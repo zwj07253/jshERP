@@ -104,10 +104,10 @@
             and dh.link_number like #{bindLinkNumber}
         </if>
         <if test="beginTime != null">
-            and dh.oper_time >= #{beginTime}
+            and dh.oper_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         <if test="materialParam != null and materialParam !=''">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
@@ -220,7 +220,7 @@
         left join jsh_material_extend me on me.id=di.material_extend_id and COALESCE(me.delete_Flag,'0') !='1'
         left join jsh_supplier s on s.id=dh.organ_id and COALESCE(s.delete_Flag,'0') !='1'
         left join (select id,name as dName,delete_Flag from jsh_depot ) d on d.id=di.depot_id and COALESCE(d.delete_Flag,'0') !='1'
-        where dh.oper_time >=#{beginTime} and dh.oper_time &lt;=#{endTime}
+        where dh.oper_time >=#{beginTime}::timestamp and dh.oper_time &lt;=#{endTime}::timestamp
         <if test="oId != null">
             and dh.organ_id = #{oId}
         </if>
@@ -302,7 +302,7 @@
         left join jsh_material_extend me on me.id=di.material_extend_id and COALESCE(me.delete_Flag,'0') !='1'
         left join jsh_supplier s on s.id=dh.organ_id and COALESCE(s.delete_Flag,'0') !='1'
         left join (select id,name as dName,delete_Flag from jsh_depot) d on d.id=di.depot_id and COALESCE(d.delete_Flag,'0') !='1'
-        where dh.oper_time >=#{beginTime} and dh.oper_time &lt;=#{endTime}
+        where dh.oper_time >=#{beginTime}::timestamp and dh.oper_time &lt;=#{endTime}::timestamp
         <if test="oId != null">
             and dh.organ_id = #{oId}
         </if>
@@ -370,7 +370,7 @@
         left join jsh_material_extend me on me.id=di.material_extend_id and COALESCE(me.delete_Flag,'0') !='1'
         left join jsh_supplier s on s.id=dh.organ_id and COALESCE(s.delete_Flag,'0') !='1'
         left join (select id,name as dName,delete_Flag from jsh_depot ) d on d.id=di.depot_id and COALESCE(d.delete_Flag,'0') !='1'
-        where dh.oper_time >=#{beginTime} and dh.oper_time &lt;=#{endTime}
+        where dh.oper_time >=#{beginTime}::timestamp and dh.oper_time &lt;=#{endTime}::timestamp
         <if test="oId != null">
             and dh.organ_id = #{oId}
         </if>
@@ -441,8 +441,8 @@
         left join jsh_unit u on m.unit_id=u.id and COALESCE(u.delete_Flag,'0') !='1'
         left join jsh_material_extend me on me.material_id=m.id and COALESCE(me.delete_Flag,'0') !='1'
         left join jsh_material_category mc on m.category_id=mc.Id and COALESCE(mc.delete_flag,'0') !='1'
-        where me.default_flag=1
-        and (dh.type=#{type} or dh.sub_type='调拨') and dh.oper_time >=#{beginTime} and dh.oper_time &lt;=#{endTime}
+        where me.default_flag='1'
+        and (dh.type=#{type} or dh.sub_type='调拨') and dh.oper_time >=#{beginTime}::timestamp and dh.oper_time &lt;=#{endTime}::timestamp
         <if test="oId != null">
             and dh.organ_id = #{oId}
         </if>
@@ -524,8 +524,8 @@
         left join jsh_depot_item di on dh.id=di.header_id  and COALESCE(di.delete_flag,'0') !='1'
         left join jsh_material m on m.id=di.material_id and COALESCE(m.delete_flag,'0') !='1'
         left join jsh_material_extend me on me.material_id=m.id and COALESCE(me.delete_flag,'0') !='1'
-        where me.default_flag=1
-        and (dh.type=#{type} or dh.sub_type='调拨') and dh.oper_time >=#{beginTime} and dh.oper_time &lt;=#{endTime}
+        where me.default_flag='1'
+        and (dh.type=#{type} or dh.sub_type='调拨') and dh.oper_time >=#{beginTime}::timestamp and dh.oper_time &lt;=#{endTime}::timestamp
         <if test="oId != null">
             and dh.organ_id = #{oId}
         </if>
@@ -594,8 +594,8 @@
         left join jsh_unit u on m.unit_id=u.id and COALESCE(u.delete_Flag,'0') !='1'
         left join jsh_material_extend me on me.material_id=m.id and COALESCE(me.delete_Flag,'0') !='1'
         left join jsh_material_category mc on m.category_id=mc.Id and COALESCE(mc.delete_flag,'0') !='1'
-        where me.default_flag=1
-        and (dh.type=#{type} or dh.sub_type='调拨') and dh.oper_time >=#{beginTime} and dh.oper_time &lt;=#{endTime}
+        where me.default_flag='1'
+        and (dh.type=#{type} or dh.sub_type='调拨') and dh.oper_time >=#{beginTime}::timestamp and dh.oper_time &lt;=#{endTime}::timestamp
         <if test="oId != null">
             and dh.organ_id = #{oId}
         </if>
@@ -666,7 +666,7 @@
         left join (select id,name as dName,delete_Flag from jsh_depot ) d on d.id=di.depot_id and COALESCE(d.delete_Flag,'0') !='1'
         <!-- 调出仓库名查询 -->
         left join (select id as aid,name as sname,delete_Flag as adelete_Flag from jsh_depot ) ddd on ddd.aid=di.another_depot_id and COALESCE(ddd.adelete_Flag,'0') !='1'
-        where dh.oper_time >=#{beginTime} and dh.oper_time &lt;=#{endTime}
+        where dh.oper_time >=#{beginTime}::timestamp and dh.oper_time &lt;=#{endTime}::timestamp
         <if test="depotFList.size()>0">
             and di.depot_id in
             <foreach collection="depotFList" item="item" index="index" separator="," open="(" close=")">
@@ -736,7 +736,7 @@
         left join jsh_material m on m.id=di.material_id and COALESCE(m.delete_Flag,'0') !='1'
         left join jsh_material_extend me on me.id=di.material_extend_id and COALESCE(me.delete_Flag,'0') !='1'
         left join (select id,name as dName,delete_Flag from jsh_depot) d on d.id=di.depot_id and COALESCE(d.delete_Flag,'0') !='1'
-        where dh.oper_time >=#{beginTime} and dh.oper_time &lt;=#{endTime}
+        where dh.oper_time >=#{beginTime}::timestamp and dh.oper_time &lt;=#{endTime}::timestamp
         <if test="depotFList.size()>0">
             and di.depot_id in
             <foreach collection="depotFList" item="item" index="index" separator="," open="(" close=")">
@@ -794,7 +794,7 @@
         left join (select id,name as dName,delete_Flag from jsh_depot ) d on d.id=di.depot_id and COALESCE(d.delete_Flag,'0') !='1'
         <!-- 调出仓库名查询 -->
         left join (select id as aid,name as sname,delete_Flag as adelete_Flag from jsh_depot ) ddd on ddd.aid=di.another_depot_id and COALESCE(ddd.adelete_Flag,'0') !='1'
-        where dh.oper_time >=#{beginTime} and dh.oper_time &lt;=#{endTime}
+        where dh.oper_time >=#{beginTime}::timestamp and dh.oper_time &lt;=#{endTime}::timestamp
         <if test="depotFList.size()>0">
             and di.depot_id in
             <foreach collection="depotFList" item="item" index="index" separator="," open="(" close=")">
@@ -854,7 +854,7 @@
             from jsh_depot_head dh
             where dh.organ_id=s.id
             and dh.type=#{type} and dh.sub_type=#{subType}
-            and dh.oper_time &lt;= #{beginTime}
+            and dh.oper_time &lt;= #{beginTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') preDebtMoney,
             -- 上期退货的欠款金额
             (select
@@ -862,19 +862,19 @@
             from jsh_depot_head dh
             where dh.organ_id=s.id
             and dh.type=#{typeBack} and dh.sub_type=#{subTypeBack}
-            and dh.oper_time &lt;= #{beginTime}
+            and dh.oper_time &lt;= #{beginTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') preReturnDebtMoney,
             -- 上期收款
             (select COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
             where ah.organ_id=s.id and ah.type='收款'
-            and ah.bill_time &lt;= #{beginTime}
+            and ah.bill_time &lt;= #{beginTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') preBackInMoney,
             -- 上期付款
             (select 0-COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
             where ah.organ_id=s.id and ah.type='付款'
-            and ah.bill_time &lt;= #{beginTime}
+            and ah.bill_time &lt;= #{beginTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') preBackOutMoney,
             -- 本期欠款
             (select
@@ -882,7 +882,7 @@
             from jsh_depot_head dh
             where dh.organ_id=s.id
             and dh.type=#{type} and dh.sub_type=#{subType}
-            and dh.oper_time>#{beginTime} and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time>#{beginTime}::timestamp and dh.oper_time &lt;= #{endTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') debtMoney,
             -- 本期退货的欠款金额
             (select
@@ -890,22 +890,22 @@
             from jsh_depot_head dh
             where dh.organ_id=s.id
             and dh.type=#{typeBack} and dh.sub_type=#{subTypeBack}
-            and dh.oper_time>#{beginTime} and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time>#{beginTime}::timestamp and dh.oper_time &lt;= #{endTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') returnDebtMoney,
             -- 本期收款
             (select COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
             where ah.organ_id=s.id and ah.type='收款'
-            and ah.bill_time>#{beginTime} and ah.bill_time &lt;= #{endTime}
+            and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') backInMoney,
             -- 本期付款
             (select 0-COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
             where ah.organ_id=s.id and ah.type='付款'
-            and ah.bill_time>#{beginTime} and ah.bill_time &lt;= #{endTime}
+            and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') backOutMoney
         from jsh_supplier s
-        where s.enabled=1
+        where s.enabled='1'
         and s.type=#{supplierType}
         <if test="organId != null">
             and s.id = #{organId}
@@ -941,7 +941,7 @@
             from jsh_depot_head dh
             where dh.organ_id=s.id
             and dh.type=#{type} and dh.sub_type=#{subType}
-            and dh.oper_time &lt;= #{beginTime}
+            and dh.oper_time &lt;= #{beginTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') preDebtMoney,
             -- 上期退货的欠款金额
             (select
@@ -949,19 +949,19 @@
             from jsh_depot_head dh
             where dh.organ_id=s.id
             and dh.type=#{typeBack} and dh.sub_type=#{subTypeBack}
-            and dh.oper_time &lt;= #{beginTime}
+            and dh.oper_time &lt;= #{beginTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') preReturnDebtMoney,
             -- 上期收款
             (select COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
             where ah.organ_id=s.id and ah.type='收款'
-            and ah.bill_time &lt;= #{beginTime}
+            and ah.bill_time &lt;= #{beginTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') preBackInMoney,
             -- 上期付款
             (select 0-COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
             where ah.organ_id=s.id and ah.type='付款'
-            and ah.bill_time &lt;= #{beginTime}
+            and ah.bill_time &lt;= #{beginTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') preBackOutMoney,
             -- 本期欠款
             (select
@@ -969,7 +969,7 @@
             from jsh_depot_head dh
             where dh.organ_id=s.id
             and dh.type=#{type} and dh.sub_type=#{subType}
-            and dh.oper_time>#{beginTime} and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time>#{beginTime}::timestamp and dh.oper_time &lt;= #{endTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') debtMoney,
             -- 本期退货的欠款金额
             (select
@@ -977,22 +977,22 @@
             from jsh_depot_head dh
             where dh.organ_id=s.id
             and dh.type=#{typeBack} and dh.sub_type=#{subTypeBack}
-            and dh.oper_time>#{beginTime} and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time>#{beginTime}::timestamp and dh.oper_time &lt;= #{endTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') returnDebtMoney,
             -- 本期收款
             (select COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
             where ah.organ_id=s.id and ah.type='收款'
-            and ah.bill_time>#{beginTime} and ah.bill_time &lt;= #{endTime}
+            and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') backInMoney,
             -- 本期付款
             (select 0-COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
             where ah.organ_id=s.id and ah.type='付款'
-            and ah.bill_time>#{beginTime} and ah.bill_time &lt;= #{endTime}
+            and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') backOutMoney
         from jsh_supplier s
-        where s.enabled=1
+        where s.enabled='1'
         and s.type=#{supplierType}
         <if test="organId != null">
             and s.id = #{organId}
@@ -1023,51 +1023,51 @@
             from jsh_depot_head dh
             where dh.organ_id=s.id
             and dh.type=#{type} and dh.sub_type=#{subType}
-            and dh.oper_time &lt;= #{beginTime}
+            and dh.oper_time &lt;= #{beginTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') preDebtMoney,
             (select
             COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
             from jsh_depot_head dh
             where dh.organ_id=s.id
             and dh.type=#{typeBack} and dh.sub_type=#{subTypeBack}
-            and dh.oper_time &lt;= #{beginTime}
+            and dh.oper_time &lt;= #{beginTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') preReturnDebtMoney,
             (select COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
             where ah.organ_id=s.id and ah.type='收款'
-            and ah.bill_time &lt;= #{beginTime}
+            and ah.bill_time &lt;= #{beginTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') preBackInMoney,
             (select 0-COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
             where ah.organ_id=s.id and ah.type='付款'
-            and ah.bill_time &lt;= #{beginTime}
+            and ah.bill_time &lt;= #{beginTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') preBackOutMoney,
             (select
             COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
             from jsh_depot_head dh
             where dh.organ_id=s.id
             and dh.type=#{type} and dh.sub_type=#{subType}
-            and dh.oper_time>#{beginTime} and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time>#{beginTime}::timestamp and dh.oper_time &lt;= #{endTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') debtMoney,
             (select
             COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
             from jsh_depot_head dh
             where dh.organ_id=s.id
             and dh.type=#{typeBack} and dh.sub_type=#{subTypeBack}
-            and dh.oper_time>#{beginTime} and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time>#{beginTime}::timestamp and dh.oper_time &lt;= #{endTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') returnDebtMoney,
             (select COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
             where ah.organ_id=s.id and ah.type='收款'
-            and ah.bill_time>#{beginTime} and ah.bill_time &lt;= #{endTime}
+            and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') backInMoney,
             (select 0-COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
             where ah.organ_id=s.id and ah.type='付款'
-            and ah.bill_time>#{beginTime} and ah.bill_time &lt;= #{endTime}
+            and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') backOutMoney
         from jsh_supplier s
-        where s.enabled=1
+        where s.enabled='1'
         and s.type=#{supplierType}
         <if test="organId != null">
             and s.id = #{organId}
@@ -1156,10 +1156,10 @@
         where di.id is not null
         and (dh.type='入库' or dh.type='出库')
         <if test="beginTime != null">
-            and dh.oper_time >= #{beginTime}
+            and dh.oper_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         <if test="forceFlag">
             and (dh.status = '1' or dh.status = '2' or dh.status = '3')
@@ -1195,10 +1195,10 @@
             and dh.number like #{bindNumber}
         </if>
         <if test="beginTime != null">
-            and dh.oper_time >= #{beginTime}
+            and dh.oper_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         <if test="materialParam != null and materialParam !=''">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
@@ -1249,10 +1249,10 @@
             and dh.number like #{bindNumber}
         </if>
         <if test="beginTime != null">
-            and dh.oper_time >= #{beginTime}
+            and dh.oper_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         <if test="materialParam != null and materialParam !=''">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
@@ -1342,10 +1342,10 @@
             and dh.number like #{bindNumber}
         </if>
         <if test="beginTime != null">
-            and dh.oper_time >= #{beginTime}
+            and dh.oper_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         <if test="materialParam != null and materialParam !=''">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
@@ -1410,10 +1410,10 @@
             and dh.number like #{bindNumber}
         </if>
         <if test="beginTime != null">
-            and dh.oper_time >= #{beginTime}
+            and dh.oper_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         <if test="materialParam != null and materialParam !=''">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>

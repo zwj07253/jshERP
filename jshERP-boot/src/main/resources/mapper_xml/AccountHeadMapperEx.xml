@@ -27,10 +27,10 @@
             and ah.type=#{type}
         </if>
         <if test="beginTime != null">
-            and ah.bill_time &gt;= #{beginTime}
+            and ah.bill_time &gt;= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and ah.bill_time &lt;= #{endTime}
+            and ah.bill_time &lt;= #{endTime}::timestamp
         </if>
         <if test="organId != null">
             and ah.organ_id=#{organId}

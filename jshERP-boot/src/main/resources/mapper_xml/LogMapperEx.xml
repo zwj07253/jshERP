@@ -31,10 +31,10 @@
             and t.type = #{tenantType}
         </if>
         <if test="beginTime != null">
-            and l.create_time &gt;= #{beginTime}
+            and l.create_time &gt;= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and l.create_time &lt;= #{endTime}
+            and l.create_time &lt;= #{endTime}::timestamp
         </if>
         <if test="content != null">
             <bind name="bindContent" value="'%'+content+'%'"/>
@@ -45,7 +45,7 @@
 
     <select id="getCountByIpAndDate" resultType="java.lang.Long">
         select count(1) from jsh_log
-        where user_id=#{userId} and operation=#{moduleName} and client_ip=#{clientIp} and create_time=#{createTime}
+        where user_id=#{userId} and operation=#{moduleName} and client_ip=#{clientIp} and create_time=#{createTime}::timestamp
     </select>
 
     <insert id="insertLogWithUserId" parameterType="com.jsh.erp.datasource.entities.Log">

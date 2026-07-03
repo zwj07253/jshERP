@@ -58,10 +58,10 @@
             and dh.account_id = #{accountId}
         </if>
         <if test="beginTime != null">
-            and dh.oper_time >= #{beginTime}
+            and dh.oper_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         <if test="forceFlag">
             and (dh.status = '1' or dh.status = '2' or dh.status = '3')
@@ -76,10 +76,10 @@
             and ah.account_id = #{accountId}
         </if>
         <if test="beginTime != null">
-            and ah.bill_time >= #{beginTime}
+            and ah.bill_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and ah.bill_time &lt;= #{endTime}
+            and ah.bill_time &lt;= #{endTime}::timestamp
         </if>
         <if test="forceFlag">
             and ah.status = '1'
@@ -95,10 +95,10 @@
             and ai.account_id = #{accountId}
         </if>
         <if test="beginTime != null">
-            and ah.bill_time >= #{beginTime}
+            and ah.bill_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and ah.bill_time &lt;= #{endTime}
+            and ah.bill_time &lt;= #{endTime}::timestamp
         </if>
         <if test="forceFlag">
             and ah.status = '1'
@@ -114,10 +114,10 @@
             and dh.account_id_list like #{bindAccountId}
         </if>
         <if test="beginTime != null">
-            and dh.oper_time >= #{beginTime}
+            and dh.oper_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         <if test="forceFlag">
             and (dh.status = '1' or dh.status = '2' or dh.status = '3')
@@ -131,10 +131,10 @@
             where 1=1 and dh.pay_type != '预付款'
             and dh.account_id = a.id
             <if test="beginTime != null">
-                and dh.oper_time >= #{beginTime}
+                and dh.oper_time >= #{beginTime}::timestamp
             </if>
             <if test="endTime != null">
-                and dh.oper_time &lt;= #{endTime}
+                and dh.oper_time &lt;= #{endTime}::timestamp
             </if>
             <if test="forceFlag">
                 and (dh.status = '1' or dh.status = '2' or dh.status = '3')
@@ -143,10 +143,10 @@
             (select COALESCE(sum(ah.change_amount),0) from jsh_account_head ah
             where 1=1 and ah.account_id = a.id
             <if test="beginTime != null">
-                and ah.bill_time >= #{beginTime}
+                and ah.bill_time >= #{beginTime}::timestamp
             </if>
             <if test="endTime != null">
-                and ah.bill_time &lt;= #{endTime}
+                and ah.bill_time &lt;= #{endTime}::timestamp
             </if>
             <if test="forceFlag">
                 and ah.status = '1'
@@ -156,10 +156,10 @@
             left join jsh_account_item ai on ah.id = ai.header_id and COALESCE(ai.delete_flag,'0') !='1'
             where 1=1 and ai.account_id = a.id
             <if test="beginTime != null">
-                and ah.bill_time >= #{beginTime}
+                and ah.bill_time >= #{beginTime}::timestamp
             </if>
             <if test="endTime != null">
-                and ah.bill_time &lt;= #{endTime}
+                and ah.bill_time &lt;= #{endTime}::timestamp
             </if>
             <if test="forceFlag">
                 and ah.status = '1'
@@ -188,10 +188,10 @@
         where 1=1
         and dh.account_id_list !=''
         <if test="beginTime != null">
-            and dh.oper_time >= #{beginTime}
+            and dh.oper_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         <if test="forceFlag">
             and (dh.status = '1' or dh.status = '2' or dh.status = '3')
@@ -213,10 +213,10 @@
             and dh.number like #{bindNumber}
         </if>
         <if test="beginTime != null and beginTime !=''">
-            and dh.oper_time >= #{beginTime}
+            and dh.oper_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null and endTime !=''">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         <if test="forceFlag">
             and (dh.status = '1' or dh.status = '2' or dh.status = '3')
@@ -237,10 +237,10 @@
             and ah.bill_no like #{bindNumber}
         </if>
         <if test="beginTime != null and beginTime !=''">
-            and ah.bill_time >= #{beginTime}
+            and ah.bill_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null and endTime !=''">
-            and ah.bill_time &lt;= #{endTime}
+            and ah.bill_time &lt;= #{endTime}::timestamp
         </if>
         <if test="forceFlag">
             and ah.status = '1'
@@ -262,10 +262,10 @@
             and ah.bill_no like #{bindNumber}
         </if>
         <if test="beginTime != null and beginTime !=''">
-            and ah.bill_time >= #{beginTime}
+            and ah.bill_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null and endTime !=''">
-            and ah.bill_time &lt;= #{endTime}
+            and ah.bill_time &lt;= #{endTime}::timestamp
         </if>
         <if test="forceFlag">
             and ah.status = '1'
@@ -286,10 +286,10 @@
             and ah.bill_no like #{bindNumber}
         </if>
         <if test="beginTime != null and beginTime !=''">
-            and ah.bill_time >= #{beginTime}
+            and ah.bill_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null and endTime !=''">
-            and ah.bill_time &lt;= #{endTime}
+            and ah.bill_time &lt;= #{endTime}::timestamp
         </if>
         <if test="forceFlag">
             and ah.status = '1'
@@ -310,10 +310,10 @@
             and ah.bill_no like #{bindNumber}
         </if>
         <if test="beginTime != null and beginTime !=''">
-            and ah.bill_time >= #{beginTime}
+            and ah.bill_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null and endTime !=''">
-            and ah.bill_time &lt;= #{endTime}
+            and ah.bill_time &lt;= #{endTime}::timestamp
         </if>
         <if test="forceFlag">
             and ah.status = '1'
@@ -336,10 +336,10 @@
             and dh.number like #{bindNumber}
         </if>
         <if test="beginTime != null and beginTime !=''">
-            and dh.oper_time >= #{beginTime}
+            and dh.oper_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null and endTime !=''">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         <if test="forceFlag">
             and (dh.status = '1' or dh.status = '2' or dh.status = '3')
@@ -367,10 +367,10 @@
                 and dh.number like #{bindNumber}
             </if>
             <if test="beginTime != null and beginTime !=''">
-                and dh.oper_time >= #{beginTime}
+                and dh.oper_time >= #{beginTime}::timestamp
             </if>
             <if test="endTime != null and endTime !=''">
-                and dh.oper_time &lt;= #{endTime}
+                and dh.oper_time &lt;= #{endTime}::timestamp
             </if>
             <if test="forceFlag">
                 and (dh.status = '1' or dh.status = '2' or dh.status = '3')
@@ -390,10 +390,10 @@
                 and ah.bill_no like #{bindNumber}
             </if>
             <if test="beginTime != null and beginTime !=''">
-                and ah.bill_time >= #{beginTime}
+                and ah.bill_time >= #{beginTime}::timestamp
             </if>
             <if test="endTime != null and endTime !=''">
-                and ah.bill_time &lt;= #{endTime}
+                and ah.bill_time &lt;= #{endTime}::timestamp
             </if>
             <if test="forceFlag">
                 and ah.status = '1'
@@ -414,10 +414,10 @@
                 and ah.bill_no like #{bindNumber}
             </if>
             <if test="beginTime != null and beginTime !=''">
-                and ah.bill_time >= #{beginTime}
+                and ah.bill_time >= #{beginTime}::timestamp
             </if>
             <if test="endTime != null and endTime !=''">
-                and ah.bill_time &lt;= #{endTime}
+                and ah.bill_time &lt;= #{endTime}::timestamp
             </if>
             <if test="forceFlag">
                 and ah.status = '1'
@@ -437,10 +437,10 @@
                 and ah.bill_no like #{bindNumber}
             </if>
             <if test="beginTime != null and beginTime !=''">
-                and ah.bill_time >= #{beginTime}
+                and ah.bill_time >= #{beginTime}::timestamp
             </if>
             <if test="endTime != null and endTime !=''">
-                and ah.bill_time &lt;= #{endTime}
+                and ah.bill_time &lt;= #{endTime}::timestamp
             </if>
             <if test="forceFlag">
                 and ah.status = '1'
@@ -460,10 +460,10 @@
                 and ah.bill_no like #{bindNumber}
             </if>
             <if test="beginTime != null and beginTime !=''">
-                and ah.bill_time >= #{beginTime}
+                and ah.bill_time >= #{beginTime}::timestamp
             </if>
             <if test="endTime != null and endTime !=''">
-                and ah.bill_time &lt;= #{endTime}
+                and ah.bill_time &lt;= #{endTime}::timestamp
             </if>
             <if test="forceFlag">
                 and ah.status = '1'
@@ -484,10 +484,10 @@
                 and dh.number like #{bindNumber}
             </if>
             <if test="beginTime != null and beginTime !=''">
-                and dh.oper_time >= #{beginTime}
+                and dh.oper_time >= #{beginTime}::timestamp
             </if>
             <if test="endTime != null and endTime !=''">
-                and dh.oper_time &lt;= #{endTime}
+                and dh.oper_time &lt;= #{endTime}::timestamp
             </if>
             <if test="forceFlag">
                 and (dh.status = '1' or dh.status = '2' or dh.status = '3')

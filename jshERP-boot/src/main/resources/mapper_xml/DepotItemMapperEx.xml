@@ -214,10 +214,10 @@
             and dh.number like #{bindNumber}
         </if>
         <if test="beginTime != null and beginTime !=''">
-            and dh.oper_time >= #{beginTime}
+            and dh.oper_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null and endTime !=''">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         and di.material_id = #{mId}
         and COALESCE(dh.delete_flag,'0') !='1'
@@ -251,10 +251,10 @@
             and dh.number like #{bindNumber}
         </if>
         <if test="beginTime != null and beginTime !=''">
-            and dh.oper_time >= #{beginTime}
+            and dh.oper_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null and endTime !=''">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         and di.material_id = #{mId}
         and COALESCE(dh.delete_flag,'0') !='1') tb
@@ -294,10 +294,10 @@
             and dh.number like #{bindNumber}
         </if>
         <if test="beginTime != null and beginTime !=''">
-            and dh.oper_time >= #{beginTime}
+            and dh.oper_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null and endTime !=''">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         and di.material_id =#{mId}
         and COALESCE(dh.delete_flag,'0') !='1'
@@ -325,10 +325,10 @@
             and dh.number like #{bindNumber}
         </if>
         <if test="beginTime != null and beginTime !=''">
-            and dh.oper_time >= #{beginTime}
+            and dh.oper_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null and endTime !=''">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         and di.material_id = #{mId}
         and COALESCE(dh.delete_flag,'0') !='1') tb
@@ -376,7 +376,7 @@
         left join jsh_depot_item di on di.material_id=m.id and COALESCE(di.delete_Flag,'0') !='1'
         left join jsh_depot_head dh on di.header_id=dh.id and COALESCE(dh.delete_flag,'0') !='1'
         left join jsh_unit u on m.unit_id=u.id and COALESCE(u.delete_Flag,'0') !='1'
-        where 1=1 and me.default_flag=1 and m.enabled=1
+        where 1=1 and me.default_flag='1' and m.enabled='1'
         <if test="materialParam != null and materialParam !=''">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
             and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
@@ -390,7 +390,7 @@
             </foreach>
         </if>
         <if test="endTime != null">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         and COALESCE(m.delete_flag,'0') !='1'
         group by m.id, me.bar_code, m.name, m.mfrs, m.model, m.standard, m.brand,
@@ -408,7 +408,7 @@
         left join jsh_material_extend me on me.material_id=m.id and COALESCE(me.delete_Flag,'0') !='1'
         left join jsh_depot_item di on di.material_id=m.id and COALESCE(di.delete_Flag,'0') !='1'
         left join jsh_depot_head dh on di.header_id=dh.id and COALESCE(dh.delete_flag,'0') !='1'
-        where 1=1 and me.default_flag=1 and m.enabled=1
+        where 1=1 and me.default_flag='1' and m.enabled='1'
         <if test="materialParam != null and materialParam !=''">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
             and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
@@ -422,7 +422,7 @@
             </foreach>
         </if>
         <if test="endTime != null">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         and COALESCE(m.delete_flag,'0') !='1'
         group by m.id) cc
@@ -460,10 +460,10 @@
             and (dh.sub_type = '零售' or dh.sub_type = '零售退货')
         </if>
         <if test="beginTime != null">
-            and dh.oper_time >= #{beginTime}
+            and dh.oper_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         <if test="creatorArray != null">
             and dh.creator in (
@@ -529,10 +529,10 @@
             and (dh.sub_type = '零售' or dh.sub_type = '零售退货')
         </if>
         <if test="beginTime != null">
-            and dh.oper_time >= #{beginTime}
+            and dh.oper_time >= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         <if test="creatorArray != null">
             and dh.creator in (
@@ -568,8 +568,8 @@
         select COALESCE(sum(basic_number),0) as BasicNumber from jsh_depot_item di,jsh_depot_head dh
         where di.header_id = dh.id
         and dh.type=#{type} and dh.sub_type=#{subType}
-        and dh.oper_time &gt;= #{beginTime}
-        and dh.oper_time &lt;= #{endTime}
+        and dh.oper_time &gt;= #{beginTime}::timestamp
+        and dh.oper_time &lt;= #{endTime}::timestamp
         and di.material_extend_id =#{meId}
         <if test="creatorArray != null">
             and dh.creator in (
@@ -605,8 +605,8 @@
         select COALESCE(sum(all_price),0) as AllPrice from jsh_depot_item di,jsh_depot_head dh
         where di.header_id = dh.id
         and dh.type=#{type} and dh.sub_type=#{subType}
-        and dh.oper_time &gt;= #{beginTime}
-        and dh.oper_time &lt;= #{endTime}
+        and dh.oper_time &gt;= #{beginTime}::timestamp
+        and dh.oper_time &lt;= #{endTime}::timestamp
         <if test="meId != null">
             and di.material_extend_id =#{meId}
         </if>
@@ -648,8 +648,8 @@
         left join jsh_material m on m.id=di.material_id and COALESCE(m.delete_Flag,'0') !='1'
         where COALESCE(di.delete_flag,'0') !='1'
         and dh.type=#{type} and dh.sub_type=#{subType}
-        and dh.oper_time &gt;= #{beginTime}
-        and dh.oper_time &lt;= #{endTime}
+        and dh.oper_time &gt;= #{beginTime}::timestamp
+        and dh.oper_time &lt;= #{endTime}::timestamp
         <if test="categoryList.size()>0">
             and m.category_id in
             <foreach collection="categoryList" item="item" index="index" separator="," open="(" close=")">
@@ -694,8 +694,8 @@
         left join jsh_depot_item di on dh.id = di.header_id and COALESCE(di.delete_flag,'0') != '1'
         where di.id is not null
         and (dh.type='入库' or dh.type='出库')
-        and dh.oper_time &gt;= #{beginTime}
-        and dh.oper_time &lt;= #{endTime}
+        and dh.oper_time &gt;= #{beginTime}::timestamp
+        and dh.oper_time &lt;= #{endTime}::timestamp
         <if test="forceFlag">
             and (dh.status = '1' or dh.status = '2' or dh.status = '3')
         </if>
@@ -727,10 +727,10 @@
             and dh.status = '1'
         </if>
         <if test="beginTime != null">
-            and dh.oper_time &gt;= #{beginTime}
+            and dh.oper_time &gt;= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         and COALESCE(dh.delete_flag,'0') !='1'
         and COALESCE(di.delete_flag,'0') !='1'
@@ -754,10 +754,10 @@
             and dh.status = '1'
         </if>
         <if test="beginTime != null">
-            and dh.oper_time &gt;= #{beginTime}
+            and dh.oper_time &gt;= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         and COALESCE(dh.delete_flag,'0') !='1'
         and COALESCE(di.delete_flag,'0') !='1'
@@ -784,10 +784,10 @@
             and dh.status = '1'
         </if>
         <if test="beginTime != null">
-            and dh.oper_time &gt;= #{beginTime}
+            and dh.oper_time &gt;= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
     </select>
 
@@ -811,10 +811,10 @@
             and dh.status = '1'
         </if>
         <if test="beginTime != null">
-            and dh.oper_time &gt;= #{beginTime}
+            and dh.oper_time &gt;= #{beginTime}::timestamp
         </if>
         <if test="endTime != null">
-            and dh.oper_time &lt;= #{endTime}
+            and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
     </select>
 
@@ -916,8 +916,8 @@
         left join jsh_unit u on m.unit_id=u.id and COALESCE(u.delete_Flag,'0') !='1'
         left join jsh_depot d on d.id=mis.depot_id and COALESCE(u.delete_flag,'0') !='1'
         where 1=1
-        and me.default_flag=1
-        and m.enabled=1
+        and me.default_flag='1'
+        and m.enabled='1'
         and COALESCE(m.delete_flag,'0') !='1'
         and mis.depot_id=mcs.depot_id
         and ((COALESCE(mis.low_safe_stock,0)!=0 and mcs.current_number &lt; COALESCE(mis.low_safe_stock,0))
@@ -956,8 +956,8 @@
         left join jsh_unit u on m.unit_id=u.id and COALESCE(u.delete_Flag,'0') !='1'
         left join jsh_depot d on d.id=mis.depot_id and COALESCE(u.delete_flag,'0') !='1'
         where 1=1
-        and me.default_flag=1
-        and m.enabled=1
+        and me.default_flag='1'
+        and m.enabled='1'
         and COALESCE(m.delete_flag,'0') !='1'
         and mis.depot_id=mcs.depot_id
         and ((COALESCE(mis.low_safe_stock,0)!=0 and mcs.current_number &lt; COALESCE(mis.low_safe_stock,0))
