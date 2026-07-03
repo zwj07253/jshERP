@@ -93,7 +93,7 @@
         and COALESCE(delete_flag,'0') !='1'
         order by sort asc, id desc
         <if test="limit != null">
-            limit 0, 500
+            LIMIT 500
         </if>
     </select>
 

@@ -2,6 +2,7 @@ package com.jsh.erp.utils;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONWriter;
+import com.alibaba.fastjson2.filter.ValueFilter;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -16,25 +17,18 @@ public class ResponseJsonUtil {
     }
 
     /**
-     * 响应过滤器
+     * 响应过滤器 - 格式化日期字段
      */
-    public static final class ResponseFilter extends ExtJsonUtils.ExtFilter {
-        @Override
-        public Object apply(Object object, String name, Object value) {
-            if (name.equals("createTime") || name.equals("modifyTime") || name.equals("updateTime")) {
-                return value;
-            } else if (value instanceof Date) {
-                return FORMAT.format(value);
-            } else {
-                return value;
-            }
+    public static final ValueFilter DATE_FILTER = (object, name, value) -> {
+        if (value instanceof Date) {
+            return FORMAT.format(value);
         }
-    }
+        return value;
+    };
 
     public static String backJson(ResponseCode responseCode) {
         if (responseCode != null) {
-            return JSON.toJSONString(responseCode, new ResponseFilter(),
-                    JSONWriter.Feature.WriteMapNullValue,
+            return JSON.toJSONString(responseCode, DATE_FILTER,
                     JSONWriter.Feature.WriteNonStringKeyAsString);
         }
         return null;

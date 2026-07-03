@@ -182,7 +182,7 @@
 
     <select id="findMaterialsListMapByHeaderIdList" resultType="com.jsh.erp.datasource.vo.MaterialsListVo">
         select jsh_depot_item.header_id, STRING_AGG(concat(jsh_material.name,' ',COALESCE(jsh_material.standard,''),' ',
-            COALESCE(jsh_material.model,''),' ',COALESCE(jsh_material.color,''))) as materialsList
+            COALESCE(jsh_material.model,''),' ',COALESCE(jsh_material.color,'')), ',') as materialsList
         from jsh_depot_item
         left join jsh_material on jsh_depot_item.material_id = jsh_material.Id and COALESCE(jsh_material.delete_Flag,'0') !='1'
         where 1=1
@@ -290,7 +290,7 @@
             </if>
         </if>
         <if test="offset != null and rows != null">
-            limit #{offset},#{rows}
+            LIMIT #{rows} OFFSET #{offset}
         </if>
     </select>
 
@@ -514,7 +514,7 @@
             </if>
         </if>
         <if test="offset != null and rows != null">
-            limit #{offset},#{rows}
+            LIMIT #{rows} OFFSET #{offset}
         </if>
     </select>
 
@@ -725,7 +725,7 @@
             </if>
         </if>
         <if test="offset != null and rows != null">
-            limit #{offset},#{rows}
+            LIMIT #{rows} OFFSET #{offset}
         </if>
     </select>
 
@@ -926,7 +926,7 @@
         </if>
         order by begin_need+preDebtMoney-preReturnDebtMoney-preBackInMoney-preBackOutMoney+debtMoney-returnDebtMoney-backInMoney-backOutMoney desc
         <if test="offset != null and rows != null">
-            limit #{offset},#{rows}
+            LIMIT #{rows} OFFSET #{offset}
         </if>
     </select>
 
@@ -1223,7 +1223,7 @@
         and COALESCE(dh.delete_flag,'0') !='1'
         order by dh.oper_time desc
         <if test="offset != null and rows != null">
-            limit #{offset},#{rows}
+            LIMIT #{rows} OFFSET #{offset}
         </if>
     </select>
 
@@ -1372,7 +1372,7 @@
         group by dh.id
         order by dh.id desc
         <if test="offset != null and rows != null">
-            limit #{offset},#{rows}
+            LIMIT #{rows} OFFSET #{offset}
         </if>) tb
         left join jsh_depot_head jdh on jdh.id=tb.id and COALESCE(jdh.delete_flag,'0') !='1'
         left join jsh_supplier s on jdh.organ_id=s.id and COALESCE(s.delete_flag,'0') !='1'

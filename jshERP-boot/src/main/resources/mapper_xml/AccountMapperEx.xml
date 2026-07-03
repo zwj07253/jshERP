@@ -178,7 +178,7 @@
         and COALESCE(a.delete_flag,'0') !='1'
         order by a.sort asc, a.id desc
         <if test="offset != null and rows != null">
-            limit #{offset},#{rows}
+            LIMIT #{rows} OFFSET #{offset}
         </if>
     </select>
 
@@ -348,7 +348,7 @@
         and COALESCE(dh.delete_flag,'0') !='1'
         ORDER BY oTime desc
         <if test="offset != null and rows != null">
-            limit #{offset},#{rows}
+            LIMIT #{rows} OFFSET #{offset}
         </if>
     </select>
 

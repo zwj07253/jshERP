@@ -24,7 +24,7 @@
         </if>
         order by update_time asc
         <if test="syncNum != null">
-            limit 0,#{syncNum}
+            LIMIT #{syncNum}
         </if>
         ) time_list
     </select>

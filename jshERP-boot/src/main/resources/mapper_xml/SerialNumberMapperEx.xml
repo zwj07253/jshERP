@@ -139,7 +139,7 @@
             </if>
                 and selFrom.is_sell !='0'
                 and COALESCE(selFrom.delete_flag,'0') !='1'
-            limit 0,#{count}
+            LIMIT #{count}
             ) batchSN
             )
         </if>
@@ -190,7 +190,7 @@
         and COALESCE(ser.delete_flag,'0') !='1'
         order by ser.id desc
         <if test="offset != null and rows != null">
-            limit #{offset},#{rows}
+            LIMIT #{rows} OFFSET #{offset}
         </if>
     </select>
     <select id="getEnableSerialNumberCount" resultType="java.lang.Long">

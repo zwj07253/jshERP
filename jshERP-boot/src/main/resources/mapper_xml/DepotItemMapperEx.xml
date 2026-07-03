@@ -144,7 +144,7 @@
         </if>
         and COALESCE(delete_flag,'0') !='1'
         <if test="offset != null and rows != null">
-            limit #{offset},#{rows}
+            LIMIT #{rows} OFFSET #{offset}
         </if>
     </select>
 
@@ -260,7 +260,7 @@
         and COALESCE(dh.delete_flag,'0') !='1') tb
         order by tb.oTime desc
         <if test="offset != null and rows != null">
-            limit #{offset},#{rows}
+            LIMIT #{rows} OFFSET #{offset}
         </if>
     </select>
 
@@ -398,7 +398,7 @@
         me.purchase_decimal, mcs.current_unit_price
         order by m.id desc
         <if test="offset != null and rows != null">
-            limit #{offset},#{rows}
+            LIMIT #{rows} OFFSET #{offset}
         </if>
     </select>
 
@@ -496,7 +496,7 @@
         m.other_field1,m.other_field2,m.other_field3, m.unit, u.basic_unit, m.color, m.brand, u.name
         order by m.id desc
         <if test="offset != null and rows != null">
-            limit #{offset},#{rows}
+            LIMIT #{rows} OFFSET #{offset}
         </if>
     </select>
 
@@ -942,7 +942,7 @@
         </if>
         order by depotName asc
         <if test="offset != null and rows != null">
-            limit #{offset},#{rows}
+            LIMIT #{rows} OFFSET #{offset}
         </if>
     </select>
 
@@ -1153,7 +1153,7 @@
         and dh.type = #{type} and dh.sub_type = #{subType}
         and COALESCE(dh.delete_flag,'0') !='1'
         order by dh.id desc, di.id desc
-        limit 0,1
+        LIMIT 1
     </select>
 
 </mapper>

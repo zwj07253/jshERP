@@ -14,10 +14,10 @@
         select tb.*,
         (select r.id from jsh_user_business ub
         left join jsh_role r on ub.value=concat("[",r.id,"]") and COALESCE(r.delete_flag,'0') !='1'
-        where ub.type='UserRole' and ub.key_id=tb.id limit 0,1) roleId,
+        where ub.type='UserRole' and ub.key_id=tb.id LIMIT 1) roleId,
         (select r.name from jsh_user_business ub
         left join jsh_role r on ub.value=concat("[",r.id,"]") and COALESCE(r.delete_flag,'0') !='1'
-        where ub.type='UserRole' and ub.key_id=tb.id limit 0,1) roleName
+        where ub.type='UserRole' and ub.key_id=tb.id LIMIT 1) roleName
         from (
         select u.id, u.username, u.login_name, u.position, u.leader_flag, u.email, u.phonenum,
         u.description, u.remark,u.isystem,org.id as orgaId,u.tenant_id,u.status,org.org_abr,

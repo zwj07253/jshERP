@@ -7,7 +7,6 @@ import com.baomidou.mybatisplus.extension.plugins.handler.TenantLineHandler;
 import com.jsh.erp.utils.Tools;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
-import net.sf.jsqlparser.expression.NullValue;
 import org.mybatis.spring.mapper.MapperScannerConfigurer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
@@ -37,12 +36,7 @@ public class TenantConfig {
             public Expression getTenantId() {
                 String token = request.getHeader("X-Access-Token");
                 Long tenantId = Tools.getTenantIdByToken(token);
-                if (tenantId != 0L) {
-                    return new LongValue(tenantId);
-                } else {
-                    // 超管，返回 null 表示不过滤
-                    return new NullValue();
-                }
+                return new LongValue(tenantId);
             }
 
             @Override
@@ -52,6 +46,12 @@ public class TenantConfig {
 
             @Override
             public boolean ignoreTable(String tableName) {
+                // 超管跳过所有表的租户过滤
+                String token = request.getHeader("X-Access-Token");
+                Long tenantId = Tools.getTenantIdByToken(token);
+                if (tenantId == 0L) {
+                    return true;
+                }
                 return IGNORE_TABLES.contains(tableName);
             }
         }));

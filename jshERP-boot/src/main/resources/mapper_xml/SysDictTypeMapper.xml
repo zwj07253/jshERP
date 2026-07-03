@@ -34,10 +34,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				AND dict_type like concat('%', #{dictType}, '%')
 			</if>
 			<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
-				and TO_CHAR(create_time, 'YYMMDD') &gt;= TO_CHAR(#{params.beginTime}, 'YYMMDD')
+				and TO_CHAR(create_time, 'YYMMDD') &gt;= TO_CHAR(#{params.beginTime}::timestamp, 'YYMMDD')
 			</if>
 			<if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
-				and TO_CHAR(create_time, 'YYMMDD') &lt;= TO_CHAR(#{params.endTime}, 'YYMMDD')
+				and TO_CHAR(create_time, 'YYMMDD') &lt;= TO_CHAR(#{params.endTime}::timestamp, 'YYMMDD')
 			</if>
 	    </where>
 	</select>

@@ -15,7 +15,7 @@
         </if>
         and Id !=1
         <if test="offset != null and rows != null">
-            limit #{offset},#{rows}
+            LIMIT #{rows} OFFSET #{offset}
         </if>
     </select>
     <select id="countsByMaterialCategory" resultType="java.lang.Long">

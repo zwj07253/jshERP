@@ -314,7 +314,7 @@
         </if>
         and COALESCE(m.delete_flag,'0') !='1'
         order by m.id desc, me.default_flag desc, me.id asc
-        limit 0,20
+        LIMIT 20
     </select>
 
     <select id="findBySelectWithBarCode" parameterType="com.jsh.erp.datasource.entities.MaterialExample" resultMap="ResultAndUnitMap">
@@ -371,7 +371,7 @@
         and COALESCE(m.delete_flag,'0') !='1'
         ORDER BY m.id desc, me.default_flag desc, me.id asc
         <if test="offset != null and rows != null">
-            limit #{offset},#{rows}
+            LIMIT #{rows} OFFSET #{offset}
         </if>
     </select>
 
@@ -509,7 +509,7 @@
         and COALESCE(m.delete_flag,'0') !='1'
         order by m.id desc
         <if test="offset != null and rows != null">
-            limit #{offset},#{rows}
+            LIMIT #{rows} OFFSET #{offset}
         </if>
     </select>
 
@@ -706,7 +706,7 @@
             </if>
         </if>
         <if test="offset != null and rows != null">
-            limit #{offset},#{rows}
+            LIMIT #{rows} OFFSET #{offset}
         </if>
     </select>
 
@@ -835,7 +835,7 @@
         where sn.serial_number = #{serialNumber}
         and me.default_flag=1
         and COALESCE(m.delete_flag,'0') !='1'
-        limit 0,1
+        LIMIT 1
     </select>
 
     <select id="getMaterialDepotStock" resultType="com.jsh.erp.datasource.vo.MaterialDepotStock">
