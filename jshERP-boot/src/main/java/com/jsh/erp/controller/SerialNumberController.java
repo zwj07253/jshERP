@@ -3,7 +3,7 @@ package com.jsh.erp.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.datasource.entities.DepotItem;
 import com.jsh.erp.datasource.entities.SerialNumberEx;
 import com.jsh.erp.service.DepotHeadService;
