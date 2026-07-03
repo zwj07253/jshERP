@@ -1,37 +1,23 @@
 package com.jsh.erp.config;
 
+import com.gitee.starblues.core.RuntimeMode;
 import com.gitee.starblues.integration.DefaultIntegrationConfiguration;
-import org.pf4j.RuntimeMode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
+import java.util.List;
 
-/**
- * @Description:
- * @Author: jishenghua
- * @Version: 1.0
- * @Create Date Time: 2019-05-25 12:36
- * @Update Date Time:
- * @see
- */
 @Component
 @ConfigurationProperties(prefix = "plugin")
 public class PluginConfiguration extends DefaultIntegrationConfiguration {
 
-    /**
-     * 运行模式
-     *  开发环境: development、dev
-     *  生产/部署 环境: deployment、prod
-     */
     @Value("${runMode:dev}")
     private String runMode;
 
     @Value("${pluginPath:plugins}")
     private String pluginPath;
-
-    @Value("${pluginConfigFilePath:pluginConfigs}")
-    private String pluginConfigFilePath;
 
     @Override
     public RuntimeMode environment() {
@@ -39,13 +25,13 @@ public class PluginConfiguration extends DefaultIntegrationConfiguration {
     }
 
     @Override
-    public String pluginPath() {
-        return pluginPath;
+    public String mainPackage() {
+        return "com.jsh.erp";
     }
 
     @Override
-    public String pluginConfigFilePath() {
-        return pluginConfigFilePath;
+    public List<String> pluginPath() {
+        return Collections.singletonList(pluginPath);
     }
 
     @Override
@@ -59,12 +45,12 @@ public class PluginConfiguration extends DefaultIntegrationConfiguration {
     }
 
     @Override
-    public String pluginRestControllerPathPrefix() {
+    public String pluginRestPathPrefix() {
         return "/api/plugin";
     }
 
     @Override
-    public boolean enablePluginIdRestControllerPathPrefix() {
+    public Boolean enablePluginIdRestPathPrefix() {
         return true;
     }
 
@@ -76,29 +62,11 @@ public class PluginConfiguration extends DefaultIntegrationConfiguration {
         this.runMode = runMode;
     }
 
-
     public String getPluginPath() {
         return pluginPath;
     }
 
     public void setPluginPath(String pluginPath) {
         this.pluginPath = pluginPath;
-    }
-
-    public String getPluginConfigFilePath() {
-        return pluginConfigFilePath;
-    }
-
-    public void setPluginConfigFilePath(String pluginConfigFilePath) {
-        this.pluginConfigFilePath = pluginConfigFilePath;
-    }
-
-    @Override
-    public String toString() {
-        return "PluginArgConfiguration{" +
-                "runMode='" + runMode + '\'' +
-                ", pluginPath='" + pluginPath + '\'' +
-                ", pluginConfigFilePath='" + pluginConfigFilePath + '\'' +
-                '}';
     }
 }

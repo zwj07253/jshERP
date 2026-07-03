@@ -5,7 +5,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import com.gitee.starblues.integration.application.PluginApplication;
 import com.gitee.starblues.integration.operator.PluginOperator;
-import com.gitee.starblues.integration.operator.module.PluginInfo;
+import com.gitee.starblues.integration.operator.upload.UploadParam;
+import com.gitee.starblues.core.PluginInfo;
 import com.jsh.erp.constants.BusinessConstants;
 import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.service.UserService;
@@ -22,14 +23,10 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-/**
- * 插件jar 包测试功能
- * @author jishenghua
- * @version 1.0
- */
 @RestController
 @RequestMapping("/plugin")
 @Tag(name = "插件管理")
@@ -45,29 +42,26 @@ public class PluginController {
     public PluginController(PluginApplication pluginApplication) {
         this.pluginOperator = pluginApplication.getPluginOperator();
     }
-    /**
-     * 获取插件信息
-     * @return 返回插件信息
-     */
+
     @GetMapping(value = "/list")
     @Operation(summary = "获取插件信息")
-    public BaseResponseInfo getPluginInfo(@RequestParam(value = "name",required = false) String name,
+    public BaseResponseInfo getPluginInfo(@RequestParam(value = "name", required = false) String name,
                                           @RequestParam("currentPage") Integer currentPage,
                                           @RequestParam("pageSize") Integer pageSize,
-                                          HttpServletRequest request) throws Exception{
+                                          HttpServletRequest request) throws Exception {
         BaseResponseInfo res = new BaseResponseInfo();
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         try {
             List<PluginInfo> resList = new ArrayList<>();
             User userInfo = userService.getCurrentUser();
-            if(BusinessConstants.DEFAULT_MANAGER.equals(userInfo.getLoginName())) {
+            if (BusinessConstants.DEFAULT_MANAGER.equals(userInfo.getLoginName())) {
                 List<PluginInfo> list = pluginOperator.getPluginInfo();
                 if (StringUtil.isEmpty(name)) {
                     resList = list;
                 } else {
                     for (PluginInfo pi : list) {
-                        String desc = pi.getPluginDescriptor().getPluginDescription();
-                        if (desc.contains(name)) {
+                        String desc = pi.getPluginDescriptor().getDescription();
+                        if (desc != null && desc.contains(name)) {
                             resList.add(pi);
                         }
                     }
@@ -77,7 +71,7 @@ public class PluginController {
             map.put("total", resList.size());
             res.code = 200;
             res.data = map;
-        } catch(Exception e){
+        } catch (Exception e) {
             logger.error(e.getMessage(), e);
             res.code = 500;
             res.data = "获取数据失败";
@@ -85,149 +79,88 @@ public class PluginController {
         return res;
     }
 
-    /**
-     * 获取插件jar文件名
-     * @return 获取插件文件名。只在生产环境显示
-     */
-    @GetMapping("/files")
-    @Operation(summary = "获取插件jar文件名")
-    public Set<String> getPluginFilePaths(){
-        try {
-            User userInfo = userService.getCurrentUser();
-            if(BusinessConstants.DEFAULT_MANAGER.equals(userInfo.getLoginName())) {
-                return pluginOperator.getPluginFilePaths();
-            } else {
-                return null;
-            }
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            return null;
-        }
-    }
-
-
-    /**
-     * 根据插件id停止插件
-     * @param id 插件id
-     * @return 返回操作结果
-     */
     @PostMapping("/stop/{id}")
     @Operation(summary = "根据插件id停止插件")
-    public BaseResponseInfo stop(@PathVariable("id") String id){
+    public BaseResponseInfo stop(@PathVariable("id") String id) {
         BaseResponseInfo res = new BaseResponseInfo();
-        Map<String, Object> map = new HashMap<String, Object>();
-        String message = "";
+        Map<String, Object> map = new HashMap<>();
         try {
             User userInfo = userService.getCurrentUser();
-            if(BusinessConstants.DEFAULT_MANAGER.equals(userInfo.getLoginName())) {
-                if (pluginOperator.stop(id)) {
-                    message = "plugin '" + id + "' stop success";
-                } else {
-                    message = "plugin '" + id + "' stop failure";
-                }
+            if (BusinessConstants.DEFAULT_MANAGER.equals(userInfo.getLoginName())) {
+                pluginOperator.stop(id);
+                map.put("message", "plugin '" + id + "' stop success");
             } else {
-                message = "power is limit";
+                map.put("message", "power is limit");
             }
-            map.put("message", message);
             res.code = 200;
             res.data = map;
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            map.put("message", "plugin '" + id +"' stop failure. " + e.getMessage());
+            map.put("message", "plugin '" + id + "' stop failure. " + e.getMessage());
             res.code = 500;
             res.data = map;
         }
         return res;
     }
 
-    /**
-     * 根据插件id启动插件
-     * @param id 插件id
-     * @return 返回操作结果
-     */
     @PostMapping("/start/{id}")
     @Operation(summary = "根据插件id启动插件")
-    public BaseResponseInfo start(@PathVariable("id") String id){
+    public BaseResponseInfo start(@PathVariable("id") String id) {
         BaseResponseInfo res = new BaseResponseInfo();
-        Map<String, Object> map = new HashMap<String, Object>();
-        String message = "";
+        Map<String, Object> map = new HashMap<>();
         try {
             User userInfo = userService.getCurrentUser();
-            if(BusinessConstants.DEFAULT_MANAGER.equals(userInfo.getLoginName())) {
-                if (pluginOperator.start(id)) {
-                    message = "plugin '" + id + "' start success";
-                } else {
-                    message = "plugin '" + id + "' start failure";
-                }
+            if (BusinessConstants.DEFAULT_MANAGER.equals(userInfo.getLoginName())) {
+                pluginOperator.start(id);
+                map.put("message", "plugin '" + id + "' start success");
             } else {
-                message = "power is limit";
+                map.put("message", "power is limit");
             }
-            map.put("message", message);
             res.code = 200;
             res.data = map;
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            map.put("message", "plugin '" + id +"' start failure. " + e.getMessage());
+            map.put("message", "plugin '" + id + "' start failure. " + e.getMessage());
             res.code = 500;
             res.data = map;
         }
         return res;
     }
 
-
-    /**
-     * 根据插件id卸载插件
-     * @param id 插件id
-     * @return 返回操作结果
-     */
     @PostMapping("/uninstall/{id}")
     @Operation(summary = "根据插件id卸载插件")
-    public BaseResponseInfo uninstall(@PathVariable("id") String id){
+    public BaseResponseInfo uninstall(@PathVariable("id") String id) {
         BaseResponseInfo res = new BaseResponseInfo();
-        Map<String, Object> map = new HashMap<String, Object>();
-        String message = "";
+        Map<String, Object> map = new HashMap<>();
         try {
             User userInfo = userService.getCurrentUser();
-            if(BusinessConstants.DEFAULT_MANAGER.equals(userInfo.getLoginName())) {
-                if (pluginOperator.uninstall(id, true)) {
-                    message = "plugin '" + id + "' uninstall success";
-                } else {
-                    message = "plugin '" + id + "' uninstall failure";
-                }
+            if (BusinessConstants.DEFAULT_MANAGER.equals(userInfo.getLoginName())) {
+                pluginOperator.uninstall(id, true, true);
+                map.put("message", "plugin '" + id + "' uninstall success");
             } else {
-                message = "power is limit";
+                map.put("message", "power is limit");
             }
-            map.put("message", message);
             res.code = 200;
             res.data = map;
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            map.put("message", "plugin '" + id +"' uninstall failure. " + e.getMessage());
+            map.put("message", "plugin '" + id + "' uninstall failure. " + e.getMessage());
             res.code = 500;
             res.data = map;
         }
         return res;
     }
 
-
-    /**
-     * 根据插件路径安装插件。该插件jar必须在服务器上存在。注意: 该操作只适用于生产环境
-     * @param path 插件路径名称
-     * @return 操作结果
-     */
     @PostMapping("/installByPath")
     @Operation(summary = "根据插件路径安装插件")
-    public String install(@RequestParam("path") String path){
+    public String install(@RequestParam("path") String path) {
         try {
             User userInfo = userService.getCurrentUser();
-            if(BusinessConstants.DEFAULT_MANAGER.equals(userInfo.getLoginName())) {
-                if (pluginOperator.install(Paths.get(path))) {
-                    return "installByPath success";
-                } else {
-                    return "installByPath failure";
-                }
+            if (BusinessConstants.DEFAULT_MANAGER.equals(userInfo.getLoginName())) {
+                pluginOperator.install(Paths.get(path), true);
+                return "installByPath success";
             } else {
-                return "installByPath failure";
+                return "installByPath failure: power is limit";
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
@@ -235,27 +168,22 @@ public class PluginController {
         }
     }
 
-
-    /**
-     * 上传并安装插件。注意: 该操作只适用于生产环境
-     * @param file 上传文件 multipartFile
-     * @return 操作结果
-     */
     @PostMapping("/uploadInstallPluginJar")
     @Operation(summary = "上传并安装插件")
-    public BaseResponseInfo install(MultipartFile file, HttpServletRequest request, HttpServletResponse response){
+    public BaseResponseInfo install(MultipartFile file, HttpServletRequest request, HttpServletResponse response) {
         BaseResponseInfo res = new BaseResponseInfo();
         try {
             User userInfo = userService.getCurrentUser();
-            if(BusinessConstants.DEFAULT_MANAGER.equals(userInfo.getLoginName())) {
-                pluginOperator.uploadPluginAndStart(file);
+            if (BusinessConstants.DEFAULT_MANAGER.equals(userInfo.getLoginName())) {
+                UploadParam uploadParam = UploadParam.byMultipartFile(file).setStartPlugin(true);
+                pluginOperator.uploadPlugin(uploadParam);
                 res.code = 200;
                 res.data = "导入成功";
             } else {
                 res.code = 500;
                 res.data = "抱歉，无操作权限！";
             }
-        } catch(Exception e){
+        } catch (Exception e) {
             logger.error(e.getMessage(), e);
             res.code = 500;
             res.data = "导入失败";
@@ -263,50 +191,16 @@ public class PluginController {
         return res;
     }
 
-    /**
-     * 上传插件的配置文件。注意: 该操作只适用于生产环境
-     * @param multipartFile 上传文件 multipartFile
-     * @return 操作结果
-     */
-    @PostMapping("/uploadPluginConfigFile")
-    @Operation(summary = "上传插件的配置文件")
-    public String uploadConfig(@RequestParam("configFile") MultipartFile multipartFile){
-        try {
-            User userInfo = userService.getCurrentUser();
-            if(BusinessConstants.DEFAULT_MANAGER.equals(userInfo.getLoginName())) {
-                if (pluginOperator.uploadConfigFile(multipartFile)) {
-                    return "uploadConfig success";
-                } else {
-                    return "uploadConfig failure";
-                }
-            } else {
-                return "installByPath failure";
-            }
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            return "uploadConfig failure : " + e.getMessage();
-        }
-    }
-
-
-    /**
-     * 备份插件。注意: 该操作只适用于生产环境
-     * @param pluginId 插件id
-     * @return 操作结果
-     */
     @PostMapping("/back/{pluginId}")
     @Operation(summary = "备份插件")
-    public String backupPlugin(@PathVariable("pluginId") String pluginId){
+    public String backupPlugin(@PathVariable("pluginId") String pluginId) {
         try {
             User userInfo = userService.getCurrentUser();
-            if(BusinessConstants.DEFAULT_MANAGER.equals(userInfo.getLoginName())) {
-                if (pluginOperator.backupPlugin(pluginId, "testBack")) {
-                    return "backupPlugin success";
-                } else {
-                    return "backupPlugin failure";
-                }
+            if (BusinessConstants.DEFAULT_MANAGER.equals(userInfo.getLoginName())) {
+                Path backupPath = pluginOperator.backupPlugin(pluginId, "backupPlugin");
+                return "backupPlugin success: " + backupPath;
             } else {
-                return "backupPlugin failure";
+                return "backupPlugin failure: power is limit";
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
@@ -314,13 +208,9 @@ public class PluginController {
         }
     }
 
-    /**
-     * 获取加密后的mac
-     * @return
-     */
     @GetMapping("/getMacWithSecret")
     @Operation(summary = "获取加密后的mac")
-    public BaseResponseInfo getMacWithSecret(){
+    public BaseResponseInfo getMacWithSecret() {
         BaseResponseInfo res = new BaseResponseInfo();
         try {
             String mac = ComputerInfo.getMacAddress();
@@ -334,24 +224,19 @@ public class PluginController {
         return res;
     }
 
-    /**
-     * 根据插件标识判断是否存在
-     * @param pluginIds 多个用逗号隔开
-     * @return
-     */
     @GetMapping("/checkByPluginId")
     @Operation(summary = "根据插件标识判断是否存在")
-    public BaseResponseInfo checkByTag(@RequestParam("pluginIds") String pluginIds){
+    public BaseResponseInfo checkByTag(@RequestParam("pluginIds") String pluginIds) {
         BaseResponseInfo res = new BaseResponseInfo();
         try {
             boolean data = false;
-            if(StringUtil.isNotEmpty(pluginIds)) {
+            if (StringUtil.isNotEmpty(pluginIds)) {
                 String[] pluginIdList = pluginIds.split(",");
                 List<PluginInfo> list = pluginOperator.getPluginInfo();
                 for (PluginInfo pi : list) {
                     String info = pi.getPluginDescriptor().getPluginId();
-                    for (int i = 0; i < pluginIdList.length; i++) {
-                        if (pluginIdList[i].equals(info)) {
+                    for (String pluginId : pluginIdList) {
+                        if (pluginId.equals(info)) {
                             data = true;
                         }
                     }
