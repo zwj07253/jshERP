@@ -1,5 +1,8 @@
 package com.jsh.erp.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.jsh.erp.base.BaseController;
@@ -10,8 +13,6 @@ import com.jsh.erp.service.SystemConfigService;
 import com.jsh.erp.service.UserBusinessService;
 import com.jsh.erp.service.UserService;
 import com.jsh.erp.utils.*;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -32,7 +33,7 @@ import static com.jsh.erp.utils.ResponseJsonUtil.returnStr;
  */
 @RestController
 @RequestMapping(value = "/function")
-@Api(tags = {"功能管理"})
+@Tag(name = "功能管理")
 public class FunctionController extends BaseController {
     private Logger logger = LoggerFactory.getLogger(FunctionController.class);
 
@@ -49,7 +50,7 @@ public class FunctionController extends BaseController {
     private SystemConfigService systemConfigService;
 
     @GetMapping(value = "/info")
-    @ApiOperation(value = "根据id获取信息")
+    @Operation(summary = "根据id获取信息")
     public String getList(@RequestParam("id") Long id,
                           HttpServletRequest request) throws Exception {
         Function function = functionService.getFunction(id);
@@ -63,7 +64,7 @@ public class FunctionController extends BaseController {
     }
 
     @GetMapping(value = "/list")
-    @ApiOperation(value = "获取信息列表")
+    @Operation(summary = "获取信息列表")
     public TableDataInfo getList(@RequestParam(value = Constants.SEARCH, required = false) String search,
                                  HttpServletRequest request)throws Exception {
         String name = StringUtil.getInfo(search, "name");
@@ -73,7 +74,7 @@ public class FunctionController extends BaseController {
     }
 
     @PostMapping(value = "/add")
-    @ApiOperation(value = "新增")
+    @Operation(summary = "新增")
     public String addResource(@RequestBody JSONObject obj, HttpServletRequest request)throws Exception {
         Map<String, Object> objectMap = new HashMap<>();
         int insert = functionService.insertFunction(obj, request);
@@ -81,7 +82,7 @@ public class FunctionController extends BaseController {
     }
 
     @PutMapping(value = "/update")
-    @ApiOperation(value = "修改")
+    @Operation(summary = "修改")
     public String updateResource(@RequestBody JSONObject obj, HttpServletRequest request)throws Exception {
         Map<String, Object> objectMap = new HashMap<>();
         int update = functionService.updateFunction(obj, request);
@@ -89,7 +90,7 @@ public class FunctionController extends BaseController {
     }
 
     @DeleteMapping(value = "/delete")
-    @ApiOperation(value = "删除")
+    @Operation(summary = "删除")
     public String deleteResource(@RequestParam("id") Long id, HttpServletRequest request)throws Exception {
         Map<String, Object> objectMap = new HashMap<>();
         int delete = functionService.deleteFunction(id, request);
@@ -97,7 +98,7 @@ public class FunctionController extends BaseController {
     }
 
     @DeleteMapping(value = "/deleteBatch")
-    @ApiOperation(value = "批量删除")
+    @Operation(summary = "批量删除")
     public String batchDeleteResource(@RequestParam("ids") String ids, HttpServletRequest request)throws Exception {
         Map<String, Object> objectMap = new HashMap<>();
         int delete = functionService.batchDeleteFunction(ids, request);
@@ -105,7 +106,7 @@ public class FunctionController extends BaseController {
     }
 
     @GetMapping(value = "/checkIsNameExist")
-    @ApiOperation(value = "检查名称是否存在")
+    @Operation(summary = "检查名称是否存在")
     public String checkIsNameExist(@RequestParam Long id, @RequestParam(value ="name", required = false) String name,
                                    HttpServletRequest request)throws Exception {
         Map<String, Object> objectMap = new HashMap<>();
@@ -119,7 +120,7 @@ public class FunctionController extends BaseController {
     }
 
     @GetMapping(value = "/checkIsNumberExist")
-    @ApiOperation(value = "检查编号是否存在")
+    @Operation(summary = "检查编号是否存在")
     public String checkIsNumberExist(@RequestParam Long id,
                                      @RequestParam(value ="number", required = false) String number,
                                      HttpServletRequest request)throws Exception {
@@ -141,7 +142,7 @@ public class FunctionController extends BaseController {
      * @throws Exception
      */
     @PostMapping(value = "/findMenuByPNumber")
-    @ApiOperation(value = "根据父编号查询菜单")
+    @Operation(summary = "根据父编号查询菜单")
     public JSONArray findMenuByPNumber(@RequestBody JSONObject jsonObject,
                               HttpServletRequest request)throws Exception {
         String pNumber = jsonObject.getString("pNumber");
@@ -230,7 +231,7 @@ public class FunctionController extends BaseController {
      * @return
      */
     @GetMapping(value = "/findRoleFunction")
-    @ApiOperation(value = "角色对应功能显示")
+    @Operation(summary = "角色对应功能显示")
     public JSONArray findRoleFunction(@RequestParam("UBType") String type, @RequestParam("UBKeyId") String keyId,
                                  HttpServletRequest request)throws Exception {
         JSONArray arr = new JSONArray();
@@ -310,7 +311,7 @@ public class FunctionController extends BaseController {
      * @return
      */
     @GetMapping(value = "/findRoleFunctionsById")
-    @ApiOperation(value = "根据id列表查找功能信息")
+    @Operation(summary = "根据id列表查找功能信息")
     public BaseResponseInfo findByIds(@RequestParam("roleId") Long roleId,
                                       HttpServletRequest request)throws Exception {
         BaseResponseInfo res = new BaseResponseInfo();

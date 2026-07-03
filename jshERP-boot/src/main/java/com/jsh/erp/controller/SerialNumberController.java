@@ -1,5 +1,8 @@
 package com.jsh.erp.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import com.alibaba.fastjson.JSONObject;
 import com.jsh.erp.datasource.entities.DepotItem;
 import com.jsh.erp.datasource.entities.SerialNumberEx;
@@ -9,8 +12,6 @@ import com.jsh.erp.service.SerialNumberService;
 import com.jsh.erp.utils.BaseResponseInfo;
 import com.jsh.erp.utils.StringUtil;
 import com.jsh.erp.utils.Tools;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -31,7 +32,7 @@ import static com.jsh.erp.utils.ResponseJsonUtil.returnStr;
  */
 @RestController
 @RequestMapping(value = "/serialNumber")
-@Api(tags = {"序列号管理"})
+@Tag(name = "序列号管理")
 public class SerialNumberController {
     private Logger logger = LoggerFactory.getLogger(SerialNumberController.class);
 
@@ -47,7 +48,7 @@ public class SerialNumberController {
      * @return java.lang.Object
      */
     @PostMapping("/batAddSerialNumber")
-    @ApiOperation(value = "批量添加序列号")
+    @Operation(summary = "批量添加序列号")
     public String batAddSerialNumber(@RequestBody JSONObject jsonObject, HttpServletRequest request)throws Exception{
         Map<String, Object> objectMap = new HashMap<>();
         String materialCode = jsonObject.getString("materialCode");
@@ -66,7 +67,7 @@ public class SerialNumberController {
      * @throws Exception
      */
     @PostMapping(value = "/getEnableSerialNumberList")
-    @ApiOperation(value = "获取序列号商品")
+    @Operation(summary = "获取序列号商品")
     public BaseResponseInfo getEnableSerialNumberList(@RequestBody JSONObject jsonObject, HttpServletRequest request)throws Exception {
         BaseResponseInfo res = new BaseResponseInfo();
         Map<String, Object> map = new HashMap<>();

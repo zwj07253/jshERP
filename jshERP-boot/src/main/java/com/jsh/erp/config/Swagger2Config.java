@@ -1,44 +1,27 @@
 package com.jsh.erp.config;
 
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import springfox.documentation.builders.ApiInfoBuilder;
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.service.ApiInfo;
-import springfox.documentation.service.Contact;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 /**
- * 插件集成配置
+ * SpringDoc OpenAPI 配置
  *
  * @author jishenghua
- * @version 1.0
+ * @version 2.0
  */
 @Configuration
-@EnableSwagger2
 public class Swagger2Config {
 
     @Bean
-    public Docket createRestApi() {
-        return new Docket(DocumentationType.SWAGGER_2)
-                .apiInfo(this.apiInfo())
-                .select()
-                .apis(RequestHandlerSelectors.any())
-                .paths(PathSelectors.any())
-                .build();
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("管伊佳ERP Restful Api")
+                        .description("管伊佳ERP接口描述")
+                        .version("3.0")
+                        .contact(new Contact().name("jishenghua")));
     }
-
-    private ApiInfo apiInfo() {
-        return new ApiInfoBuilder()
-                .title("管伊佳ERP Restful Api")
-                .description("管伊佳ERP接口描述")
-                .termsOfServiceUrl("http://127.0.0.1")
-                .contact(new Contact("jishenghua", "", ""))
-                .version("3.0")
-                .build();
-    }
-
 }

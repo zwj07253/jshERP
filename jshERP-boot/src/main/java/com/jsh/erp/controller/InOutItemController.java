@@ -1,5 +1,8 @@
 package com.jsh.erp.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.jsh.erp.base.BaseController;
@@ -9,8 +12,6 @@ import com.jsh.erp.service.InOutItemService;
 import com.jsh.erp.utils.Constants;
 import com.jsh.erp.utils.ErpInfo;
 import com.jsh.erp.utils.StringUtil;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +30,7 @@ import static com.jsh.erp.utils.ResponseJsonUtil.returnStr;
  */
 @RestController
 @RequestMapping(value = "/inOutItem")
-@Api(tags = {"收支项目"})
+@Tag(name = "收支项目")
 public class InOutItemController extends BaseController {
     private Logger logger = LoggerFactory.getLogger(InOutItemController.class);
 
@@ -37,7 +38,7 @@ public class InOutItemController extends BaseController {
     private InOutItemService inOutItemService;
 
     @GetMapping(value = "/info")
-    @ApiOperation(value = "根据id获取信息")
+    @Operation(summary = "根据id获取信息")
     public String getList(@RequestParam("id") Long id,
                           HttpServletRequest request) throws Exception {
         InOutItem inOutItem = inOutItemService.getInOutItem(id);
@@ -51,7 +52,7 @@ public class InOutItemController extends BaseController {
     }
 
     @GetMapping(value = "/list")
-    @ApiOperation(value = "获取信息列表")
+    @Operation(summary = "获取信息列表")
     public TableDataInfo getList(@RequestParam(value = Constants.SEARCH, required = false) String search,
                                  HttpServletRequest request)throws Exception {
         String name = StringUtil.getInfo(search, "name");
@@ -62,7 +63,7 @@ public class InOutItemController extends BaseController {
     }
 
     @PostMapping(value = "/add")
-    @ApiOperation(value = "新增")
+    @Operation(summary = "新增")
     public String addResource(@RequestBody JSONObject obj, HttpServletRequest request)throws Exception {
         Map<String, Object> objectMap = new HashMap<>();
         int insert = inOutItemService.insertInOutItem(obj, request);
@@ -70,7 +71,7 @@ public class InOutItemController extends BaseController {
     }
 
     @PutMapping(value = "/update")
-    @ApiOperation(value = "修改")
+    @Operation(summary = "修改")
     public String updateResource(@RequestBody JSONObject obj, HttpServletRequest request)throws Exception {
         Map<String, Object> objectMap = new HashMap<>();
         int update = inOutItemService.updateInOutItem(obj, request);
@@ -78,7 +79,7 @@ public class InOutItemController extends BaseController {
     }
 
     @DeleteMapping(value = "/delete")
-    @ApiOperation(value = "删除")
+    @Operation(summary = "删除")
     public String deleteResource(@RequestParam("id") Long id, HttpServletRequest request)throws Exception {
         Map<String, Object> objectMap = new HashMap<>();
         int delete = inOutItemService.deleteInOutItem(id, request);
@@ -86,7 +87,7 @@ public class InOutItemController extends BaseController {
     }
 
     @DeleteMapping(value = "/deleteBatch")
-    @ApiOperation(value = "批量删除")
+    @Operation(summary = "批量删除")
     public String batchDeleteResource(@RequestParam("ids") String ids, HttpServletRequest request)throws Exception {
         Map<String, Object> objectMap = new HashMap<>();
         int delete = inOutItemService.batchDeleteInOutItem(ids, request);
@@ -94,7 +95,7 @@ public class InOutItemController extends BaseController {
     }
 
     @GetMapping(value = "/checkIsNameExist")
-    @ApiOperation(value = "检查名称是否存在-后续废弃")
+    @Operation(summary = "检查名称是否存在-后续废弃")
     public String checkIsNameExist(@RequestParam Long id,
                                    @RequestParam(value ="name", required = false) String name,
                                    HttpServletRequest request)throws Exception {
@@ -114,7 +115,7 @@ public class InOutItemController extends BaseController {
      * @return
      */
     @GetMapping(value = "/findBySelect")
-    @ApiOperation(value = "查找收支项目信息")
+    @Operation(summary = "查找收支项目信息")
     public String findBySelect(@RequestParam("type") String type, HttpServletRequest request) throws Exception{
         String res = null;
         try {
@@ -145,7 +146,7 @@ public class InOutItemController extends BaseController {
      * @return
      */
     @PostMapping(value = "/batchSetStatus")
-    @ApiOperation(value = "批量设置状态")
+    @Operation(summary = "批量设置状态")
     public String batchSetStatus(@RequestBody JSONObject jsonObject,
                                  HttpServletRequest request)throws Exception {
         Boolean status = jsonObject.getBoolean("status");
