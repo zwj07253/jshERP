@@ -1,43 +1,47 @@
 package com.jsh.erp.config;
 
-import com.baomidou.mybatisplus.core.parser.ISqlParser;
-import com.baomidou.mybatisplus.core.parser.ISqlParserFilter;
-import com.baomidou.mybatisplus.core.parser.SqlParserHelper;
-import com.baomidou.mybatisplus.extension.plugins.PaginationInterceptor;
-import com.baomidou.mybatisplus.extension.plugins.PerformanceInterceptor;
-import com.baomidou.mybatisplus.extension.plugins.tenant.TenantHandler;
-import com.baomidou.mybatisplus.extension.plugins.tenant.TenantSqlParser;
+import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.inner.TenantLineInnerInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.handler.TenantLineHandler;
 import com.jsh.erp.utils.Tools;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
-import org.apache.ibatis.mapping.MappedStatement;
-import org.apache.ibatis.reflection.MetaObject;
+import net.sf.jsqlparser.expression.NullValue;
 import org.mybatis.spring.mapper.MapperScannerConfigurer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
 public class TenantConfig {
 
+    /**
+     * 需要排除租户过滤的表
+     */
+    private static final List<String> IGNORE_TABLES = Arrays.asList(
+            "jsh_sequence", "jsh_function", "jsh_platform_config",
+            "jsh_tenant", "jsh_sys_dict_data", "jsh_sys_dict_type"
+    );
+
     @Bean
-    public PaginationInterceptor paginationInterceptor(HttpServletRequest request) {
-        PaginationInterceptor paginationInterceptor = new PaginationInterceptor();
-        List<ISqlParser> sqlParserList = new ArrayList<>();
-        TenantSqlParser tenantSqlParser = new TenantSqlParser();
-        tenantSqlParser.setTenantHandler(new TenantHandler() {
+    public MybatisPlusInterceptor mybatisPlusInterceptor(HttpServletRequest request) {
+        MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+
+        // 多租户拦截器（必须在分页拦截器之前）
+        interceptor.addInnerInterceptor(new TenantLineInnerInterceptor(new TenantLineHandler() {
             @Override
             public Expression getTenantId() {
                 String token = request.getHeader("X-Access-Token");
                 Long tenantId = Tools.getTenantIdByToken(token);
-                if (tenantId!=0L) {
+                if (tenantId != 0L) {
                     return new LongValue(tenantId);
                 } else {
-                    //超管
-                    return null;
+                    // 超管，返回 null 表示不过滤
+                    return new NullValue();
                 }
             }
 
@@ -47,53 +51,15 @@ public class TenantConfig {
             }
 
             @Override
-            public boolean doTableFilter(String tableName) {
-                //获取开启状态
-                Boolean res = true;
-                String token = request.getHeader("X-Access-Token");
-                Long tenantId = Tools.getTenantIdByToken(token);
-                if (tenantId!=0L) {
-                    // 这里可以判断是否过滤表
-                    if ("jsh_sequence".equals(tableName) || "jsh_function".equals(tableName)
-                            || "jsh_platform_config".equals(tableName) || "jsh_tenant".equals(tableName)
-                            || "jsh_sys_dict_data".equals(tableName) || "jsh_sys_dict_type".equals(tableName)) {
-                        res = true;
-                    } else {
-                        res = false;
-                    }
-                }
-                return res;
+            public boolean ignoreTable(String tableName) {
+                return IGNORE_TABLES.contains(tableName);
             }
-        });
+        }));
 
-        sqlParserList.add(tenantSqlParser);
-        paginationInterceptor.setSqlParserList(sqlParserList);
-        paginationInterceptor.setSqlParserFilter(new ISqlParserFilter() {
-            @Override
-            public boolean doFilter(MetaObject metaObject) {
-                MappedStatement ms = SqlParserHelper.getMappedStatement(metaObject);
-                // 过滤自定义查询此时无租户信息约束出现
-                if ("com.jsh.erp.datasource.mappers.UserMapperEx.getUserByWeixinOpenId".equals(ms.getId())) {
-                    return true;
-                } else if ("com.jsh.erp.datasource.mappers.UserMapperEx.updateUserWithWeixinOpenId".equals(ms.getId())) {
-                    return true;
-                } else if ("com.jsh.erp.datasource.mappers.UserMapperEx.getUserListByUserNameOrLoginName".equals(ms.getId())) {
-                    return true;
-                } else if ("com.jsh.erp.datasource.mappers.UserMapperEx.disableUserByLimit".equals(ms.getId())) {
-                    return true;
-                } else if ("com.jsh.erp.datasource.mappers.RoleMapperEx.getRoleWithoutTenant".equals(ms.getId())) {
-                    return true;
-                } else if ("com.jsh.erp.datasource.mappers.LogMapperEx.insertLogWithUserId".equals(ms.getId())) {
-                    return true;
-                } else if ("com.jsh.erp.datasource.mappers.UserBusinessMapperEx.getBasicDataByKeyIdAndType".equals(ms.getId())) {
-                    return true;
-                } else if ("com.jsh.erp.datasource.mappers.SysDictDataMapper.selectDictDataList".equals(ms.getId())) {
-                    return true;
-                }
-                return false;
-            }
-        });
-        return paginationInterceptor;
+        // 分页拦截器（必须在多租户拦截器之后）
+        interceptor.addInnerInterceptor(new PaginationInnerInterceptor());
+
+        return interceptor;
     }
 
     /**
@@ -107,14 +73,4 @@ public class TenantConfig {
         scannerConfigurer.setBasePackage("com.jsh.erp.datasource.mappers*");
         return scannerConfigurer;
     }
-
-    /**
-     * 性能分析拦截器，不建议生产使用
-     */
-//    @Bean
-//    public PerformanceInterceptor performanceInterceptor(){
-//        return new PerformanceInterceptor();
-//    }
-
-
 }
