@@ -9,7 +9,7 @@
             <bind name="bindCompanyName" value="'%'+companyName+'%'"/>
             and company_name like #{bindCompanyName}
         </if>
-        and ifnull(delete_flag,'0') !='1'
+        and COALESCE(delete_flag,'0') !='1'
     </select>
 
     <update id="batchDeleteSystemConfigByIds">

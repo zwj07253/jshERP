@@ -13,60 +13,60 @@
     <select id="selectByConditionUser" parameterType="com.jsh.erp.datasource.entities.UserExample" resultMap="ResultMapEx">
         select tb.*,
         (select r.id from jsh_user_business ub
-        left join jsh_role r on ub.value=concat("[",r.id,"]") and ifnull(r.delete_flag,'0') !='1'
+        left join jsh_role r on ub.value=concat("[",r.id,"]") and COALESCE(r.delete_flag,'0') !='1'
         where ub.type='UserRole' and ub.key_id=tb.id limit 0,1) roleId,
         (select r.name from jsh_user_business ub
-        left join jsh_role r on ub.value=concat("[",r.id,"]") and ifnull(r.delete_flag,'0') !='1'
+        left join jsh_role r on ub.value=concat("[",r.id,"]") and COALESCE(r.delete_flag,'0') !='1'
         where ub.type='UserRole' and ub.key_id=tb.id limit 0,1) roleName
         from (
-        select user.id, user.username, user.login_name, user.position, user.leader_flag, user.email, user.phonenum,
-        user.description, user.remark,user.isystem,org.id as orgaId,user.tenant_id,user.status,org.org_abr,
+        select u.id, u.username, u.login_name, u.position, u.leader_flag, u.email, u.phonenum,
+        u.description, u.remark,u.isystem,org.id as orgaId,u.tenant_id,u.status,org.org_abr,
         rel.user_blng_orga_dspl_seq,rel.id as orgaUserRelId
-        FROM jsh_user user
-        left join jsh_orga_user_rel rel on user.id=rel.user_id and ifnull(rel.delete_flag,'0') !='1'
-        left join jsh_organization org on rel.orga_id=org.id and ifnull(org.delete_flag,'0') !='1'
+        FROM jsh_user u
+        left join jsh_orga_user_rel rel on u.id=rel.user_id and COALESCE(rel.delete_flag,'0') !='1'
+        left join jsh_organization org on rel.orga_id=org.id and COALESCE(org.delete_flag,'0') !='1'
         where 1=1
-        and ifnull(user.delete_flag,'0') !='1'
+        and COALESCE(u.delete_flag,'0') !='1'
         <if test="userName != null">
             <bind name="bindUserName" value="'%'+userName+'%'"/>
-            and user.username like #{bindUserName}
+            and u.username like #{bindUserName}
         </if>
         <if test="loginName != null">
             <bind name="bindLoginName" value="'%'+loginName+'%'"/>
-            and user.login_name like #{bindLoginName}
+            and u.login_name like #{bindLoginName}
         </if>
-        order by rel.user_blng_orga_dspl_seq,user.id desc
+        order by rel.user_blng_orga_dspl_seq,u.id desc
         ) tb
     </select>
 
     <select id="countsByUser" resultType="java.lang.Long">
-        select count(user.id)
-        FROM jsh_user user
+        select count(u.id)
+        FROM jsh_user u
         where 1=1
-        and ifnull(user.delete_flag,'0') !='1'
+        and COALESCE(u.delete_flag,'0') !='1'
         <if test="userName != null">
             <bind name="bindUserName" value="'%'+userName+'%'"/>
-            and user.username like #{bindUserName}
+            and u.username like #{bindUserName}
         </if>
         <if test="loginName != null">
             <bind name="bindLoginName" value="'%'+loginName+'%'"/>
-            and user.login_name like #{bindLoginName}
+            and u.login_name like #{bindLoginName}
         </if>
     </select>
     <select id="getUserListByUserNameOrLoginName" resultMap="com.jsh.erp.datasource.mappers.UserMapper.BaseResultMap">
-        select user.id, user.username, user.login_name, user.position, user.email, user.phonenum,
-        user.description, user.remark,user.isystem
-        FROM jsh_user user
+        select u.id, u.username, u.login_name, u.position, u.email, u.phonenum,
+        u.description, u.remark,u.isystem
+        FROM jsh_user u
         where 1=1
-        and user.status = 0
-        and ifnull(user.delete_flag,'0') !='1'
+        and u.status = 0
+        and COALESCE(u.delete_flag,'0') !='1'
         <if test="userName != null and userName != ''">
-            and user.userName = #{userName}
+            and u.userName = #{userName}
         </if>
         <if test="loginName != null and loginName != ''">
-            and user.login_name = #{loginName}
+            and u.login_name = #{loginName}
         </if>
-        order by user.id desc
+        order by u.id desc
     </select>
     <update id="batDeleteOrUpdateUser">
         update jsh_user
@@ -107,18 +107,18 @@
             org.id, org.org_abr as text,org.org_no as orgNo,org.sort as sort,null as iconCls,'0' as type
             FROM jsh_organization org
             WHERE org.org_parent_no = #{orgNo}
-            and ifnull(org.org_stcd,'0') !='5'
+            and COALESCE(org.org_stcd,'0') !='5'
             union all
             select
-            user.id,user.username as text, null as orgNo,rel.user_blng_orga_dspl_seq as sort,'icon-user' as iconCls,'1' as type
-            from jsh_user user,jsh_orga_user_rel rel
+            u.id,u.username as text, null as orgNo,rel.user_blng_orga_dspl_seq as sort,'icon-user' as iconCls,'1' as type
+            from jsh_user u,jsh_orga_user_rel rel
             where
             1=1
-            and user.id=rel.user_id
+            and u.id=rel.user_id
             and rel.orga_id=#{orgId}
-            and ifnull(rel.delete_flag,'0') !='1'
-            and user.status = 0
-            and ifnull(user.delete_flag,'0') !='1'
+            and COALESCE(rel.delete_flag,'0') !='1'
+            and u.status = 0
+            and COALESCE(u.delete_flag,'0') !='1'
           ) node
           order by sort asc
     </select>
@@ -128,7 +128,7 @@
          id, org_abr as text,org_no as orgNo,'0' as type
         FROM jsh_organization
         WHERE org_parent_no = -1
-        and ifnull(org_stcd,'0') !='5'
+        and COALESCE(org_stcd,'0') !='5'
         order by sort asc
     </select>
 
@@ -141,7 +141,7 @@
         select u.*,our.orga_id from jsh_user u
         left join jsh_orga_user_rel our on u.id=our.user_id
         where u.leader_flag='1' and orga_id= #{orgaId}
-        and ifnull(u.delete_flag,'0') !='1'
+        and COALESCE(u.delete_flag,'0') !='1'
         <if test="id != null">
             and u.id != #{id}
         </if>
@@ -151,13 +151,13 @@
         select u.* from jsh_user u
         where u.weixin_open_id = #{weixinOpenId}
         and u.status=0
-        and ifnull(u.delete_flag,'0') !='1'
+        and COALESCE(u.delete_flag,'0') !='1'
     </select>
 
     <update id="updateUserWithWeixinOpenId">
         update jsh_user u set u.weixin_open_id = #{weixinOpenId}
         where u.login_name = #{loginName} and u.password = #{password}
         and u.status=0
-        and ifnull(u.delete_flag,'0') !='1'
+        and COALESCE(u.delete_flag,'0') !='1'
     </update>
 </mapper>

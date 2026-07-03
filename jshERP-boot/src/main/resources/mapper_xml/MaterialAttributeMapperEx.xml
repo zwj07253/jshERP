@@ -13,7 +13,7 @@
             <bind name="bindAttributeValue" value="'%'+attributeValue+'%'"/>
             and ma.attribute_value like #{bindAttributeValue}
         </if>
-        and ifnull(ma.delete_flag,'0') !='1'
+        and COALESCE(ma.delete_flag,'0') !='1'
         order by ma.id desc
     </select>
 

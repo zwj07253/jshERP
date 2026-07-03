@@ -28,7 +28,7 @@
             <bind name="bindSerialNo" value="'%'+serialNo+'%'"/>
             and serial_no like #{bindSerialNo}
         </if>
-        and ifnull(delete_flag,'0') !='1'
+        and COALESCE(delete_flag,'0') !='1'
     </select>
 
     <select id="selectByConditionAccount" parameterType="com.jsh.erp.datasource.entities.AccountExample" resultMap="ResultListMap">
@@ -47,12 +47,12 @@
             <bind name="bindRemark" value="'%'+remark+'%'"/>
             and remark like #{bindRemark}
         </if>
-        and ifnull(delete_flag,'0') !='1'
+        and COALESCE(delete_flag,'0') !='1'
         order by sort asc, id desc
     </select>
 
     <select id="getAccountSum" resultType="java.math.BigDecimal">
-        select ifnull(sum(dh.change_amount),0) from jsh_depot_head dh
+        select COALESCE(sum(dh.change_amount),0) from jsh_depot_head dh
         where 1=1 and dh.pay_type != '预付款'
         <if test="accountId != null">
             and dh.account_id = #{accountId}
@@ -66,11 +66,11 @@
         <if test="forceFlag">
             and (dh.status = '1' or dh.status = '2' or dh.status = '3')
         </if>
-        and ifnull(dh.delete_flag,'0') !='1'
+        and COALESCE(dh.delete_flag,'0') !='1'
     </select>
 
     <select id="getAccountSumByHead" resultType="java.math.BigDecimal">
-        select ifnull(sum(ah.change_amount),0) from jsh_account_head ah
+        select COALESCE(sum(ah.change_amount),0) from jsh_account_head ah
         where 1=1
         <if test="accountId != null">
             and ah.account_id = #{accountId}
@@ -84,12 +84,12 @@
         <if test="forceFlag">
             and ah.status = '1'
         </if>
-        and ifnull(ah.delete_flag,'0') !='1'
+        and COALESCE(ah.delete_flag,'0') !='1'
     </select>
 
     <select id="getAccountSumByDetail" resultType="java.math.BigDecimal">
-        select ifnull(sum(ai.each_amount),0) from jsh_account_head ah
-        left join jsh_account_item ai on ah.id = ai.header_id and ifnull(ai.delete_flag,'0') !='1'
+        select COALESCE(sum(ai.each_amount),0) from jsh_account_head ah
+        left join jsh_account_item ai on ah.id = ai.header_id and COALESCE(ai.delete_flag,'0') !='1'
         where 1=1
         <if test="accountId != null">
             and ai.account_id = #{accountId}
@@ -103,7 +103,7 @@
         <if test="forceFlag">
             and ah.status = '1'
         </if>
-        and ifnull(ah.delete_flag,'0') !='1'
+        and COALESCE(ah.delete_flag,'0') !='1'
     </select>
 
     <select id="getManyAccountSum" resultType="com.jsh.erp.datasource.entities.DepotHead">
@@ -122,12 +122,12 @@
         <if test="forceFlag">
             and (dh.status = '1' or dh.status = '2' or dh.status = '3')
         </if>
-        and ifnull(dh.delete_flag,'0') !='1'
+        and COALESCE(dh.delete_flag,'0') !='1'
     </select>
 
     <select id="getAccountSumByParam" resultType="com.jsh.erp.datasource.entities.AccountVo4Sum">
         select a.id,
-            (select ifnull(sum(dh.change_amount),0) from jsh_depot_head dh
+            (select COALESCE(sum(dh.change_amount),0) from jsh_depot_head dh
             where 1=1 and dh.pay_type != '预付款'
             and dh.account_id = a.id
             <if test="beginTime != null">
@@ -139,8 +139,8 @@
             <if test="forceFlag">
                 and (dh.status = '1' or dh.status = '2' or dh.status = '3')
             </if>
-            and ifnull(dh.delete_flag,'0') !='1') accountSum,
-            (select ifnull(sum(ah.change_amount),0) from jsh_account_head ah
+            and COALESCE(dh.delete_flag,'0') !='1') accountSum,
+            (select COALESCE(sum(ah.change_amount),0) from jsh_account_head ah
             where 1=1 and ah.account_id = a.id
             <if test="beginTime != null">
                 and ah.bill_time >= #{beginTime}
@@ -151,9 +151,9 @@
             <if test="forceFlag">
                 and ah.status = '1'
             </if>
-            and ifnull(ah.delete_flag,'0') !='1') accountSumByHead,
-            (select ifnull(sum(ai.each_amount),0) from jsh_account_head ah
-            left join jsh_account_item ai on ah.id = ai.header_id and ifnull(ai.delete_flag,'0') !='1'
+            and COALESCE(ah.delete_flag,'0') !='1') accountSumByHead,
+            (select COALESCE(sum(ai.each_amount),0) from jsh_account_head ah
+            left join jsh_account_item ai on ah.id = ai.header_id and COALESCE(ai.delete_flag,'0') !='1'
             where 1=1 and ai.account_id = a.id
             <if test="beginTime != null">
                 and ah.bill_time >= #{beginTime}
@@ -164,7 +164,7 @@
             <if test="forceFlag">
                 and ah.status = '1'
             </if>
-            and ifnull(ah.delete_flag,'0') !='1') accountSumByDetail
+            and COALESCE(ah.delete_flag,'0') !='1') accountSumByDetail
         from jsh_account a
         where 1=1
         <if test="name != null">
@@ -175,7 +175,7 @@
             <bind name="bindSerialNo" value="'%'+serialNo+'%'"/>
             and a.serial_no like #{bindSerialNo}
         </if>
-        and ifnull(a.delete_flag,'0') !='1'
+        and COALESCE(a.delete_flag,'0') !='1'
         order by a.sort asc, a.id desc
         <if test="offset != null and rows != null">
             limit #{offset},#{rows}
@@ -196,14 +196,14 @@
         <if test="forceFlag">
             and (dh.status = '1' or dh.status = '2' or dh.status = '3')
         </if>
-        and ifnull(dh.delete_flag,'0') !='1'
+        and COALESCE(dh.delete_flag,'0') !='1'
     </select>
 
     <select id="findAccountInOutList" parameterType="com.jsh.erp.datasource.entities.AccountExample" resultMap="ResultInOutList">
         <!--主表出入库涉及的账户 -->
         select dh.number,concat(dh.sub_type,dh.type) as newType, 'bill' as fromType, s.supplier,dh.change_amount,
-               date_format(dh.oper_time,'%Y-%m-%d %H:%i:%S') as oTime,'' as AList,'' as AMList, dh.remark
-        from jsh_depot_head dh left join jsh_supplier s on dh.organ_id = s.id and ifnull(s.delete_flag,'0') !='1'
+               TO_CHAR(dh.oper_time, 'YYYY-MM-DD HH24:MI:SS') as oTime,'' as AList,'' as AMList, dh.remark
+        from jsh_depot_head dh left join jsh_supplier s on dh.organ_id = s.id and COALESCE(s.delete_flag,'0') !='1'
         where 1=1
         <if test="accountId != null">
             and dh.account_id=#{accountId}
@@ -221,13 +221,13 @@
         <if test="forceFlag">
             and (dh.status = '1' or dh.status = '2' or dh.status = '3')
         </if>
-        and ifnull(dh.change_amount, 0)!=0
-        and ifnull(dh.delete_flag,'0') !='1'
+        and COALESCE(dh.change_amount, 0)!=0
+        and COALESCE(dh.delete_flag,'0') !='1'
         <!--主表收入和支出涉及的账户 -->
         UNION ALL
         select ah.bill_no,ah.type as newType, 'financial' as fromType, s.supplier,ah.change_amount,
-               date_format(ah.bill_time,'%Y-%m-%d %H:%i:%S') as oTime,'' as AList,'' as AMList, ah.remark
-        from jsh_account_head ah left join jsh_supplier s on ah.organ_id=s.id and ifnull(s.delete_flag,'0') !='1'
+               TO_CHAR(ah.bill_time, 'YYYY-MM-DD HH24:MI:SS') as oTime,'' as AList,'' as AMList, ah.remark
+        from jsh_account_head ah left join jsh_supplier s on ah.organ_id=s.id and COALESCE(s.delete_flag,'0') !='1'
         where ah.type!='转账'
         <if test="accountId != null">
             and ah.account_id=#{accountId}
@@ -245,14 +245,14 @@
         <if test="forceFlag">
             and ah.status = '1'
         </if>
-        and ifnull(ah.change_amount, 0)!=0
-        and ifnull(ah.delete_flag,'0') !='1'
+        and COALESCE(ah.change_amount, 0)!=0
+        and COALESCE(ah.delete_flag,'0') !='1'
         <!--明细中涉及的账户（收款,付款,收预付款） -->
         UNION ALL
         select ah.bill_no,ah.type as newType, 'financial' as fromType, s.supplier,ai.each_amount change_amount,
-               date_format(ah.bill_time,'%Y-%m-%d %H:%i:%S') as oTime,'' as AList,'' as AMList, ah.remark
+               TO_CHAR(ah.bill_time, 'YYYY-MM-DD HH24:MI:SS') as oTime,'' as AList,'' as AMList, ah.remark
         from jsh_account_head ah left join jsh_supplier s on ah.organ_id=s.id
-        left join jsh_account_item ai on ai.header_id=ah.id and ifnull(ai.delete_flag,'0') !='1'
+        left join jsh_account_item ai on ai.header_id=ah.id and COALESCE(ai.delete_flag,'0') !='1'
         where ah.type in ('收款','付款','收预付款')
         <if test="accountId != null">
             and ai.account_id=#{accountId}
@@ -270,12 +270,12 @@
         <if test="forceFlag">
             and ah.status = '1'
         </if>
-        and ifnull(ai.each_amount, 0)!=0
-        and ifnull(ah.delete_flag,'0') !='1'
+        and COALESCE(ai.each_amount, 0)!=0
+        and COALESCE(ah.delete_flag,'0') !='1'
         <!--主表中转出的账户 -->
         UNION ALL
         select ah.bill_no,ah.type as newType, 'financial' as fromType, '' as sName,ah.change_amount,
-               date_format(ah.bill_time,'%Y-%m-%d %H:%i:%S') as oTime,'' as AList,'' as AMList, ah.remark
+               TO_CHAR(ah.bill_time, 'YYYY-MM-DD HH24:MI:SS') as oTime,'' as AList,'' as AMList, ah.remark
         from jsh_account_head ah
         where ah.type='转账'
         <if test="accountId != null">
@@ -294,13 +294,13 @@
         <if test="forceFlag">
             and ah.status = '1'
         </if>
-        and ifnull(ah.change_amount, 0)!=0
-        and ifnull(ah.delete_flag,'0') !='1'
+        and COALESCE(ah.change_amount, 0)!=0
+        and COALESCE(ah.delete_flag,'0') !='1'
         <!--明细中被转入的账户 -->
         UNION ALL
         select ah.bill_no,ah.type as newType, 'financial' as fromType, '' as sName,ai.each_amount change_amount,
-               date_format(ah.bill_time,'%Y-%m-%d %H:%i:%S') as oTime,'' as AList,'' as AMList, ah.remark
-        from jsh_account_head ah left join jsh_account_item ai on ai.header_id=ah.id and ifnull(ai.delete_flag,'0') !='1'
+               TO_CHAR(ah.bill_time, 'YYYY-MM-DD HH24:MI:SS') as oTime,'' as AList,'' as AMList, ah.remark
+        from jsh_account_head ah left join jsh_account_item ai on ai.header_id=ah.id and COALESCE(ai.delete_flag,'0') !='1'
         where ah.type='转账'
         <if test="accountId != null">
             and ai.account_id=#{accountId}
@@ -318,14 +318,14 @@
         <if test="forceFlag">
             and ah.status = '1'
         </if>
-        and ifnull(ai.each_amount, 0)!=0
-        and ifnull(ah.delete_flag,'0') !='1'
+        and COALESCE(ai.each_amount, 0)!=0
+        and COALESCE(ah.delete_flag,'0') !='1'
         <!--多账户的情况 -->
         UNION ALL
         select dh.number,concat(dh.sub_type,dh.type) as newType, 'bill' as fromType, s.supplier,dh.change_amount,
-               date_format(dh.oper_time,'%Y-%m-%d %H:%i:%S') as oTime,
+               TO_CHAR(dh.oper_time, 'YYYY-MM-DD HH24:MI:SS') as oTime,
         dh.account_id_list as AList,dh.account_money_list as AMList, dh.remark
-        from jsh_depot_head dh left join jsh_supplier s on dh.organ_id = s.id and ifnull(s.delete_flag,'0') !='1'
+        from jsh_depot_head dh left join jsh_supplier s on dh.organ_id = s.id and COALESCE(s.delete_flag,'0') !='1'
         where 1=1
         <if test="accountId != null">
             <bind name="bindAccountId" value="'%'+accountId+'%'"/>
@@ -344,8 +344,8 @@
         <if test="forceFlag">
             and (dh.status = '1' or dh.status = '2' or dh.status = '3')
         </if>
-        and ifnull(dh.change_amount, 0)!=0
-        and ifnull(dh.delete_flag,'0') !='1'
+        and COALESCE(dh.change_amount, 0)!=0
+        and COALESCE(dh.delete_flag,'0') !='1'
         ORDER BY oTime desc
         <if test="offset != null and rows != null">
             limit #{offset},#{rows}
@@ -357,7 +357,7 @@
         (
             <!--主表出入库涉及的账户 -->
             select count(1) a
-            from jsh_depot_head dh left join jsh_supplier s on dh.organ_id = s.id and ifnull(s.delete_flag,'0') !='1'
+            from jsh_depot_head dh left join jsh_supplier s on dh.organ_id = s.id and COALESCE(s.delete_flag,'0') !='1'
             where 1=1
             <if test="accountId != null">
                 and dh.account_id=#{accountId}
@@ -375,12 +375,12 @@
             <if test="forceFlag">
                 and (dh.status = '1' or dh.status = '2' or dh.status = '3')
             </if>
-            and ifnull(dh.change_amount, 0)!=0
-            and ifnull(dh.delete_flag,'0') !='1'
+            and COALESCE(dh.change_amount, 0)!=0
+            and COALESCE(dh.delete_flag,'0') !='1'
             <!--主表收入和支出涉及的账户 -->
             UNION ALL
             select count(1) a
-            from jsh_account_head ah left join jsh_supplier s on ah.organ_id=s.id and ifnull(s.delete_flag,'0') !='1'
+            from jsh_account_head ah left join jsh_supplier s on ah.organ_id=s.id and COALESCE(s.delete_flag,'0') !='1'
             where ah.type!='转账'
             <if test="accountId != null">
                 and ah.account_id=#{accountId}
@@ -398,13 +398,13 @@
             <if test="forceFlag">
                 and ah.status = '1'
             </if>
-            and ifnull(ah.change_amount, 0)!=0
-            and ifnull(ah.delete_flag,'0') !='1'
+            and COALESCE(ah.change_amount, 0)!=0
+            and COALESCE(ah.delete_flag,'0') !='1'
             <!--明细中涉及的账户（收款,付款,收预付款） -->
             UNION ALL
             select count(1) a
             from jsh_account_head ah left join jsh_supplier s on ah.organ_id=s.id
-            left join jsh_account_item ai on ai.header_id=ah.Id and ifnull(ai.delete_flag,'0') !='1'
+            left join jsh_account_item ai on ai.header_id=ah.Id and COALESCE(ai.delete_flag,'0') !='1'
             where ah.Type in ('收款','付款','收预付款')
             <if test="accountId != null">
                 and ai.account_id=#{accountId}
@@ -422,8 +422,8 @@
             <if test="forceFlag">
                 and ah.status = '1'
             </if>
-            and ifnull(ai.each_amount, 0)!=0
-            and ifnull(ah.delete_flag,'0') !='1'
+            and COALESCE(ai.each_amount, 0)!=0
+            and COALESCE(ah.delete_flag,'0') !='1'
             <!--主表中转出的账户 -->
             UNION ALL
             select count(1) a
@@ -445,12 +445,12 @@
             <if test="forceFlag">
                 and ah.status = '1'
             </if>
-            and ifnull(ah.change_amount, 0)!=0
-            and ifnull(ah.delete_flag,'0') !='1'
+            and COALESCE(ah.change_amount, 0)!=0
+            and COALESCE(ah.delete_flag,'0') !='1'
             <!--明细中被转入的账户 -->
             UNION ALL
             select count(1) a
-            from jsh_account_head ah left join jsh_account_item ai on ai.header_id=ah.id and ifnull(ai.delete_flag,'0') !='1'
+            from jsh_account_head ah left join jsh_account_item ai on ai.header_id=ah.id and COALESCE(ai.delete_flag,'0') !='1'
             where ah.type='转账'
             <if test="accountId != null">
                 and ai.account_id=#{accountId}
@@ -468,12 +468,12 @@
             <if test="forceFlag">
                 and ah.status = '1'
             </if>
-            and ifnull(ai.each_amount, 0)!=0
-            and ifnull(ah.delete_flag,'0') !='1'
+            and COALESCE(ai.each_amount, 0)!=0
+            and COALESCE(ah.delete_flag,'0') !='1'
             <!--多账户的情况 -->
             UNION ALL
             select count(1) a
-            from jsh_depot_head dh left join jsh_supplier s on dh.organ_id = s.id and ifnull(s.delete_flag,'0') !='1'
+            from jsh_depot_head dh left join jsh_supplier s on dh.organ_id = s.id and COALESCE(s.delete_flag,'0') !='1'
             where 1=1
             <if test="accountId != null">
                 <bind name="bindAccountId" value="'%'+accountId+'%'"/>
@@ -492,8 +492,8 @@
             <if test="forceFlag">
                 and (dh.status = '1' or dh.status = '2' or dh.status = '3')
             </if>
-            and ifnull(dh.change_amount, 0)!=0
-            and ifnull(dh.delete_flag,'0') !='1'
+            and COALESCE(dh.change_amount, 0)!=0
+            and COALESCE(dh.delete_flag,'0') !='1'
         ) cc
     </select>
 

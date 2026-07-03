@@ -9,7 +9,7 @@
             <bind name="bindName" value="'%'+name+'%'"/>
             and native_name like #{bindName}
         </if>
-        and ifnull(delete_flag,'0') !='1'
+        and COALESCE(delete_flag,'0') !='1'
         order by native_name asc
     </select>
 
@@ -28,13 +28,13 @@
         select count(1)
         from jsh_material_property
         where native_name = #{nativeName}
-        and ifnull(delete_flag,'0') !='1'
+        and COALESCE(delete_flag,'0') !='1'
     </select>
 
     <update id="updateMaterialPropertyByNativeName">
         update jsh_material_property
         set another_name = #{anotherName}
         where native_name = #{nativeName}
-        and ifnull(delete_flag,'0') !='1'
+        and COALESCE(delete_flag,'0') !='1'
     </update>
 </mapper>

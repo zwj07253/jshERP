@@ -63,7 +63,7 @@
         <if test="materialId != null">
             and ser.material_Id=#{materialId}
         </if>
-        and ifnull(ser.delete_flag,'0') !='1'
+        and COALESCE(ser.delete_flag,'0') !='1'
         and ser.is_sell !='1'
     </select>
 
@@ -79,7 +79,7 @@
             )
         </if>
         and is_sell != '1'
-        and ifnull(delete_flag,'0') != '1'
+        and COALESCE(delete_flag,'0') != '1'
         group by material_id, serial_number
     </select>
 
@@ -125,7 +125,7 @@
             and out_bill_no = #{outBillNo,jdbcType=VARCHAR}
         </if>
             and is_sell != '0'
-            and ifnull(delete_flag,'0') !='1'
+            and COALESCE(delete_flag,'0') !='1'
         <if test="count != null">
             and id in
             ( select batchSN.id from
@@ -138,7 +138,7 @@
                 and selFrom.out_bill_no = #{outBillNo,jdbcType=VARCHAR}
             </if>
                 and selFrom.is_sell !='0'
-                and ifnull(selFrom.delete_flag,'0') !='1'
+                and COALESCE(selFrom.delete_flag,'0') !='1'
             limit 0,#{count}
             ) batchSN
             )
@@ -161,8 +161,8 @@
         select
         ser.id, ser.serial_number, ser.in_bill_no, ser.create_time, ser.update_time
         FROM jsh_serial_number ser
-        left join jsh_material m on m.id=ser.material_id and ifnull(m.delete_flag, '0') != '1'
-        left join jsh_material_extend me on me.material_id=m.id and ifnull(me.delete_flag,'0') !='1'
+        left join jsh_material m on m.id=ser.material_id and COALESCE(m.delete_flag, '0') != '1'
+        left join jsh_material_extend me on me.material_id=m.id and COALESCE(me.delete_flag,'0') !='1'
         where 1=1 and me.default_flag=1
         <if test="name != null">
             <bind name="bindName" value="'%'+name+'%'"/>
@@ -187,7 +187,7 @@
             or ser.out_bill_no = #{number}
         </if>
         )
-        and ifnull(ser.delete_flag,'0') !='1'
+        and COALESCE(ser.delete_flag,'0') !='1'
         order by ser.id desc
         <if test="offset != null and rows != null">
             limit #{offset},#{rows}
@@ -197,8 +197,8 @@
         select
         count(1)
         FROM jsh_serial_number ser
-        left join jsh_material m on m.id=ser.material_id and ifnull(m.delete_flag, '0') != '1'
-        left join jsh_material_extend me on me.material_id=m.id and ifnull(me.delete_flag,'0') !='1'
+        left join jsh_material m on m.id=ser.material_id and COALESCE(m.delete_flag, '0') != '1'
+        left join jsh_material_extend me on me.material_id=m.id and COALESCE(me.delete_flag,'0') !='1'
         where 1=1 and me.default_flag=1
         <if test="name != null">
             <bind name="bindName" value="'%'+name+'%'"/>
@@ -223,7 +223,7 @@
             or ser.out_bill_no = #{number}
         </if>
         )
-        and ifnull(ser.delete_flag,'0') !='1'
+        and COALESCE(ser.delete_flag,'0') !='1'
     </select>
 
     <select id="getIsNotSellCountByParam" resultType="java.lang.Integer">
@@ -231,7 +231,7 @@
         where material_id = #{materialId}
         and serial_number = #{serialNumber}
         and is_sell = '0'
-        and ifnull(delete_flag,'0') !='1'
+        and COALESCE(delete_flag,'0') !='1'
     </select>
 
     <select id="getIsSellListByInBillNo" resultType="com.jsh.erp.datasource.entities.SerialNumber">
@@ -239,7 +239,7 @@
         where in_bill_no = #{inBillNo}
         and is_sell = '1'
         and out_bill_no != ''
-        and ifnull(delete_flag,'0') !='1'
+        and COALESCE(delete_flag,'0') !='1'
     </select>
 
 

@@ -7,7 +7,7 @@
         SELECT *
         FROM jsh_msg
         WHERE 1=1
-        and ifnull(delete_Flag,'0') !='1'
+        and COALESCE(delete_Flag,'0') !='1'
         <if test="userId != null">
             and user_id = #{userId}
         </if>
@@ -34,7 +34,7 @@
         COUNT(id)
         FROM jsh_msg
         WHERE 1=1
-        and ifnull(delete_Flag,'0') !='1'
+        and COALESCE(delete_Flag,'0') !='1'
         <if test="status != null">
             and status = #{status}
         </if>

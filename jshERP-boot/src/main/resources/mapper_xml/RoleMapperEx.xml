@@ -7,7 +7,7 @@
         SELECT *
         FROM jsh_role
         WHERE 1=1
-        and ifnull(delete_flag,'0') !='1'
+        and COALESCE(delete_flag,'0') !='1'
         <if test="name != null">
             <bind name="bindName" value="'%'+name+'%'"/>
             and name like #{bindName}
@@ -32,7 +32,7 @@
     <select id="getRoleWithoutTenant" resultType="com.jsh.erp.datasource.entities.Role">
         select * from jsh_role
         where 1=1
-        and ifnull(delete_flag,'0') !='1'
+        and COALESCE(delete_flag,'0') !='1'
         and id=#{roleId}
     </select>
 </mapper>

@@ -10,7 +10,7 @@
                         d.low_decimal,d.default_flag
         from jsh_material_extend d
         where d.material_id = #{materialId}
-        and ifnull(d.delete_flag,'0') !='1'
+        and COALESCE(d.delete_flag,'0') !='1'
         order by d.default_flag desc,d.id asc
     </select>
 
@@ -34,7 +34,7 @@
         <include refid="com.jsh.erp.datasource.mappers.MaterialExtendMapper.Base_Column_List" />
         from jsh_material_extend
         where 1=1
-        and ifnull(delete_Flag,'0') !='1'
+        and COALESCE(delete_Flag,'0') !='1'
         and material_id in (
         <foreach collection="ids" item="id" separator=",">
             #{id}
@@ -47,7 +47,7 @@
         update jsh_material_extend
         set delete_Flag='1'
         where 1=1
-        and ifnull(delete_Flag,'0') !='1'
+        and COALESCE(delete_Flag,'0') !='1'
         and id in (
         <foreach collection="ids" item="id" separator=",">
             #{id}
@@ -59,7 +59,7 @@
         update jsh_material_extend
         set delete_Flag='1'
         where 1=1
-        and ifnull(delete_Flag,'0') !='1'
+        and COALESCE(delete_Flag,'0') !='1'
         and material_id in (
         <foreach collection="ids" item="id" separator=",">
             #{id}
@@ -74,12 +74,12 @@
             wholesale_decimal = #{wholesaleDecimal,jdbcType=DECIMAL},
             low_decimal = #{lowDecimal,jdbcType=DECIMAL}
         where id = #{id,jdbcType=BIGINT}
-        and ifnull(delete_flag,'0') !='1'
+        and COALESCE(delete_flag,'0') !='1'
     </update>
 
     <select id="getBasicInfoByMid" resultType="com.jsh.erp.datasource.entities.MaterialExtend">
         select * from jsh_material_extend
         where material_id=#{materialId} and default_flag='1'
-        and ifnull(delete_Flag,'0') !='1'
+        and COALESCE(delete_Flag,'0') !='1'
     </select>
 </mapper>

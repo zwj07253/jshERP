@@ -9,7 +9,7 @@
             <bind name="bindName" value="'%'+name+'%'"/>
             and name like #{bindName}
         </if>
-        and ifnull(delete_flag,'0') !='1'
+        and COALESCE(delete_flag,'0') !='1'
         order by id desc
     </select>
 

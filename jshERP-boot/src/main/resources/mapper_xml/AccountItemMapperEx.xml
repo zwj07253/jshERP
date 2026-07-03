@@ -23,7 +23,7 @@
             <bind name="bindRemark" value="'%'+remark+'%'"/>
             and remark like #{bindRemark}
         </if>
-        and ifnull(delete_flag,'0') !='1'
+        and COALESCE(delete_flag,'0') !='1'
         <if test="offset != null and rows != null">
             limit #{offset},#{rows}
         </if>
@@ -44,16 +44,16 @@
             <bind name="bindRemark" value="'%'+remark+'%'"/>
             and remark like #{bindRemark}
         </if>
-        and ifnull(delete_flag,'0') !='1'
+        and COALESCE(delete_flag,'0') !='1'
     </select>
 
     <select id="getDetailList" parameterType="com.jsh.erp.datasource.entities.AccountItemExample" resultMap="ResultWithInfoExMap">
         select ai.*,a.Name AccountName,ioi.Name InOutItemName, dh.number billNumber
-        from jsh_account_item ai left join jsh_account a on ai.account_id=a.id and ifnull(a.delete_Flag,'0') !='1'
-        left join jsh_in_out_item ioi on ai.in_out_item_id = ioi.id and ifnull(ioi.delete_Flag,'0') !='1'
-        left join jsh_depot_head dh on ai.bill_id = dh.id and ifnull(dh.delete_Flag,'0') !='1'
+        from jsh_account_item ai left join jsh_account a on ai.account_id=a.id and COALESCE(a.delete_Flag,'0') !='1'
+        left join jsh_in_out_item ioi on ai.in_out_item_id = ioi.id and COALESCE(ioi.delete_Flag,'0') !='1'
+        left join jsh_depot_head dh on ai.bill_id = dh.id and COALESCE(dh.delete_Flag,'0') !='1'
         where ai.header_id = #{headerId}
-        and ifnull(ai.delete_flag,'0') !='1'
+        and COALESCE(ai.delete_flag,'0') !='1'
         order by ai.id asc
     </select>
     <update id="batchDeleteAccountItemByIds">
@@ -76,7 +76,7 @@
             #{accountId}
         </foreach>
         )
-        and ifnull(delete_flag,'0') !='1'
+        and COALESCE(delete_flag,'0') !='1'
     </select>
     <select id="getAccountItemListByHeaderIds" resultMap="com.jsh.erp.datasource.mappers.AccountItemMapper.BaseResultMap">
         select
@@ -88,7 +88,7 @@
             #{headerId}
         </foreach>
         )
-        and ifnull(delete_flag,'0') !='1'
+        and COALESCE(delete_flag,'0') !='1'
     </select>
     <select id="getAccountItemListByInOutItemIds" resultMap="com.jsh.erp.datasource.mappers.AccountItemMapper.BaseResultMap">
         select
@@ -100,7 +100,7 @@
             #{inOutItemId}
         </foreach>
         )
-        and ifnull(delete_flag,'0') !='1'
+        and COALESCE(delete_flag,'0') !='1'
     </select>
 
     <update id="batchDeleteAccountItemByHeadIds">
@@ -116,21 +116,21 @@
 
     <select id="getEachAmountByBillId" resultType="java.math.BigDecimal">
         select
-        ifnull(sum(each_amount),0)
+        COALESCE(sum(each_amount),0)
         from jsh_account_item
         where 1=1
         <if test="billId != null">
             and bill_id=#{billId}
         </if>
-        and ifnull(delete_flag,'0') !='1'
+        and COALESCE(delete_flag,'0') !='1'
     </select>
 
     <select id="getFinishDebtByOrganId" resultType="java.math.BigDecimal">
-        select ifnull(sum(ai.each_amount),0) from jsh_account_head ah
-        left join jsh_account_item ai on ah.id = ai.header_id and ifnull(ai.delete_flag,'0') !='1'
+        select COALESCE(sum(ai.each_amount),0) from jsh_account_head ah
+        left join jsh_account_item ai on ah.id = ai.header_id and COALESCE(ai.delete_flag,'0') !='1'
         where ah.organ_id = #{organId}
         and (ah.type = '收款' or ah.type = '付款')
         and ai.bill_id is null
-        and ifnull(ah.delete_flag,'0') !='1'
+        and COALESCE(ah.delete_flag,'0') !='1'
     </select>
 </mapper>
