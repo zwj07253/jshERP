@@ -178,7 +178,7 @@
         id = #{record.id,jdbcType=BIGINT},
       </if>
       <if test="record.name != null">
-        name = #{record.name,jdbcType=VARCHAR},
+        "name" = #{record.name,jdbcType=VARCHAR},
       </if>
       <if test="record.type != null">
         type = #{record.type,jdbcType=VARCHAR},
@@ -206,7 +206,7 @@
   <update id="updateByExample" parameterType="map">
     update jsh_in_out_item
     set id = #{record.id,jdbcType=BIGINT},
-      name = #{record.name,jdbcType=VARCHAR},
+      "name" = #{record.name,jdbcType=VARCHAR},
       type = #{record.type,jdbcType=VARCHAR},
       remark = #{record.remark,jdbcType=VARCHAR},
       enabled = #{record.enabled,jdbcType=BIT},

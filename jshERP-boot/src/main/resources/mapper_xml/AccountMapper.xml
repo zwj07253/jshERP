@@ -202,7 +202,7 @@
         id = #{record.id,jdbcType=BIGINT},
       </if>
       <if test="record.name != null">
-        name = #{record.name,jdbcType=VARCHAR},
+        "name" = #{record.name,jdbcType=VARCHAR},
       </if>
       <if test="record.serialNo != null">
         serial_no = #{record.serialNo,jdbcType=VARCHAR},
@@ -239,7 +239,7 @@
   <update id="updateByExample" parameterType="map">
     update jsh_account
     set id = #{record.id,jdbcType=BIGINT},
-      name = #{record.name,jdbcType=VARCHAR},
+      "name" = #{record.name,jdbcType=VARCHAR},
       serial_no = #{record.serialNo,jdbcType=VARCHAR},
       initial_amount = #{record.initialAmount,jdbcType=DECIMAL},
       current_amount = #{record.currentAmount,jdbcType=DECIMAL},

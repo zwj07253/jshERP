@@ -7,10 +7,10 @@
         where 1=1
         <if test="name != null">
             <bind name="bindName" value="'%'+name+'%'"/>
-            and name like #{bindName}
+            and "name" like #{bindName}
         </if>
         <if test="type != null">
-            and type=#{type}
+            and "type"=#{type}
         </if>
         <if test="remark != null">
             <bind name="bindRemark" value="'%'+remark+'%'"/>

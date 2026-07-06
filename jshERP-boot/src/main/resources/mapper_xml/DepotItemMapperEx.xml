@@ -133,10 +133,10 @@
         where 1=1
         <if test="name != null">
             <bind name="bindName" value="'%'+name+'%'"/>
-            and name like #{bindName}
+            and "name" like #{bindName}
         </if>
         <if test="type != null">
-            and type = #{type}
+            and "type" = #{type}
         </if>
         <if test="remark != null">
             <bind name="bindRemark" value="'%'+remark+'%'"/>
@@ -155,10 +155,10 @@
         WHERE 1=1
         <if test="name != null">
             <bind name="bindName" value="'%'+name+'%'"/>
-            and name like #{bindName}
+            and "name" like #{bindName}
         </if>
         <if test="type != null">
-            and type = #{type}
+            and "type" = #{type}
         </if>
         <if test="remark != null">
             <bind name="bindRemark" value="'%'+remark+'%'"/>
@@ -168,9 +168,9 @@
     </select>
 
     <select id="findDetailByDepotIdsAndMaterialIdList" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="DetailByTypeAndMIdResultMap">
-        select tb.number, tb.bar_code, tb.material_name, tb.type, tb.sub_type, tb.b_num, tb.unit_price,
+        select tb.number, tb.bar_code, tb.material_name, tb."type", tb.sub_type, tb.b_num, tb.unit_price,
         COALESCE(tb.b_num*tb.unit_price,0) as all_price, tb.material_unit, tb.depotName, tb.oTime from
-        (select dh.number,me.bar_code,m.name material_name,dh.type,dh.sub_type,
+        (select dh.number,me.bar_code,m."name" material_name,dh."type",dh.sub_type,
         case
             when type='入库' then COALESCE(di.basic_number,0)
             when type='出库' then 0-COALESCE(di.basic_number,0)
@@ -188,16 +188,16 @@
         left join jsh_depot_item di on dh.id=di.header_id and COALESCE(di.delete_flag,'0') !='1'
         left join jsh_material m on di.material_id=m.id and COALESCE(m.delete_flag,'0') !='1'
         left join jsh_material_extend me on me.id=di.material_extend_id and COALESCE(me.delete_Flag,'0') !='1'
-        where (dh.type!='其它'
-        or (dh.type='其它' and dh.sub_type='组装单')
-        or (dh.type='其它' and dh.sub_type='拆卸单')
-        or (dh.type='其它' and dh.sub_type='盘点复盘'))
+        where (dh."type"!='其它'
+        or (dh."type"='其它' and dh.sub_type='组装单')
+        or (dh."type"='其它' and dh.sub_type='拆卸单')
+        or (dh."type"='其它' and dh.sub_type='盘点复盘'))
         <if test="inOutManageFlag">
             and (dh.sub_type!='采购' and dh.sub_type!='采购退货' and dh.sub_type!='销售' and dh.sub_type!='销售退货')
         </if>
         <if test="depotIdArray != null and depotIdArray.length>0">
             and di.depot_id in (
-            <foreach collection="depotIdArray" item="depotId" separator=",">#{depotId}</foreach>
+            <foreach collection="depotIdArray" item="depotId" separator=",">#{depotId}::bigint</foreach>
             )
         </if>
         <if test="forceFlag">
@@ -223,7 +223,7 @@
         and COALESCE(dh.delete_flag,'0') !='1'
         union all
         --单独构造记录：调拨入库
-        select dh.number,me.bar_code,m.name material_name,dh.type,dh.sub_type,
+        select dh.number,me.bar_code,m."name" material_name,dh."type",dh.sub_type,
         COALESCE(di.basic_number,0) as b_num, di.unit_price, di.material_unit,
         (select concat(name,'[调入]') from jsh_depot d where d.id=di.another_depot_id and COALESCE(d.delete_flag,'0') !='1') as depotName,
         TO_CHAR(dh.oper_time, 'YYYY-MM-DD HH24:MI:SS') as oTime
@@ -231,10 +231,10 @@
         left join jsh_depot_item di on dh.id=di.header_id and COALESCE(di.delete_flag,'0') !='1'
         left join jsh_material m on di.material_id=m.id and COALESCE(m.delete_flag,'0') !='1'
         left join jsh_material_extend me on me.id=di.material_extend_id and COALESCE(me.delete_Flag,'0') !='1'
-        where dh.type='出库' and dh.sub_type='调拨'
+        where dh."type"='出库' and dh.sub_type='调拨'
         <if test="depotIdArray != null and depotIdArray.length>0">
             and di.another_depot_id in (
-            <foreach collection="depotIdArray" item="depotId" separator=",">#{depotId}</foreach>
+            <foreach collection="depotIdArray" item="depotId" separator=",">#{depotId}::bigint</foreach>
             )
         </if>
         <if test="forceFlag">
@@ -268,16 +268,16 @@
         select count(tb.number) from
         (select dh.number from jsh_depot_head dh
         left JOIN jsh_depot_item di on dh.id=di.header_id and COALESCE(di.delete_flag,'0') !='1'
-        where (dh.type!='其它'
-        or (dh.type='其它' and dh.sub_type='组装单')
-        or (dh.type='其它' and dh.sub_type='拆卸单')
-        or (dh.type='其它' and dh.sub_type='盘点复盘'))
+        where (dh."type"!='其它'
+        or (dh."type"='其它' and dh.sub_type='组装单')
+        or (dh."type"='其它' and dh.sub_type='拆卸单')
+        or (dh."type"='其它' and dh.sub_type='盘点复盘'))
         <if test="inOutManageFlag">
             and (dh.sub_type!='采购' and dh.sub_type!='采购退货' and dh.sub_type!='销售' and dh.sub_type!='销售退货')
         </if>
         <if test="depotIdArray != null and depotIdArray.length>0">
             and di.depot_id in (
-            <foreach collection="depotIdArray" item="depotId" separator=",">#{depotId}</foreach>
+            <foreach collection="depotIdArray" item="depotId" separator=",">#{depotId}::bigint</foreach>
             )
         </if>
         <if test="forceFlag">
@@ -305,10 +305,10 @@
         --单独构造记录：调拨入库
         select dh.number from jsh_depot_head dh
         left join jsh_depot_item di on dh.id=di.header_id and COALESCE(di.delete_flag,'0') !='1'
-        where dh.type='出库' and dh.sub_type='调拨'
+        where dh."type"='出库' and dh.sub_type='调拨'
         <if test="depotIdArray != null and depotIdArray.length>0">
             and di.another_depot_id in (
-            <foreach collection="depotIdArray" item="depotId" separator=",">#{depotId}</foreach>
+            <foreach collection="depotIdArray" item="depotId" separator=",">#{depotId}::bigint</foreach>
             )
         </if>
         <if test="forceFlag">
@@ -335,9 +335,9 @@
     </select>
 
     <select id="getDetailList" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultWithInfoExMap">
-        select di.*,m.name MName,m.model MModel,m.unit MaterialUnit,m.color MColor,m.standard MStandard,m.mfrs MMfrs,m.weight, m.position, m.img_name,
+        select di.*,m."name" MName,m.model MModel,m.unit MaterialUnit,m.color MColor,m.standard MStandard,m.mfrs MMfrs,m.weight, m.position, m.img_name,
         m.other_field1 MOtherField1,m.other_field2 MOtherField2,m.other_field3 MOtherField3,m.enable_serial_number, m.enable_batch_number,
-        m.brand, dp1.name DepotName,dp2.name AnotherDepotName, me.bar_code barCode, me.purchase_decimal
+        m.brand, dp1."name" DepotName,dp2."name" AnotherDepotName, me.bar_code barCode, me.purchase_decimal
         from jsh_depot_item di
         left join jsh_material m on di.material_id=m.id  and COALESCE(m.delete_flag,'0') !='1'
         left join jsh_material_extend me on me.id=di.material_extend_id  and COALESCE(me.delete_Flag,'0') !='1'
@@ -349,9 +349,9 @@
     </select>
 
     <select id="getBillDetailListByIds" resultType="com.jsh.erp.datasource.entities.DepotItemVo4WithInfoEx">
-        select di.*,m.name MName,m.model MModel,m.unit MaterialUnit,m.color MColor,m.standard MStandard,m.mfrs MMfrs,m.weight, m.position, m.img_name,
+        select di.*,m."name" MName,m.model MModel,m.unit MaterialUnit,m.color MColor,m.standard MStandard,m.mfrs MMfrs,m.weight, m.position, m.img_name,
         m.other_field1 MOtherField1,m.other_field2 MOtherField2,m.other_field3 MOtherField3,m.enable_serial_number, m.enable_batch_number,
-        m.brand, dp1.name DepotName,dp2.name AnotherDepotName, me.bar_code barCode, me.purchase_decimal
+        m.brand, dp1."name" DepotName,dp2."name" AnotherDepotName, me.bar_code barCode, me.purchase_decimal
         from jsh_depot_item di
         left join jsh_material m on di.material_id=m.id  and COALESCE(m.delete_flag,'0') !='1'
         left join jsh_material_extend me on me.id=di.material_extend_id  and COALESCE(me.delete_Flag,'0') !='1'
@@ -366,9 +366,9 @@
     </select>
 
     <select id="getInOutStock" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultByMaterial">
-        select m.id MId, me.bar_code, m.name MName, m.mfrs MMfrs, m.model MModel, m.standard MStandard, m.brand,
+        select m.id MId, me.bar_code, m."name" MName, m.mfrs MMfrs, m.model MModel, m.standard MStandard, m.brand,
         m.other_field1 MOtherField1,m.other_field2 MOtherField2,m.other_field3 MOtherField3, m.img_name,
-        concat_ws('', m.unit, u.basic_unit) MaterialUnit, m.color MColor, m.unit_id, u.name unit_name,
+        concat_ws('', m.unit, u.basic_unit) MaterialUnit, m.color MColor, m.unit_id, u."name" unit_name,
         COALESCE(me.purchase_decimal,0) purchase_decimal, COALESCE(mcs.current_unit_price,0) currentUnitPrice
         from jsh_material m
         left join jsh_material_extend me on me.material_id=m.id and COALESCE(me.delete_Flag,'0') !='1'
@@ -379,7 +379,7 @@
         where 1=1 and me.default_flag='1' and m.enabled='1'
         <if test="materialParam != null and materialParam !=''">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
-            and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
+            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
             or m.color like #{bindKey} or m.mfrs like #{bindKey} or m.brand like #{bindKey} or m.other_field1 like #{bindKey}
             or m.other_field2 like #{bindKey} or m.other_field3 like #{bindKey})
         </if>
@@ -393,8 +393,8 @@
             and dh.oper_time &lt;= #{endTime}::timestamp
         </if>
         and COALESCE(m.delete_flag,'0') !='1'
-        group by m.id, me.bar_code, m.name, m.mfrs, m.model, m.standard, m.brand,
-        m.other_field1,m.other_field2,m.other_field3, m.img_name ,m.unit, u.basic_unit, m.color, m.unit_id, u.name,
+        group by m.id, me.bar_code, m."name", m.mfrs, m.model, m.standard, m.brand,
+        m.other_field1,m.other_field2,m.other_field3, m.img_name ,m.unit, u.basic_unit, m.color, m.unit_id, u."name",
         me.purchase_decimal, mcs.current_unit_price
         order by m.id desc
         <if test="offset != null and rows != null">
@@ -411,7 +411,7 @@
         where 1=1 and me.default_flag='1' and m.enabled='1'
         <if test="materialParam != null and materialParam !=''">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
-            and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
+            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
             or m.color like #{bindKey} or m.mfrs like #{bindKey} or m.brand like #{bindKey} or m.other_field1 like #{bindKey}
             or m.other_field2 like #{bindKey} or m.other_field3 like #{bindKey})
         </if>
@@ -429,9 +429,9 @@
     </select>
 
     <select id="getListWithBuyOrSale" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultByMaterial">
-        select m.id MId, di.material_extend_id, me.bar_code, m.name MName, m.mfrs MMfrs, m.model MModel, m.standard MStandard,
+        select m.id MId, di.material_extend_id, me.bar_code, m."name" MName, m.mfrs MMfrs, m.model MModel, m.standard MStandard,
         m.other_field1 MOtherField1,m.other_field2 MOtherField2,m.other_field3 MOtherField3,
-        concat_ws('', m.unit, u.basic_unit) MaterialUnit, m.color MColor, m.brand, u.name unit_name
+        concat_ws('', m.unit, u.basic_unit) MaterialUnit, m.color MColor, m.brand, u."name" unit_name
         from jsh_material m
         left join jsh_depot_item di on di.material_id=m.id  and COALESCE(di.delete_Flag,'0') !='1'
         left join jsh_material_extend me on me.id=di.material_extend_id  and COALESCE(me.delete_Flag,'0') !='1'
@@ -446,7 +446,7 @@
         </if>
         <if test="materialParam != null and materialParam !=''">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
-            and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
+            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
             or m.color like #{bindKey} or m.mfrs like #{bindKey} or m.brand like #{bindKey} or m.other_field1 like #{bindKey}
             or m.other_field2 like #{bindKey} or m.other_field3 like #{bindKey})
         </if>
@@ -468,17 +468,17 @@
         <if test="creatorArray != null">
             and dh.creator in (
             <foreach collection="creatorArray" item="creator" separator=",">
-                #{creator}
+                #{creator}::bigint
             </foreach>
             )
         </if>
         <if test="organId != null">
-            and dh.organ_id = #{organId}
+            and dh.organ_id = #{organId}::bigint
         </if>
         <if test="organArray != null and organArray !=''">
             and dh.organ_id in (
             <foreach collection="organArray" item="organId" separator=",">
-                #{organId}
+                #{organId}::bigint
             </foreach>
             )
         </if>
@@ -492,8 +492,8 @@
             and (dh.status = '1' or dh.status = '2' or dh.status = '3')
         </if>
         and COALESCE(m.delete_flag,'0') !='1'
-        group by m.id, di.material_extend_id, me.bar_code, m.name, m.mfrs, m.model, m.standard,
-        m.other_field1,m.other_field2,m.other_field3, m.unit, u.basic_unit, m.color, m.brand, u.name
+        group by m.id, di.material_extend_id, me.bar_code, m."name", m.mfrs, m.model, m.standard,
+        m.other_field1,m.other_field2,m.other_field3, m.unit, u.basic_unit, m.color, m.brand, u."name"
         order by m.id desc
         <if test="offset != null and rows != null">
             LIMIT #{rows} OFFSET #{offset}
@@ -515,7 +515,7 @@
         </if>
         <if test="materialParam != null and materialParam !=''">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
-            and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
+            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
             or m.color like #{bindKey} or m.mfrs like #{bindKey} or m.brand like #{bindKey} or m.other_field1 like #{bindKey}
             or m.other_field2 like #{bindKey} or m.other_field3 like #{bindKey})
         </if>
@@ -537,17 +537,17 @@
         <if test="creatorArray != null">
             and dh.creator in (
             <foreach collection="creatorArray" item="creator" separator=",">
-                #{creator}
+                #{creator}::bigint
             </foreach>
             )
         </if>
         <if test="organId != null">
-            and dh.organ_id = #{organId}
+            and dh.organ_id = #{organId}::bigint
         </if>
         <if test="organArray != null and organArray !=''">
             and dh.organ_id in (
             <foreach collection="organArray" item="organId" separator=",">
-                #{organId}
+                #{organId}::bigint
             </foreach>
             )
         </if>
@@ -567,24 +567,24 @@
     <select id="buyOrSaleNumber" resultType="java.math.BigDecimal">
         select COALESCE(sum(basic_number),0) as BasicNumber from jsh_depot_item di,jsh_depot_head dh
         where di.header_id = dh.id
-        and dh.type=#{type} and dh.sub_type=#{subType}
+        and dh."type"=#{type} and dh.sub_type=#{subType}
         and dh.oper_time &gt;= #{beginTime}::timestamp
         and dh.oper_time &lt;= #{endTime}::timestamp
         and di.material_extend_id =#{meId}
         <if test="creatorArray != null">
             and dh.creator in (
             <foreach collection="creatorArray" item="creator" separator=",">
-                #{creator}
+                #{creator}::bigint
             </foreach>
             )
         </if>
         <if test="organId != null">
-            and dh.organ_id = #{organId}
+            and dh.organ_id = #{organId}::bigint
         </if>
         <if test="organArray != null and organArray !=''">
             and dh.organ_id in (
             <foreach collection="organArray" item="organId" separator=",">
-                #{organId}
+                #{organId}::bigint
             </foreach>
             )
         </if>
@@ -604,7 +604,7 @@
     <select id="buyOrSalePrice" resultType="java.math.BigDecimal">
         select COALESCE(sum(all_price),0) as AllPrice from jsh_depot_item di,jsh_depot_head dh
         where di.header_id = dh.id
-        and dh.type=#{type} and dh.sub_type=#{subType}
+        and dh."type"=#{type} and dh.sub_type=#{subType}
         and dh.oper_time &gt;= #{beginTime}::timestamp
         and dh.oper_time &lt;= #{endTime}::timestamp
         <if test="meId != null">
@@ -613,17 +613,17 @@
         <if test="creatorArray != null">
             and dh.creator in (
             <foreach collection="creatorArray" item="creator" separator=",">
-                #{creator}
+                #{creator}::bigint
             </foreach>
             )
         </if>
         <if test="organId != null">
-            and dh.organ_id = #{organId}
+            and dh.organ_id = #{organId}::bigint
         </if>
         <if test="organArray != null and organArray !=''">
             and dh.organ_id in (
             <foreach collection="organArray" item="organId" separator=",">
-                #{organId}
+                #{organId}::bigint
             </foreach>
             )
         </if>
@@ -647,7 +647,7 @@
         left join jsh_material_extend me on me.id=di.material_extend_id  and COALESCE(me.delete_Flag,'0') !='1'
         left join jsh_material m on m.id=di.material_id and COALESCE(m.delete_Flag,'0') !='1'
         where COALESCE(di.delete_flag,'0') !='1'
-        and dh.type=#{type} and dh.sub_type=#{subType}
+        and dh."type"=#{type} and dh.sub_type=#{subType}
         and dh.oper_time &gt;= #{beginTime}::timestamp
         and dh.oper_time &lt;= #{endTime}::timestamp
         <if test="categoryList.size()>0">
@@ -658,22 +658,22 @@
         </if>
         <if test="materialParam != null and materialParam !=''">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
-            and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey})
+            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey})
         </if>
         <if test="creatorArray != null">
             and dh.creator in (
             <foreach collection="creatorArray" item="creator" separator=",">
-                #{creator}
+                #{creator}::bigint
             </foreach>
             )
         </if>
         <if test="organId != null">
-            and dh.organ_id = #{organId}
+            and dh.organ_id = #{organId}::bigint
         </if>
         <if test="organArray != null and organArray !=''">
             and dh.organ_id in (
             <foreach collection="organArray" item="organId" separator=",">
-                #{organId}
+                #{organId}::bigint
             </foreach>
             )
         </if>
@@ -689,11 +689,11 @@
     </select>
 
     <select id="inOrOutPriceList" resultType="com.jsh.erp.datasource.vo.InOutPriceVo">
-        select distinct dh.id, dh.discount_last_money, dh.total_price, dh.type, dh.sub_type, dh.oper_time
+        select distinct dh.id, dh.discount_last_money, dh.total_price, dh."type", dh.sub_type, dh.oper_time
         from jsh_depot_head dh
         left join jsh_depot_item di on dh.id = di.header_id and COALESCE(di.delete_flag,'0') != '1'
         where di.id is not null
-        and (dh.type='入库' or dh.type='出库')
+        and (dh."type"='入库' or dh."type"='出库')
         and dh.oper_time &gt;= #{beginTime}::timestamp
         and dh.oper_time &lt;= #{endTime}::timestamp
         <if test="forceFlag">
@@ -702,7 +702,7 @@
         <if test="creatorArray != null">
             and dh.creator in (
             <foreach collection="creatorArray" item="creator" separator=",">
-                #{creator}
+                #{creator}::bigint
             </foreach>
             )
         </if>
@@ -765,8 +765,8 @@
 
     <select id="getSkuStockByParamWithDepotList" resultMap="stockMap">
         select
-        sum(case when dh.type='入库' <include refid="inOutManageParam" /> <include refid="depotParam" /> then di.basic_number else 0 end) as inTotal,
-        sum(case when dh.type='出库' and dh.sub_type!='调拨' <include refid="inOutManageParam" /> <include refid="depotParam" /> then di.basic_number else 0 end) as outTotal,
+        sum(case when dh."type"='入库' <include refid="inOutManageParam" /> <include refid="depotParam" /> then di.basic_number else 0 end) as inTotal,
+        sum(case when dh."type"='出库' and dh.sub_type!='调拨' <include refid="inOutManageParam" /> <include refid="depotParam" /> then di.basic_number else 0 end) as outTotal,
         sum(case when dh.sub_type='调拨' <include refid="anotherDepotParam" /> then di.basic_number else 0 end) as transfInTotal,
         sum(case when dh.sub_type='调拨' <include refid="depotParam" /> then di.basic_number else 0 end) as transfOutTotal,
         sum(case when dh.sub_type='组装单' and di.material_type='组合件' <include refid="depotParam" /> then di.basic_number else 0 end) as assemInTotal,
@@ -793,8 +793,8 @@
 
     <select id="getStockByParamWithDepotList" resultMap="stockMap">
         select
-        sum(case when dh.type='入库' <include refid="inOutManageParam" /> <include refid="depotParam" /> then di.basic_number else 0 end) as inTotal,
-        sum(case when dh.type='出库' and dh.sub_type!='调拨' <include refid="inOutManageParam" /> <include refid="depotParam" /> then di.basic_number else 0 end) as outTotal,
+        sum(case when dh."type"='入库' <include refid="inOutManageParam" /> <include refid="depotParam" /> then di.basic_number else 0 end) as inTotal,
+        sum(case when dh."type"='出库' and dh.sub_type!='调拨' <include refid="inOutManageParam" /> <include refid="depotParam" /> then di.basic_number else 0 end) as outTotal,
         sum(case when dh.sub_type='调拨' <include refid="anotherDepotParam" /> then di.basic_number else 0 end) as transfInTotal,
         sum(case when dh.sub_type='调拨' <include refid="depotParam" /> then di.basic_number else 0 end) as transfOutTotal,
         sum(case when dh.sub_type='组装单' and di.material_type='组合件' <include refid="depotParam" /> then di.basic_number else 0 end) as assemInTotal,
@@ -885,7 +885,7 @@
         where 1=1
         and depot_id in (
         <foreach collection="depotIds" item="depotId" separator=",">
-            #{depotId}
+            #{depotId}::bigint
         </foreach>
         )
         and COALESCE(delete_flag,'0') !='1'
@@ -905,8 +905,8 @@
     </select>
 
     <select id="findStockWarningCount" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultStockWarningCount">
-        select m.id MId, m.name MName, me.bar_code, m.mfrs MMfrs, m.model MModel, m.standard MStandard,m.color MColor, m.brand,
-        m.other_field1 MOtherField1,m.other_field2 MOtherField2,m.other_field3 MOtherField3,d.name depotName,
+        select m.id MId, m."name" MName, me.bar_code, m.mfrs MMfrs, m.model MModel, m.standard MStandard,m.color MColor, m.brand,
+        m.other_field1 MOtherField1,m.other_field2 MOtherField2,m.other_field3 MOtherField3,d."name" depotName,
         m.unit MaterialUnit, u.basic_unit unit_name,mcs.current_number,
         mis.low_safe_stock, mis.high_safe_stock
         from jsh_material m
@@ -924,7 +924,7 @@
             or (COALESCE(mis.high_safe_stock,0)!=0 and mcs.current_number > COALESCE(mis.high_safe_stock,0)))
         <if test="materialParam != null and materialParam !=''">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
-            and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
+            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
             or m.color like #{bindKey} or m.mfrs like #{bindKey} or m.brand like #{bindKey} or m.other_field1 like #{bindKey}
             or m.other_field2 like #{bindKey} or m.other_field3 like #{bindKey})
         </if>
@@ -964,7 +964,7 @@
             or (COALESCE(mis.high_safe_stock,0)!=0 and mcs.current_number > COALESCE(mis.high_safe_stock,0)))
         <if test="materialParam != null and materialParam !=''">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
-            and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
+            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
             or m.color like #{bindKey} or m.mfrs like #{bindKey} or m.brand like #{bindKey} or m.other_field1 like #{bindKey}
             or m.other_field2 like #{bindKey} or m.other_field3 like #{bindKey})
         </if>
@@ -1033,9 +1033,9 @@
     <select id="getBatchNumberList" resultMap="batchNumberListMap">
         select id, bar_code, name, standard, model, unit_id,
         commodity_unit, batch_number, expiration_date, sum(basic_number) total_num from
-        (select di.batch_number id, me.bar_code, m.name, m.standard, m.model, m.unit_id,
+        (select di.batch_number id, me.bar_code, m."name", m.standard, m.model, m.unit_id,
          me.commodity_unit, di.batch_number,di.expiration_date,
-         di.basic_number*(case dh.type when '入库' then 1 when '出库' then -1 end) as basic_number
+         di.basic_number*(case dh."type" when '入库' then 1 when '出库' then -1 end) as basic_number
         from jsh_depot_head dh
         left join jsh_depot_item di on dh.id=di.header_id
         left join jsh_material m on m.id=di.material_id and COALESCE(m.delete_flag, '0') != '1'
@@ -1046,7 +1046,7 @@
             and di.batch_number like #{bindName}
         </if>
         <if test="depotId != null">
-            and di.depot_id= #{depotId}
+            and di.depot_id= #{depotId}::bigint
         </if>
         <if test="batchNumber != null">
             and di.batch_number= #{batchNumber}
@@ -1070,7 +1070,7 @@
 
     <select id="getCountByMaterialAndDepot" resultType="java.lang.Long">
         select count(1) from jsh_depot_item di
-        where di.material_id=#{mId} and di.depot_id=#{depotId}
+        where di.material_id=#{mId} and di.depot_id=#{depotId}::bigint
         and COALESCE(di.delete_flag,'0') !='1'
     </select>
 
@@ -1085,7 +1085,7 @@
     <select id="getBatchBillDetailMaterialSum" resultMap="materialSumMap">
         select di.material_extend_id, sum(di.oper_number) oper_number from jsh_depot_head dh
         left join jsh_depot_item di on dh.id=di.header_id and COALESCE(di.delete_flag,'0') !='1'
-        where dh.type=#{type}
+        where dh."type"=#{type}
         <if test="linkType == 'normal'">
             and dh.link_number=#{linkStr}
         </if>
@@ -1113,11 +1113,11 @@
         and COALESCE(dh.delete_flag,'0') !='1'
         and di.material_extend_id = #{materialExtendId}
         and di.batch_number = #{batchNumber}
-        and dh.type = '入库'
+        and dh."type" = '入库'
     </select>
 
     <select id="getBillItemByParam" resultType="com.jsh.erp.datasource.entities.MaterialVo4Unit">
-        select m.id, m.name, m.standard, m.model, me.id meId,me.commodity_unit commodityUnit,
+        select m.id, m."name", m.standard, m.model, me.id meId,me.commodity_unit commodityUnit,
         me.purchase_decimal purchaseDecimal, me.wholesale_decimal wholesaleDecimal, me.bar_code mBarCode, me.sku
         from jsh_material m
         left join jsh_material_extend me on m.id=me.material_id and COALESCE(me.delete_Flag,'0') !='1'
@@ -1137,7 +1137,7 @@
         from jsh_material_current_stock
         where 1=1
         <if test="depotId != null">
-            and depot_id = #{depotId}
+            and depot_id = #{depotId}::bigint
         </if>
         <if test="mId != null">
             and material_id = #{mId}
@@ -1148,9 +1148,9 @@
     <select id="getLastUnitPriceByParam" resultType="java.math.BigDecimal">
         select di.unit_price from jsh_depot_head dh
         left join jsh_depot_item di on dh.id=di.header_id and COALESCE(di.delete_flag,'0') !='1'
-        where dh.organ_id = #{organId}
+        where dh.organ_id = #{organId}::bigint
         and di.material_extend_id = #{meId}
-        and dh.type = #{type} and dh.sub_type = #{subType}
+        and dh."type" = #{type} and dh.sub_type = #{subType}
         and COALESCE(dh.delete_flag,'0') !='1'
         order by dh.id desc, di.id desc
         LIMIT 1

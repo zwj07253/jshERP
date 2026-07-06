@@ -10,7 +10,7 @@
         and COALESCE(delete_flag,'0') !='1'
         <if test="name != null">
             <bind name="bindName" value="'%'+name+'%'"/>
-            and name like #{bindName}
+            and "name" like #{bindName}
         </if>
         <if test="description != null">
             <bind name="bindDescription" value="'%'+description+'%'"/>

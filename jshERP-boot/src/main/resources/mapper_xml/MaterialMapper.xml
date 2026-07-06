@@ -314,7 +314,7 @@
         category_id = #{record.categoryId,jdbcType=BIGINT},
       </if>
       <if test="record.name != null">
-        name = #{record.name,jdbcType=VARCHAR},
+        "name" = #{record.name,jdbcType=VARCHAR},
       </if>
       <if test="record.mfrs != null">
         mfrs = #{record.mfrs,jdbcType=VARCHAR},
@@ -391,7 +391,7 @@
     update jsh_material
     set id = #{record.id,jdbcType=BIGINT},
       category_id = #{record.categoryId,jdbcType=BIGINT},
-      name = #{record.name,jdbcType=VARCHAR},
+      "name" = #{record.name,jdbcType=VARCHAR},
       mfrs = #{record.mfrs,jdbcType=VARCHAR},
       model = #{record.model,jdbcType=VARCHAR},
       standard = #{record.standard,jdbcType=VARCHAR},

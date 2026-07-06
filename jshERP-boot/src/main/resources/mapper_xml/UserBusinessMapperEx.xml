@@ -21,7 +21,7 @@
     <update id="updateValueByTypeAndKeyId">
         update jsh_user_business
         set value= #{ubValue}
-        where type = #{type} and key_id = #{keyId}
+        where "type" = #{type} and key_id = #{keyId}
         and COALESCE(delete_flag,'0') !='1'
     </update>
 

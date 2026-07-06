@@ -39,7 +39,7 @@
     </resultMap>
 
     <select id="selectByConditionMaterial" parameterType="com.jsh.erp.datasource.entities.MaterialExample" resultMap="ResultMapList">
-        select jm.*, u.name unitName, mc.name categoryName, jme.bar_code,
+        select jm.*, u."name" unitName, mc."name" categoryName, jme.bar_code,
         jme.purchase_decimal, jme.commodity_decimal, jme.wholesale_decimal, jme.low_decimal, jme.sku
         from (select m.id, min(me.id) meId
         from jsh_material m
@@ -47,7 +47,7 @@
         where 1=1
         <if test="materialParam != null and materialParam !=''">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
-            and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey}
+            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey}
             or m.model like #{bindKey} or m.color like #{bindKey} or m.brand like #{bindKey} or m.mfrs like #{bindKey})
         </if>
         <if test="standard != null and standard !=''">
@@ -287,14 +287,14 @@
     </select>
 
     <select id="findById" parameterType="com.jsh.erp.datasource.entities.MaterialExample" resultMap="ResultAndUnitMap">
-        select m.*,u.name unit_name from jsh_material m
+        select m.*,u."name" unit_name from jsh_material m
         left join jsh_unit u on m.unit_id=u.id and COALESCE(u.delete_flag,'0') !='1'
         where m.id = #{id}
         and COALESCE(m.delete_flag,'0') !='1'
     </select>
 
     <select id="findByIdWithBarCode" parameterType="com.jsh.erp.datasource.entities.MaterialExample" resultMap="ResultAndUnitMap">
-        select m.*,u.name unit_name,me.bar_code m_bar_code, me.commodity_unit, me.purchase_decimal, me.commodity_decimal,
+        select m.*,u."name" unit_name,me.bar_code m_bar_code, me.commodity_unit, me.purchase_decimal, me.commodity_decimal,
         me.wholesale_decimal, me.low_decimal
         from jsh_material m
         left join jsh_material_extend me on m.id=me.material_id and COALESCE(me.delete_Flag,'0') !='1'
@@ -304,13 +304,13 @@
     </select>
 
     <select id="getMaterialByParam" resultType="com.jsh.erp.datasource.vo.MaterialVoSearch">
-        select me.bar_code, m.name, m.mnemonic, m.standard, m.model, m.color, me.commodity_unit unit
+        select me.bar_code, m."name", m.mnemonic, m.standard, m.model, m.color, me.commodity_unit unit
         from jsh_material m
         left join jsh_material_extend me on m.id = me.material_id and COALESCE(me.delete_Flag,'0') !='1'
-        where m.enabled=1 and me.id is not null
+        where m.enabled='1' and me.id is not null
         <if test="materialParam != null and materialParam !=''">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
-            and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey} or m.mnemonic like #{bindKey})
+            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey} or m.mnemonic like #{bindKey})
         </if>
         and COALESCE(m.delete_flag,'0') !='1'
         order by m.id desc, me.default_flag desc, me.id asc
@@ -318,14 +318,14 @@
     </select>
 
     <select id="findBySelectWithBarCode" parameterType="com.jsh.erp.datasource.entities.MaterialExample" resultMap="ResultAndUnitMap">
-        select m.*,u.name unit_name,mc.name categoryName,me.bar_code m_bar_code,me.id meId,me.commodity_unit,me.sku from jsh_material m
+        select m.*,u."name" unit_name,mc."name" categoryName,me.bar_code m_bar_code,me.id meId,me.commodity_unit,me.sku from jsh_material m
         left join jsh_material_extend me on m.id=me.material_id and COALESCE(me.delete_Flag,'0') !='1'
         left join jsh_unit u on m.unit_id=u.id and COALESCE(u.delete_Flag,'0') !='1'
         left JOIN jsh_material_category mc on m.category_id = mc.id and COALESCE(mc.delete_Flag,'0') !='1'
-        where m.enabled=1 and me.id is not null
+        where m.enabled='1' and me.id is not null
         <if test="q != null and q !=''">
             <bind name="bindKey" value="'%'+q+'%'"/>
-            and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey}
+            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey}
             or m.model like #{bindKey} or m.color like #{bindKey} or m.brand like #{bindKey} or m.mfrs like #{bindKey})
         </if>
         <if test="standardOrModel != null and standardOrModel !=''">
@@ -379,10 +379,10 @@
         select count(1) from jsh_material m
         left join jsh_material_extend me on m.id=me.material_id and COALESCE(me.delete_Flag,'0') !='1'
         left join jsh_unit u on m.unit_id=u.id and COALESCE(u.delete_Flag,'0') !='1'
-        where m.enabled=1 and me.id is not null
+        where m.enabled='1' and me.id is not null
         <if test="q != null and q !=''">
             <bind name="bindKey" value="'%'+q+'%'"/>
-            and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey}
+            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey}
             or m.model like #{bindKey} or m.color like #{bindKey} or m.brand like #{bindKey} or m.mfrs like #{bindKey})
         </if>
         <if test="standardOrModel != null and standardOrModel !=''">
@@ -429,17 +429,17 @@
     </select>
 
     <select id="exportExcel" parameterType="com.jsh.erp.datasource.entities.MaterialExample" resultMap="ResultMapList">
-        select m.*,u.name unitName, u.ratio, mc.name categoryName,me.bar_code,me.commodity_unit,me.purchase_decimal, me.commodity_decimal,
+        select m.*,u."name" unitName, u.ratio, mc."name" categoryName,me.bar_code,me.commodity_unit,me.purchase_decimal, me.commodity_decimal,
         me.wholesale_decimal, me.low_decimal, me.sku
         from jsh_material m
         left join jsh_material_extend me on m.id=me.material_id and COALESCE(me.delete_Flag,'0') !='1'
         left JOIN jsh_unit u on m.unit_id = u.id and COALESCE(u.delete_Flag,'0') !='1'
         left JOIN jsh_material_category mc on m.category_id = mc.id and COALESCE(mc.delete_Flag,'0') !='1'
         where 1=1
-        and (me.default_flag=1 or (me.sku is not null and me.sku!=''))
+        and (me.default_flag='1' or (me.sku is not null and me.sku!=''))
         <if test="materialParam != null and materialParam !=''">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
-            and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey})
+            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey})
         </if>
         <if test="color != null and color !=''">
             <bind name="bindColor" value="'%'+color+'%'"/>
@@ -491,7 +491,7 @@
         FROM jsh_material m
         where 1=1
         <if test="name != null">
-            and m.name =#{name}
+            and m."name" =#{name}
         </if>
         and COALESCE(m.delete_flag,'0') !='1'
     </select>
@@ -500,11 +500,11 @@
         select m.*,me.bar_code m_bar_code from jsh_material m
         left join jsh_material_extend me on m.id=me.material_id and COALESCE(me.delete_Flag,'0') !='1'
         where 1=1
-        and m.enabled=1
+        and m.enabled='1'
         and m.enable_serial_number ='1'
         <if test="q != null and q !=''">
             <bind name="bindKey" value="'%'+q+'%'"/>
-            and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey})
+            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey})
         </if>
         and COALESCE(m.delete_flag,'0') !='1'
         order by m.id desc
@@ -521,7 +521,7 @@
         and m.enable_serial_number ='1'
         <if test="q != null and q !=''">
             <bind name="bindKey" value="'%'+q+'%'"/>
-            and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey})
+            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey})
         </if>
         and COALESCE(m.delete_flag,'0') !='1'
     </select>
@@ -568,7 +568,7 @@
     </select>
 
     <select id="getMaterialByMeId" parameterType="com.jsh.erp.datasource.entities.MaterialExample" resultMap="ResultMapList">
-        select m.*,me.bar_code,u.name unitName, mc.name categoryName
+        select m.*,me.bar_code,u."name" unitName, mc."name" categoryName
         FROM jsh_material m
         left join jsh_material_extend me on m.id=me.material_id and COALESCE(me.delete_Flag,'0') !='1'
         left JOIN jsh_unit u on m.unit_id = u.id and COALESCE(u.delete_flag,'0') !='1'
@@ -581,14 +581,14 @@
     </select>
 
     <select id="getMaterialNameList" resultType="java.lang.String">
-        select m.name from jsh_material m
-        where m.name is not null and m.name !='' and COALESCE(m.delete_flag,'0') !='1'
-        group by m.name
-        order by m.name asc
+        select m."name" from jsh_material m
+        where m."name" is not null and m."name" !='' and COALESCE(m.delete_flag,'0') !='1'
+        group by m."name"
+        order by m."name" asc
     </select>
 
     <select id="getMaterialByBarCode" parameterType="com.jsh.erp.datasource.entities.MaterialExample" resultMap="ResultAndUnitMap">
-        select m.*,u.name unit_name, me.id meId,me.bar_code m_bar_code, me.commodity_unit, me.purchase_decimal, me.commodity_decimal,
+        select m.*,u."name" unit_name, me.id meId,me.bar_code m_bar_code, me.commodity_unit, me.purchase_decimal, me.commodity_decimal,
         me.wholesale_decimal, me.low_decimal, me.sku
         from jsh_material m
         left join jsh_material_extend me on m.id=me.material_id and COALESCE(me.delete_Flag,'0') !='1'
@@ -604,7 +604,7 @@
     </select>
 
     <select id="getMaterialByBarCodeAndWithOutMId" parameterType="com.jsh.erp.datasource.entities.MaterialExample" resultMap="ResultAndUnitMap">
-        select m.*,u.name unit_name, me.id meId,me.bar_code m_bar_code, me.commodity_unit, me.purchase_decimal, me.commodity_decimal,
+        select m.*,u."name" unit_name, me.id meId,me.bar_code m_bar_code, me.commodity_unit, me.purchase_decimal, me.commodity_decimal,
         me.wholesale_decimal, me.low_decimal, me.sku
         from jsh_material m
         left join jsh_material_extend me on m.id=me.material_id and COALESCE(me.delete_Flag,'0') !='1'
@@ -650,8 +650,8 @@
     </select>
 
     <select id="getListWithStock" resultMap="ResultMapListWithStock">
-        select m.id, m.name, m.standard, m.model, m.color, m.brand, m.mfrs, m.position, m.img_name,
-               me.commodity_unit unitName, mc.name categoryName, me.bar_code mBarCode,
+        select m.id, m."name", m.standard, m.model, m.color, m.brand, m.mfrs, m.position, m.img_name,
+               me.commodity_unit unitName, mc."name" categoryName, me.bar_code mBarCode,
         COALESCE(me.purchase_decimal,0) purchaseDecimal,
         COALESCE(mcs.current_unit_price,0) currentUnitPrice,
         COALESCE(sum(mcs.current_number),0) currentStock,
@@ -670,8 +670,8 @@
         left JOIN jsh_unit u on m.unit_id = u.id and COALESCE(u.delete_Flag,'0') !='1'
         left JOIN jsh_material_category mc on m.category_id = mc.id and COALESCE(mc.delete_Flag,'0') !='1'
         where 1=1
-        and me.default_flag=1
-        and m.enabled=1
+        and me.default_flag='1'
+        and m.enabled='1'
         <if test="idList.size()>0">
             and m.category_id in
             <foreach collection="idList" item="item" index="index" separator="," open="(" close=")">
@@ -684,13 +684,13 @@
         </if>
         <if test="materialParam != null">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
-            and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
+            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
             or m.color like #{bindKey} or m.mfrs like #{bindKey} or m.brand like #{bindKey} or m.other_field1 like #{bindKey}
             or m.other_field2 like #{bindKey} or m.other_field3 like #{bindKey})
         </if>
         and COALESCE(m.delete_flag,'0') !='1'
-        group by m.id, m.name, m.standard, m.model, m.color, m.brand, m.mfrs, m.position, m.img_name,
-        me.commodity_unit, mc.name, me.bar_code, COALESCE(me.purchase_decimal,0), COALESCE(mcs.current_unit_price,0)
+        group by m.id, m."name", m.standard, m.model, m.color, m.brand, m.mfrs, m.position, m.img_name,
+        me.commodity_unit, mc."name", me.bar_code, COALESCE(me.purchase_decimal,0), COALESCE(mcs.current_unit_price,0)
         <if test="zeroStock == 0">
             having COALESCE(sum(mcs.current_number),0)!=0
         </if>
@@ -724,8 +724,8 @@
         left JOIN jsh_unit u on m.unit_id = u.id and COALESCE(u.delete_Flag,'0') !='1'
         left JOIN jsh_material_category mc on m.category_id = mc.id and COALESCE(mc.delete_Flag,'0') !='1'
         where 1=1
-        and me.default_flag=1
-        and m.enabled=1
+        and me.default_flag='1'
+        and m.enabled='1'
         <if test="idList.size()>0">
             and m.category_id in
             <foreach collection="idList" item="item" index="index" separator="," open="(" close=")">
@@ -738,7 +738,7 @@
         </if>
         <if test="materialParam != null">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
-            and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
+            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
             or m.color like #{bindKey} or m.mfrs like #{bindKey} or m.brand like #{bindKey} or m.other_field1 like #{bindKey}
             or m.other_field2 like #{bindKey} or m.other_field3 like #{bindKey})
         </if>
@@ -762,8 +762,8 @@
         left JOIN jsh_unit u on m.unit_id = u.id and COALESCE(u.delete_Flag,'0') !='1'
         left JOIN jsh_material_category mc on m.category_id = mc.id and COALESCE(mc.delete_Flag,'0') !='1'
         where 1=1
-        and me.default_flag=1
-        and m.enabled=1
+        and me.default_flag='1'
+        and m.enabled='1'
         <if test="depotList.size()>0">
             and mcs.depot_id in
             <foreach collection="depotList" item="item" index="index" separator="," open="(" close=")">
@@ -782,7 +782,7 @@
         </if>
         <if test="materialParam != null">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
-            and (me.bar_code like #{bindKey} or m.name like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
+            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
             or m.color like #{bindKey} or m.mfrs like #{bindKey} or m.brand like #{bindKey} or m.other_field1 like #{bindKey}
             or m.other_field2 like #{bindKey} or m.other_field3 like #{bindKey})
         </if>
@@ -793,7 +793,7 @@
         select count(1) from jsh_material m
         where COALESCE(m.delete_flag,'0') !='1'
         <if test="name != null">
-            and m.name = #{name}
+            and m."name" = #{name}
         </if>
         <if test="model != null">
             and m.model = #{model}
@@ -833,22 +833,22 @@
         left join jsh_material_extend me on m.id=me.material_id and COALESCE(me.delete_flag,'0') !='1'
         left join jsh_serial_number sn on sn.material_id=m.id and COALESCE(sn.delete_flag,'0') !='1'
         where sn.serial_number = #{serialNumber}
-        and me.default_flag=1
+        and me.default_flag='1'
         and COALESCE(m.delete_flag,'0') !='1'
         LIMIT 1
     </select>
 
     <select id="getMaterialDepotStock" resultType="com.jsh.erp.datasource.vo.MaterialDepotStock">
-        select mcs.id, mcs.material_id, mcs.depot_id, d.name depotName, mcs.current_number,
+        select mcs.id, mcs.material_id, mcs.depot_id, d."name" depotName, mcs.current_number,
         COALESCE(me.purchase_decimal,0) purchase_decimal, COALESCE(mcs.current_unit_price,0) currentUnitPrice
         from jsh_material_current_stock mcs
         left join jsh_material_extend me on me.material_id=mcs.material_id and COALESCE(me.delete_Flag,'0') !='1'
         left join jsh_depot d on mcs.depot_id=d.id and COALESCE(d.delete_flag,'0') !='1'
-        where me.default_flag=1 and COALESCE(mcs.current_number,0)!=0
+        where me.default_flag='1' and COALESCE(mcs.current_number,0)!=0
         and mcs.material_id=#{mId}
         <if test="depotIdArray != null and depotIdArray.length>0">
             and mcs.depot_id in (
-            <foreach collection="depotIdArray" item="depotId" separator=",">#{depotId}</foreach>
+            <foreach collection="depotIdArray" item="depotId" separator=",">#{depotId}::bigint</foreach>
             )
         </if>
     </select>

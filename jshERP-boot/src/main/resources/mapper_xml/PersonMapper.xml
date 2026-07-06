@@ -174,7 +174,7 @@
         type = #{record.type,jdbcType=VARCHAR},
       </if>
       <if test="record.name != null">
-        name = #{record.name,jdbcType=VARCHAR},
+        "name" = #{record.name,jdbcType=VARCHAR},
       </if>
       <if test="record.enabled != null">
         enabled = #{record.enabled,jdbcType=BIT},
@@ -197,7 +197,7 @@
     update jsh_person
     set id = #{record.id,jdbcType=BIGINT},
       type = #{record.type,jdbcType=VARCHAR},
-      name = #{record.name,jdbcType=VARCHAR},
+      "name" = #{record.name,jdbcType=VARCHAR},
       enabled = #{record.enabled,jdbcType=BIT},
       sort = #{record.sort,jdbcType=VARCHAR},
       tenant_id = #{record.tenantId,jdbcType=BIGINT},

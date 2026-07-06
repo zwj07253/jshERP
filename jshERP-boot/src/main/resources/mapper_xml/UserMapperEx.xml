@@ -15,7 +15,7 @@
         (select r.id from jsh_user_business ub
         left join jsh_role r on ub.value=concat("[",r.id,"]") and COALESCE(r.delete_flag,'0') !='1'
         where ub.type='UserRole' and ub.key_id=tb.id LIMIT 1) roleId,
-        (select r.name from jsh_user_business ub
+        (select r."name" from jsh_user_business ub
         left join jsh_role r on ub.value=concat("[",r.id,"]") and COALESCE(r.delete_flag,'0') !='1'
         where ub.type='UserRole' and ub.key_id=tb.id LIMIT 1) roleName
         from (

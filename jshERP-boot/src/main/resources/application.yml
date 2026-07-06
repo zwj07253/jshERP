@@ -12,12 +12,15 @@ server:
     basedir: /opt/tmp/tomcat
 
 spring:
+  main:
+    allow-circular-references: true
+    allow-bean-definition-overriding: true
   datasource:
     # PostgreSQL 数据库连接
     url: jdbc:postgresql://127.0.0.1:5432/jsh_erp
     driver-class-name: org.postgresql.Driver
     username: postgres
-    password: 123456
+    password: Postgres@123
   redis:
     host: 127.0.0.1
     port: 6379

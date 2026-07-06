@@ -202,7 +202,7 @@
         id = #{record.id,jdbcType=BIGINT},
       </if>
       <if test="record.name != null">
-        name = #{record.name,jdbcType=VARCHAR},
+        "name" = #{record.name,jdbcType=VARCHAR},
       </if>
       <if test="record.categoryLevel != null">
         category_level = #{record.categoryLevel,jdbcType=SMALLINT},
@@ -239,7 +239,7 @@
   <update id="updateByExample" parameterType="map">
     update jsh_material_category
     set id = #{record.id,jdbcType=BIGINT},
-      name = #{record.name,jdbcType=VARCHAR},
+      "name" = #{record.name,jdbcType=VARCHAR},
       category_level = #{record.categoryLevel,jdbcType=SMALLINT},
       parent_id = #{record.parentId,jdbcType=BIGINT},
       sort = #{record.sort,jdbcType=VARCHAR},

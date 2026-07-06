@@ -14,10 +14,10 @@
         where 1=1
         <if test="name != null">
             <bind name="bindName" value="'%'+name+'%'"/>
-            and name like #{bindName}
+            and "name" like #{bindName}
         </if>
         <if test="type != null">
-            and type=#{type}
+            and "type"=#{type}
         </if>
         <if test="remark != null">
             <bind name="bindRemark" value="'%'+remark+'%'"/>
@@ -35,10 +35,10 @@
         WHERE 1=1
         <if test="name != null">
             <bind name="bindName" value="'%'+name+'%'"/>
-            and name like #{bindName}
+            and "name" like #{bindName}
         </if>
         <if test="type != null">
-            and type=#{type}
+            and "type"=#{type}
         </if>
         <if test="remark != null">
             <bind name="bindRemark" value="'%'+remark+'%'"/>
@@ -48,7 +48,7 @@
     </select>
 
     <select id="getDetailList" parameterType="com.jsh.erp.datasource.entities.AccountItemExample" resultMap="ResultWithInfoExMap">
-        select ai.*,a.Name AccountName,ioi.Name InOutItemName, dh.number billNumber
+        select ai.*,a."name" AccountName,ioi."name" InOutItemName, dh.number billNumber
         from jsh_account_item ai left join jsh_account a on ai.account_id=a.id and COALESCE(a.delete_Flag,'0') !='1'
         left join jsh_in_out_item ioi on ai.in_out_item_id = ioi.id and COALESCE(ioi.delete_Flag,'0') !='1'
         left join jsh_depot_head dh on ai.bill_id = dh.id and COALESCE(dh.delete_Flag,'0') !='1'
@@ -129,7 +129,7 @@
         select COALESCE(sum(ai.each_amount),0) from jsh_account_head ah
         left join jsh_account_item ai on ah.id = ai.header_id and COALESCE(ai.delete_flag,'0') !='1'
         where ah.organ_id = #{organId}
-        and (ah.type = '收款' or ah.type = '付款')
+        and (ah."type" = '收款' or ah."type" = '付款')
         and ai.bill_id is null
         and COALESCE(ah.delete_flag,'0') !='1'
     </select>

@@ -12,7 +12,7 @@
         where 1=1
         <if test="name != null">
             <bind name="bindName" value="'%'+name+'%'"/>
-            and dep.name like #{bindName}
+            and dep."name" like #{bindName}
         </if>
         <if test="type != null">
             and dep.type=#{type}

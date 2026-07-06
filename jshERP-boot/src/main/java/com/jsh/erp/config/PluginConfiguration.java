@@ -4,11 +4,13 @@ import com.gitee.starblues.core.RuntimeMode;
 import com.gitee.starblues.integration.DefaultIntegrationConfiguration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;
 
+@Primary
 @Component
 @ConfigurationProperties(prefix = "plugin")
 public class PluginConfiguration extends DefaultIntegrationConfiguration {

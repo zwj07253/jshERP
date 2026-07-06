@@ -1741,6 +1741,9 @@ public class DepotHeadService {
     }
 
     public String getBillCategory(String subType) {
+        if(subType == null) {
+            return "buy";
+        }
         if(subType.equals("零售") || subType.equals("零售退货")) {
             return "retail";
         } else if(subType.equals("销售订单") || subType.equals("销售") || subType.equals("销售退货")) {

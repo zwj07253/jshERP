@@ -22,7 +22,7 @@
         where 1=1
         <if test="name != null and name !=''">
             <bind name="bindName" value="'%'+name+'%'"/>
-            and name like #{bindName}
+            and "name" like #{bindName}
         </if>
         <if test="serialNo != null and serialNo !=''">
             <bind name="bindSerialNo" value="'%'+serialNo+'%'"/>
@@ -37,7 +37,7 @@
         where 1=1
         <if test="name != null">
             <bind name="bindName" value="'%'+name+'%'"/>
-            and name like #{bindName}
+            and "name" like #{bindName}
         </if>
         <if test="serialNo != null and serialNo !=''">
             <bind name="bindSerialNo" value="'%'+serialNo+'%'"/>
@@ -55,7 +55,7 @@
         select COALESCE(sum(dh.change_amount),0) from jsh_depot_head dh
         where 1=1 and dh.pay_type != '预付款'
         <if test="accountId != null">
-            and dh.account_id = #{accountId}
+            and dh.account_id = #{accountId}::bigint
         </if>
         <if test="beginTime != null">
             and dh.oper_time >= #{beginTime}::timestamp
@@ -73,7 +73,7 @@
         select COALESCE(sum(ah.change_amount),0) from jsh_account_head ah
         where 1=1
         <if test="accountId != null">
-            and ah.account_id = #{accountId}
+            and ah.account_id = #{accountId}::bigint
         </if>
         <if test="beginTime != null">
             and ah.bill_time >= #{beginTime}::timestamp
@@ -92,7 +92,7 @@
         left join jsh_account_item ai on ah.id = ai.header_id and COALESCE(ai.delete_flag,'0') !='1'
         where 1=1
         <if test="accountId != null">
-            and ai.account_id = #{accountId}
+            and ai.account_id = #{accountId}::bigint
         </if>
         <if test="beginTime != null">
             and ah.bill_time >= #{beginTime}::timestamp
@@ -169,7 +169,7 @@
         where 1=1
         <if test="name != null">
             <bind name="bindName" value="'%'+name+'%'"/>
-            and a.name like #{bindName}
+            and a."name" like #{bindName}
         </if>
         <if test="serialNo != null and serialNo !=''">
             <bind name="bindSerialNo" value="'%'+serialNo+'%'"/>
@@ -201,12 +201,12 @@
 
     <select id="findAccountInOutList" parameterType="com.jsh.erp.datasource.entities.AccountExample" resultMap="ResultInOutList">
         <!--主表出入库涉及的账户 -->
-        select dh.number,concat(dh.sub_type,dh.type) as newType, 'bill' as fromType, s.supplier,dh.change_amount,
+        select dh.number,concat(dh.sub_type,dh."type") as newType, 'bill' as fromType, s.supplier,dh.change_amount,
                TO_CHAR(dh.oper_time, 'YYYY-MM-DD HH24:MI:SS') as oTime,'' as AList,'' as AMList, dh.remark
         from jsh_depot_head dh left join jsh_supplier s on dh.organ_id = s.id and COALESCE(s.delete_flag,'0') !='1'
         where 1=1
         <if test="accountId != null">
-            and dh.account_id=#{accountId}
+            and dh.account_id=#{accountId}::bigint
         </if>
         <if test="number != null and number !=''">
             <bind name="bindNumber" value="'%'+number+'%'"/>
@@ -225,12 +225,12 @@
         and COALESCE(dh.delete_flag,'0') !='1'
         <!--主表收入和支出涉及的账户 -->
         UNION ALL
-        select ah.bill_no,ah.type as newType, 'financial' as fromType, s.supplier,ah.change_amount,
+        select ah.bill_no,ah."type" as newType, 'financial' as fromType, s.supplier,ah.change_amount,
                TO_CHAR(ah.bill_time, 'YYYY-MM-DD HH24:MI:SS') as oTime,'' as AList,'' as AMList, ah.remark
         from jsh_account_head ah left join jsh_supplier s on ah.organ_id=s.id and COALESCE(s.delete_flag,'0') !='1'
-        where ah.type!='转账'
+        where ah."type"!='转账'
         <if test="accountId != null">
-            and ah.account_id=#{accountId}
+            and ah.account_id=#{accountId}::bigint
         </if>
         <if test="number != null and number !=''">
             <bind name="bindNumber" value="'%'+number+'%'"/>
@@ -249,13 +249,13 @@
         and COALESCE(ah.delete_flag,'0') !='1'
         <!--明细中涉及的账户（收款,付款,收预付款） -->
         UNION ALL
-        select ah.bill_no,ah.type as newType, 'financial' as fromType, s.supplier,ai.each_amount change_amount,
+        select ah.bill_no,ah."type" as newType, 'financial' as fromType, s.supplier,ai.each_amount change_amount,
                TO_CHAR(ah.bill_time, 'YYYY-MM-DD HH24:MI:SS') as oTime,'' as AList,'' as AMList, ah.remark
         from jsh_account_head ah left join jsh_supplier s on ah.organ_id=s.id
         left join jsh_account_item ai on ai.header_id=ah.id and COALESCE(ai.delete_flag,'0') !='1'
-        where ah.type in ('收款','付款','收预付款')
+        where ah."type" in ('收款','付款','收预付款')
         <if test="accountId != null">
-            and ai.account_id=#{accountId}
+            and ai.account_id=#{accountId}::bigint
         </if>
         <if test="number != null and number !=''">
             <bind name="bindNumber" value="'%'+number+'%'"/>
@@ -274,12 +274,12 @@
         and COALESCE(ah.delete_flag,'0') !='1'
         <!--主表中转出的账户 -->
         UNION ALL
-        select ah.bill_no,ah.type as newType, 'financial' as fromType, '' as sName,ah.change_amount,
+        select ah.bill_no,ah."type" as newType, 'financial' as fromType, '' as sName,ah.change_amount,
                TO_CHAR(ah.bill_time, 'YYYY-MM-DD HH24:MI:SS') as oTime,'' as AList,'' as AMList, ah.remark
         from jsh_account_head ah
-        where ah.type='转账'
+        where ah."type"='转账'
         <if test="accountId != null">
-            and ah.account_id=#{accountId}
+            and ah.account_id=#{accountId}::bigint
         </if>
         <if test="number != null and number !=''">
             <bind name="bindNumber" value="'%'+number+'%'"/>
@@ -298,12 +298,12 @@
         and COALESCE(ah.delete_flag,'0') !='1'
         <!--明细中被转入的账户 -->
         UNION ALL
-        select ah.bill_no,ah.type as newType, 'financial' as fromType, '' as sName,ai.each_amount change_amount,
+        select ah.bill_no,ah."type" as newType, 'financial' as fromType, '' as sName,ai.each_amount change_amount,
                TO_CHAR(ah.bill_time, 'YYYY-MM-DD HH24:MI:SS') as oTime,'' as AList,'' as AMList, ah.remark
         from jsh_account_head ah left join jsh_account_item ai on ai.header_id=ah.id and COALESCE(ai.delete_flag,'0') !='1'
-        where ah.type='转账'
+        where ah."type"='转账'
         <if test="accountId != null">
-            and ai.account_id=#{accountId}
+            and ai.account_id=#{accountId}::bigint
         </if>
         <if test="number != null and number !=''">
             <bind name="bindNumber" value="'%'+number+'%'"/>
@@ -322,7 +322,7 @@
         and COALESCE(ah.delete_flag,'0') !='1'
         <!--多账户的情况 -->
         UNION ALL
-        select dh.number,concat(dh.sub_type,dh.type) as newType, 'bill' as fromType, s.supplier,dh.change_amount,
+        select dh.number,concat(dh.sub_type,dh."type") as newType, 'bill' as fromType, s.supplier,dh.change_amount,
                TO_CHAR(dh.oper_time, 'YYYY-MM-DD HH24:MI:SS') as oTime,
         dh.account_id_list as AList,dh.account_money_list as AMList, dh.remark
         from jsh_depot_head dh left join jsh_supplier s on dh.organ_id = s.id and COALESCE(s.delete_flag,'0') !='1'
@@ -360,7 +360,7 @@
             from jsh_depot_head dh left join jsh_supplier s on dh.organ_id = s.id and COALESCE(s.delete_flag,'0') !='1'
             where 1=1
             <if test="accountId != null">
-                and dh.account_id=#{accountId}
+                and dh.account_id=#{accountId}::bigint
             </if>
             <if test="number != null and number !=''">
                 <bind name="bindNumber" value="'%'+number+'%'"/>
@@ -381,9 +381,9 @@
             UNION ALL
             select count(1) a
             from jsh_account_head ah left join jsh_supplier s on ah.organ_id=s.id and COALESCE(s.delete_flag,'0') !='1'
-            where ah.type!='转账'
+            where ah."type"!='转账'
             <if test="accountId != null">
-                and ah.account_id=#{accountId}
+                and ah.account_id=#{accountId}::bigint
             </if>
             <if test="number != null and number !=''">
                 <bind name="bindNumber" value="'%'+number+'%'"/>
@@ -407,7 +407,7 @@
             left join jsh_account_item ai on ai.header_id=ah.Id and COALESCE(ai.delete_flag,'0') !='1'
             where ah.Type in ('收款','付款','收预付款')
             <if test="accountId != null">
-                and ai.account_id=#{accountId}
+                and ai.account_id=#{accountId}::bigint
             </if>
             <if test="number != null and number !=''">
                 <bind name="bindNumber" value="'%'+number+'%'"/>
@@ -428,9 +428,9 @@
             UNION ALL
             select count(1) a
             from jsh_account_head ah
-            where ah.type='转账'
+            where ah."type"='转账'
             <if test="accountId != null">
-                and ah.account_id=#{accountId}
+                and ah.account_id=#{accountId}::bigint
             </if>
             <if test="number != null and number !=''">
                 <bind name="bindNumber" value="'%'+number+'%'"/>
@@ -451,9 +451,9 @@
             UNION ALL
             select count(1) a
             from jsh_account_head ah left join jsh_account_item ai on ai.header_id=ah.id and COALESCE(ai.delete_flag,'0') !='1'
-            where ah.type='转账'
+            where ah."type"='转账'
             <if test="accountId != null">
-                and ai.account_id=#{accountId}
+                and ai.account_id=#{accountId}::bigint
             </if>
             <if test="number != null and number !=''">
                 <bind name="bindNumber" value="'%'+number+'%'"/>

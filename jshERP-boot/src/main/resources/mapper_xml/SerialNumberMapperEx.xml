@@ -163,7 +163,7 @@
         FROM jsh_serial_number ser
         left join jsh_material m on m.id=ser.material_id and COALESCE(m.delete_flag, '0') != '1'
         left join jsh_material_extend me on me.material_id=m.id and COALESCE(me.delete_flag,'0') !='1'
-        where 1=1 and me.default_flag=1
+        where 1=1 and me.default_flag='1'
         <if test="name != null">
             <bind name="bindName" value="'%'+name+'%'"/>
             and ser.serial_number like #{bindName}
@@ -199,7 +199,7 @@
         FROM jsh_serial_number ser
         left join jsh_material m on m.id=ser.material_id and COALESCE(m.delete_flag, '0') != '1'
         left join jsh_material_extend me on me.material_id=m.id and COALESCE(me.delete_flag,'0') !='1'
-        where 1=1 and me.default_flag=1
+        where 1=1 and me.default_flag='1'
         <if test="name != null">
             <bind name="bindName" value="'%'+name+'%'"/>
             and ser.serial_number like #{bindName}
