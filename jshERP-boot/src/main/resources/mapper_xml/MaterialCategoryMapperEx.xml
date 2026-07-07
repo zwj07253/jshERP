@@ -14,9 +14,6 @@
             and parent_id = #{parentId}
         </if>
         and Id !=1
-        <if test="offset != null and rows != null">
-            LIMIT #{rows} OFFSET #{offset}
-        </if>
     </select>
     <select id="countsByMaterialCategory" resultType="java.lang.Long">
         SELECT

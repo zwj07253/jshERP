@@ -148,6 +148,9 @@ public class Tools {
 
     public static String parseDayToTime(String day, String timeStr) {
         if(StringUtil.isNotEmpty(day)){
+            if(day.length() > 10) {
+                return day;
+            }
             return day + timeStr;
         } else {
             return null;

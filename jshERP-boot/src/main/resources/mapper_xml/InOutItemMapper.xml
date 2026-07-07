@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.jsh.erp.datasource.mappers.InOutItemMapper">
   <resultMap id="BaseResultMap" type="com.jsh.erp.datasource.entities.InOutItem">
@@ -6,7 +6,7 @@
     <result column="name" jdbcType="VARCHAR" property="name" />
     <result column="type" jdbcType="VARCHAR" property="type" />
     <result column="remark" jdbcType="VARCHAR" property="remark" />
-    <result column="enabled" jdbcType="BIT" property="enabled" />
+    <result column="enabled" jdbcType="BOOLEAN" property="enabled" />
     <result column="sort" jdbcType="VARCHAR" property="sort" />
     <result column="tenant_id" jdbcType="BIGINT" property="tenantId" />
     <result column="delete_flag" jdbcType="VARCHAR" property="deleteFlag" />
@@ -107,7 +107,7 @@
       remark, enabled, sort, 
       tenant_id, delete_flag)
     values (#{id,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR}, #{type,jdbcType=VARCHAR}, 
-      #{remark,jdbcType=VARCHAR}, #{enabled,jdbcType=BIT}, #{sort,jdbcType=VARCHAR}, 
+      #{remark,jdbcType=VARCHAR}, #{enabled,jdbcType=BOOLEAN}, #{sort,jdbcType=VARCHAR}, 
       #{tenantId,jdbcType=BIGINT}, #{deleteFlag,jdbcType=VARCHAR})
   </insert>
   <insert id="insertSelective" parameterType="com.jsh.erp.datasource.entities.InOutItem">
@@ -152,7 +152,7 @@
         #{remark,jdbcType=VARCHAR},
       </if>
       <if test="enabled != null">
-        #{enabled,jdbcType=BIT},
+        #{enabled,jdbcType=BOOLEAN},
       </if>
       <if test="sort != null">
         #{sort,jdbcType=VARCHAR},
@@ -187,7 +187,7 @@
         remark = #{record.remark,jdbcType=VARCHAR},
       </if>
       <if test="record.enabled != null">
-        enabled = #{record.enabled,jdbcType=BIT},
+        enabled = #{record.enabled,jdbcType=BOOLEAN},
       </if>
       <if test="record.sort != null">
         sort = #{record.sort,jdbcType=VARCHAR},
@@ -209,7 +209,7 @@
       "name" = #{record.name,jdbcType=VARCHAR},
       type = #{record.type,jdbcType=VARCHAR},
       remark = #{record.remark,jdbcType=VARCHAR},
-      enabled = #{record.enabled,jdbcType=BIT},
+      enabled = #{record.enabled,jdbcType=BOOLEAN},
       sort = #{record.sort,jdbcType=VARCHAR},
       tenant_id = #{record.tenantId,jdbcType=BIGINT},
       delete_flag = #{record.deleteFlag,jdbcType=VARCHAR}
@@ -230,7 +230,7 @@
         remark = #{remark,jdbcType=VARCHAR},
       </if>
       <if test="enabled != null">
-        enabled = #{enabled,jdbcType=BIT},
+        enabled = #{enabled,jdbcType=BOOLEAN},
       </if>
       <if test="sort != null">
         sort = #{sort,jdbcType=VARCHAR},
@@ -249,7 +249,7 @@
     set name = #{name,jdbcType=VARCHAR},
       type = #{type,jdbcType=VARCHAR},
       remark = #{remark,jdbcType=VARCHAR},
-      enabled = #{enabled,jdbcType=BIT},
+      enabled = #{enabled,jdbcType=BOOLEAN},
       sort = #{sort,jdbcType=VARCHAR},
       tenant_id = #{tenantId,jdbcType=BIGINT},
       delete_flag = #{deleteFlag,jdbcType=VARCHAR}

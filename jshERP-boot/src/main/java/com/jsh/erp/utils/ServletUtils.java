@@ -12,7 +12,7 @@ import java.io.IOException;
 /**
  * 客户端工具类
  * 
- * @author ji-sheng-hua
+ * @author YUEWEI
  */
 public class ServletUtils
 {

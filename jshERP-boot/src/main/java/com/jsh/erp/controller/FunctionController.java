@@ -29,7 +29,7 @@ import static com.jsh.erp.utils.ResponseJsonUtil.returnJson;
 import static com.jsh.erp.utils.ResponseJsonUtil.returnStr;
 
 /**
- * @author ji-sheng-hua  jshERP
+ * @author YUEWEI  jshERP
  */
 @RestController
 @RequestMapping(value = "/function")

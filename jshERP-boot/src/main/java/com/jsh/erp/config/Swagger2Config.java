@@ -19,8 +19,8 @@ public class Swagger2Config {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("管伊佳ERP Restful Api")
-                        .description("管伊佳ERP接口描述")
+                        .title("YUEWEIERP Restful Api")
+                        .description("YUEWEIERP接口描述")
                         .version("3.0")
                         .contact(new Contact().name("jishenghua")));
     }

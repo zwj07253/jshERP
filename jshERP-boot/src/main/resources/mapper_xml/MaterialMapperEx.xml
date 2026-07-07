@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.jsh.erp.datasource.mappers.MaterialMapperEx">
     <resultMap extends="com.jsh.erp.datasource.mappers.MaterialMapper.BaseResultMap" id="ResultMapList" type="com.jsh.erp.datasource.entities.MaterialVo4Unit">
@@ -247,7 +247,7 @@
                 #{weight,jdbcType=DECIMAL},
             </if>
             <if test="enabled != null">
-                #{enabled,jdbcType=BIT},
+                #{enabled,jdbcType=BOOLEAN},
             </if>
             <if test="otherField1 != null">
                 #{otherField1,jdbcType=VARCHAR},
@@ -481,7 +481,7 @@
 
     <select id="getOtherMaterialList" resultType="com.jsh.erp.datasource.entities.MaterialExtend">
         select me.material_id, me.bar_code, me.commodity_unit from jsh_material_extend me
-        where me.default_flag=0 and (me.sku='' or me.sku is null)
+        where me.default_flag='0' and (me.sku='' or me.sku is null)
         and COALESCE(me.delete_Flag,'0') !='1'
         group by me.material_id, me.bar_code, me.commodity_unit
     </select>

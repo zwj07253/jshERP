@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.jsh.erp.datasource.mappers.LogMapper">
   <resultMap id="BaseResultMap" type="com.jsh.erp.datasource.entities.Log">
@@ -7,7 +7,7 @@
     <result column="operation" jdbcType="VARCHAR" property="operation" />
     <result column="client_ip" jdbcType="VARCHAR" property="clientIp" />
     <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
-    <result column="status" jdbcType="TINYINT" property="status" />
+    <result column="status" jdbcType="SMALLINT" property="status" />
     <result column="content" jdbcType="VARCHAR" property="content" />
     <result column="tenant_id" jdbcType="BIGINT" property="tenantId" />
   </resultMap>
@@ -107,7 +107,7 @@
       client_ip, create_time, status, 
       content, tenant_id)
     values (#{id,jdbcType=BIGINT}, #{userId,jdbcType=BIGINT}, #{operation,jdbcType=VARCHAR}, 
-      #{clientIp,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP}, #{status,jdbcType=TINYINT}, 
+      #{clientIp,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP}, #{status,jdbcType=SMALLINT}, 
       #{content,jdbcType=VARCHAR}, #{tenantId,jdbcType=BIGINT})
   </insert>
   <insert id="insertSelective" parameterType="com.jsh.erp.datasource.entities.Log">
@@ -155,7 +155,7 @@
         #{createTime,jdbcType=TIMESTAMP},
       </if>
       <if test="status != null">
-        #{status,jdbcType=TINYINT},
+        #{status,jdbcType=SMALLINT},
       </if>
       <if test="content != null">
         #{content,jdbcType=VARCHAR},
@@ -190,7 +190,7 @@
         create_time = #{record.createTime,jdbcType=TIMESTAMP},
       </if>
       <if test="record.status != null">
-        status = #{record.status,jdbcType=TINYINT},
+        status = #{record.status,jdbcType=SMALLINT},
       </if>
       <if test="record.content != null">
         content = #{record.content,jdbcType=VARCHAR},
@@ -210,7 +210,7 @@
       operation = #{record.operation,jdbcType=VARCHAR},
       client_ip = #{record.clientIp,jdbcType=VARCHAR},
       create_time = #{record.createTime,jdbcType=TIMESTAMP},
-      status = #{record.status,jdbcType=TINYINT},
+      status = #{record.status,jdbcType=SMALLINT},
       content = #{record.content,jdbcType=VARCHAR},
       tenant_id = #{record.tenantId,jdbcType=BIGINT}
     <if test="_parameter != null">
@@ -233,7 +233,7 @@
         create_time = #{createTime,jdbcType=TIMESTAMP},
       </if>
       <if test="status != null">
-        status = #{status,jdbcType=TINYINT},
+        status = #{status,jdbcType=SMALLINT},
       </if>
       <if test="content != null">
         content = #{content,jdbcType=VARCHAR},
@@ -250,7 +250,7 @@
       operation = #{operation,jdbcType=VARCHAR},
       client_ip = #{clientIp,jdbcType=VARCHAR},
       create_time = #{createTime,jdbcType=TIMESTAMP},
-      status = #{status,jdbcType=TINYINT},
+      status = #{status,jdbcType=SMALLINT},
       content = #{content,jdbcType=VARCHAR},
       tenant_id = #{tenantId,jdbcType=BIGINT}
     where id = #{id,jdbcType=BIGINT}

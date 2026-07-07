@@ -8,7 +8,7 @@ import java.util.Objects;
 /**
  * 操作消息提醒
  *
- * @author ji-sheng-hua
+ * @author YUEWEI
  */
 public class AjaxResult extends HashMap<String, Object>
 {

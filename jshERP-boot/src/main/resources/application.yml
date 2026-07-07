@@ -10,6 +10,8 @@ server:
   tomcat:
     # 文件上传临时路径
     basedir: /opt/tmp/tomcat
+    # 允许 URL 中包含 [] {} | 等特殊字符（前端传参需要）
+    relaxed-query-chars: "|,{,},[,]"
 
 spring:
   main:
@@ -58,3 +60,10 @@ file:
   path: /opt/jshERP/upload
   # 文件导出缓存
   exportTmp: /opt/jshERP/export
+
+# PageHelper 分页插件配置
+pagehelper:
+  helperDialect: postgresql
+  reasonable: true
+  supportMethodsArguments: true
+  params: count=countSql

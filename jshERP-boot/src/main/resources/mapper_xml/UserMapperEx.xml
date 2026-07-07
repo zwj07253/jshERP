@@ -13,11 +13,11 @@
     <select id="selectByConditionUser" parameterType="com.jsh.erp.datasource.entities.UserExample" resultMap="ResultMapEx">
         select tb.*,
         (select r.id from jsh_user_business ub
-        left join jsh_role r on ub.value=concat("[",r.id,"]") and COALESCE(r.delete_flag,'0') !='1'
-        where ub.type='UserRole' and ub.key_id=tb.id LIMIT 1) roleId,
+        left join jsh_role r on ub.value=concat('[',r.id,']') and COALESCE(r.delete_flag,'0') !='1'
+        where ub.type='UserRole' and ub.key_id=cast(tb.id as varchar) LIMIT 1) roleId,
         (select r."name" from jsh_user_business ub
-        left join jsh_role r on ub.value=concat("[",r.id,"]") and COALESCE(r.delete_flag,'0') !='1'
-        where ub.type='UserRole' and ub.key_id=tb.id LIMIT 1) roleName
+        left join jsh_role r on ub.value=concat('[',r.id,']') and COALESCE(r.delete_flag,'0') !='1'
+        where ub.type='UserRole' and ub.key_id=cast(tb.id as varchar) LIMIT 1) roleName
         from (
         select u.id, u.username, u.login_name, u.position, u.leader_flag, u.email, u.phonenum,
         u.description, u.remark,u.isystem,org.id as orgaId,u.tenant_id,u.status,org.org_abr,
@@ -155,7 +155,7 @@
     </select>
 
     <update id="updateUserWithWeixinOpenId">
-        update jsh_user u set u.weixin_open_id = #{weixinOpenId}
+        update jsh_user u set weixin_open_id = #{weixinOpenId}
         where u.login_name = #{loginName} and u.password = #{password}
         and u.status=0
         and COALESCE(u.delete_flag,'0') !='1'

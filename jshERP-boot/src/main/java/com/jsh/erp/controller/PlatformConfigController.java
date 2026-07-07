@@ -26,7 +26,7 @@ import static com.jsh.erp.utils.ResponseJsonUtil.returnJson;
 import static com.jsh.erp.utils.ResponseJsonUtil.returnStr;
 
 /**
- * @author ji|sheng|hua 管伊佳erp QQ7827-18920
+ * @author ji|sheng|hua erp QQ7827-18920
  */
 @RestController
 @RequestMapping(value = "/platformConfig")

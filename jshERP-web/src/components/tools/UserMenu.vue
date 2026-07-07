@@ -3,7 +3,7 @@
     <span class="action" v-if="showAd">
       <a v-if="theme==='light'" class="ad_title" target="_blank" :href="payFeeUrl">
         <a-icon type="cloud" theme="filled" style="color: yellow; font-size: 16px; line-height: 16px; padding-right: 5px" />
-        <span>管伊佳ERP网络版198元1年</span>
+        <span>YUEWEIERP网络版198元1年</span>
       </a>
     </span>
     <!-- update_begin author:zhaoxin date:20191129 for: 做头部菜单栏导航 -->
@@ -32,20 +32,12 @@
     <!-- update-end author:sunjianlei date:20200219 for: 菜单搜索改为动态组件，在手机端呈现出弹出框 -->
     <!-- update-end author:sunjianlei date:20191220 for: 解决全局样式冲突的问题 -->
     <!-- update_end  author:zhaoxin date:20191129 for: 做头部菜单栏导航 -->
-    <span class="action">
-      <a-tooltip>
-        <template slot="title">官方网站</template>
-        <a target="_blank" :href="systemUrl">
-          <a-icon type="bank" style="font-size: 16px;" />
-        </a>
-      </a-tooltip>
-    </span>
     <header-notice class="action"/>
-    <a-dropdown>
-      <span v-if="isDesktop()" class="action ant-dropdown-link user-dropdown-menu">
+    <a-dropdown v-if="isDesktop()">
+      <div class="action ant-dropdown-link user-dropdown-menu">
         <a-icon type="down-circle"/>
         <span style="margin-left:4px">欢迎您，{{ nickname() }}</span>
-      </span>
+      </div>
       <a-menu slot="overlay" class="user-dropdown-menu-wrapper">
         <a-menu-item key="3"  @click="systemSetting">
            <a-icon type="tool"/>
@@ -88,7 +80,6 @@
         searchMenuOptions:[],
         searchMenuComp: 'span',
         searchMenuVisible: false,
-        systemUrl: window.SYS_URL,
         showAd: false,
         payFeeUrl: ''
         // update-begin author:sunjianlei date:20200219 for: 头部菜单搜索规范命名 --------------
@@ -187,8 +178,12 @@
         }
       },
       filterOption(input, option) {
-        if(option && option.componentOptions && option.componentOptions.children && option.componentOptions.children[0]) {
-          return option.componentOptions.children[0].text.toLowerCase().indexOf(input.toLowerCase()) >= 0
+        try {
+          if(option && option.componentOptions && option.componentOptions.children && option.componentOptions.children[0]) {
+            return option.componentOptions.children[0].text.toLowerCase().indexOf(input.toLowerCase()) >= 0
+          }
+        } catch(e) {
+          return false
         }
       },
       // update_begin author:sunjianlei date:20191230 for: 解决外部链接打开失败的问题

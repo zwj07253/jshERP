@@ -6,7 +6,7 @@ import com.jsh.erp.utils.ServletUtils;
 /**
  * 表格数据处理
  * 
- * @author ji-sheng-hua
+ * @author YUEWEI
  */
 public class TableSupport
 {

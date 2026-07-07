@@ -909,7 +909,7 @@ COMMENT ON COLUMN jsh_platform_config.platform_key_info IS '关键词名称';
 COMMENT ON COLUMN jsh_platform_config.platform_value IS '值';
 
 INSERT INTO jsh_platform_config (id, platform_key, platform_key_info, platform_value) VALUES
-(1, 'platform_name', '平台名称', '管伊佳ERP'),
+(1, 'platform_name', '平台名称', 'YUEWEIERP'),
 (2, 'activation_code', '激活码', ''),
 (3, 'platform_url', '官方网站', 'http://www.gyjerp.com/'),
 (4, 'bill_print_flag', '三联打印启用标记', '0'),

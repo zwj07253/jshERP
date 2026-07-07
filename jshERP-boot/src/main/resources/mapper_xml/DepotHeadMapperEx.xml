@@ -432,7 +432,7 @@
 
     <select id="findInOutMaterialCount" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultInOutMaterialCount">
         select di.material_id materialId, me.bar_code barCode, m."name" mName,m.model,m.standard,m.color,m.brand,m.mfrs,
-               mc."name" categoryName,concat_ws('', m.unit, u.basic_unit) materialUnit,
+               mc."name" categoryName,(m.unit || u.basic_unit) materialUnit,
         sum(di.basic_number) numSum,
         sum(di.all_price) priceSum
         from jsh_depot_head dh
@@ -501,7 +501,7 @@
         </if>
         and COALESCE(dh.delete_flag,'0') !='1'
         group by di.material_id, me.bar_code, m."name",m.model,m.standard,m.color,m.brand,m.mfrs,
-        mc."name", m.unit, u.basic_unit
+        mc."name", (m.unit || u.basic_unit)
         <if test="column == 'createTime'">
             order by materialId desc
         </if>
@@ -1300,7 +1300,7 @@
     </select>
 
     <update id="setAccountIdToNull">
-        update jsh_depot_head dh set dh.account_id = null
+        update jsh_depot_head dh set account_id = null
         where dh.id=#{id}
         and COALESCE(dh.delete_flag,'0') !='1'
     </update>

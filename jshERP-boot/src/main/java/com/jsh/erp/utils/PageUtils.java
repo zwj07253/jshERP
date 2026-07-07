@@ -7,7 +7,7 @@ import com.jsh.erp.base.TableSupport;
 /**
  * 分页工具类
  * 
- * @author ji-sheng-hua
+ * @author YUEWEI
  */
 public class PageUtils extends PageHelper
 {

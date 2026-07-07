@@ -27,7 +27,7 @@ import static com.jsh.erp.utils.ResponseJsonUtil.returnJson;
 import static com.jsh.erp.utils.ResponseJsonUtil.returnStr;
 
 /**
- * @author ji|sheng|hua 管伊佳erp
+ * @author ji|sheng|hua erp
  */
 @RestController
 @RequestMapping(value = "/person")

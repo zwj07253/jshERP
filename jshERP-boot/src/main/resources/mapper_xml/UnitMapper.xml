@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.jsh.erp.datasource.mappers.UnitMapper">
   <resultMap id="BaseResultMap" type="com.jsh.erp.datasource.entities.Unit">
@@ -11,7 +11,7 @@
     <result column="ratio" jdbcType="DECIMAL" property="ratio" />
     <result column="ratio_two" jdbcType="DECIMAL" property="ratioTwo" />
     <result column="ratio_three" jdbcType="DECIMAL" property="ratioThree" />
-    <result column="enabled" jdbcType="BIT" property="enabled" />
+    <result column="enabled" jdbcType="BOOLEAN" property="enabled" />
     <result column="tenant_id" jdbcType="BIGINT" property="tenantId" />
     <result column="delete_flag" jdbcType="VARCHAR" property="deleteFlag" />
   </resultMap>
@@ -116,7 +116,7 @@
     values (#{id,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR}, #{basicUnit,jdbcType=VARCHAR}, 
       #{otherUnit,jdbcType=VARCHAR}, #{otherUnitTwo,jdbcType=VARCHAR}, #{otherUnitThree,jdbcType=VARCHAR}, 
       #{ratio,jdbcType=DECIMAL}, #{ratioTwo,jdbcType=DECIMAL}, #{ratioThree,jdbcType=DECIMAL}, 
-      #{enabled,jdbcType=BIT}, #{tenantId,jdbcType=BIGINT}, #{deleteFlag,jdbcType=VARCHAR}
+      #{enabled,jdbcType=BOOLEAN}, #{tenantId,jdbcType=BIGINT}, #{deleteFlag,jdbcType=VARCHAR}
       )
   </insert>
   <insert id="insertSelective" parameterType="com.jsh.erp.datasource.entities.Unit">
@@ -188,7 +188,7 @@
         #{ratioThree,jdbcType=DECIMAL},
       </if>
       <if test="enabled != null">
-        #{enabled,jdbcType=BIT},
+        #{enabled,jdbcType=BOOLEAN},
       </if>
       <if test="tenantId != null">
         #{tenantId,jdbcType=BIGINT},
@@ -235,7 +235,7 @@
         ratio_three = #{record.ratioThree,jdbcType=DECIMAL},
       </if>
       <if test="record.enabled != null">
-        enabled = #{record.enabled,jdbcType=BIT},
+        enabled = #{record.enabled,jdbcType=BOOLEAN},
       </if>
       <if test="record.tenantId != null">
         tenant_id = #{record.tenantId,jdbcType=BIGINT},
@@ -259,7 +259,7 @@
       ratio = #{record.ratio,jdbcType=DECIMAL},
       ratio_two = #{record.ratioTwo,jdbcType=DECIMAL},
       ratio_three = #{record.ratioThree,jdbcType=DECIMAL},
-      enabled = #{record.enabled,jdbcType=BIT},
+      enabled = #{record.enabled,jdbcType=BOOLEAN},
       tenant_id = #{record.tenantId,jdbcType=BIGINT},
       delete_flag = #{record.deleteFlag,jdbcType=VARCHAR}
     <if test="_parameter != null">
@@ -294,7 +294,7 @@
         ratio_three = #{ratioThree,jdbcType=DECIMAL},
       </if>
       <if test="enabled != null">
-        enabled = #{enabled,jdbcType=BIT},
+        enabled = #{enabled,jdbcType=BOOLEAN},
       </if>
       <if test="tenantId != null">
         tenant_id = #{tenantId,jdbcType=BIGINT},
@@ -315,7 +315,7 @@
       ratio = #{ratio,jdbcType=DECIMAL},
       ratio_two = #{ratioTwo,jdbcType=DECIMAL},
       ratio_three = #{ratioThree,jdbcType=DECIMAL},
-      enabled = #{enabled,jdbcType=BIT},
+      enabled = #{enabled,jdbcType=BOOLEAN},
       tenant_id = #{tenantId,jdbcType=BIGINT},
       delete_flag = #{deleteFlag,jdbcType=VARCHAR}
     where id = #{id,jdbcType=BIGINT}

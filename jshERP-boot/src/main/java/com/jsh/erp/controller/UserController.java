@@ -34,7 +34,7 @@ import static com.jsh.erp.utils.ResponseJsonUtil.returnJson;
 import static com.jsh.erp.utils.ResponseJsonUtil.returnStr;
 
 /**
- * @author ji_sheng_hua 管伊佳erp
+ * @author ji_sheng_hua erp
  */
 @RestController
 @RequestMapping(value = "/user")

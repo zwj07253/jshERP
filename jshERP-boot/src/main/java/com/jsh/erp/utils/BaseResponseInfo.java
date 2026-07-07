@@ -5,7 +5,7 @@ public class BaseResponseInfo {
 	public Object data;
 	
 	public BaseResponseInfo() {
-		code = 400;
+		code = 200;
 		data = null;
 	}
 }

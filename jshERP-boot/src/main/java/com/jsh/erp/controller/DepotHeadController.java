@@ -38,7 +38,7 @@ import static com.jsh.erp.utils.ResponseJsonUtil.returnJson;
 import static com.jsh.erp.utils.ResponseJsonUtil.returnStr;
 
 /**
- * @author ji-sheng-hua 752*718*920
+ * @author YUEWEI 752*718*920
  */
 @RestController
 @RequestMapping(value = "/depotHead")

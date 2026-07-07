@@ -5,7 +5,7 @@ import com.jsh.erp.exception.UtilException;
 /**
  * sql操作工具类
  * 
- * @author ji-sheng-hua
+ * @author YUEWEI
  */
 public class SqlUtil
 {

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.jsh.erp.datasource.mappers.SupplierMapper">
   <resultMap id="BaseResultMap" type="com.jsh.erp.datasource.entities.Supplier">
@@ -8,9 +8,9 @@
     <result column="phone_num" jdbcType="VARCHAR" property="phoneNum" />
     <result column="email" jdbcType="VARCHAR" property="email" />
     <result column="description" jdbcType="VARCHAR" property="description" />
-    <result column="isystem" jdbcType="TINYINT" property="isystem" />
+    <result column="isystem" jdbcType="SMALLINT" property="isystem" />
     <result column="type" jdbcType="VARCHAR" property="type" />
-    <result column="enabled" jdbcType="BIT" property="enabled" />
+    <result column="enabled" jdbcType="BOOLEAN" property="enabled" />
     <result column="advance_in" jdbcType="DECIMAL" property="advanceIn" />
     <result column="begin_need_get" jdbcType="DECIMAL" property="beginNeedGet" />
     <result column="begin_need_pay" jdbcType="DECIMAL" property="beginNeedPay" />
@@ -133,7 +133,7 @@
       delete_flag)
     values (#{id,jdbcType=BIGINT}, #{supplier,jdbcType=VARCHAR}, #{contacts,jdbcType=VARCHAR}, 
       #{phoneNum,jdbcType=VARCHAR}, #{email,jdbcType=VARCHAR}, #{description,jdbcType=VARCHAR}, 
-      #{isystem,jdbcType=TINYINT}, #{type,jdbcType=VARCHAR}, #{enabled,jdbcType=BIT}, 
+      #{isystem,jdbcType=SMALLINT}, #{type,jdbcType=VARCHAR}, #{enabled,jdbcType=BOOLEAN}, 
       #{advanceIn,jdbcType=DECIMAL}, #{beginNeedGet,jdbcType=DECIMAL}, #{beginNeedPay,jdbcType=DECIMAL}, 
       #{allNeedGet,jdbcType=DECIMAL}, #{allNeedPay,jdbcType=DECIMAL}, #{fax,jdbcType=VARCHAR}, 
       #{telephone,jdbcType=VARCHAR}, #{address,jdbcType=VARCHAR}, #{taxNum,jdbcType=VARCHAR}, 
@@ -240,13 +240,13 @@
         #{description,jdbcType=VARCHAR},
       </if>
       <if test="isystem != null">
-        #{isystem,jdbcType=TINYINT},
+        #{isystem,jdbcType=SMALLINT},
       </if>
       <if test="type != null">
         #{type,jdbcType=VARCHAR},
       </if>
       <if test="enabled != null">
-        #{enabled,jdbcType=BIT},
+        #{enabled,jdbcType=BOOLEAN},
       </if>
       <if test="advanceIn != null">
         #{advanceIn,jdbcType=DECIMAL},
@@ -326,13 +326,13 @@
         description = #{record.description,jdbcType=VARCHAR},
       </if>
       <if test="record.isystem != null">
-        isystem = #{record.isystem,jdbcType=TINYINT},
+        isystem = #{record.isystem,jdbcType=SMALLINT},
       </if>
       <if test="record.type != null">
         type = #{record.type,jdbcType=VARCHAR},
       </if>
       <if test="record.enabled != null">
-        enabled = #{record.enabled,jdbcType=BIT},
+        enabled = #{record.enabled,jdbcType=BOOLEAN},
       </if>
       <if test="record.advanceIn != null">
         advance_in = #{record.advanceIn,jdbcType=DECIMAL},
@@ -395,9 +395,9 @@
       phone_num = #{record.phoneNum,jdbcType=VARCHAR},
       email = #{record.email,jdbcType=VARCHAR},
       description = #{record.description,jdbcType=VARCHAR},
-      isystem = #{record.isystem,jdbcType=TINYINT},
+      isystem = #{record.isystem,jdbcType=SMALLINT},
       type = #{record.type,jdbcType=VARCHAR},
-      enabled = #{record.enabled,jdbcType=BIT},
+      enabled = #{record.enabled,jdbcType=BOOLEAN},
       advance_in = #{record.advanceIn,jdbcType=DECIMAL},
       begin_need_get = #{record.beginNeedGet,jdbcType=DECIMAL},
       begin_need_pay = #{record.beginNeedPay,jdbcType=DECIMAL},
@@ -437,13 +437,13 @@
         description = #{description,jdbcType=VARCHAR},
       </if>
       <if test="isystem != null">
-        isystem = #{isystem,jdbcType=TINYINT},
+        isystem = #{isystem,jdbcType=SMALLINT},
       </if>
       <if test="type != null">
         type = #{type,jdbcType=VARCHAR},
       </if>
       <if test="enabled != null">
-        enabled = #{enabled,jdbcType=BIT},
+        enabled = #{enabled,jdbcType=BOOLEAN},
       </if>
       <if test="advanceIn != null">
         advance_in = #{advanceIn,jdbcType=DECIMAL},
@@ -503,9 +503,9 @@
       phone_num = #{phoneNum,jdbcType=VARCHAR},
       email = #{email,jdbcType=VARCHAR},
       description = #{description,jdbcType=VARCHAR},
-      isystem = #{isystem,jdbcType=TINYINT},
+      isystem = #{isystem,jdbcType=SMALLINT},
       type = #{type,jdbcType=VARCHAR},
-      enabled = #{enabled,jdbcType=BIT},
+      enabled = #{enabled,jdbcType=BOOLEAN},
       advance_in = #{advanceIn,jdbcType=DECIMAL},
       begin_need_get = #{beginNeedGet,jdbcType=DECIMAL},
       begin_need_pay = #{beginNeedPay,jdbcType=DECIMAL},

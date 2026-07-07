@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.jsh.erp.datasource.mappers.MaterialMapper">
   <resultMap id="BaseResultMap" type="com.jsh.erp.datasource.entities.Material">
@@ -17,7 +17,7 @@
     <result column="unit_id" jdbcType="BIGINT" property="unitId" />
     <result column="expiry_num" jdbcType="INTEGER" property="expiryNum" />
     <result column="weight" jdbcType="DECIMAL" property="weight" />
-    <result column="enabled" jdbcType="BIT" property="enabled" />
+    <result column="enabled" jdbcType="BOOLEAN" property="enabled" />
     <result column="other_field1" jdbcType="VARCHAR" property="otherField1" />
     <result column="other_field2" jdbcType="VARCHAR" property="otherField2" />
     <result column="other_field3" jdbcType="VARCHAR" property="otherField3" />
@@ -136,7 +136,7 @@
       #{brand,jdbcType=VARCHAR}, #{mnemonic,jdbcType=VARCHAR}, #{color,jdbcType=VARCHAR}, 
       #{unit,jdbcType=VARCHAR}, #{remark,jdbcType=VARCHAR}, #{imgName,jdbcType=VARCHAR}, 
       #{unitId,jdbcType=BIGINT}, #{expiryNum,jdbcType=INTEGER}, #{weight,jdbcType=DECIMAL}, 
-      #{enabled,jdbcType=BIT}, #{otherField1,jdbcType=VARCHAR}, #{otherField2,jdbcType=VARCHAR}, 
+      #{enabled,jdbcType=BOOLEAN}, #{otherField1,jdbcType=VARCHAR}, #{otherField2,jdbcType=VARCHAR}, 
       #{otherField3,jdbcType=VARCHAR}, #{enableSerialNumber,jdbcType=VARCHAR}, #{enableBatchNumber,jdbcType=VARCHAR}, 
       #{position,jdbcType=VARCHAR}, #{attribute,jdbcType=VARCHAR}, #{tenantId,jdbcType=BIGINT}, 
       #{deleteFlag,jdbcType=VARCHAR})
@@ -267,7 +267,7 @@
         #{weight,jdbcType=DECIMAL},
       </if>
       <if test="enabled != null">
-        #{enabled,jdbcType=BIT},
+        #{enabled,jdbcType=BOOLEAN},
       </if>
       <if test="otherField1 != null">
         #{otherField1,jdbcType=VARCHAR},
@@ -353,7 +353,7 @@
         weight = #{record.weight,jdbcType=DECIMAL},
       </if>
       <if test="record.enabled != null">
-        enabled = #{record.enabled,jdbcType=BIT},
+        enabled = #{record.enabled,jdbcType=BOOLEAN},
       </if>
       <if test="record.otherField1 != null">
         other_field1 = #{record.otherField1,jdbcType=VARCHAR},
@@ -404,7 +404,7 @@
       unit_id = #{record.unitId,jdbcType=BIGINT},
       expiry_num = #{record.expiryNum,jdbcType=INTEGER},
       weight = #{record.weight,jdbcType=DECIMAL},
-      enabled = #{record.enabled,jdbcType=BIT},
+      enabled = #{record.enabled,jdbcType=BOOLEAN},
       other_field1 = #{record.otherField1,jdbcType=VARCHAR},
       other_field2 = #{record.otherField2,jdbcType=VARCHAR},
       other_field3 = #{record.otherField3,jdbcType=VARCHAR},
@@ -464,7 +464,7 @@
         weight = #{weight,jdbcType=DECIMAL},
       </if>
       <if test="enabled != null">
-        enabled = #{enabled,jdbcType=BIT},
+        enabled = #{enabled,jdbcType=BOOLEAN},
       </if>
       <if test="otherField1 != null">
         other_field1 = #{otherField1,jdbcType=VARCHAR},
@@ -512,7 +512,7 @@
       unit_id = #{unitId,jdbcType=BIGINT},
       expiry_num = #{expiryNum,jdbcType=INTEGER},
       weight = #{weight,jdbcType=DECIMAL},
-      enabled = #{enabled,jdbcType=BIT},
+      enabled = #{enabled,jdbcType=BOOLEAN},
       other_field1 = #{otherField1,jdbcType=VARCHAR},
       other_field2 = #{otherField2,jdbcType=VARCHAR},
       other_field3 = #{otherField3,jdbcType=VARCHAR},

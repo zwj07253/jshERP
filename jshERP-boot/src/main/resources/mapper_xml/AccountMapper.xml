@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.jsh.erp.datasource.mappers.AccountMapper">
   <resultMap id="BaseResultMap" type="com.jsh.erp.datasource.entities.Account">
@@ -8,9 +8,9 @@
     <result column="initial_amount" jdbcType="DECIMAL" property="initialAmount" />
     <result column="current_amount" jdbcType="DECIMAL" property="currentAmount" />
     <result column="remark" jdbcType="VARCHAR" property="remark" />
-    <result column="enabled" jdbcType="BIT" property="enabled" />
+    <result column="enabled" jdbcType="BOOLEAN" property="enabled" />
     <result column="sort" jdbcType="VARCHAR" property="sort" />
-    <result column="is_default" jdbcType="BIT" property="isDefault" />
+    <result column="is_default" jdbcType="BOOLEAN" property="isDefault" />
     <result column="tenant_id" jdbcType="BIGINT" property="tenantId" />
     <result column="delete_flag" jdbcType="VARCHAR" property="deleteFlag" />
   </resultMap>
@@ -113,7 +113,7 @@
       delete_flag)
     values (#{id,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR}, #{serialNo,jdbcType=VARCHAR}, 
       #{initialAmount,jdbcType=DECIMAL}, #{currentAmount,jdbcType=DECIMAL}, #{remark,jdbcType=VARCHAR}, 
-      #{enabled,jdbcType=BIT}, #{sort,jdbcType=VARCHAR}, #{isDefault,jdbcType=BIT}, #{tenantId,jdbcType=BIGINT}, 
+      #{enabled,jdbcType=BOOLEAN}, #{sort,jdbcType=VARCHAR}, #{isDefault,jdbcType=BOOLEAN}, #{tenantId,jdbcType=BIGINT}, 
       #{deleteFlag,jdbcType=VARCHAR})
   </insert>
   <insert id="insertSelective" parameterType="com.jsh.erp.datasource.entities.Account">
@@ -173,13 +173,13 @@
         #{remark,jdbcType=VARCHAR},
       </if>
       <if test="enabled != null">
-        #{enabled,jdbcType=BIT},
+        #{enabled,jdbcType=BOOLEAN},
       </if>
       <if test="sort != null">
         #{sort,jdbcType=VARCHAR},
       </if>
       <if test="isDefault != null">
-        #{isDefault,jdbcType=BIT},
+        #{isDefault,jdbcType=BOOLEAN},
       </if>
       <if test="tenantId != null">
         #{tenantId,jdbcType=BIGINT},
@@ -217,13 +217,13 @@
         remark = #{record.remark,jdbcType=VARCHAR},
       </if>
       <if test="record.enabled != null">
-        enabled = #{record.enabled,jdbcType=BIT},
+        enabled = #{record.enabled,jdbcType=BOOLEAN},
       </if>
       <if test="record.sort != null">
         sort = #{record.sort,jdbcType=VARCHAR},
       </if>
       <if test="record.isDefault != null">
-        is_default = #{record.isDefault,jdbcType=BIT},
+        is_default = #{record.isDefault,jdbcType=BOOLEAN},
       </if>
       <if test="record.tenantId != null">
         tenant_id = #{record.tenantId,jdbcType=BIGINT},
@@ -244,9 +244,9 @@
       initial_amount = #{record.initialAmount,jdbcType=DECIMAL},
       current_amount = #{record.currentAmount,jdbcType=DECIMAL},
       remark = #{record.remark,jdbcType=VARCHAR},
-      enabled = #{record.enabled,jdbcType=BIT},
+      enabled = #{record.enabled,jdbcType=BOOLEAN},
       sort = #{record.sort,jdbcType=VARCHAR},
-      is_default = #{record.isDefault,jdbcType=BIT},
+      is_default = #{record.isDefault,jdbcType=BOOLEAN},
       tenant_id = #{record.tenantId,jdbcType=BIGINT},
       delete_flag = #{record.deleteFlag,jdbcType=VARCHAR}
     <if test="_parameter != null">
@@ -272,13 +272,13 @@
         remark = #{remark,jdbcType=VARCHAR},
       </if>
       <if test="enabled != null">
-        enabled = #{enabled,jdbcType=BIT},
+        enabled = #{enabled,jdbcType=BOOLEAN},
       </if>
       <if test="sort != null">
         sort = #{sort,jdbcType=VARCHAR},
       </if>
       <if test="isDefault != null">
-        is_default = #{isDefault,jdbcType=BIT},
+        is_default = #{isDefault,jdbcType=BOOLEAN},
       </if>
       <if test="tenantId != null">
         tenant_id = #{tenantId,jdbcType=BIGINT},
@@ -296,9 +296,9 @@
       initial_amount = #{initialAmount,jdbcType=DECIMAL},
       current_amount = #{currentAmount,jdbcType=DECIMAL},
       remark = #{remark,jdbcType=VARCHAR},
-      enabled = #{enabled,jdbcType=BIT},
+      enabled = #{enabled,jdbcType=BOOLEAN},
       sort = #{sort,jdbcType=VARCHAR},
-      is_default = #{isDefault,jdbcType=BIT},
+      is_default = #{isDefault,jdbcType=BOOLEAN},
       tenant_id = #{tenantId,jdbcType=BIGINT},
       delete_flag = #{deleteFlag,jdbcType=VARCHAR}
     where id = #{id,jdbcType=BIGINT}

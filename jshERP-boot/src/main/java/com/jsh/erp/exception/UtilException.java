@@ -3,7 +3,7 @@ package com.jsh.erp.exception;
 /**
  * 工具类异常
  * 
- * @author ji-sheng-hua
+ * @author YUEWEI
  */
 public class UtilException extends RuntimeException
 {

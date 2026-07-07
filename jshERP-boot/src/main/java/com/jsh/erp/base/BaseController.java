@@ -19,7 +19,7 @@ import java.util.Map;
 /**
  * web层通用数据处理
  * 
- * @author ji-sheng-hua
+ * @author YUEWEI
  */
 public class BaseController
 {

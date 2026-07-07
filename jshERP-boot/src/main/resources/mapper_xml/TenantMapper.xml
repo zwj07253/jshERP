@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.jsh.erp.datasource.mappers.TenantMapper">
   <resultMap id="BaseResultMap" type="com.jsh.erp.datasource.entities.Tenant">
@@ -7,7 +7,7 @@
     <result column="login_name" jdbcType="VARCHAR" property="loginName" />
     <result column="user_num_limit" jdbcType="INTEGER" property="userNumLimit" />
     <result column="type" jdbcType="VARCHAR" property="type" />
-    <result column="enabled" jdbcType="BIT" property="enabled" />
+    <result column="enabled" jdbcType="BOOLEAN" property="enabled" />
     <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
     <result column="expire_time" jdbcType="TIMESTAMP" property="expireTime" />
     <result column="remark" jdbcType="VARCHAR" property="remark" />
@@ -111,7 +111,7 @@
       create_time, expire_time, remark, 
       delete_flag)
     values (#{id,jdbcType=BIGINT}, #{tenantId,jdbcType=BIGINT}, #{loginName,jdbcType=VARCHAR}, 
-      #{userNumLimit,jdbcType=INTEGER}, #{type,jdbcType=VARCHAR}, #{enabled,jdbcType=BIT}, 
+      #{userNumLimit,jdbcType=INTEGER}, #{type,jdbcType=VARCHAR}, #{enabled,jdbcType=BOOLEAN}, 
       #{createTime,jdbcType=TIMESTAMP}, #{expireTime,jdbcType=TIMESTAMP}, #{remark,jdbcType=VARCHAR}, 
       #{deleteFlag,jdbcType=VARCHAR})
   </insert>
@@ -166,7 +166,7 @@
         #{type,jdbcType=VARCHAR},
       </if>
       <if test="enabled != null">
-        #{enabled,jdbcType=BIT},
+        #{enabled,jdbcType=BOOLEAN},
       </if>
       <if test="createTime != null">
         #{createTime,jdbcType=TIMESTAMP},
@@ -207,7 +207,7 @@
         type = #{record.type,jdbcType=VARCHAR},
       </if>
       <if test="record.enabled != null">
-        enabled = #{record.enabled,jdbcType=BIT},
+        enabled = #{record.enabled,jdbcType=BOOLEAN},
       </if>
       <if test="record.createTime != null">
         create_time = #{record.createTime,jdbcType=TIMESTAMP},
@@ -233,7 +233,7 @@
       login_name = #{record.loginName,jdbcType=VARCHAR},
       user_num_limit = #{record.userNumLimit,jdbcType=INTEGER},
       type = #{record.type,jdbcType=VARCHAR},
-      enabled = #{record.enabled,jdbcType=BIT},
+      enabled = #{record.enabled,jdbcType=BOOLEAN},
       create_time = #{record.createTime,jdbcType=TIMESTAMP},
       expire_time = #{record.expireTime,jdbcType=TIMESTAMP},
       remark = #{record.remark,jdbcType=VARCHAR},
@@ -258,7 +258,7 @@
         type = #{type,jdbcType=VARCHAR},
       </if>
       <if test="enabled != null">
-        enabled = #{enabled,jdbcType=BIT},
+        enabled = #{enabled,jdbcType=BOOLEAN},
       </if>
       <if test="createTime != null">
         create_time = #{createTime,jdbcType=TIMESTAMP},
@@ -281,7 +281,7 @@
       login_name = #{loginName,jdbcType=VARCHAR},
       user_num_limit = #{userNumLimit,jdbcType=INTEGER},
       type = #{type,jdbcType=VARCHAR},
-      enabled = #{enabled,jdbcType=BIT},
+      enabled = #{enabled,jdbcType=BOOLEAN},
       create_time = #{createTime,jdbcType=TIMESTAMP},
       expire_time = #{expireTime,jdbcType=TIMESTAMP},
       remark = #{remark,jdbcType=VARCHAR},

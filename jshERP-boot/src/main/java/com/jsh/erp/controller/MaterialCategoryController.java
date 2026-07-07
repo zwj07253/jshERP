@@ -178,7 +178,7 @@ public class MaterialCategoryController extends BaseController {
      */
     @RequestMapping(value = "/getMaterialCategoryTree")
     @Operation(summary = "获取商品类别树数据")
-    public JSONArray getMaterialCategoryTree(@RequestParam("id") Long id) throws Exception{
+    public JSONArray getMaterialCategoryTree(@RequestParam(value = "id", required = false) Long id) throws Exception{
        JSONArray arr=new JSONArray();
        List<TreeNode> materialCategoryTree = materialCategoryService.getMaterialCategoryTree(id);
        if(materialCategoryTree!=null&&materialCategoryTree.size()>0){

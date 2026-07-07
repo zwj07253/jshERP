@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.jsh.erp.datasource.mappers.MaterialPropertyMapper">
   <resultMap id="BaseResultMap" type="com.jsh.erp.datasource.entities.MaterialProperty">
     <id column="id" jdbcType="BIGINT" property="id" />
     <result column="native_name" jdbcType="VARCHAR" property="nativeName" />
-    <result column="enabled" jdbcType="BIT" property="enabled" />
+    <result column="enabled" jdbcType="BOOLEAN" property="enabled" />
     <result column="sort" jdbcType="VARCHAR" property="sort" />
     <result column="another_name" jdbcType="VARCHAR" property="anotherName" />
     <result column="tenant_id" jdbcType="BIGINT" property="tenantId" />
@@ -105,7 +105,7 @@
     insert into jsh_material_property (id, native_name, enabled, 
       sort, another_name, tenant_id, 
       delete_flag)
-    values (#{id,jdbcType=BIGINT}, #{nativeName,jdbcType=VARCHAR}, #{enabled,jdbcType=BIT}, 
+    values (#{id,jdbcType=BIGINT}, #{nativeName,jdbcType=VARCHAR}, #{enabled,jdbcType=BOOLEAN}, 
       #{sort,jdbcType=VARCHAR}, #{anotherName,jdbcType=VARCHAR}, #{tenantId,jdbcType=BIGINT}, 
       #{deleteFlag,jdbcType=VARCHAR})
   </insert>
@@ -142,7 +142,7 @@
         #{nativeName,jdbcType=VARCHAR},
       </if>
       <if test="enabled != null">
-        #{enabled,jdbcType=BIT},
+        #{enabled,jdbcType=BOOLEAN},
       </if>
       <if test="sort != null">
         #{sort,jdbcType=VARCHAR},
@@ -174,7 +174,7 @@
         native_name = #{record.nativeName,jdbcType=VARCHAR},
       </if>
       <if test="record.enabled != null">
-        enabled = #{record.enabled,jdbcType=BIT},
+        enabled = #{record.enabled,jdbcType=BOOLEAN},
       </if>
       <if test="record.sort != null">
         sort = #{record.sort,jdbcType=VARCHAR},
@@ -197,7 +197,7 @@
     update jsh_material_property
     set id = #{record.id,jdbcType=BIGINT},
       native_name = #{record.nativeName,jdbcType=VARCHAR},
-      enabled = #{record.enabled,jdbcType=BIT},
+      enabled = #{record.enabled,jdbcType=BOOLEAN},
       sort = #{record.sort,jdbcType=VARCHAR},
       another_name = #{record.anotherName,jdbcType=VARCHAR},
       tenant_id = #{record.tenantId,jdbcType=BIGINT},
@@ -213,7 +213,7 @@
         native_name = #{nativeName,jdbcType=VARCHAR},
       </if>
       <if test="enabled != null">
-        enabled = #{enabled,jdbcType=BIT},
+        enabled = #{enabled,jdbcType=BOOLEAN},
       </if>
       <if test="sort != null">
         sort = #{sort,jdbcType=VARCHAR},
@@ -233,7 +233,7 @@
   <update id="updateByPrimaryKey" parameterType="com.jsh.erp.datasource.entities.MaterialProperty">
     update jsh_material_property
     set native_name = #{nativeName,jdbcType=VARCHAR},
-      enabled = #{enabled,jdbcType=BIT},
+      enabled = #{enabled,jdbcType=BOOLEAN},
       sort = #{sort,jdbcType=VARCHAR},
       another_name = #{anotherName,jdbcType=VARCHAR},
       tenant_id = #{tenantId,jdbcType=BIGINT},

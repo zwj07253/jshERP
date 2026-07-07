@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.jsh.erp.datasource.mappers.FunctionMapper">
   <resultMap id="BaseResultMap" type="com.jsh.erp.datasource.entities.Function">
@@ -8,9 +8,9 @@
     <result column="parent_number" jdbcType="VARCHAR" property="parentNumber" />
     <result column="url" jdbcType="VARCHAR" property="url" />
     <result column="component" jdbcType="VARCHAR" property="component" />
-    <result column="state" jdbcType="BIT" property="state" />
+    <result column="state" jdbcType="BOOLEAN" property="state" />
     <result column="sort" jdbcType="VARCHAR" property="sort" />
-    <result column="enabled" jdbcType="BIT" property="enabled" />
+    <result column="enabled" jdbcType="BOOLEAN" property="enabled" />
     <result column="type" jdbcType="VARCHAR" property="type" />
     <result column="push_btn" jdbcType="VARCHAR" property="pushBtn" />
     <result column="icon" jdbcType="VARCHAR" property="icon" />
@@ -116,7 +116,7 @@
       )
     values (#{id,jdbcType=BIGINT}, #{number,jdbcType=VARCHAR}, #{name,jdbcType=VARCHAR}, 
       #{parentNumber,jdbcType=VARCHAR}, #{url,jdbcType=VARCHAR}, #{component,jdbcType=VARCHAR}, 
-      #{state,jdbcType=BIT}, #{sort,jdbcType=VARCHAR}, #{enabled,jdbcType=BIT}, #{type,jdbcType=VARCHAR}, 
+      #{state,jdbcType=BOOLEAN}, #{sort,jdbcType=VARCHAR}, #{enabled,jdbcType=BOOLEAN}, #{type,jdbcType=VARCHAR}, 
       #{pushBtn,jdbcType=VARCHAR}, #{icon,jdbcType=VARCHAR}, #{deleteFlag,jdbcType=VARCHAR}
       )
   </insert>
@@ -183,13 +183,13 @@
         #{component,jdbcType=VARCHAR},
       </if>
       <if test="state != null">
-        #{state,jdbcType=BIT},
+        #{state,jdbcType=BOOLEAN},
       </if>
       <if test="sort != null">
         #{sort,jdbcType=VARCHAR},
       </if>
       <if test="enabled != null">
-        #{enabled,jdbcType=BIT},
+        #{enabled,jdbcType=BOOLEAN},
       </if>
       <if test="type != null">
         #{type,jdbcType=VARCHAR},
@@ -233,13 +233,13 @@
         component = #{record.component,jdbcType=VARCHAR},
       </if>
       <if test="record.state != null">
-        state = #{record.state,jdbcType=BIT},
+        state = #{record.state,jdbcType=BOOLEAN},
       </if>
       <if test="record.sort != null">
         sort = #{record.sort,jdbcType=VARCHAR},
       </if>
       <if test="record.enabled != null">
-        enabled = #{record.enabled,jdbcType=BIT},
+        enabled = #{record.enabled,jdbcType=BOOLEAN},
       </if>
       <if test="record.type != null">
         type = #{record.type,jdbcType=VARCHAR},
@@ -266,9 +266,9 @@
       parent_number = #{record.parentNumber,jdbcType=VARCHAR},
       url = #{record.url,jdbcType=VARCHAR},
       component = #{record.component,jdbcType=VARCHAR},
-      state = #{record.state,jdbcType=BIT},
+      state = #{record.state,jdbcType=BOOLEAN},
       sort = #{record.sort,jdbcType=VARCHAR},
-      enabled = #{record.enabled,jdbcType=BIT},
+      enabled = #{record.enabled,jdbcType=BOOLEAN},
       type = #{record.type,jdbcType=VARCHAR},
       push_btn = #{record.pushBtn,jdbcType=VARCHAR},
       icon = #{record.icon,jdbcType=VARCHAR},
@@ -296,13 +296,13 @@
         component = #{component,jdbcType=VARCHAR},
       </if>
       <if test="state != null">
-        state = #{state,jdbcType=BIT},
+        state = #{state,jdbcType=BOOLEAN},
       </if>
       <if test="sort != null">
         sort = #{sort,jdbcType=VARCHAR},
       </if>
       <if test="enabled != null">
-        enabled = #{enabled,jdbcType=BIT},
+        enabled = #{enabled,jdbcType=BOOLEAN},
       </if>
       <if test="type != null">
         type = #{type,jdbcType=VARCHAR},
@@ -326,9 +326,9 @@
       parent_number = #{parentNumber,jdbcType=VARCHAR},
       url = #{url,jdbcType=VARCHAR},
       component = #{component,jdbcType=VARCHAR},
-      state = #{state,jdbcType=BIT},
+      state = #{state,jdbcType=BOOLEAN},
       sort = #{sort,jdbcType=VARCHAR},
-      enabled = #{enabled,jdbcType=BIT},
+      enabled = #{enabled,jdbcType=BOOLEAN},
       type = #{type,jdbcType=VARCHAR},
       push_btn = #{pushBtn,jdbcType=VARCHAR},
       icon = #{icon,jdbcType=VARCHAR},

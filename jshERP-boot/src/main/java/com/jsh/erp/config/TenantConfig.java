@@ -2,7 +2,7 @@ package com.jsh.erp.config;
 
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
-import com.baomidou.mybatisplus.extension.plugins.inner.TenantLineInnerInterceptor;
+
 import com.baomidou.mybatisplus.extension.plugins.handler.TenantLineHandler;
 import com.jsh.erp.utils.Tools;
 import net.sf.jsqlparser.expression.Expression;
@@ -30,8 +30,8 @@ public class TenantConfig {
     public MybatisPlusInterceptor mybatisPlusInterceptor(HttpServletRequest request) {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
 
-        // 多租户拦截器（必须在分页拦截器之前）
-        interceptor.addInnerInterceptor(new TenantLineInnerInterceptor(new TenantLineHandler() {
+        // 多租户拦截器（必须在分页拦截器之前），使用PostgreSQL兼容版本自动限定表名
+        interceptor.addInnerInterceptor(new PostgresTenantLineInnerInterceptor(new TenantLineHandler() {
             @Override
             public Expression getTenantId() {
                 String token = request.getHeader("X-Access-Token");

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.jsh.erp.datasource.mappers.UserMapper">
   <resultMap id="BaseResultMap" type="com.jsh.erp.datasource.entities.User">
@@ -11,9 +11,9 @@
     <result column="department" jdbcType="VARCHAR" property="department" />
     <result column="email" jdbcType="VARCHAR" property="email" />
     <result column="phonenum" jdbcType="VARCHAR" property="phonenum" />
-    <result column="ismanager" jdbcType="TINYINT" property="ismanager" />
-    <result column="isystem" jdbcType="TINYINT" property="isystem" />
-    <result column="status" jdbcType="TINYINT" property="status" />
+    <result column="ismanager" jdbcType="SMALLINT" property="ismanager" />
+    <result column="isystem" jdbcType="SMALLINT" property="isystem" />
+    <result column="status" jdbcType="SMALLINT" property="status" />
     <result column="description" jdbcType="VARCHAR" property="description" />
     <result column="remark" jdbcType="VARCHAR" property="remark" />
     <result column="weixin_open_id" jdbcType="VARCHAR" property="weixinOpenId" />
@@ -122,7 +122,7 @@
     values (#{id,jdbcType=BIGINT}, #{username,jdbcType=VARCHAR}, #{loginName,jdbcType=VARCHAR}, 
       #{password,jdbcType=VARCHAR}, #{leaderFlag,jdbcType=VARCHAR}, #{position,jdbcType=VARCHAR}, 
       #{department,jdbcType=VARCHAR}, #{email,jdbcType=VARCHAR}, #{phonenum,jdbcType=VARCHAR}, 
-      #{ismanager,jdbcType=TINYINT}, #{isystem,jdbcType=TINYINT}, #{status,jdbcType=TINYINT}, 
+      #{ismanager,jdbcType=SMALLINT}, #{isystem,jdbcType=SMALLINT}, #{status,jdbcType=SMALLINT}, 
       #{description,jdbcType=VARCHAR}, #{remark,jdbcType=VARCHAR}, #{weixinOpenId,jdbcType=VARCHAR}, 
       #{tenantId,jdbcType=BIGINT}, #{deleteFlag,jdbcType=VARCHAR})
   </insert>
@@ -210,13 +210,13 @@
         #{phonenum,jdbcType=VARCHAR},
       </if>
       <if test="ismanager != null">
-        #{ismanager,jdbcType=TINYINT},
+        #{ismanager,jdbcType=SMALLINT},
       </if>
       <if test="isystem != null">
-        #{isystem,jdbcType=TINYINT},
+        #{isystem,jdbcType=SMALLINT},
       </if>
       <if test="status != null">
-        #{status,jdbcType=TINYINT},
+        #{status,jdbcType=SMALLINT},
       </if>
       <if test="description != null">
         #{description,jdbcType=VARCHAR},
@@ -272,13 +272,13 @@
         phonenum = #{record.phonenum,jdbcType=VARCHAR},
       </if>
       <if test="record.ismanager != null">
-        ismanager = #{record.ismanager,jdbcType=TINYINT},
+        ismanager = #{record.ismanager,jdbcType=SMALLINT},
       </if>
       <if test="record.isystem != null">
-        isystem = #{record.isystem,jdbcType=TINYINT},
+        isystem = #{record.isystem,jdbcType=SMALLINT},
       </if>
       <if test="record.status != null">
-        status = #{record.status,jdbcType=TINYINT},
+        status = #{record.status,jdbcType=SMALLINT},
       </if>
       <if test="record.description != null">
         description = #{record.description,jdbcType=VARCHAR},
@@ -311,9 +311,9 @@
       department = #{record.department,jdbcType=VARCHAR},
       email = #{record.email,jdbcType=VARCHAR},
       phonenum = #{record.phonenum,jdbcType=VARCHAR},
-      ismanager = #{record.ismanager,jdbcType=TINYINT},
-      isystem = #{record.isystem,jdbcType=TINYINT},
-      status = #{record.status,jdbcType=TINYINT},
+      ismanager = #{record.ismanager,jdbcType=SMALLINT},
+      isystem = #{record.isystem,jdbcType=SMALLINT},
+      status = #{record.status,jdbcType=SMALLINT},
       description = #{record.description,jdbcType=VARCHAR},
       remark = #{record.remark,jdbcType=VARCHAR},
       weixin_open_id = #{record.weixinOpenId,jdbcType=VARCHAR},
@@ -351,13 +351,13 @@
         phonenum = #{phonenum,jdbcType=VARCHAR},
       </if>
       <if test="ismanager != null">
-        ismanager = #{ismanager,jdbcType=TINYINT},
+        ismanager = #{ismanager,jdbcType=SMALLINT},
       </if>
       <if test="isystem != null">
-        isystem = #{isystem,jdbcType=TINYINT},
+        isystem = #{isystem,jdbcType=SMALLINT},
       </if>
       <if test="status != null">
-        status = #{status,jdbcType=TINYINT},
+        status = #{status,jdbcType=SMALLINT},
       </if>
       <if test="description != null">
         description = #{description,jdbcType=VARCHAR},
@@ -387,9 +387,9 @@
       department = #{department,jdbcType=VARCHAR},
       email = #{email,jdbcType=VARCHAR},
       phonenum = #{phonenum,jdbcType=VARCHAR},
-      ismanager = #{ismanager,jdbcType=TINYINT},
-      isystem = #{isystem,jdbcType=TINYINT},
-      status = #{status,jdbcType=TINYINT},
+      ismanager = #{ismanager,jdbcType=SMALLINT},
+      isystem = #{isystem,jdbcType=SMALLINT},
+      status = #{status,jdbcType=SMALLINT},
       description = #{description,jdbcType=VARCHAR},
       remark = #{remark,jdbcType=VARCHAR},
       weixin_open_id = #{weixinOpenId,jdbcType=VARCHAR},

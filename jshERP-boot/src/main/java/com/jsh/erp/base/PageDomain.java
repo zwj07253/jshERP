@@ -5,7 +5,7 @@ import com.jsh.erp.utils.StringUtil;
 /**
  * 分页数据
  * 
- * @author ji-sheng-hua
+ * @author YUEWEI
  */
 public class PageDomain
 {

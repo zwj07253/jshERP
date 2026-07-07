@@ -5,7 +5,7 @@ import java.io.Serializable;
 /**
  * 表格分页数据对象
  * 
- * @author ji-sheng-hua
+ * @author YUEWEI
  */
 public class TableDataInfo implements Serializable
 {
