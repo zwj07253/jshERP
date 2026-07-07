@@ -1,70 +1,98 @@
-# 项目总述
-* 很多人说YUEWEIERP（原名：华夏ERP，英文名：jshERP）是目前人气领先的国产ERP系统
-* 虽然目前只有进销存+财务+生产的功能，但后面将会推出ERP的全部功能，有兴趣请帮点一下 **Star** 哦
-* **官网地址：http://www.gyjerp.com  商务或技术交流，请联系QQ：752718920 微信：shenhua861584**
-* 对物联网感兴趣的朋友欢迎关注我们的新开源系统：[物联](https://gitee.com/jishenghua/gyj-iot)
+# YUEWEIERP
 
-# 网络版介绍
-* 推荐使用网络版（198元1年）淘宝链接：https://item.taobao.com/item.htm?id=674169489573
-* 平台地址：http://cloud.gyjerp.com 欢迎大家注册租户进行使用
-* 网络版手机端请扫描下方二维码
+YUEWEIERP是一套基于 Spring Boot + Vue 2 的开源进销存管理系统，适用于中小企业。系统采用 PostgreSQL 数据库，支持多租户、多语言（73种），并提供插件扩展能力。
 
-![输入图片说明](https://cloud.gyjerp.com/static/android-code.png)
-![输入图片说明](https://cloud.gyjerp.com/static/iphone-code.png)
-![输入图片说明](https://cloud.gyjerp.com/static/weixin-code.png)
+**核心功能：** 进销存管理 | 财务管理 | 生产管理 | 多租户 | 多语言
 
-# 定制和插件
-* 如有ERP私人定制需求，请将需求整理成文档，发给邮箱： **752718920@qq.com** ，我会及时回复哒
-* 如需更多功能，欢迎购买作者小店的插件 https://shop104070207.taobao.com/ 谢谢支持
+## 技术栈
 
-# 开发初衷
-* YUEWEIERP立志为中小企业提供开源好用的ERP软件，降低企业的信息化成本
-* 个人开发者也可以使用YUEWEIERP进行二次开发，加快完成开发任务
-* 初学JAVA的小伙伴可以下载源代码来进行学习交流
+### 后端
 
-# 技术框架
-* 核心框架：Spring Boot 2.7.18
-* 持久层框架：MyBatis Plus 3.5.7
-* 数据库：PostgreSQL 15+
-* 日志管理：SLF4J + Logback
-* 前端框架：Vue 2.7.16
-* UI框架：Ant-Design-Vue 1.5.2
-* 模板框架：Jeecg-Boot 2.2.0
-* API文档：SpringDoc OpenAPI 1.8.0
-* JSON处理：Fastjson2 2.0.53
-* 插件框架：spring-brick 3.1.2
-* 项目管理框架：Maven 3.9+
+| 组件 | 版本 |
+|------|------|
+| Spring Boot | 2.7.18 |
+| MyBatis Plus | 3.5.7 |
+| PostgreSQL | 15+ |
+| Redis | 6.2.1+ |
+| Fastjson2 | 2.0.53 |
+| SpringDoc OpenAPI | 1.8.0 |
+| spring-brick（插件框架） | 3.1.2 |
+| JDK | 17 |
 
-# 开发环境
-建议开发者使用以下环境，可以避免版本带来的问题
-* IDE：IntelliJ IDEA 2025.1.4.1
-* DB：PostgreSQL 15+（推荐 PostgreSQL 17）
-* JDK：JDK 17
-* Node：Node 20.17.0
-* Maven：Maven 3.9+
-* Redis：6.2.1+
-* Nginx：1.12.2+
+### 前端
 
-# 服务器环境
-* 数据库：PostgreSQL 15+
-* JAVA平台：JDK 17
-* Redis库：Redis 6.2.1+
-* Nginx代理：Nginx 1.12.2+
-* 操作系统：Windows、Linux等
+| 组件 | 版本 |
+|------|------|
+| Vue | 2.7.16 |
+| Vue Router | 3.x |
+| Vuex | 3.x |
+| Ant Design Vue | 1.5.2 |
+| vue-i18n | 8.x |
+| Axios | 0.18.x |
+| Node | 20.17.0 |
 
-# 快速启动
+## 项目结构
 
-## 数据库初始化
+```
+jshERP/
+├── jshERP-boot/                # 后端 Spring Boot 项目
+│   ├── pom.xml
+│   ├── docs/                   # 初始化 SQL 脚本
+│   │   ├── jsh_erp_pg.sql     # PostgreSQL 初始化（主）
+│   │   └── jsh_erp.sql        # MySQL 历史版本
+│   └── src/
+│       ├── main/
+│       │   ├── java/com/jsh/erp/
+│       │   │   ├── ErpApplication.java        # 启动类
+│       │   │   ├── controller/                # 31 个 Controller
+│       │   │   ├── service/                   # 31 个 Service
+│       │   │   ├── datasource/entities/       # 84 个实体类
+│       │   │   ├── datasource/mappers/        # 62 个 Mapper 接口
+│       │   │   ├── config/                    # 配置类
+│       │   │   └── utils/                     # 30 个工具类
+│       │   ├── resources/
+│       │   │   ├── application.yml
+│       │   │   └── mapper_xml/                # 63 个 Mapper XML
+│       │   ├── bin/                           # 部署脚本
+│       │   └── assembly/                      # 打包配置
+│       └── test/java/com/jsh/erp/             # 自动化测试
+│
+├── jshERP-web/                 # 前端 Vue 项目
+│   ├── package.json
+│   ├── vue.config.js
+│   └── src/
+│       ├── api/                # API 定义（~130 个接口）
+│       ├── views/
+│       │   ├── bill/           # 单据管理（15 个视图）
+│       │   ├── financial/      # 财务管理（6 个视图）
+│       │   ├── material/       # 商品管理（4 个视图）
+│       │   ├── report/         # 报表查询（14 个视图）
+│       │   └── system/         # 系统管理（20 个视图）
+│       ├── components/         # 公共组件
+│       ├── store/              # Vuex 状态管理
+│       └── utils/              # 工具函数
+│
+└── LICENSE                     # Apache 2.0
+```
+
+## 快速开始
+
+### 环境要求
+
+- JDK 17
+- PostgreSQL 15+
+- Redis 6.2.1+
+- Node 20.17.0
+- Maven 3.9+
+
+### 1. 数据库初始化
 
 ```bash
-# 1. 创建数据库
 psql -U postgres -c "CREATE DATABASE jsh_erp WITH ENCODING 'UTF8';"
-
-# 2. 执行初始化脚本
 psql -U postgres -d jsh_erp -f jshERP-boot/docs/jsh_erp_pg.sql
 ```
 
-## 后端启动
+### 2. 启动后端
 
 ```bash
 cd jshERP-boot
@@ -72,7 +100,11 @@ mvn clean package -DskipTests
 java -jar target/jshERP.jar
 ```
 
-## 前端启动
+后端启动后访问：
+- API 服务：http://localhost:9999/jshERP-boot
+- Swagger 文档：http://localhost:9999/jshERP-boot/swagger-ui/index.html
+
+### 3. 启动前端
 
 ```bash
 cd jshERP-web
@@ -80,12 +112,160 @@ npm install
 npm run serve
 ```
 
-访问地址：
-* 后端API：http://localhost:9999/jshERP-boot
-* Swagger文档：http://localhost:9999/jshERP-boot/swagger-ui/index.html
-* 前端页面：http://localhost:3000
+前端访问：http://localhost:3000
 
-## Docker Compose 部署
+### 4. 登录系统
+
+| 账号类型 | 用户名 | 密码 |
+|---------|--------|------|
+| 默认租户 | jsh | 123456 |
+| 超级管理员 | admin | 123456 |
+
+## 配置说明
+
+### 后端配置（application.yml）
+
+| 配置项 | 默认值 | 说明 |
+|--------|--------|------|
+| server.port | 9999 | 服务端口 |
+| server.servlet.context-path | /jshERP-boot | 上下文路径 |
+| 数据库地址 | 127.0.0.1:5432/jsh_erp | PostgreSQL 连接 |
+| Redis 地址 | 127.0.0.1:6379 | Redis 连接 |
+| 文件上传大小 | 10MB | 单文件限制 |
+| 文件存储路径 | /opt/jshERP/upload | 本地上传目录 |
+
+### 前端配置（vue.config.js）
+
+| 配置项 | 默认值 | 说明 |
+|--------|--------|------|
+| 开发端口 | 3000 | 前端开发服务器 |
+| API 代理 | /jshERP-boot -> localhost:9999 | 反向代理 |
+
+## 数据库设计
+
+系统共 32 张业务表，所有表均支持多租户（`tenant_id`）和软删除（`delete_flag`）。
+
+<details>
+<summary>展开查看全部表</summary>
+
+| 表名 | 说明 |
+|------|------|
+| jsh_account | 账户信息 |
+| jsh_account_head | 财务主表 |
+| jsh_account_item | 财务明细 |
+| jsh_depot | 仓库 |
+| jsh_depot_head | 单据主表 |
+| jsh_depot_item | 单据明细 |
+| jsh_function | 功能菜单 |
+| jsh_in_out_item | 收支项目 |
+| jsh_log | 操作日志 |
+| jsh_material | 商品/物料 |
+| jsh_material_attribute | 商品属性 |
+| jsh_material_category | 商品分类 |
+| jsh_material_current_stock | 当前库存 |
+| jsh_material_extend | 商品价格扩展 |
+| jsh_material_initial_stock | 期初库存 |
+| jsh_material_property | 商品自定义字段 |
+| jsh_msg | 消息通知 |
+| jsh_orga_user_rel | 部门用户关系 |
+| jsh_organization | 部门 |
+| jsh_person | 经手人 |
+| jsh_platform_config | 平台参数 |
+| jsh_role | 角色 |
+| jsh_sequence | 单据编号序列 |
+| jsh_serial_number | 序列号 |
+| jsh_supplier | 供应商/客户 |
+| jsh_sys_dict_data | 字典数据 |
+| jsh_sys_dict_type | 字典类型 |
+| jsh_system_config | 系统参数 |
+| jsh_tenant | 租户 |
+| jsh_unit | 多单位 |
+| jsh_user | 用户 |
+| jsh_user_business | 用户角色模块关系 |
+
+</details>
+
+## PostgreSQL 适配说明
+
+本项目已从 MySQL 迁移至 PostgreSQL，主要语法变更：
+
+| MySQL | PostgreSQL | 说明 |
+|-------|-----------|------|
+| `ifnull(x, y)` | `COALESCE(x, y)` | 空值处理 |
+| `date_format(x, '%Y-%m-%d')` | `TO_CHAR(x, 'YYYY-MM-DD')` | 日期格式化 |
+| `group_concat(...)` | `STRING_AGG(..., ',')` | 字符串聚合 |
+| `FIND_IN_SET(x, col)` | `col ~ ('(^|,)' \|\| x \|\| '(,|$)')` | 集合查找 |
+| `SYSDATE()` | `NOW()` | 当前时间 |
+| `AUTO_INCREMENT` | `GENERATED BY DEFAULT AS IDENTITY` | 自增主键 |
+| `LIMIT offset, rows` | `LIMIT rows OFFSET offset` | 分页语法 |
+
+**注意事项：**
+- PostgreSQL 对大小写敏感，所有表名、字段名统一使用小写
+- `user`、`order`、`group` 等是保留字，SQL 中需注意
+- `ORDER BY x DESC` 时 NULL 排序与 MySQL 不同，必要时添加 `NULLS LAST`
+- 多租户场景使用 `PostgresTenantLineInnerInterceptor` 解决 JOIN 时 `tenant_id` 歧义
+
+## 自动化测试
+
+测试位于 `jshERP-boot/src/test/java/com/jsh/erp/`，基于 REST Assured 5.3.2，需要后端服务运行后执行。
+
+| 层级 | 测试类 | 说明 |
+|------|--------|------|
+| P0 | `SmokeTest` | 系统启动验证 |
+| P0 | `P0LoginAuthTest` | 登录认证 |
+| P0 | `P0PurchaseTest` | 采购全流程 |
+| P0 | `P0SalesTest` | 销售全流程 |
+| P0 | `P0RetailTransferTest` | 零售与调拨 |
+| P1 | `P1BasicDataTest` | 基础数据 CRUD |
+| P1 | `P1ExceptionTest` | 异常场景 |
+| P1 | `P1ReportTest` | 报表查询 |
+| P2 | `P2PgUpgradeTest` | PostgreSQL 适配回归 |
+
+```bash
+# 运行全部测试
+cd jshERP-boot
+mvn test
+
+# 运行单个测试
+mvn test -Dtest=P0LoginAuthTest
+
+# 运行 P0 核心测试
+mvn test -Dtest=SmokeTest,P0LoginAuthTest,P0PurchaseTest,P0SalesTest,P0RetailTransferTest
+```
+
+## 部署
+
+### Linux 部署
+
+```bash
+# 打包
+cd jshERP-boot
+mvn clean package -DskipTests -P prod
+
+# 解压部署包到目标目录
+unzip target/jshERP-boot-assembly.zip -d /opt/jshERP
+
+# 启动
+cd /opt/jshERP/bin
+chmod +x *.sh
+./start.sh
+```
+
+部署包结构：
+
+```
+/opt/jshERP/
+├── lib/          # JAR 包
+├── config/       # 配置文件
+├── bin/          # 启动脚本
+│   ├── run-manage.sh   # 进程管理（start/stop/restart/status）
+│   ├── start.sh
+│   ├── stop.sh
+│   └── start.bat       # Windows 启动
+└── docs/         # SQL 脚本
+```
+
+### Docker Compose
 
 ```yaml
 version: '3.8'
@@ -106,6 +286,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
   redis:
     image: redis:7
     ports:
@@ -115,6 +296,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
   app:
     build: .
     ports:
@@ -124,95 +306,42 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+
 volumes:
   pgdata:
 ```
 
-# 数据库适配说明
+## 常见问题
 
-本项目已从 MySQL 迁移至 PostgreSQL。主要变更：
+**Q: 启动报 sequence 不存在**
+确保已执行 PostgreSQL 初始化脚本 `jsh_erp_pg.sql`，该脚本会自动创建所有 IDENTITY 序列。
 
-| MySQL 语法 | PostgreSQL 语法 | 说明 |
-|------------|----------------|------|
-| `ifnull(x, y)` | `COALESCE(x, y)` | 空值处理 |
-| `date_format(x, '%Y-%m-%d')` | `TO_CHAR(x, 'YYYY-MM-DD')` | 日期格式化 |
-| `group_concat(...)` | `STRING_AGG(..., ',')` | 字符串聚合 |
-| `FIND_IN_SET(x, col)` | `col ~ ('(^|,)' \|\| x \|\| '(,|$)')` | 集合查找 |
-| `SYSDATE()` | `NOW()` | 当前时间 |
-| `AUTO_INCREMENT` | `GENERATED BY DEFAULT AS IDENTITY` | 自增主键 |
-| `LIMIT offset, rows` | `LIMIT rows OFFSET offset` | 分页语法 |
+**Q: 多表 JOIN 查询报 tenant_id 歧义**
+PostgreSQL 严格模式下多表都有 `tenant_id` 时会报歧义。项目已内置 `PostgresTenantLineInnerInterceptor`，在 `MybatisPlusConfig` 中配置即可。
 
-**注意事项：**
-* PostgreSQL 对大小写敏感，所有表名、字段名统一使用小写
-* `user`、`order`、`group` 等是 PostgreSQL 保留字，SQL 中需注意
-* PostgreSQL 默认事务隔离级别为 `READ COMMITTED`（MySQL 为 `REPEATABLE READ`）
-* `ORDER BY x DESC` 时 NULL 排序行为与 MySQL 不同，必要时添加 `NULLS LAST`
+**Q: 保留字字段查询报错**
+PostgreSQL 对保留字（如 `user`、`order`、`group`）更严格。检查 SQL 中是否需要对保留字加双引号。
 
-# 配套资料
-* 需要用户手册请访问这里 https://www.gyjerp.com/doc/archive/user-manual.html
-* 需要接口文档请查看这里 https://www.gyjerp.com/doc/archive/apidoc.html
-* 喜欢视频教程可以看这里 https://space.bilibili.com/540003552/channel/series
-* 为方便大家搭建运行环境，分享了下载地址 https://pan.baidu.com/s/1jlild9uyGdQ7H2yaMx76zw  提取码:814g
-* 不会打包的小伙伴，请下载此打包后的文件 https://share.weiyun.com/NDJNLhry 密码：vd3aig
-* 不会部署的小伙伴，请参考部署教程 https://www.gyjerp.com/doc/archive/deploy.html
-* 部署后登录系统的默认租户账号：jsh，默认超管账户：admin，默认密码均为：123456
+**Q: 分页排序与 MySQL 不一致**
+PostgreSQL 的 `ORDER BY x DESC` 时 NULL 值默认排在最前面。如需保持一致，在排序字段后添加 `NULLS LAST`。
 
-# 升级日志
+**Q: 忘记密码**
+默认租户账号：jsh，默认超管账户：admin，默认密码均为：123456。
 
-## v2.0 - PostgreSQL 适配升级
-* 数据库：MySQL → PostgreSQL 15+
-* JDK：1.8 → 17
-* Spring Boot：2.0.0 → 2.7.18
-* MyBatis Plus：3.0.7 → 3.5.7
-* Fastjson：1.2.83 → Fastjson2 2.0.53
-* Swagger：Springfox → SpringDoc OpenAPI 1.8.0
-* Plugin Framework：springboot-plugin-framework 2.2.1 → spring-brick 3.1.2
-* Redis：spring-boot-starter-redis → spring-boot-starter-data-redis
+## 功能模块
 
-# 常见问题
+| 模块 | 功能 |
+|------|------|
+| 零售管理 | 零售出库、零售退货 |
+| 采购管理 | 采购订单、采购入库、采购退货 |
+| 销售管理 | 销售订单、销售出库、销售退货 |
+| 仓库管理 | 其他入库、其他出库、调拨、组装拆卸 |
+| 财务管理 | 收款、付款、收入、支出、转账、预收款 |
+| 报表查询 | 库存报表、出入库明细、收发明细、客户/供应商对账、经营报表、库存预警 |
+| 商品管理 | 商品列表、商品分类、商品属性、自定义字段 |
+| 基础资料 | 仓库、供应商、客户、经手人、收支项目、多单位 |
+| 系统管理 | 用户、角色、部门、菜单、日志、消息、租户、字典、平台配置、插件管理 |
 
-### Q: 启动报 sequence 不存在
-A: 确保已执行 PostgreSQL 初始化脚本 `jsh_erp_pg.sql`，该脚本会自动创建所有 IDENTITY 序列。
+## 开源协议
 
-### Q: 保留字字段查询报错
-A: PostgreSQL 对保留字（如 `user`、`order`、`group`）更严格。如遇报错，检查 SQL 中是否需要对保留字加双引号。
-
-### Q: 分页排序与 MySQL 不一致
-A: PostgreSQL 的 `ORDER BY x DESC` 时 NULL 值默认排在最前面（MySQL 排在最后）。如需保持一致，在排序字段后添加 `NULLS LAST`。
-
-### Q: 性能比 MySQL 慢
-A: PostgreSQL 的执行计划与 MySQL 不同。使用 `EXPLAIN ANALYZE` 检查关键查询，确保索引被正确使用。首次启动后执行 `ANALYZE` 更新统计信息。
-
-### Q: 忘记密码
-A: 默认租户账号：jsh，默认超管账户：admin，默认密码均为：123456
-
-# 开源说明
-* 本系统100%开源，遵守Apache-2.0协议，企业可以商用
-* 支持全球73种语言，在登录后右上角"界面设置"页面进行切换
-
-# 系统美图
-* 首页
-![输入图片说明](jshERP-web/public/static/screenshot/1.jpg)
-* 零售管理
-![输入图片说明](jshERP-web/public/static/screenshot/2.jpg)
-* 采购管理
-![输入图片说明](jshERP-web/public/static/screenshot/3.jpg)
-* 销售管理
-![输入图片说明](jshERP-web/public/static/screenshot/4.jpg)
-* 仓库管理
-![输入图片说明](jshERP-web/public/static/screenshot/5.jpg)
-* 财务管理
-![输入图片说明](jshERP-web/public/static/screenshot/6.jpg)
-* 报表查询
-![输入图片说明](jshERP-web/public/static/screenshot/7.jpg)
-* 商品管理
-![输入图片说明](jshERP-web/public/static/screenshot/8.jpg)
-* 基本资料
-![输入图片说明](jshERP-web/public/static/screenshot/9.jpg)
-* 系统管理
-![输入图片说明](jshERP-web/public/static/screenshot/10.jpg)
-
-# 如何支持
-* 开源不易，坚持更难！如果您觉得YUEWEIERP不错，不用请作者喝咖啡。
-* 您可以将我们的云平台地址：https://cloud.gyjerp.com 发给您的家人或朋友，只要是开店的、办厂的、做批发的都可以用得上。
-* 这将是对我们开源最大的支持！在此表示感谢！
+本项目基于 [Apache License 2.0](LICENSE) 开源，企业可商用。
