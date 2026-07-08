@@ -1,0 +1,12 @@
+**/node_modules
+**/target
+**/dist
+**/.git
+**/.idea
+**/.vscode
+**/docs
+**/*.md
+jshERP-web/node_modules
+jshERP-web/dist
+jshERP-boot/target
+jshERP-boot/src/test

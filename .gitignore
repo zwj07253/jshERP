@@ -8,3 +8,7 @@
 
 ## front
 **/*.lock
+
+## env
+.env
+docs/
