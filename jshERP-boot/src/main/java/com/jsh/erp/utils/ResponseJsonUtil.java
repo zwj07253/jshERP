@@ -21,6 +21,9 @@ public class ResponseJsonUtil {
      */
     public static final ValueFilter DATE_FILTER = (object, name, value) -> {
         if (value instanceof Date) {
+            if ("createTime".equals(name) || "modifyTime".equals(name) || "updateTime".equals(name)) {
+                return value;
+            }
             return FORMAT.format(value);
         }
         return value;

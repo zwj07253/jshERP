@@ -307,7 +307,7 @@
         select me.bar_code, m."name", m.mnemonic, m.standard, m.model, m.color, me.commodity_unit unit
         from jsh_material m
         left join jsh_material_extend me on m.id = me.material_id and COALESCE(me.delete_Flag,'0') !='1'
-        where m.enabled='1' and me.id is not null
+        where m.enabled=true and me.id is not null
         <if test="materialParam != null and materialParam !=''">
             <bind name="bindKey" value="'%'+materialParam+'%'"/>
             and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey} or m.mnemonic like #{bindKey})
@@ -322,7 +322,7 @@
         left join jsh_material_extend me on m.id=me.material_id and COALESCE(me.delete_Flag,'0') !='1'
         left join jsh_unit u on m.unit_id=u.id and COALESCE(u.delete_Flag,'0') !='1'
         left JOIN jsh_material_category mc on m.category_id = mc.id and COALESCE(mc.delete_Flag,'0') !='1'
-        where m.enabled='1' and me.id is not null
+        where m.enabled=true and me.id is not null
         <if test="q != null and q !=''">
             <bind name="bindKey" value="'%'+q+'%'"/>
             and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey}
@@ -379,7 +379,7 @@
         select count(1) from jsh_material m
         left join jsh_material_extend me on m.id=me.material_id and COALESCE(me.delete_Flag,'0') !='1'
         left join jsh_unit u on m.unit_id=u.id and COALESCE(u.delete_Flag,'0') !='1'
-        where m.enabled='1' and me.id is not null
+        where m.enabled=true and me.id is not null
         <if test="q != null and q !=''">
             <bind name="bindKey" value="'%'+q+'%'"/>
             and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey}
@@ -500,7 +500,7 @@
         select m.*,me.bar_code m_bar_code from jsh_material m
         left join jsh_material_extend me on m.id=me.material_id and COALESCE(me.delete_Flag,'0') !='1'
         where 1=1
-        and m.enabled='1'
+        and m.enabled=true
         and m.enable_serial_number ='1'
         <if test="q != null and q !=''">
             <bind name="bindKey" value="'%'+q+'%'"/>
@@ -517,7 +517,7 @@
         select count(me.id) from jsh_material m
         left join jsh_material_extend me on m.id=me.material_id and COALESCE(me.delete_Flag,'0') !='1'
         where 1=1
-        and m.enabled ='1'
+        and m.enabled =true
         and m.enable_serial_number ='1'
         <if test="q != null and q !=''">
             <bind name="bindKey" value="'%'+q+'%'"/>
@@ -671,7 +671,7 @@
         left JOIN jsh_material_category mc on m.category_id = mc.id and COALESCE(mc.delete_Flag,'0') !='1'
         where 1=1
         and me.default_flag='1'
-        and m.enabled='1'
+        and m.enabled=true
         <if test="idList.size()>0">
             and m.category_id in
             <foreach collection="idList" item="item" index="index" separator="," open="(" close=")">
@@ -725,7 +725,7 @@
         left JOIN jsh_material_category mc on m.category_id = mc.id and COALESCE(mc.delete_Flag,'0') !='1'
         where 1=1
         and me.default_flag='1'
-        and m.enabled='1'
+        and m.enabled=true
         <if test="idList.size()>0">
             and m.category_id in
             <foreach collection="idList" item="item" index="index" separator="," open="(" close=")">
@@ -763,7 +763,7 @@
         left JOIN jsh_material_category mc on m.category_id = mc.id and COALESCE(mc.delete_Flag,'0') !='1'
         where 1=1
         and me.default_flag='1'
-        and m.enabled='1'
+        and m.enabled=true
         <if test="depotList.size()>0">
             and mcs.depot_id in
             <foreach collection="depotList" item="item" index="index" separator="," open="(" close=")">

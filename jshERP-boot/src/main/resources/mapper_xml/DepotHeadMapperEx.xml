@@ -301,7 +301,7 @@
         left join jsh_material m on m.id=di.material_id and COALESCE(m.delete_Flag,'0') !='1'
         left join jsh_material_extend me on me.id=di.material_extend_id and COALESCE(me.delete_Flag,'0') !='1'
         left join jsh_supplier s on s.id=dh.organ_id and COALESCE(s.delete_Flag,'0') !='1'
-        left join (select id,name as dName,delete_Flag from jsh_depot) d on d.id=di.depot_id and COALESCE(d.delete_Flag,'0') !='1'
+        left join (select id,"name" as dName,delete_Flag from jsh_depot) d on d.id=di.depot_id and COALESCE(d.delete_Flag,'0') !='1'
         where dh.oper_time >=#{beginTime}::timestamp and dh.oper_time &lt;=#{endTime}::timestamp
         <if test="oId != null">
             and dh.organ_id = #{oId}
@@ -665,7 +665,7 @@
         left join jsh_material_extend me on me.id=di.material_extend_id and COALESCE(me.delete_Flag,'0') !='1'
         left join (select id,"name" as dName,delete_Flag from jsh_depot ) d on d.id=di.depot_id and COALESCE(d.delete_Flag,'0') !='1'
         <!-- 调出仓库名查询 -->
-        left join (select id as aid,name as sname,delete_Flag as adelete_Flag from jsh_depot ) ddd on ddd.aid=di.another_depot_id and COALESCE(ddd.adelete_Flag,'0') !='1'
+        left join (select id as aid,"name" as sname,delete_Flag as adelete_Flag from jsh_depot ) ddd on ddd.aid=di.another_depot_id and COALESCE(ddd.adelete_Flag,'0') !='1'
         where dh.oper_time >=#{beginTime}::timestamp and dh.oper_time &lt;=#{endTime}::timestamp
         <if test="depotFList.size()>0">
             and di.depot_id in
@@ -735,7 +735,7 @@
         left join jsh_depot_item di on di.header_id=dh.id and COALESCE(di.delete_flag,'0') !='1'
         left join jsh_material m on m.id=di.material_id and COALESCE(m.delete_Flag,'0') !='1'
         left join jsh_material_extend me on me.id=di.material_extend_id and COALESCE(me.delete_Flag,'0') !='1'
-        left join (select id,name as dName,delete_Flag from jsh_depot) d on d.id=di.depot_id and COALESCE(d.delete_Flag,'0') !='1'
+        left join (select id,"name" as dName,delete_Flag from jsh_depot) d on d.id=di.depot_id and COALESCE(d.delete_Flag,'0') !='1'
         where dh.oper_time >=#{beginTime}::timestamp and dh.oper_time &lt;=#{endTime}::timestamp
         <if test="depotFList.size()>0">
             and di.depot_id in
@@ -793,7 +793,7 @@
         left join jsh_material_extend me on me.id=di.material_extend_id and COALESCE(me.delete_Flag,'0') !='1'
         left join (select id,"name" as dName,delete_Flag from jsh_depot ) d on d.id=di.depot_id and COALESCE(d.delete_Flag,'0') !='1'
         <!-- 调出仓库名查询 -->
-        left join (select id as aid,name as sname,delete_Flag as adelete_Flag from jsh_depot ) ddd on ddd.aid=di.another_depot_id and COALESCE(ddd.adelete_Flag,'0') !='1'
+        left join (select id as aid,"name" as sname,delete_Flag as adelete_Flag from jsh_depot ) ddd on ddd.aid=di.another_depot_id and COALESCE(ddd.adelete_Flag,'0') !='1'
         where dh.oper_time >=#{beginTime}::timestamp and dh.oper_time &lt;=#{endTime}::timestamp
         <if test="depotFList.size()>0">
             and di.depot_id in
@@ -905,7 +905,7 @@
             and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') backOutMoney
         from jsh_supplier s
-        where s.enabled='1'
+        where s.enabled=true
         and s."type"=#{supplierType}
         <if test="organId != null">
             and s.id = #{organId}::bigint
@@ -992,7 +992,7 @@
             and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') backOutMoney
         from jsh_supplier s
-        where s.enabled='1'
+        where s.enabled=true
         and s."type"=#{supplierType}
         <if test="organId != null">
             and s.id = #{organId}::bigint
@@ -1067,7 +1067,7 @@
             and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') backOutMoney
         from jsh_supplier s
-        where s.enabled='1'
+        where s.enabled=true
         and s."type"=#{supplierType}
         <if test="organId != null">
             and s.id = #{organId}::bigint
