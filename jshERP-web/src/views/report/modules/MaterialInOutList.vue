@@ -85,7 +85,7 @@
       return {
         title:"操作",
         visible: false,
-        disableMixinCreated: false,
+        disableMixinCreated: true,
         toFromType: '',
         currentMaterialId: '',
         // 查询条件
@@ -150,6 +150,10 @@
         return param
       },
       show(record, depotIds) {
+        if(!record || !record.id) {
+          this.$message.warning('商品ID为空，无法查询库存流水')
+          return
+        }
         this.model = Object.assign({}, record);
         this.currentMaterialId = record.id
         this.visible = true;

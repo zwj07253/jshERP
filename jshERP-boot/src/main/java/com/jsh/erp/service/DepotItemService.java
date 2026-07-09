@@ -1038,20 +1038,20 @@ public class DepotItemService {
         Boolean forceFlag = systemConfigService.getForceApprovalFlag();
         Boolean inOutManageFlag = systemConfigService.getInOutManageFlag();
         //初始库存
-        BigDecimal initStock = materialService.getInitStockByMidAndDepotList(depotList, mId);
+        BigDecimal initStock = zeroIfNull(materialService.getInitStockByMidAndDepotList(depotList, mId));
         //盘点复盘后数量的变动
-        BigDecimal stockCheckSum = depotItemMapperEx.getStockCheckSumByDepotList(depotList, mId, forceFlag, beginTime, endTime);
+        BigDecimal stockCheckSum = zeroIfNull(depotItemMapperEx.getStockCheckSumByDepotList(depotList, mId, forceFlag, beginTime, endTime));
         DepotItemVo4Stock stockObj = depotItemMapperEx.getStockByParamWithDepotList(depotList, mId, forceFlag, inOutManageFlag, beginTime, endTime);
         BigDecimal stockSum = BigDecimal.ZERO;
         if(stockObj!=null) {
-            BigDecimal inTotal = stockObj.getInTotal();
-            BigDecimal transfInTotal = stockObj.getTransfInTotal();
-            BigDecimal assemInTotal = stockObj.getAssemInTotal();
-            BigDecimal disAssemInTotal = stockObj.getDisAssemInTotal();
-            BigDecimal outTotal = stockObj.getOutTotal();
-            BigDecimal transfOutTotal = stockObj.getTransfOutTotal();
-            BigDecimal assemOutTotal = stockObj.getAssemOutTotal();
-            BigDecimal disAssemOutTotal = stockObj.getDisAssemOutTotal();
+            BigDecimal inTotal = zeroIfNull(stockObj.getInTotal());
+            BigDecimal transfInTotal = zeroIfNull(stockObj.getTransfInTotal());
+            BigDecimal assemInTotal = zeroIfNull(stockObj.getAssemInTotal());
+            BigDecimal disAssemInTotal = zeroIfNull(stockObj.getDisAssemInTotal());
+            BigDecimal outTotal = zeroIfNull(stockObj.getOutTotal());
+            BigDecimal transfOutTotal = zeroIfNull(stockObj.getTransfOutTotal());
+            BigDecimal assemOutTotal = zeroIfNull(stockObj.getAssemOutTotal());
+            BigDecimal disAssemOutTotal = zeroIfNull(stockObj.getDisAssemOutTotal());
             stockSum = inTotal.add(transfInTotal).add(assemInTotal).add(disAssemInTotal)
                     .subtract(outTotal).subtract(transfOutTotal).subtract(assemOutTotal).subtract(disAssemOutTotal);
         }
@@ -1073,18 +1073,18 @@ public class DepotItemService {
         BigDecimal inSum = BigDecimal.ZERO;
         BigDecimal outSum = BigDecimal.ZERO;
         //盘点复盘后数量的变动
-        BigDecimal stockCheckSum = depotItemMapperEx.getStockCheckSumByDepotList(depotList, mId, forceFlag, beginTime, endTime);
+        BigDecimal stockCheckSum = zeroIfNull(depotItemMapperEx.getStockCheckSumByDepotList(depotList, mId, forceFlag, beginTime, endTime));
         DepotItemVo4Stock stockObj = depotItemMapperEx.getStockByParamWithDepotList(depotList, mId, forceFlag, inOutManageFlag, beginTime, endTime);
         if(stockObj!=null) {
-            BigDecimal inTotal = stockObj.getInTotal();
-            BigDecimal transfInTotal = stockObj.getTransfInTotal();
-            BigDecimal assemInTotal = stockObj.getAssemInTotal();
-            BigDecimal disAssemInTotal = stockObj.getDisAssemInTotal();
+            BigDecimal inTotal = zeroIfNull(stockObj.getInTotal());
+            BigDecimal transfInTotal = zeroIfNull(stockObj.getTransfInTotal());
+            BigDecimal assemInTotal = zeroIfNull(stockObj.getAssemInTotal());
+            BigDecimal disAssemInTotal = zeroIfNull(stockObj.getDisAssemInTotal());
             inSum = inTotal.add(transfInTotal).add(assemInTotal).add(disAssemInTotal);
-            BigDecimal outTotal = stockObj.getOutTotal();
-            BigDecimal transfOutTotal = stockObj.getTransfOutTotal();
-            BigDecimal assemOutTotal = stockObj.getAssemOutTotal();
-            BigDecimal disAssemOutTotal = stockObj.getDisAssemOutTotal();
+            BigDecimal outTotal = zeroIfNull(stockObj.getOutTotal());
+            BigDecimal transfOutTotal = zeroIfNull(stockObj.getTransfOutTotal());
+            BigDecimal assemOutTotal = zeroIfNull(stockObj.getAssemOutTotal());
+            BigDecimal disAssemOutTotal = zeroIfNull(stockObj.getDisAssemOutTotal());
             outSum = outTotal.add(transfOutTotal).add(assemOutTotal).add(disAssemOutTotal);
         }
         if(stockCheckSum.compareTo(BigDecimal.ZERO)>0) {
@@ -1096,6 +1096,10 @@ public class DepotItemService {
         intervalMap.put("inSum", inSum);
         intervalMap.put("outSum", outSum);
         return intervalMap;
+    }
+
+    private BigDecimal zeroIfNull(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
     }
 
     /**

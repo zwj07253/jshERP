@@ -304,14 +304,14 @@
             this.dataSource = res.data.rows;
             this.ipagination.total = res.data.total;
             this.tableAddTotalRow(this.columns, this.dataSource)
-            this.currentStock = res.data.currentStock.toFixed(2)
-            this.currentStockPrice = res.data.currentStockPrice.toFixed(2)
-            this.currentWeight = res.data.currentWeight.toFixed(2)
+            this.currentStock = this.formatNumber(res.data.currentStock)
+            this.currentStockPrice = this.formatNumber(res.data.currentStockPrice)
+            this.currentWeight = this.formatNumber(res.data.currentWeight)
             this.showStockPrice = res.data.showStockPrice
           } else if(res.code===510){
             this.$message.warning(res.data)
           } else {
-            this.$message.warning(res.data.message)
+            this.$message.warning((res.data && res.data.message) || res.data || '获取数据失败')
           }
           this.loading = false;
         })

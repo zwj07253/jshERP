@@ -106,7 +106,7 @@ export const JeecgListMixin = {
         } else if(res.code===510){
           this.$message.warning(res.data)
         } else {
-          this.$message.warning(res.data.message)
+          this.$message.warning((res.data && res.data.message) || res.data || '获取数据失败')
         }
         this.loading = false
         this.onClearSelected()
@@ -497,6 +497,13 @@ export const JeecgListMixin = {
         }
       }
     },
+    formatNumber(value, precision = 2) {
+      const number = Number(value)
+      if (!Number.isFinite(number)) {
+        return Number(0).toFixed(precision)
+      }
+      return number.toFixed(precision)
+    },
     /** 表格增加合计行 */
     tableAddTotalRow(columns, dataSource) {
       if(dataSource.length>0 && this.ipagination.pageSize%10===1) {
@@ -514,8 +521,9 @@ export const JeecgListMixin = {
             let total = 0
             dataSource.forEach(data => {
               if(parseCols.indexOf(dataIndex+',')>-1) {
-                if(data[dataIndex]) {
-                  total += Number.parseFloat(data[dataIndex])
+                const value = Number.parseFloat(data[dataIndex])
+                if(Number.isFinite(value)) {
+                  total += value
                 } else {
                   total += 0
                 }

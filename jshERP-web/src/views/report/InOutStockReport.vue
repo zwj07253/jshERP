@@ -284,9 +284,11 @@
         param.monthTime = this.queryParam.monthTime;
         getAction(this.url.totalCountMoney, param).then((res)=>{
           if(res && res.code === 200) {
-            this.totalStockStr = res.data.totalStock.toFixed(2)
-            this.totalCountMoneyStr = res.data.totalCount.toFixed(2)
+            this.totalStockStr = this.formatNumber(res.data.totalStock)
+            this.totalCountMoneyStr = this.formatNumber(res.data.totalCount)
             this.showStockPrice = res.data.showStockPrice
+          } else {
+            this.$message.warning((res && res.data && res.data.message) || (res && res.data) || '获取数据失败')
           }
         })
       },
