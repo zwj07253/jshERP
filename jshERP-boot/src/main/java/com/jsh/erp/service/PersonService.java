@@ -202,10 +202,19 @@ public class PersonService {
     }
 
     public String getPersonByMapAndIds(Map<Long,String> personMap, String personIds)throws Exception {
-        List<Long> ids = StringUtil.strToLongList(personIds);
         StringBuffer sb = new StringBuffer();
-        for(Long id: ids){
-            sb.append(personMap.get(id) + " ");
+        String[] ids = personIds.split(",");
+        for(String idStr: ids){
+            if(StringUtil.isEmpty(idStr)) {
+                continue;
+            }
+            idStr = idStr.trim();
+            if(StringUtil.isNumeric(idStr)) {
+                String personName = personMap.get(Long.parseLong(idStr));
+                sb.append(StringUtil.isNotEmpty(personName) ? personName : idStr).append(" ");
+            } else {
+                sb.append(idStr).append(" ");
+            }
         }
         return sb.toString();
     }

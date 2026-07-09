@@ -357,7 +357,7 @@ public class DepotHeadService {
             List<AccountItem> list = accountHeadService.getFinancialBillPriceByBillIdList(idList);
             if(list!=null && !list.isEmpty()) {
                 for (AccountItem accountItem : list) {
-                    if(accountItem!=null) {
+                    if(accountItem!=null && accountItem.getEachAmount()!=null) {
                         billListMap.put(accountItem.getBillId(), accountItem.getEachAmount().abs());
                     }
                 }
