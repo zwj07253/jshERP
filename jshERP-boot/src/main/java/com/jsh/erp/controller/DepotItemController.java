@@ -967,10 +967,12 @@ public class DepotItemController {
                         String billOperMonth = Tools.dateToStr(item.getOperTime(), "yyyy-MM");
                         if (month.equals(billOperMonth)) {
                             if ("入库".equals(item.getType()) && "采购".equals(item.getSubType())) {
-                                outPrice = outPrice.add(item.getDiscountLastMoney());
+                                BigDecimal val = item.getDiscountLastMoney();
+                                outPrice = outPrice.add(val != null ? val : BigDecimal.ZERO);
                             }
                             if ("出库".equals(item.getType()) && "采购退货".equals(item.getSubType())) {
-                                inPrice = inPrice.add(item.getDiscountLastMoney());
+                                BigDecimal val = item.getDiscountLastMoney();
+                                inPrice = inPrice.add(val != null ? val : BigDecimal.ZERO);
                             }
                         }
                     }
@@ -988,10 +990,12 @@ public class DepotItemController {
                         String billOperMonth = Tools.dateToStr(item.getOperTime(), "yyyy-MM");
                         if (month.equals(billOperMonth)) {
                             if ("出库".equals(item.getType()) && "销售".equals(item.getSubType())) {
-                                outPrice = outPrice.add(item.getDiscountLastMoney());
+                                BigDecimal val = item.getDiscountLastMoney();
+                                outPrice = outPrice.add(val != null ? val : BigDecimal.ZERO);
                             }
                             if ("入库".equals(item.getType()) && "销售退货".equals(item.getSubType())) {
-                                inPrice = inPrice.add(item.getDiscountLastMoney());
+                                BigDecimal val = item.getDiscountLastMoney();
+                                inPrice = inPrice.add(val != null ? val : BigDecimal.ZERO);
                             }
                         }
                     }
@@ -1009,10 +1013,12 @@ public class DepotItemController {
                         String billOperMonth = Tools.dateToStr(item.getOperTime(), "yyyy-MM");
                         if (month.equals(billOperMonth)) {
                             if ("出库".equals(item.getType()) && "零售".equals(item.getSubType())) {
-                                outPrice = outPrice.add(item.getTotalPrice().abs());
+                                BigDecimal val = item.getTotalPrice();
+                                outPrice = outPrice.add(val != null ? val.abs() : BigDecimal.ZERO);
                             }
                             if ("入库".equals(item.getType()) && "零售退货".equals(item.getSubType())) {
-                                inPrice = inPrice.add(item.getTotalPrice().abs());
+                                BigDecimal val = item.getTotalPrice();
+                                inPrice = inPrice.add(val != null ? val.abs() : BigDecimal.ZERO);
                             }
                         }
                     }

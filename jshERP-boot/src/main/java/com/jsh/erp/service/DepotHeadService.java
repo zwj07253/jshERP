@@ -1450,8 +1450,9 @@ public class DepotHeadService {
 
         for (InOutPriceVo item : inOutPriceVoList) {
             Date operTime = item.getOperTime();
-            BigDecimal discountLastMoney = item.getDiscountLastMoney();
-            BigDecimal totalPriceAbs = item.getTotalPrice().abs();
+            BigDecimal discountLastMoney = item.getDiscountLastMoney() != null ? item.getDiscountLastMoney() : BigDecimal.ZERO;
+            BigDecimal totalPrice = item.getTotalPrice();
+            BigDecimal totalPriceAbs = totalPrice != null ? totalPrice.abs() : BigDecimal.ZERO;
 
             if (isWithinRange(operTime, todayDate, Tools.strToDate(getNow3()))) {
                 updateStatistics(statistics, item, "today", discountLastMoney, totalPriceAbs);
