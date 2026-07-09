@@ -24,6 +24,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -74,7 +75,7 @@ public class TenantService {
     }
 
     public List<TenantEx> select(String loginName, String type, String enabled, String remark)throws Exception {
-        List<TenantEx> list = null;
+        List<TenantEx> list = Collections.emptyList();
         try{
             if(BusinessConstants.DEFAULT_MANAGER.equals(userService.getCurrentUser().getLoginName())) {
                 PageUtils.startPage();

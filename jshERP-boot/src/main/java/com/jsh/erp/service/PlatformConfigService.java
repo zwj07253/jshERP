@@ -20,6 +20,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.mail.*;
 import javax.mail.internet.*;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
@@ -54,7 +55,7 @@ public class PlatformConfigService {
     public List<PlatformConfig> getPlatformConfig()throws Exception {
         PlatformConfigExample example = new PlatformConfigExample();
         example.createCriteria();
-        List<PlatformConfig> list=null;
+        List<PlatformConfig> list=Collections.emptyList();
         try{
             if(BusinessConstants.DEFAULT_MANAGER.equals(userService.getCurrentUser().getLoginName())) {
                 list = platformConfigMapper.selectByExample(example);
@@ -66,7 +67,7 @@ public class PlatformConfigService {
     }
 
     public List<PlatformConfig> select(String platformKey)throws Exception {
-        List<PlatformConfig> list=null;
+        List<PlatformConfig> list=Collections.emptyList();
         try{
             if(BusinessConstants.DEFAULT_MANAGER.equals(userService.getCurrentUser().getLoginName())) {
                 PageUtils.startPage();

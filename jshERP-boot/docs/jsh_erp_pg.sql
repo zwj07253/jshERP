@@ -2,10 +2,15 @@
 -- jshERP PostgreSQL 初始化脚本
 -- 从 MySQL jsh_erp.sql 转换而来
 -- 目标: PostgreSQL 15+
+-- 执行方式（避免 Windows PowerShell 管道把中文转成问号）:
+-- docker cp jshERP-boot/docs/jsh_erp_pg.sql jsherp-postgres:/tmp/jsh_erp_pg.sql
+-- docker exec jsherp-postgres psql -U postgres -d jsh_erp -f /tmp/jsh_erp_pg.sql
 -- ============================================================
 
 -- 创建数据库（在 psql 中执行）
 -- CREATE DATABASE jsh_erp WITH ENCODING 'UTF8';
+
+SET client_encoding = 'UTF8';
 
 -- ============================================================
 -- 1. jsh_account - 账户信息
@@ -38,10 +43,7 @@ COMMENT ON COLUMN jsh_account.is_default IS '是否默认';
 COMMENT ON COLUMN jsh_account.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_account.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_account (id, name, serial_no, initial_amount, current_amount, remark, enabled, sort, is_default, tenant_id, delete_flag) VALUES
-(17, '账户1', 'zzz111', 100.000000, 829.000000, 'aabb', TRUE, NULL, TRUE, 63, '0'),
-(18, '账户2', '1234131324', 200.000000, -1681.000000, 'bbbb', TRUE, NULL, FALSE, 63, '0');
-SELECT setval('jsh_account_id_seq', COALESCE((SELECT MAX(id) FROM jsh_account), 1));
+SELECT setval('jsh_account_id_seq', 1);
 
 -- ============================================================
 -- 2. jsh_account_head - 财务主表
@@ -90,12 +92,7 @@ COMMENT ON COLUMN jsh_account_head.source IS '单据来源，0-pc，1-手机';
 COMMENT ON COLUMN jsh_account_head.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_account_head.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_account_head (id, type, organ_id, hands_person_id, creator, change_amount, discount_money, total_price, account_id, bill_no, bill_time, remark, status, source, tenant_id, delete_flag) VALUES
-(1, '付款', 75, 14, 63, 25500.000000, 0.000000, 25500.000000, 17, 'FK-20260701-001', '2026-07-01 11:00:00', '付明月镜片厂货款-采购钛合金近视眼镜等', '1', '0', 63, '0'),
-(2, '付款', 77, 14, 63, 44000.000000, 0.000000, 44000.000000, 18, 'FK-20260701-002', '2026-07-01 15:00:00', '付蔡司光学货款-采购镜片', '1', '0', 63, '0'),
-(3, '收款', 78, 14, 63, 5390.000000, 0.000000, 5390.000000, 17, 'SK-20260702-001', '2026-07-02 10:00:00', '收爱尔眼科医院销售回款', '1', '0', 63, '0'),
-(4, '收入', NULL, 18, 63, 200.000000, 0.000000, 200.000000, 17, 'SR-20260705-001', '2026-07-05 09:00:00', '验光服务收入', '1', '0', 63, '0');
-SELECT setval('jsh_account_head_id_seq', COALESCE((SELECT MAX(id) FROM jsh_account_head), 1));
+SELECT setval('jsh_account_head_id_seq', 1);
 
 -- ============================================================
 -- 3. jsh_account_item - 财务子表
@@ -132,12 +129,7 @@ COMMENT ON COLUMN jsh_account_item.remark IS '单据备注';
 COMMENT ON COLUMN jsh_account_item.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_account_item.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_account_item (id, header_id, account_id, in_out_item_id, bill_id, need_debt, finish_debt, each_amount, remark, tenant_id, delete_flag) VALUES
-(1, 1, 17, NULL, NULL, 0.000000, 0.000000, 25500.000000, '采购钛合金近视眼镜+板材全框眼镜+TR90超轻眼镜', 63, '0'),
-(2, 2, 18, NULL, NULL, 0.000000, 0.000000, 44000.000000, '采购蔡司1.67非球面镜片+依视路1.74超薄镜片', 63, '0'),
-(3, 3, 17, NULL, NULL, 0.000000, 0.000000, 5390.000000, '爱尔眼科销售回款', 63, '0'),
-(4, 4, 17, 25, NULL, 0.000000, 0.000000, 200.000000, '验光服务收入', 63, '0');
-SELECT setval('jsh_account_item_id_seq', COALESCE((SELECT MAX(id) FROM jsh_account_item), 1));
+SELECT setval('jsh_account_item_id_seq', 1);
 
 -- ============================================================
 -- 4. jsh_depot - 仓库表
@@ -174,13 +166,7 @@ COMMENT ON COLUMN jsh_depot.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_depot.delete_flag IS '删除标记，0未删除，1删除';
 COMMENT ON COLUMN jsh_depot.is_default IS '是否默认';
 
-INSERT INTO jsh_depot (id, name, address, warehousing, truckage, type, sort, remark, principal, enabled, tenant_id, delete_flag, is_default) VALUES
-(14, '仓库1', 'dizhi', 12.000000, 12.000000, 0, '1', '描述', 131, TRUE, 63, '0', TRUE),
-(15, '仓库2', '地址100', 555.000000, 666.000000, 0, '2', 'dfdf', 131, TRUE, 63, '0', FALSE),
-(17, '仓库3', '123123', 123.000000, 123.000000, 0, '3', '123', 131, TRUE, 63, '0', FALSE),
-(18, '眼镜成品仓', '上海市浦东新区仓库路1号', 0.000000, 0.000000, 0, '4', '存放眼镜成品', 131, TRUE, 63, '0', FALSE),
-(19, '镜片原料仓', '上海市浦东新区仓库路2号', 0.000000, 0.000000, 0, '5', '存放镜片原料', 131, TRUE, 63, '0', FALSE);
-SELECT setval('jsh_depot_id_seq', COALESCE((SELECT MAX(id) FROM jsh_depot), 1));
+SELECT setval('jsh_depot_id_seq', 1);
 
 -- ============================================================
 -- 5. jsh_depot_head - 单据主表
@@ -264,12 +250,7 @@ COMMENT ON COLUMN jsh_depot_head.link_apply IS '关联请购单';
 COMMENT ON COLUMN jsh_depot_head.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_depot_head.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_depot_head (id, type, sub_type, default_number, number, create_time, oper_time, organ_id, creator, account_id, change_amount, back_amount, total_price, pay_type, bill_type, remark, sales_man, status, purchase_status, source, tenant_id, delete_flag) VALUES
-(1, '入库', '采购', 'PO-20260701-001', 'PO-20260701-001', '2026-07-01 10:30:00', '2026-07-01 10:30:00', 75, 63, 17, 25500.000000, 0.000000, 25500.000000, '现金', NULL, '采购钛合金近视眼镜和TR90超轻眼镜', '20', '1', '2', '0', 63, '0'),
-(2, '入库', '采购', 'PO-20260701-002', 'PO-20260701-002', '2026-07-01 14:00:00', '2026-07-01 14:00:00', 77, 63, 18, 44000.000000, 0.000000, 44000.000000, '银行转帐', NULL, '采购蔡司和依视路镜片', '20', '1', '2', '0', 63, '0'),
-(3, '出库', '销售', 'SO-20260702-001', 'SO-20260702-001', '2026-07-02 09:00:00', '2026-07-02 09:00:00', 78, 63, 17, 5390.000000, 0.000000, 5390.000000, '现金', NULL, '爱尔眼科采购近视眼镜、太阳镜和隐形眼镜', '20', '1', '2', '0', 63, '0'),
-(4, '出库', '销售', 'SO-20260703-001', 'SO-20260703-001', '2026-07-03 15:00:00', '2026-07-03 15:00:00', 79, 63, NULL, 3192.000000, 0.000000, 3340.000000, '月结', NULL, '大光明眼镜店补货', '20', '0', '0', '0', 63, '0');
-SELECT setval('jsh_depot_head_id_seq', COALESCE((SELECT MAX(id) FROM jsh_depot_head), 1));
+SELECT setval('jsh_depot_head_id_seq', 1);
 
 -- ============================================================
 -- 6. jsh_depot_item - 单据子表
@@ -335,19 +316,7 @@ COMMENT ON COLUMN jsh_depot_item.link_id IS '关联明细id';
 COMMENT ON COLUMN jsh_depot_item.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_depot_item.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_depot_item (id, header_id, material_id, material_extend_id, material_unit, sku, oper_number, basic_number, unit_price, purchase_unit_price, all_price, remark, depot_id, tenant_id, delete_flag) VALUES
-(1, 1, 620, 40, '副', NULL, 100.000000, 100.000000, 150.000000, 150.000000, 15000.000000, '', 18, 63, '0'),
-(2, 1, 621, 41, '副', NULL, 50.000000, 50.000000, 120.000000, 120.000000, 6000.000000, '', 18, 63, '0'),
-(3, 1, 628, 48, '副', NULL, 50.000000, 50.000000, 90.000000, 90.000000, 4500.000000, '', 18, 63, '0'),
-(4, 2, 626, 46, '片', NULL, 100.000000, 100.000000, 180.000000, 180.000000, 18000.000000, '', 19, 63, '0'),
-(5, 2, 627, 47, '片', NULL, 100.000000, 100.000000, 260.000000, 260.000000, 26000.000000, '', 19, 63, '0'),
-(6, 3, 620, 40, '副', NULL, 10.000000, 10.000000, 280.000000, 280.000000, 2800.000000, '', 18, 63, '0'),
-(7, 3, 622, 42, '副', NULL, 5.000000, 5.000000, 420.000000, 420.000000, 2100.000000, '', 18, 63, '0'),
-(8, 3, 624, 44, '盒', NULL, 10.000000, 10.000000, 60.000000, 60.000000, 600.000000, '', 18, 63, '0'),
-(9, 4, 621, 41, '副', NULL, 8.000000, 8.000000, 230.000000, 230.000000, 1840.000000, '', 18, 63, '0'),
-(10, 4, 625, 45, '盒', NULL, 12.000000, 12.000000, 80.000000, 80.000000, 960.000000, '', 18, 63, '0'),
-(11, 4, 628, 48, '副', NULL, 3.000000, 3.000000, 180.000000, 180.000000, 540.000000, '', 18, 63, '0');
-SELECT setval('jsh_depot_item_id_seq', COALESCE((SELECT MAX(id) FROM jsh_depot_item), 1));
+SELECT setval('jsh_depot_item_id_seq', 1);
 
 -- ============================================================
 -- 7. jsh_function - 功能模块表
@@ -384,6 +353,7 @@ COMMENT ON COLUMN jsh_function.push_btn IS '功能按钮';
 COMMENT ON COLUMN jsh_function.icon IS '图标';
 COMMENT ON COLUMN jsh_function.delete_flag IS '删除标记，0未删除，1删除';
 
+-- ============================================
 INSERT INTO jsh_function (id, number, name, parent_number, url, component, state, sort, enabled, type, push_btn, icon, delete_flag) VALUES
 (1, '0001', '系统管理', '0', '/system', '/layouts/TabLayout', TRUE, '0910', TRUE, '电脑版', '', 'setting', '0'),
 (13, '000102', '角色管理', '0001', '/system/role', '/system/RoleList', FALSE, '0130', TRUE, '电脑版', '1', 'profile', '0'),
@@ -449,7 +419,9 @@ INSERT INTO jsh_function (id, number, name, parent_number, url, component, state
 (258, '000112', '平台配置', '0001', '/system/platform_config', '/system/PlatformConfigList', FALSE, '0175', TRUE, '电脑版', '', 'profile', '0'),
 (259, '030105', '零售统计', '0301', '/report/retail_out_report', '/report/RetailOutReport', FALSE, '0615', TRUE, '电脑版', '', 'profile', '0'),
 (260, '000113', '字典管理', '0001', '/system/dict', '/system/DictList', FALSE, '0172', TRUE, '电脑版', '', 'profile', '0'),
-(261, '050203', '请购单', '0502', '/bill/purchase_apply', '/bill/PurchaseApplyList', FALSE, '0330', TRUE, '电脑版', '1,2,3,7', 'profile', '0');
+(261, '050203', '请购单', '0502', '/bill/purchase_apply', '/bill/PurchaseApplyList', FALSE, '0330', TRUE, '电脑版', '1,2,3,7', 'profile', '0')
+ON CONFLICT (id) DO NOTHING;
+
 SELECT setval('jsh_function_id_seq', COALESCE((SELECT MAX(id) FROM jsh_function), 1));
 
 -- ============================================================
@@ -477,14 +449,7 @@ COMMENT ON COLUMN jsh_in_out_item.sort IS '排序';
 COMMENT ON COLUMN jsh_in_out_item.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_in_out_item.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_in_out_item (id, name, type, remark, enabled, sort, tenant_id, delete_flag) VALUES
-(21, '快递费', '支出', '', TRUE, NULL, 63, '0'),
-(22, '房租收入', '收入', '', TRUE, NULL, 63, '0'),
-(23, '利息收入', '收入', '收入', TRUE, NULL, 63, '0'),
-(24, '镜片加工费', '支出', '镜片加工服务费', TRUE, NULL, 63, '0'),
-(25, '验光服务收入', '收入', '验光服务收入', TRUE, NULL, 63, '0'),
-(26, '眼镜维修收入', '收入', '眼镜维修保养收入', TRUE, NULL, 63, '0');
-SELECT setval('jsh_in_out_item_id_seq', COALESCE((SELECT MAX(id) FROM jsh_in_out_item), 1));
+SELECT setval('jsh_in_out_item_id_seq', 1);
 
 -- ============================================================
 -- 9. jsh_log - 操作日志
@@ -574,26 +539,7 @@ COMMENT ON COLUMN jsh_material.attribute IS '多属性信息';
 COMMENT ON COLUMN jsh_material.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_material.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_material (id, category_id, name, mfrs, model, standard, brand, mnemonic, color, unit, remark, img_name, unit_id, expiry_num, weight, enabled, other_field1, other_field2, other_field3, enable_serial_number, enable_batch_number, position, attribute, tenant_id, delete_flag) VALUES
-(568, 17, '商品1', '制1', 'sp1', '', NULL, NULL, '', '个', '', NULL, NULL, NULL, NULL, TRUE, '', '', '', '0', '0', NULL, NULL, 63, '0'),
-(569, 17, '商品2', '', 'sp2', '', NULL, NULL, '', '只', '', NULL, NULL, NULL, NULL, TRUE, '', '', '', '0', '0', NULL, NULL, 63, '0'),
-(570, 17, '商品3', '', 'sp3', '', NULL, NULL, '', '个', '', NULL, NULL, NULL, NULL, TRUE, '', '', '', '0', '0', NULL, NULL, 63, '0'),
-(577, NULL, '商品8', '', 'sp8', '', NULL, NULL, '', '', '', NULL, 15, NULL, NULL, TRUE, '', '', '', '0', '0', NULL, NULL, 63, '0'),
-(579, 21, '商品17', '', 'sp17', '', NULL, NULL, '', '', '', NULL, 15, NULL, NULL, TRUE, '', '', '', '0', '0', NULL, NULL, 63, '0'),
-(586, 17, '序列号商品测试', '', 'xlh123', '', NULL, NULL, '', '个', '', NULL, NULL, NULL, NULL, TRUE, '', '', '', '1', '0', NULL, NULL, 63, '0'),
-(587, 17, '商品test1', '南通中远', '', 'test1', NULL, NULL, '', '个', '', NULL, NULL, NULL, NULL, TRUE, '', '', '', '0', '0', NULL, NULL, 63, '0'),
-(588, 21, '商品200', 'fafda', 'weqwe', '300ml', NULL, NULL, '红色', '个', 'aaaabbbbb', NULL, NULL, NULL, NULL, TRUE, '', '', '', '0', '0', NULL, NULL, 63, '0'),
-(619, NULL, '衣服', NULL, NULL, NULL, NULL, NULL, NULL, '件', NULL, '', NULL, NULL, NULL, TRUE, NULL, NULL, NULL, '0', '0', NULL, NULL, 63, '0'),
-(620, 23, '钛合金半框近视眼镜', 'TJ-001', '', '', '明月', NULL, '', '副', '', NULL, 22, NULL, NULL, TRUE, '', '', '', '0', '0', NULL, NULL, 63, '0'),
-(621, 23, '板材全框近视眼镜', 'BC-002', '', '', '暴龙', NULL, '', '副', '', NULL, 22, NULL, NULL, TRUE, '', '', '', '0', '0', NULL, NULL, 63, '0'),
-(622, 24, '偏光太阳镜', 'PG-001', '', '', '雷朋', NULL, '', '副', '', NULL, 22, NULL, NULL, TRUE, '', '', '', '0', '0', NULL, NULL, 63, '0'),
-(623, 24, '运动太阳镜', 'YD-001', '', '', '欧克利', NULL, '', '副', '', NULL, 22, NULL, NULL, TRUE, '', '', '', '0', '0', NULL, NULL, 63, '0'),
-(624, 25, '日抛隐形眼镜(30片)', 'RP-001', '', '', '海昌', NULL, '', '盒', '', NULL, NULL, NULL, NULL, TRUE, '', '', '', '0', '0', NULL, NULL, 63, '0'),
-(625, 25, '月抛隐形眼镜(6片)', 'MP-001', '', '', '强生', NULL, '', '盒', '', NULL, NULL, NULL, NULL, TRUE, '', '', '', '0', '0', NULL, NULL, 63, '0'),
-(626, 26, '1.67非球面镜片', 'FQ-167', '', '', '蔡司', NULL, '', '片', '', NULL, NULL, NULL, NULL, TRUE, '', '', '', '0', '0', NULL, NULL, 63, '0'),
-(627, 26, '1.74超薄镜片', 'CB-174', '', '', '依视路', NULL, '', '片', '', NULL, NULL, NULL, NULL, TRUE, '', '', '', '0', '0', NULL, NULL, 63, '0'),
-(628, 23, 'TR90超轻近视眼镜', 'TR-003', '', '', '帕莎', NULL, '', '副', '', NULL, 22, NULL, NULL, TRUE, '', '', '', '0', '0', NULL, NULL, 63, '0');
-SELECT setval('jsh_material_id_seq', COALESCE((SELECT MAX(id) FROM jsh_material), 1));
+SELECT setval('jsh_material_id_seq', 1);
 
 -- ============================================================
 -- 11. jsh_material_attribute - 产品属性表
@@ -614,15 +560,7 @@ COMMENT ON COLUMN jsh_material_attribute.attribute_value IS '属性值';
 COMMENT ON COLUMN jsh_material_attribute.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_material_attribute.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_material_attribute (id, attribute_name, attribute_value, tenant_id, delete_flag) VALUES
-(1, '多颜色', '红色|橙色|黄色|绿色|蓝色|紫色', 63, '0'),
-(2, '多尺寸', 'S|M|L|XL|XXL|XXXL', 63, '0'),
-(3, '自定义1', '小米|华为', 63, '0'),
-(4, '自定义2', NULL, 63, '0'),
-(5, '自定义3', NULL, 63, '0'),
-(6, '镜片度数', '-2.00|-3.00|-4.00|-5.00|-6.00', 63, '0'),
-(7, '镜框颜色', '黑色|银色|金色|玫瑰金|透明', 63, '0');
-SELECT setval('jsh_material_attribute_id_seq', COALESCE((SELECT MAX(id) FROM jsh_material_attribute), 1));
+SELECT setval('jsh_material_attribute_id_seq', 1);
 
 -- ============================================================
 -- 12. jsh_material_category - 产品类型表
@@ -656,15 +594,7 @@ COMMENT ON COLUMN jsh_material_category.update_time IS '更新时间';
 COMMENT ON COLUMN jsh_material_category.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_material_category.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_material_category (id, name, category_level, parent_id, sort, serial_no, remark, create_time, update_time, tenant_id, delete_flag) VALUES
-(17, '目录1', NULL, NULL, '11', 'wae12', 'eee', '2019-04-10 22:18:12', '2021-02-17 15:11:35', 63, '0'),
-(21, '目录2', NULL, 17, '22', 'ada112', 'ddd', '2020-07-20 23:08:44', '2020-07-20 23:08:44', 63, '0'),
-(22, '眼镜', NULL, NULL, '1', 'YJ001', '眼镜大类', '2026-07-01 10:00:00', '2026-07-01 10:00:00', 63, '0'),
-(23, '近视眼镜', NULL, 22, '1', 'YJ00101', '近视眼镜', '2026-07-01 10:00:00', '2026-07-01 10:00:00', 63, '0'),
-(24, '太阳镜', NULL, 22, '2', 'YJ00102', '太阳镜', '2026-07-01 10:00:00', '2026-07-01 10:00:00', 63, '0'),
-(25, '隐形眼镜', NULL, 22, '3', 'YJ00103', '隐形眼镜', '2026-07-01 10:00:00', '2026-07-01 10:00:00', 63, '0'),
-(26, '镜片', NULL, 22, '4', 'YJ00104', '镜片', '2026-07-01 10:00:00', '2026-07-01 10:00:00', 63, '0');
-SELECT setval('jsh_material_category_id_seq', COALESCE((SELECT MAX(id) FROM jsh_material_category), 1));
+SELECT setval('jsh_material_category_id_seq', 1);
 
 -- ============================================================
 -- 13. jsh_material_current_stock - 产品当前库存
@@ -691,24 +621,7 @@ COMMENT ON COLUMN jsh_material_current_stock.current_unit_price IS '当前单价
 COMMENT ON COLUMN jsh_material_current_stock.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_material_current_stock.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_material_current_stock (id, material_id, depot_id, current_number, current_unit_price, tenant_id, delete_flag) VALUES
-(19, 588, 14, 7.000000, NULL, 63, '0'),
-(20, 568, 14, 2.000000, NULL, 63, '0'),
-(21, 568, 15, 1.000000, NULL, 63, '0'),
-(22, 570, 14, 8.000000, NULL, 63, '0'),
-(23, 619, 14, 5.000000, NULL, 63, '0'),
-(24, 619, 15, 0.000000, NULL, 63, '0'),
-(25, 619, 17, 0.000000, NULL, 63, '0'),
-(26, 620, 14, 50.000000, NULL, 63, '0'),
-(27, 621, 14, 80.000000, NULL, 63, '0'),
-(28, 622, 14, 30.000000, NULL, 63, '0'),
-(29, 623, 15, 20.000000, NULL, 63, '0'),
-(30, 624, 14, 200.000000, NULL, 63, '0'),
-(31, 625, 14, 150.000000, NULL, 63, '0'),
-(32, 626, 15, 100.000000, NULL, 63, '0'),
-(33, 627, 15, 60.000000, NULL, 63, '0'),
-(34, 628, 14, 45.000000, NULL, 63, '0');
-SELECT setval('jsh_material_current_stock_id_seq', COALESCE((SELECT MAX(id) FROM jsh_material_current_stock), 1));
+SELECT setval('jsh_material_current_stock_id_seq', 1);
 
 -- ============================================================
 -- 14. jsh_material_extend - 产品价格扩展
@@ -753,31 +666,7 @@ COMMENT ON COLUMN jsh_material_extend.update_time IS '更新时间戳';
 COMMENT ON COLUMN jsh_material_extend.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_material_extend.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_material_extend (id, material_id, bar_code, commodity_unit, sku, purchase_decimal, commodity_decimal, wholesale_decimal, low_decimal, default_flag, create_time, create_serial, update_serial, update_time, tenant_id, delete_flag) VALUES
-(1, 587, '1000', '个', NULL, 11.000000, 22.000000, 22.000000, 22.000000, '1', '2020-02-20 23:22:03', 'jsh', 'jsh', 1595263657135, 63, '0'),
-(2, 568, '1001', '个', NULL, 11.000000, 15.000000, 15.000000, 15.000000, '1', '2020-02-20 23:44:57', 'jsh', 'jsh', 1595265439418, 63, '0'),
-(3, 569, '1002', '只', NULL, 10.000000, 15.000000, 15.000000, 13.000000, '1', '2020-02-20 23:45:15', 'jsh', 'jsh', 1582213514731, 63, '0'),
-(4, 570, '1003', '个', NULL, 8.000000, 15.000000, 14.000000, 13.000000, '1', '2020-02-20 23:45:37', 'jsh', 'jsh', 1587657604430, 63, '0'),
-(5, 577, '1004', '个', NULL, 10.000000, 20.000000, 20.000000, 20.000000, '1', '2020-02-20 23:46:36', 'jsh', 'jsh', 1582213596494, 63, '0'),
-(6, 577, '1005', '箱', NULL, 120.000000, 240.000000, 240.000000, 240.000000, '0', '2020-02-20 23:46:36', 'jsh', 'jsh', 1582213596497, 63, '0'),
-(7, 579, '1006', '个', NULL, 20.000000, 30.000000, 30.000000, 30.000000, '1', '2020-02-20 23:47:04', 'jsh', 'jsh', 1595264270458, 63, '0'),
-(8, 579, '1007', '箱', NULL, 240.000000, 360.000000, 360.000000, 360.000000, '0', '2020-02-20 23:47:04', 'jsh', 'jsh', 1595264270466, 63, '0'),
-(9, 586, '1008', '个', NULL, 12.000000, 15.000000, 15.000000, 15.000000, '1', '2020-02-20 23:47:23', 'jsh', 'jsh', 1595254981896, 63, '0'),
-(10, 588, '1009', '个', NULL, 11.000000, 22.000000, 22.000000, 22.000000, '1', '2020-07-21 00:58:15', 'jsh', 'jsh', 1614699799073, 63, '0'),
-(36, 619, '1014', '件', '橙色,M', 12.000000, 15.000000, 14.000000, NULL, '1', '2021-07-28 01:00:20', 'jsh', 'jsh', 1627405220316, 63, '0'),
-(37, 619, '1015', '件', '橙色,L', 12.000000, 15.000000, 14.000000, NULL, '0', '2021-07-28 01:00:20', 'jsh', 'jsh', 1627405220327, 63, '0'),
-(38, 619, '1016', '件', '绿色,M', 12.000000, 15.000000, 14.000000, NULL, '0', '2021-07-28 01:00:20', 'jsh', 'jsh', 1627405220336, 63, '0'),
-(39, 619, '1017', '件', '绿色,L', 12.000000, 15.000000, 14.000000, NULL, '0', '2021-07-28 01:00:20', 'jsh', 'jsh', 1627405220346, 63, '0'),
-(40, 620, '2001', '副', NULL, 150.000000, 399.000000, 280.000000, 250.000000, '1', '2026-07-01 10:00:00', 'jsh', 'jsh', 1751366400000, 63, '0'),
-(41, 621, '2002', '副', NULL, 120.000000, 329.000000, 230.000000, 200.000000, '1', '2026-07-01 10:00:00', 'jsh', 'jsh', 1751366400000, 63, '0'),
-(42, 622, '2003', '副', NULL, 200.000000, 599.000000, 420.000000, 380.000000, '1', '2026-07-01 10:00:00', 'jsh', 'jsh', 1751366400000, 63, '0'),
-(43, 623, '2004', '副', NULL, 280.000000, 799.000000, 560.000000, 500.000000, '1', '2026-07-01 10:00:00', 'jsh', 'jsh', 1751366400000, 63, '0'),
-(44, 624, '2005', '盒', NULL, 35.000000, 89.000000, 60.000000, 50.000000, '1', '2026-07-01 10:00:00', 'jsh', 'jsh', 1751366400000, 63, '0'),
-(45, 625, '2006', '盒', NULL, 45.000000, 119.000000, 80.000000, 70.000000, '1', '2026-07-01 10:00:00', 'jsh', 'jsh', 1751366400000, 63, '0'),
-(46, 626, '2007', '片', NULL, 180.000000, 480.000000, 350.000000, 300.000000, '1', '2026-07-01 10:00:00', 'jsh', 'jsh', 1751366400000, 63, '0'),
-(47, 627, '2008', '片', NULL, 260.000000, 680.000000, 500.000000, 450.000000, '1', '2026-07-01 10:00:00', 'jsh', 'jsh', 1751366400000, 63, '0'),
-(48, 628, '2009', '副', NULL, 90.000000, 259.000000, 180.000000, 150.000000, '1', '2026-07-01 10:00:00', 'jsh', 'jsh', 1751366400000, 63, '0');
-SELECT setval('jsh_material_extend_id_seq', COALESCE((SELECT MAX(id) FROM jsh_material_extend), 1));
+SELECT setval('jsh_material_extend_id_seq', 1);
 
 -- ============================================================
 -- 15. jsh_material_initial_stock - 产品初始库存
@@ -828,11 +717,7 @@ COMMENT ON COLUMN jsh_material_property.another_name IS '别名';
 COMMENT ON COLUMN jsh_material_property.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_material_property.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_material_property (id, native_name, enabled, sort, another_name, tenant_id, delete_flag) VALUES
-(1, '镜框材质', TRUE, '1', 'material', 63, '0'),
-(2, '适用人群', TRUE, '2', 'crowd', 63, '0'),
-(3, '镜片折射率', TRUE, '3', 'refractive', 63, '0');
-SELECT setval('jsh_material_property_id_seq', COALESCE((SELECT MAX(id) FROM jsh_material_property), 1));
+SELECT setval('jsh_material_property_id_seq', 1);
 
 -- ============================================================
 -- 17. jsh_msg - 消息表
@@ -861,9 +746,7 @@ COMMENT ON COLUMN jsh_msg.status IS '状态，1未读 2已读';
 COMMENT ON COLUMN jsh_msg.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_msg.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_msg (id, msg_title, msg_content, create_time, type, user_id, status, tenant_id, delete_flag) VALUES
-(2, '标题1', '内容1', '2019-09-10 00:11:39', '类型1', 63, '2', 63, '0');
-SELECT setval('jsh_msg_id_seq', COALESCE((SELECT MAX(id) FROM jsh_msg), 1));
+SELECT setval('jsh_msg_id_seq', 1);
 
 -- ============================================================
 -- 18. jsh_orga_user_rel - 部门用户关系表
@@ -897,15 +780,7 @@ COMMENT ON COLUMN jsh_orga_user_rel.update_time IS '更新时间';
 COMMENT ON COLUMN jsh_orga_user_rel.updater IS '更新人';
 COMMENT ON COLUMN jsh_orga_user_rel.tenant_id IS '租户id';
 
-INSERT INTO jsh_orga_user_rel (id, orga_id, user_id, user_blng_orga_dspl_seq, delete_flag, create_time, creator, update_time, updater, tenant_id) VALUES
-(10, 13, 131, '2', '0', '2019-12-28 12:13:15', 63, '2021-03-18 22:33:19', 63, 63),
-(11, 12, 63, '15', '0', '2020-09-13 18:42:45', 63, '2021-03-19 00:11:40', 63, 63),
-(12, 13, 135, '9', '0', '2021-03-18 22:24:25', 63, '2021-03-19 00:09:23', 63, 63),
-(13, 13, 134, '1', '0', '2021-03-18 22:31:39', 63, '2021-03-18 23:59:55', 63, 63),
-(14, 22, 133, '22', '0', '2021-03-18 22:31:44', 63, '2021-03-18 22:32:04', 63, 63),
-(15, 12, 144, NULL, '0', '2021-03-19 00:00:40', 63, '2021-03-19 00:08:07', 63, 63),
-(16, 12, 145, NULL, '0', '2021-03-19 00:03:44', 63, '2021-03-19 00:03:44', 63, 63);
-SELECT setval('jsh_orga_user_rel_id_seq', COALESCE((SELECT MAX(id) FROM jsh_orga_user_rel), 1));
+SELECT setval('jsh_orga_user_rel_id_seq', 1);
 
 -- ============================================================
 -- 19. jsh_organization - 部门表
@@ -936,11 +811,7 @@ COMMENT ON COLUMN jsh_organization.update_time IS '更新时间';
 COMMENT ON COLUMN jsh_organization.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_organization.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_organization (id, org_no, org_abr, parent_id, sort, remark, create_time, update_time, tenant_id, delete_flag) VALUES
-(12, '001', '测试部门', NULL, '2', 'aaaa2', '2019-12-28 12:13:01', '2019-12-28 12:13:01', 63, '0'),
-(13, 'jg1', '部门1', 12, '3', '', '2020-07-21 00:09:57', '2020-07-21 00:10:22', 63, '0'),
-(14, '12', '部门2', 13, '4', '', '2020-07-21 22:45:42', '2021-02-15 22:18:30', 63, '0');
-SELECT setval('jsh_organization_id_seq', COALESCE((SELECT MAX(id) FROM jsh_organization), 1));
+SELECT setval('jsh_organization_id_seq', 1);
 
 -- ============================================================
 -- 20. jsh_person - 经手人表
@@ -965,15 +836,7 @@ COMMENT ON COLUMN jsh_person.sort IS '排序';
 COMMENT ON COLUMN jsh_person.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_person.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_person (id, type, name, enabled, sort, tenant_id, delete_flag) VALUES
-(14, '销售员', '小李', TRUE, NULL, 63, '0'),
-(15, '销售员', '小军', TRUE, NULL, 63, '0'),
-(16, '财务员', '小夏', TRUE, NULL, 63, '0'),
-(17, '财务员', '小曹', TRUE, NULL, 63, '0'),
-(18, '验光师', '张验光', TRUE, NULL, 63, '0'),
-(19, '加工师', '李加工', TRUE, NULL, 63, '0'),
-(20, '销售员', '王眼镜', TRUE, NULL, 63, '0');
-SELECT setval('jsh_person_id_seq', COALESCE((SELECT MAX(id) FROM jsh_person), 1));
+SELECT setval('jsh_person_id_seq', 1);
 
 -- ============================================================
 -- 21. jsh_platform_config - 平台参数
@@ -991,30 +854,7 @@ COMMENT ON COLUMN jsh_platform_config.platform_key IS '关键词';
 COMMENT ON COLUMN jsh_platform_config.platform_key_info IS '关键词名称';
 COMMENT ON COLUMN jsh_platform_config.platform_value IS '值';
 
-INSERT INTO jsh_platform_config (id, platform_key, platform_key_info, platform_value) VALUES
-(1, 'platform_name', '平台名称', 'YUEWEIERP'),
-(2, 'activation_code', '激活码', ''),
-(3, 'platform_url', '官方网站', ''),
-(4, 'bill_print_flag', '三联打印启用标记', '0'),
-(5, 'bill_print_url', '三联打印地址', ''),
-(6, 'pay_fee_url', '租户续费地址', ''),
-(7, 'register_flag', '注册启用标记', '1'),
-(8, 'app_activation_code', '手机端激活码', ''),
-(9, 'send_workflow_url', '发起流程地址', ''),
-(10, 'weixinUrl', '微信url', ''),
-(11, 'weixinAppid', '微信appid', ''),
-(12, 'weixinSecret', '微信secret', ''),
-(13, 'aliOss_endpoint', '阿里OSS-endpoint', ''),
-(14, 'aliOss_accessKeyId', '阿里OSS-accessKeyId', ''),
-(15, 'aliOss_accessKeySecret', '阿里OSS-accessKeySecret', ''),
-(16, 'aliOss_bucketName', '阿里OSS-bucketName', ''),
-(17, 'aliOss_linkUrl', '阿里OSS-linkUrl', ''),
-(18, 'bill_excel_url', '单据Excel地址', ''),
-(19, 'email_from', '邮件发送端-发件人', ''),
-(20, 'email_auth_code', '邮件发送端-授权码', ''),
-(21, 'email_smtp_host', '邮件发送端-SMTP服务器', ''),
-(22, 'checkcode_flag', '验证码启用标记', '1');
-SELECT setval('jsh_platform_config_id_seq', COALESCE((SELECT MAX(id) FROM jsh_platform_config), 1));
+SELECT setval('jsh_platform_config_id_seq', 1);
 
 -- ============================================================
 -- 22. jsh_role - 角色表
@@ -1045,11 +885,20 @@ COMMENT ON COLUMN jsh_role.sort IS '排序';
 COMMENT ON COLUMN jsh_role.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_role.delete_flag IS '删除标记，0未删除，1删除';
 
+SELECT setval('jsh_role_id_seq', 1);
+
 INSERT INTO jsh_role (id, name, type, price_limit, value, description, enabled, sort, tenant_id, delete_flag) VALUES
-(4, '管理员', '全部数据', NULL, NULL, NULL, TRUE, NULL, NULL, '0'),
-(10, '租户', '全部数据', NULL, NULL, '', TRUE, NULL, NULL, '0'),
-(16, '销售经理', '全部数据', NULL, NULL, 'ddd', TRUE, NULL, 63, '0'),
-(17, '销售代表', '个人数据', NULL, NULL, 'rrr', TRUE, NULL, 63, '0');
+(4, '管理员', '全部数据', NULL, NULL, '平台运维管理员', TRUE, NULL, NULL, '0')
+ON CONFLICT (id) DO UPDATE SET
+name = EXCLUDED.name,
+type = EXCLUDED.type,
+price_limit = EXCLUDED.price_limit,
+value = EXCLUDED.value,
+description = EXCLUDED.description,
+enabled = EXCLUDED.enabled,
+sort = EXCLUDED.sort,
+tenant_id = EXCLUDED.tenant_id,
+delete_flag = EXCLUDED.delete_flag;
 SELECT setval('jsh_role_id_seq', COALESCE((SELECT MAX(id) FROM jsh_role), 1));
 
 -- ============================================================
@@ -1072,8 +921,6 @@ COMMENT ON COLUMN jsh_sequence.current_val IS '当前值';
 COMMENT ON COLUMN jsh_sequence.increment_val IS '增长步数';
 COMMENT ON COLUMN jsh_sequence.remark IS '备注';
 
-INSERT INTO jsh_sequence (seq_name, min_value, max_value, current_val, increment_val, remark) VALUES
-('depot_number_seq', 1, 999999999999999999, 672, 1, '单据编号sequence');
 
 -- ============================================================
 -- 24. jsh_serial_number - 序列号表
@@ -1176,21 +1023,7 @@ COMMENT ON COLUMN jsh_supplier.creator IS '操作员';
 COMMENT ON COLUMN jsh_supplier.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_supplier.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_supplier (id, supplier, contacts, phone_num, email, description, isystem, type, enabled, advance_in, begin_need_get, begin_need_pay, all_need_get, all_need_pay, fax, telephone, address, tax_num, bank_name, account_number, tax_rate, sort, creator, tenant_id, delete_flag) VALUES
-(57, '供应商1', '小军', '12345678', '', '', NULL, '供应商', TRUE, 0.000000, 0.000000, 0.000000, 0.000000, 4.000000, '', '15000000000', '地址1', '', '', '', 12.000000, NULL, 63, 63, '0'),
-(58, '客户1', '小李', '12345678', '', '', NULL, '客户', TRUE, 0.000000, 0.000000, 0.000000, -100.000000, NULL, '', '', '', '', '', '', 12.000000, NULL, 63, 63, '0'),
-(59, '客户2', '小陈', '', '', '', NULL, '客户', TRUE, 0.000000, 0.000000, 0.000000, 0.000000, NULL, '', '', '', '', '', '', NULL, NULL, 63, 63, '0'),
-(60, '12312666', '小曹', '', '', '', NULL, '会员', TRUE, 970.000000, 0.000000, 0.000000, NULL, NULL, '', '13000000000', '', '', '', '', NULL, NULL, 63, 63, '0'),
-(68, '供应商3', '晓丽', '12345678', '', 'fasdfadf', NULL, '供应商', TRUE, 0.000000, 0.000000, 0.000000, 0.000000, -35.000000, '', '13000000000', 'aaaa', '1341324', '', '', 13.000000, NULL, 63, 63, '0'),
-(71, '客户3', '小周', '', '', '', NULL, '客户', TRUE, 0.000000, 0.000000, 0.000000, 0.000000, NULL, '', '', '', '', '', '', NULL, NULL, 63, 63, '0'),
-(74, '供应商5', '小季', '77779999', '', '', NULL, '供应商', TRUE, 0.000000, 0.000000, 5.000000, 0.000000, 5.000000, '', '15806283912', '', '', '', '', 3.000000, NULL, 63, 63, '0'),
-(75, '明月镜片厂', '张经理', '13800001111', 'zhangjy@mingyue.com', '国内知名镜片生产商', NULL, '供应商', TRUE, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, '', '021-58001111', '上海市浦东新区', '91310000MA1GXXXX', '工商银行上海分行', '6222021234567890001', 13.000000, '1', 63, 63, '0'),
-(76, '暴龙眼镜总代', '李总', '13800002222', 'lizong@bolon.com', '暴龙品牌区域总代理', NULL, '供应商', TRUE, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, '', '0592-58002222', '厦门市思明区', '91350200MA3GXXXX', '建设银行厦门分行', '6227001234567890002', 13.000000, '2', 63, 63, '0'),
-(77, '蔡司光学', '王采购', '13800003333', 'wangcg@zeiss.com', '德国蔡司光学中国代理', NULL, '供应商', TRUE, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, '', '020-58003333', '广州市天河区', '91440000MA5GXXXX', '中国银行广州分行', '6217001234567890003', 13.000000, '3', 63, 63, '0'),
-(78, '爱尔眼科医院', '陈主任', '13900001111', 'chenzr@aier.com', '连锁眼科医院', NULL, '客户', TRUE, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, '', '010-59001111', '北京市朝阳区', '', '', '', 0.000000, '1', 63, 63, '0'),
-(79, '大光明眼镜店', '刘店长', '13900002222', 'liudz@dgm.com', '杭州连锁眼镜店', NULL, '客户', TRUE, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, '', '0571-59002222', '杭州市西湖区', '', '', '', 0.000000, '2', 63, 63, '0'),
-(80, '博士眼镜连锁', '赵经理', '13900003333', 'zhaojl@boss.com', '深圳连锁眼镜零售', NULL, '客户', TRUE, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, '', '0755-59003333', '深圳市南山区', '', '', '', 0.000000, '3', 63, 63, '0');
-SELECT setval('jsh_supplier_id_seq', COALESCE((SELECT MAX(id) FROM jsh_supplier), 1));
+SELECT setval('jsh_supplier_id_seq', 1);
 
 -- ============================================================
 -- 26. jsh_sys_dict_data - 字典数据表
@@ -1230,12 +1063,7 @@ COMMENT ON COLUMN jsh_sys_dict_data.update_time IS '更新时间';
 COMMENT ON COLUMN jsh_sys_dict_data.remark IS '备注';
 COMMENT ON COLUMN jsh_sys_dict_data.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_sys_dict_data (dict_code, dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, update_by, update_time, remark, delete_flag) VALUES
-(1, 1, '男', '0', 'sys_user_sex', '', 'default', 'Y', '0', 'admin', '2021-12-15 21:36:18', 'admin', '2026-04-04 22:38:19', '性别男', '0'),
-(2, 2, '女', '1', 'sys_user_sex', '', 'default', 'N', '0', 'admin', '2021-12-15 21:36:18', 'admin', '2026-04-04 22:38:27', '性别女', '0'),
-(11, 1, '正常', '0', 'sys_normal_disable', NULL, 'green', 'N', '0', 'admin', '2026-04-03 22:31:34', 'admin', '2026-04-04 22:35:39', '正常状态', '0'),
-(12, 2, '停用', '1', 'sys_normal_disable', NULL, 'red', 'N', '0', 'admin', '2026-04-03 22:32:03', 'admin', '2026-04-04 21:38:10', '停用状态', '0');
-SELECT setval('jsh_sys_dict_data_dict_code_seq', COALESCE((SELECT MAX(dict_code) FROM jsh_sys_dict_data), 1));
+SELECT setval('jsh_sys_dict_data_dict_code_seq', 1);
 
 -- ============================================================
 -- 27. jsh_sys_dict_type - 字典类型表
@@ -1266,10 +1094,7 @@ COMMENT ON COLUMN jsh_sys_dict_type.update_time IS '更新时间';
 COMMENT ON COLUMN jsh_sys_dict_type.remark IS '备注';
 COMMENT ON COLUMN jsh_sys_dict_type.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_sys_dict_type (dict_id, dict_name, dict_type, status, create_by, create_time, update_by, update_time, remark, delete_flag) VALUES
-(1, '用户性别', 'sys_user_sex', '0', 'admin', '2021-12-15 21:36:18', 'admin', '2026-04-02 16:20:41', '用户性别列表', '0'),
-(12, '系统开关', 'sys_normal_disable', '0', 'admin', '2026-04-03 22:30:57', 'admin', '2026-04-04 21:41:09', '系统开关列表', '0');
-SELECT setval('jsh_sys_dict_type_dict_id_seq', COALESCE((SELECT MAX(dict_id) FROM jsh_sys_dict_type), 1));
+SELECT setval('jsh_sys_dict_type_dict_id_seq', 1);
 
 -- ============================================================
 -- 28. jsh_system_config - 系统参数
@@ -1331,9 +1156,7 @@ COMMENT ON COLUMN jsh_system_config.material_price_tax_flag IS '商品价格含�
 COMMENT ON COLUMN jsh_system_config.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_system_config.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_system_config (id, company_name, company_contacts, company_address, company_tel, company_fax, company_post_code, sale_agreement, depot_flag, customer_flag, minus_stock_flag, purchase_by_sale_flag, multi_level_approval_flag, multi_bill_type, force_approval_flag, update_unit_price_flag, over_link_bill_flag, in_out_manage_flag, multi_account_flag, move_avg_price_flag, audit_print_flag, zero_change_amount_flag, customer_static_price_flag, material_price_tax_flag, tenant_id, delete_flag) VALUES
-(11, '公司test', '小李', '地址1', '12345678', NULL, NULL, '注：本单为我公司与客户约定账期内结款的依据，由客户或其单位员工签字生效，并承担法律责任。', '0', '0', '1', '0', '0', '', '0', '1', '0', '0', '0', '0', '0', '0', '0', '0', 63, '0');
-SELECT setval('jsh_system_config_id_seq', COALESCE((SELECT MAX(id) FROM jsh_system_config), 1));
+SELECT setval('jsh_system_config_id_seq', 1);
 
 -- ============================================================
 -- 29. jsh_tenant - 租户
@@ -1365,9 +1188,7 @@ COMMENT ON COLUMN jsh_tenant.expire_time IS '到期时间';
 COMMENT ON COLUMN jsh_tenant.remark IS '备注';
 COMMENT ON COLUMN jsh_tenant.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_tenant (id, tenant_id, login_name, user_num_limit, type, enabled, create_time, expire_time, remark, delete_flag) VALUES
-(13, 63, 'jsh', 2000, '1', TRUE, '2021-02-17 23:19:17', '2099-02-17 23:19:17', NULL, '0');
-SELECT setval('jsh_tenant_id_seq', COALESCE((SELECT MAX(id) FROM jsh_tenant), 1));
+SELECT setval('jsh_tenant_id_seq', 1);
 
 -- ============================================================
 -- 30. jsh_unit - 多单位表
@@ -1401,14 +1222,7 @@ COMMENT ON COLUMN jsh_unit.enabled IS '启用';
 COMMENT ON COLUMN jsh_unit.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_unit.delete_flag IS '删除标记，0未删除，1删除';
 
-INSERT INTO jsh_unit (id, name, basic_unit, other_unit, other_unit_two, other_unit_three, ratio, ratio_two, ratio_three, enabled, tenant_id, delete_flag) VALUES
-(15, '个/(箱=12个)', '个', '箱', NULL, NULL, 12.000, NULL, NULL, TRUE, 63, '0'),
-(19, '个/(盒=15个)', '个', '盒', NULL, NULL, 15.000, NULL, NULL, TRUE, 63, '0'),
-(20, '盒/(箱=8盒)', '盒', '箱', NULL, NULL, 8.000, NULL, NULL, TRUE, 63, '0'),
-(21, '瓶/(箱=12瓶)', '瓶', '箱', NULL, NULL, 12.000, NULL, NULL, TRUE, 63, '0'),
-(22, '副/(盒=12副)', '副', '盒', NULL, NULL, 12.000, NULL, NULL, TRUE, 63, '0'),
-(23, '副/(箱=50副)', '副', '箱', NULL, NULL, 50.000, NULL, NULL, TRUE, 63, '0');
-SELECT setval('jsh_unit_id_seq', COALESCE((SELECT MAX(id) FROM jsh_unit), 1));
+SELECT setval('jsh_unit_id_seq', 1);
 
 -- ============================================================
 -- 31. jsh_user - 用户表
@@ -1452,10 +1266,27 @@ COMMENT ON COLUMN jsh_user.weixin_open_id IS '微信绑定';
 COMMENT ON COLUMN jsh_user.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_user.delete_flag IS '删除标记，0未删除，1删除';
 
+SELECT setval('jsh_user_id_seq', 1);
+
 INSERT INTO jsh_user (id, username, login_name, password, leader_flag, position, department, email, phonenum, ismanager, isystem, status, description, remark, weixin_open_id, tenant_id, delete_flag) VALUES
-(63, '测试用户', 'jsh', 'e10adc3949ba59abbe56e057f20f883e', '0', '主管', NULL, '666666@qq.com', '1123123123132', 1, 1, 0, '', NULL, NULL, 63, '0'),
-(120, '管理员', 'admin', 'e10adc3949ba59abbe56e057f20f883e', '0', NULL, NULL, NULL, NULL, 1, 0, 0, NULL, NULL, NULL, 0, '0'),
-(131, 'test123', 'test123', 'e10adc3949ba59abbe56e057f20f883e', '0', '总监', NULL, '7777777@qq.com', '', 1, 0, 0, '', NULL, NULL, 63, '0');
+(120, '管理员', 'admin', 'e10adc3949ba59abbe56e057f20f883e', '0', NULL, NULL, NULL, NULL, 1, 0, 0, '平台运维管理员', NULL, NULL, 0, '0')
+ON CONFLICT (id) DO UPDATE SET
+username = EXCLUDED.username,
+login_name = EXCLUDED.login_name,
+password = EXCLUDED.password,
+leader_flag = EXCLUDED.leader_flag,
+position = EXCLUDED.position,
+department = EXCLUDED.department,
+email = EXCLUDED.email,
+phonenum = EXCLUDED.phonenum,
+ismanager = EXCLUDED.ismanager,
+isystem = EXCLUDED.isystem,
+status = EXCLUDED.status,
+description = EXCLUDED.description,
+remark = EXCLUDED.remark,
+weixin_open_id = EXCLUDED.weixin_open_id,
+tenant_id = EXCLUDED.tenant_id,
+delete_flag = EXCLUDED.delete_flag;
 SELECT setval('jsh_user_id_seq', COALESCE((SELECT MAX(id) FROM jsh_user), 1));
 
 -- ============================================================
@@ -1483,105 +1314,24 @@ COMMENT ON COLUMN jsh_user_business.btn_str IS '按钮权限';
 COMMENT ON COLUMN jsh_user_business.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_user_business.delete_flag IS '删除标记，0未删除，1删除';
 
+SELECT setval('jsh_user_business_id_seq', 1);
+
 INSERT INTO jsh_user_business (id, type, key_id, value, btn_str, tenant_id, delete_flag) VALUES
-(5, 'RoleFunctions', '4', '[210][225][211][261][32][241][33][199][242][38][41][200][201][239][202][40][232][233][197][44][203][204][205][206][212][246][198][207][259][208][209][226][227][248][228][229][59][235][237][244][22][21][23][220][247][25][24][217][218][26][194][195][31][13][14][243][15][236][234][16][18][245][258][260][1]', '[{"funId":13,"btnStr":"1"},{"funId":14,"btnStr":"1"},{"funId":243,"btnStr":"1"},{"funId":236,"btnStr":"1"},{"funId":234,"btnStr":"1"},{"funId":16,"btnStr":"1"},{"funId":18,"btnStr":"1"},{"funId":245,"btnStr":"1"},{"funId":22,"btnStr":"1"},{"funId":23,"btnStr":"1,3"},{"funId":220,"btnStr":"1"},{"funId":247,"btnStr":"1"},{"funId":25,"btnStr":"1,3"},{"funId":217,"btnStr":"1,3"},{"funId":218,"btnStr":"1,3"},{"funId":26,"btnStr":"1"},{"funId":194,"btnStr":"1"},{"funId":195,"btnStr":"1"},{"funId":31,"btnStr":"1"},{"funId":261,"btnStr":"1,2,7,3"},{"funId":241,"btnStr":"1,2,7,3"},{"funId":33,"btnStr":"1,2,7,3"},{"funId":199,"btnStr":"1,2,7,3"},{"funId":242,"btnStr":"1,2,7,3"},{"funId":41,"btnStr":"1,2,7,3"},{"funId":200,"btnStr":"1,2,7,3"},{"funId":210,"btnStr":"1,2,7,3"},{"funId":211,"btnStr":"1,2,7,3"},{"funId":197,"btnStr":"1,7,2,3"},{"funId":203,"btnStr":"1,7,2,3"},{"funId":204,"btnStr":"1,7,2,3"},{"funId":205,"btnStr":"1,2,7,3"},{"funId":206,"btnStr":"1,2,7,3"},{"funId":212,"btnStr":"1,2,7,3"},{"funId":201,"btnStr":"1,2,7,3"},{"funId":202,"btnStr":"1,2,7,3"},{"funId":40,"btnStr":"1,2,7,3"},{"funId":232,"btnStr":"1,2,7,3"},{"funId":233,"btnStr":"1,2,7,3"}]', NULL, '0'),
-(6, 'RoleFunctions', '5', '[22][23][25][26][194][195][31][33][200][201][41][199][202]', NULL, NULL, '0'),
-(7, 'RoleFunctions', '6', '[22][23][220][240][25][217][218][26][194][195][31][59][207][208][209][226][227][228][229][235][237][210][211][241][33][199][242][41][200][201][202][40][232][233][197][203][204][205][206][212]', '[{"funId":"33","btnStr":"4"}]', NULL, '0'),
-(9, 'RoleFunctions', '7', '[168][13][12][16][14][15][189][18][19][132]', NULL, NULL, '0'),
-(10, 'RoleFunctions', '8', '[168][13][12][16][14][15][189][18][19][132][22][23][25][26][27][157][158][155][156][125][31][127][126][128][33][34][35][36][37][39][40][41][42][43][46][47][48][49][50][51][52][53][54][55][56][57][192][59][60][61][62][63][65][66][68][69][70][71][73][74][76][77][79][191][81][82][83][85][89][161][86][176][165][160][28][134][91][92][29][94][95][97][104][99][100][101][102][105][107][108][110][111][113][114][116][117][118][120][121][131][135][123][122][20][130][146][147][138][148][149][153][140][145][184][152][143][170][171][169][166][167][163][164][172][173][179][178][181][182][183][186][187][247]', NULL, NULL, '0'),
-(11, 'RoleFunctions', '9', '[168][13][12][16][14][15][189][18][19][132][22][23][25][26][27][157][158][155][156][125][31][127][126][128][33][34][35][36][37][39][40][41][42][43][46][47][48][49][50][51][52][53][54][55][56][57][192][59][60][61][62][63][65][66][68][69][70][71][73][74][76][77][79][191][81][82][83][85][89][161][86][176][165][160][28][134][91][92][29][94][95][97][104][99][100][101][102][105][107][108][110][111][113][114][116][117][118][120][121][131][135][123][122][20][130][146][147][138][148][149][153][140][145][184][152][143][170][171][169][166][167][163][164][172][173][179][178][181][182][183][186][187][188]', NULL, NULL, '0'),
-(12, 'UserRole', '1', '[5]', NULL, NULL, '0'),
-(13, 'UserRole', '2', '[6][7]', NULL, NULL, '0'),
-(14, 'UserDepot', '2', '[1][2][6][7]', NULL, NULL, '0'),
-(15, 'UserDepot', '1', '[1][2][5][6][7][10][12][14][15][17]', NULL, NULL, '0'),
-(16, 'UserRole', '63', '[10]', NULL, 63, '0'),
-(18, 'UserDepot', '63', '[14][15]', NULL, 63, '0'),
-(19, 'UserDepot', '5', '[6][45][46][50]', NULL, NULL, '0'),
-(20, 'UserRole', '5', '[5]', NULL, NULL, '0'),
-(21, 'UserRole', '64', '[13]', NULL, NULL, '0'),
-(22, 'UserDepot', '64', '[1]', NULL, NULL, '0'),
-(23, 'UserRole', '65', '[5]', NULL, NULL, '0'),
-(24, 'UserDepot', '65', '[1]', NULL, NULL, '0'),
-(25, 'UserCustomer', '64', '[5][2]', NULL, NULL, '0'),
-(26, 'UserCustomer', '65', '[6]', NULL, NULL, '0'),
-(27, 'UserCustomer', '63', '[58]', NULL, 63, '0'),
-(28, 'UserDepot', '96', '[7]', NULL, NULL, '0'),
-(29, 'UserRole', '96', '[6]', NULL, NULL, '0'),
-(30, 'UserRole', '113', '[10]', NULL, NULL, '0'),
-(32, 'RoleFunctions', '10', '[210][225][211][261][32][241][33][199][242][38][41][200][201][239][202][40][232][233][197][44][203][204][205][206][212][246][198][207][259][208][209][226][227][248][228][229][59][235][237][244][22][21][23][220][247][25][24][217][218][26][194][195][31][13][14][243][15][234][236]', '[{"funId":13,"btnStr":"1"},{"funId":14,"btnStr":"1"},{"funId":243,"btnStr":"1"},{"funId":234,"btnStr":"1"},{"funId":236,"btnStr":"1"},{"funId":22,"btnStr":"1"},{"funId":23,"btnStr":"1,3"},{"funId":220,"btnStr":"1"},{"funId":247,"btnStr":"1"},{"funId":25,"btnStr":"1,3"},{"funId":217,"btnStr":"1,3"},{"funId":218,"btnStr":"1,3"},{"funId":26,"btnStr":"1"},{"funId":194,"btnStr":"1"},{"funId":195,"btnStr":"1"},{"funId":31,"btnStr":"1"},{"funId":261,"btnStr":"1,2,7,3"},{"funId":241,"btnStr":"1,2,7,3"},{"funId":33,"btnStr":"1,2,7,3"},{"funId":199,"btnStr":"1,7,2,3"},{"funId":242,"btnStr":"1,2,7,3"},{"funId":41,"btnStr":"1,2,7,3"},{"funId":200,"btnStr":"1,2,7,3"},{"funId":210,"btnStr":"1,2,7,3"},{"funId":211,"btnStr":"1,2,7,3"},{"funId":197,"btnStr":"1,2,7,3"},{"funId":203,"btnStr":"1,7,2,3"},{"funId":204,"btnStr":"1,7,2,3"},{"funId":205,"btnStr":"1,2,7,3"},{"funId":206,"btnStr":"1,7,2,3"},{"funId":212,"btnStr":"1,2,7,3"},{"funId":201,"btnStr":"1,2,7,3"},{"funId":202,"btnStr":"1,2,7,3"},{"funId":40,"btnStr":"1,2,7,3"},{"funId":232,"btnStr":"1,2,7,3"},{"funId":233,"btnStr":"1,2,7,3"}]', NULL, '0'),
-(34, 'UserRole', '115', '[10]', NULL, NULL, '0'),
-(35, 'UserRole', '117', '[10]', NULL, NULL, '0'),
-(36, 'UserDepot', '117', '[8][9]', NULL, NULL, '0'),
-(37, 'UserCustomer', '117', '[52]', NULL, NULL, '0'),
-(38, 'UserRole', '120', '[4]', NULL, NULL, '0'),
-(41, 'RoleFunctions', '12', '', NULL, NULL, '0'),
-(48, 'RoleFunctions', '13', '[59][207][208][209][226][227][228][229][235][237][210][211][241][33][199][242][41][200]', NULL, NULL, '0'),
-(51, 'UserRole', '74', '[10]', NULL, NULL, '0'),
-(52, 'UserDepot', '121', '[13]', NULL, NULL, '0'),
-(54, 'UserDepot', '115', '[13]', NULL, NULL, '0'),
-(56, 'UserCustomer', '115', '[56]', NULL, NULL, '0'),
-(57, 'UserCustomer', '121', '[56]', NULL, NULL, '0'),
-(67, 'UserRole', '131', '[17]', NULL, 63, '0'),
-(68, 'RoleFunctions', '16', '[210]', NULL, 63, '0'),
-(69, 'RoleFunctions', '17', '[210][225][211][241][32][33][199][242][38][41][200][201][239][202][40][232][233][197][44][203][204][205][206][212]', '[{"funId":"241","btnStr":"1,2"},{"funId":"33","btnStr":"1,2"},{"funId":"199","btnStr":"1,2"},{"funId":"242","btnStr":"1,2"},{"funId":"41","btnStr":"1,2"},{"funId":"200","btnStr":"1,2"},{"funId":"210","btnStr":"1,2"},{"funId":"211","btnStr":"1,2"},{"funId":"197","btnStr":"1"},{"funId":"203","btnStr":"1"},{"funId":"204","btnStr":"1"},{"funId":"205","btnStr":"1"},{"funId":"206","btnStr":"1"},{"funId":"212","btnStr":"1"},{"funId":"201","btnStr":"1,2"},{"funId":"202","btnStr":"1,2"},{"funId":"40","btnStr":"1,2"},{"funId":"232","btnStr":"1,2"},{"funId":"233","btnStr":"1,2"}]', 63, '0');
+(111, 'UserRole', '120', '[4]', NULL, 0, '0'),
+(112, 'RoleFunctions', '4', '[1][13][14][15][16][18][21][22][23][24][25][26][31][32][33][38][40][41][44][59][194][195][197][198][199][200][201][202][203][204][205][206][207][208][209][210][211][212][217][218][220][225][226][227][228][229][232][233][234][235][236][237][239][241][242][243][244][245][246][247][248][258][259][260][261]', '[{"funId":13,"btnStr":"1"},{"funId":14,"btnStr":"1"},{"funId":243,"btnStr":"1"},{"funId":234,"btnStr":"1"},{"funId":236,"btnStr":"1"},{"funId":16,"btnStr":"1"},{"funId":18,"btnStr":"1"},{"funId":258,"btnStr":"1"},{"funId":22,"btnStr":"1"},{"funId":23,"btnStr":"1,3"},{"funId":220,"btnStr":"1"},{"funId":247,"btnStr":"1"},{"funId":25,"btnStr":"1,3"},{"funId":217,"btnStr":"1,3"},{"funId":218,"btnStr":"1,3"},{"funId":26,"btnStr":"1"},{"funId":194,"btnStr":"1"},{"funId":195,"btnStr":"1"},{"funId":31,"btnStr":"1"},{"funId":261,"btnStr":"1,2,7,3"},{"funId":241,"btnStr":"1,2,7,3"},{"funId":33,"btnStr":"1,2,7,3"},{"funId":199,"btnStr":"1,2,7,3"},{"funId":242,"btnStr":"1,2,7,3"},{"funId":41,"btnStr":"1,2,7,3"},{"funId":200,"btnStr":"1,2,7,3"},{"funId":210,"btnStr":"1,2,7,3"},{"funId":211,"btnStr":"1,2,7,3"},{"funId":197,"btnStr":"1,7,2,3"},{"funId":203,"btnStr":"1,7,2,3"},{"funId":204,"btnStr":"1,7,2,3"},{"funId":205,"btnStr":"1,2,7,3"},{"funId":206,"btnStr":"1,2,7,3"},{"funId":212,"btnStr":"1,7,2,3"},{"funId":201,"btnStr":"1,2,7,3"},{"funId":202,"btnStr":"1,2,7,3"},{"funId":40,"btnStr":"1,2,7,3"},{"funId":232,"btnStr":"1,2,7,3"},{"funId":233,"btnStr":"1,2,7,3"}]', 0, '0')
+ON CONFLICT (id) DO UPDATE SET
+type = EXCLUDED.type,
+key_id = EXCLUDED.key_id,
+value = EXCLUDED.value,
+btn_str = EXCLUDED.btn_str,
+tenant_id = EXCLUDED.tenant_id,
+delete_flag = EXCLUDED.delete_flag;
 SELECT setval('jsh_user_business_id_seq', COALESCE((SELECT MAX(id) FROM jsh_user_business), 1));
-
--- ============================================================
--- 眼镜业务演示补录数据：空白模块单据、财务单据、库存预警
--- ============================================================
-INSERT INTO jsh_depot_head (id, type, sub_type, default_number, number, create_time, oper_time, organ_id, creator, account_id, change_amount, back_amount, total_price, pay_type, bill_type, remark, sales_man, status, purchase_status, source, tenant_id, delete_flag) VALUES
-(1001, '入库', '零售退货', 'LSTH-20260708-001', 'LSTH-20260708-001', '2026-07-08 09:10:00', '2026-07-08 09:10:00', 60, 63, 17, 399.000000, 0.000000, 399.000000, '现金', NULL, '会员退回防蓝光近视眼镜一副', '20', '1', '0', '0', 63, '0'),
-(1002, '其它', '请购单', 'QGD-20260708-001', 'QGD-20260708-001', '2026-07-08 09:35:00', '2026-07-08 09:35:00', 75, 63, NULL, 0.000000, 0.000000, 4500.000000, NULL, NULL, '门店请购1.67非球面镜片', '20', '1', '0', '0', 63, '0'),
-(1003, '其它', '采购订单', 'CGDD-20260708-001', 'CGDD-20260708-001', '2026-07-08 10:05:00', '2026-07-08 10:05:00', 75, 63, NULL, 0.000000, 0.000000, 4500.000000, NULL, NULL, '向明月镜片厂采购镜片', '20', '1', '0', '0', 63, '0'),
-(1004, '其它', '销售订单', 'XSDD-20260708-001', 'XSDD-20260708-001', '2026-07-08 10:40:00', '2026-07-08 10:40:00', 78, 63, NULL, 0.000000, 0.000000, 3990.000000, NULL, NULL, '爱尔眼科预订钛合金半框近视眼镜', '20', '1', '0', '0', 63, '0'),
-(1005, '入库', '其它', 'QTRK-20260708-001', 'QTRK-20260708-001', '2026-07-08 11:20:00', '2026-07-08 11:20:00', NULL, 63, NULL, 0.000000, 0.000000, 600.000000, NULL, NULL, '仓库盘盈入库板材全框近视眼镜', '20', '1', '0', '0', 63, '0'),
-(1006, '出库', '其它', 'QTCK-20260708-001', 'QTCK-20260708-001', '2026-07-08 11:45:00', '2026-07-08 11:45:00', NULL, 63, NULL, 0.000000, 0.000000, 267.000000, NULL, NULL, '门店试戴耗用日抛隐形眼镜', '20', '1', '0', '0', 63, '0'),
-(1007, '出库', '调拨', 'DBCK-20260708-001', 'DBCK-20260708-001', '2026-07-08 13:15:00', '2026-07-08 13:15:00', NULL, 63, NULL, 0.000000, 0.000000, 798.000000, NULL, NULL, '仓库1调拨钛合金半框近视眼镜到仓库2', '20', '1', '0', '0', 63, '0'),
-(1008, '其它', '组装单', 'ZZD-20260708-001', 'ZZD-20260708-001', '2026-07-08 14:00:00', '2026-07-08 14:00:00', NULL, 63, NULL, 0.000000, 0.000000, 480.000000, NULL, NULL, '镜架和镜片组装成成品眼镜', '20', '1', '0', '0', 63, '0'),
-(1009, '其它', '拆卸单', 'CXD-20260708-001', 'CXD-20260708-001', '2026-07-08 14:30:00', '2026-07-08 14:30:00', NULL, 63, NULL, 0.000000, 0.000000, 329.000000, NULL, NULL, '板材全框近视眼镜拆卸返修', '20', '1', '0', '0', 63, '0'),
-(1010, '其它', '盘点录入', 'PDLR-20260708-001', 'PDLR-20260708-001', '2026-07-08 15:00:00', '2026-07-08 15:00:00', NULL, 63, NULL, 0.000000, 0.000000, 0.000000, NULL, NULL, '仓库1库存盘点录入', '20', '1', '0', '0', 63, '0'),
-(1011, '其它', '盘点复盘', 'PDFP-20260708-001', 'PDFP-20260708-001', '2026-07-08 15:30:00', '2026-07-08 15:30:00', NULL, 63, NULL, 0.000000, 0.000000, 0.000000, NULL, NULL, '仓库1库存盘点复盘', '20', '1', '0', '0', 63, '0')
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO jsh_depot_item (id, header_id, material_id, material_extend_id, material_unit, sku, oper_number, basic_number, unit_price, purchase_unit_price, all_price, remark, depot_id, another_depot_id, material_type, tenant_id, delete_flag) VALUES
-(2001, 1001, 629, 49, '副', NULL, 1.000000, 1.000000, 399.000000, 350.000000, 399.000000, '零售退货入库', 14, NULL, NULL, 63, '0'),
-(2002, 1002, 626, 46, '片', NULL, 25.000000, 25.000000, 180.000000, 180.000000, 4500.000000, '请购镜片', 14, NULL, NULL, 63, '0'),
-(2003, 1003, 626, 46, '片', NULL, 25.000000, 25.000000, 180.000000, 180.000000, 4500.000000, '采购订单明细', 14, NULL, NULL, 63, '0'),
-(2004, 1004, 620, 40, '副', NULL, 10.000000, 10.000000, 399.000000, 150.000000, 3990.000000, '销售订单明细', 14, NULL, NULL, 63, '0'),
-(2005, 1005, 621, 41, '副', NULL, 5.000000, 5.000000, 120.000000, 120.000000, 600.000000, '其它入库', 14, NULL, NULL, 63, '0'),
-(2006, 1006, 624, 44, '盒', NULL, 3.000000, 3.000000, 89.000000, 35.000000, 267.000000, '其它出库', 14, NULL, NULL, 63, '0'),
-(2007, 1007, 620, 40, '副', NULL, 2.000000, 2.000000, 399.000000, 150.000000, 798.000000, '仓库调拨', 14, 15, NULL, 63, '0'),
-(2008, 1008, 620, 40, '副', NULL, 1.000000, 1.000000, 399.000000, 150.000000, 399.000000, '组装成品', 14, NULL, '组合件', 63, '0'),
-(2009, 1008, 626, 46, '片', NULL, 2.000000, 2.000000, 180.000000, 180.000000, 360.000000, '组装镜片', 14, NULL, '普通子件', 63, '0'),
-(2010, 1009, 621, 41, '副', NULL, 1.000000, 1.000000, 329.000000, 120.000000, 329.000000, '拆卸成品', 14, NULL, '组合件', 63, '0'),
-(2011, 1009, 626, 46, '片', NULL, 2.000000, 2.000000, 180.000000, 180.000000, 360.000000, '拆卸镜片', 14, NULL, '普通子件', 63, '0'),
-(2012, 1010, 622, 42, '副', NULL, 30.000000, 30.000000, 599.000000, 200.000000, 0.000000, '盘点录入', 14, NULL, NULL, 63, '0'),
-(2013, 1011, 622, 42, '副', NULL, 28.000000, 28.000000, 599.000000, 200.000000, 0.000000, '盘点复盘', 14, NULL, NULL, 63, '0')
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO jsh_account_head (id, type, organ_id, hands_person_id, creator, change_amount, discount_money, total_price, account_id, bill_no, bill_time, remark, status, source, tenant_id, delete_flag) VALUES
-(1001, '支出', NULL, 20, 63, 380.000000, 0.000000, 380.000000, 17, 'ZC-20260708-001', '2026-07-08 16:00:00', '镜片加工费支出', '1', '0', 63, '0'),
-(1002, '转账', NULL, 20, 63, 500.000000, 0.000000, 500.000000, 17, 'ZZ-20260708-001', '2026-07-08 16:20:00', '账户1转到账户2', '1', '0', 63, '0'),
-(1003, '收预付款', 60, 20, 63, 1000.000000, 0.000000, 1000.000000, 18, 'SYF-20260708-001', '2026-07-08 16:40:00', '会员定制眼镜预付款', '1', '0', 63, '0')
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO jsh_account_item (id, header_id, account_id, in_out_item_id, bill_id, need_debt, finish_debt, each_amount, remark, tenant_id, delete_flag) VALUES
-(2001, 1001, 17, 24, NULL, 0.000000, 0.000000, 380.000000, '镜片加工费支出', 63, '0'),
-(2002, 1002, 18, NULL, NULL, 0.000000, 0.000000, 500.000000, '转入账户2', 63, '0'),
-(2003, 1003, 18, NULL, NULL, 0.000000, 0.000000, 1000.000000, '会员预付款', 63, '0')
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO jsh_material_initial_stock (id, material_id, depot_id, number, low_safe_stock, high_safe_stock, tenant_id, delete_flag) VALUES
-(1001, 620, 14, 50.000000, 60.000000, 200.000000, 63, '0'),
-(1002, 621, 14, 80.000000, 10.000000, 70.000000, 63, '0'),
-(1003, 624, 14, 200.000000, 50.000000, 300.000000, 63, '0')
-ON CONFLICT (id) DO NOTHING;
-
-SELECT setval('jsh_depot_head_id_seq', COALESCE((SELECT MAX(id) FROM jsh_depot_head), 1));
-SELECT setval('jsh_depot_item_id_seq', COALESCE((SELECT MAX(id) FROM jsh_depot_item), 1));
-SELECT setval('jsh_account_head_id_seq', COALESCE((SELECT MAX(id) FROM jsh_account_head), 1));
-SELECT setval('jsh_account_item_id_seq', COALESCE((SELECT MAX(id) FROM jsh_account_item), 1));
-SELECT setval('jsh_material_initial_stock_id_seq', COALESCE((SELECT MAX(id) FROM jsh_material_initial_stock), 1));
+SELECT setval('jsh_depot_head_id_seq', 1);
+SELECT setval('jsh_depot_item_id_seq', 1);
+SELECT setval('jsh_account_head_id_seq', 1);
+SELECT setval('jsh_account_item_id_seq', 1);
+SELECT setval('jsh_material_initial_stock_id_seq', 1);
 
 -- ============================================================
 -- 完成：更新统计信息

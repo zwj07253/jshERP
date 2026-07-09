@@ -77,7 +77,7 @@ public class FunctionService {
     }
 
     public List<FunctionEx> select(String name, String type)throws Exception {
-        List<FunctionEx> list=null;
+        List<FunctionEx> list=Collections.emptyList();
         try{
             if(BusinessConstants.DEFAULT_MANAGER.equals(userService.getCurrentUser().getLoginName())) {
                 PageUtils.startPage();
