@@ -1,24 +1,12 @@
 <template>
   <a-card title="清关单证" :bordered="false">
-    <div style="margin-bottom: 16px"><a-radio-group v-model="status" @change="loadData"><a-radio-button value="">全部</a-radio-button><a-radio-button value="缺失">缺失</a-radio-button><a-radio-button value="审核中">审核中</a-radio-button><a-radio-button value="已通过">已通过</a-radio-button></a-radio-group></div>
-    <a-table :columns="columns" :dataSource="dataSource" :loading="loading" rowKey="id" :pagination="false">
-      <span slot="status" slot-scope="text"><a-tag :color="text === '缺失' ? 'red' : text === '审核中' ? 'orange' : 'green'">{{ text }}</a-tag></span>
-      <span slot="exception" slot-scope="text">{{ text || '-' }}</span>
-    </a-table>
+    <div class="table-operator"><a-button type="primary" icon="plus" @click="openModal()">新增单证</a-button><a-radio-group v-model="status" @change="loadData" style="margin-left:16px"><a-radio-button value="">全部</a-radio-button><a-radio-button value="缺失">缺失</a-radio-button><a-radio-button value="审核中">审核中</a-radio-button><a-radio-button value="已通过">已通过</a-radio-button></a-radio-group></div>
+    <a-table :columns="columns" :dataSource="dataSource" :loading="loading" rowKey="id" :pagination="false"><span slot="status" slot-scope="text"><a-tag :color="text === '缺失' ? 'red' : text === '审核中' ? 'orange' : 'green'">{{ text }}</a-tag></span><span slot="exception" slot-scope="text">{{ text || '-' }}</span><span slot="action" slot-scope="text,record"><a @click="openModal(record)">编辑</a></span></a-table>
+    <a-modal :title="form.id ? '编辑清关单证' : '新增清关单证'" :visible="modalVisible" :confirmLoading="saving" @ok="save" @cancel="modalVisible=false"><a-form-model :label-col="{span:6}" :wrapper-col="{span:16}"><a-form-model-item label="发运批次" required><a-select v-model="form.shipmentId"><a-select-option v-for="item in shipments" :key="item.id" :value="item.id">{{ item.shipmentNo }}</a-select-option></a-select></a-form-model-item><a-form-model-item label="单证类型" required><a-select v-model="form.documentType"><a-select-option v-for="item in types" :key="item" :value="item">{{ item }}</a-select-option></a-select></a-form-model-item><a-form-model-item label="单证编号"><a-input v-model="form.documentNo" /></a-form-model-item><a-form-model-item label="状态"><a-select v-model="form.status"><a-select-option v-for="item in statuses" :key="item" :value="item">{{ item }}</a-select-option></a-select></a-form-model-item><a-form-model-item label="责任人"><a-input v-model="form.ownerName" /></a-form-model-item><a-form-model-item label="截止时间"><a-input v-model="form.dueDate" placeholder="2026-08-05 18:00:00" /></a-form-model-item><a-form-model-item label="附件名称"><a-input v-model="form.attachmentName" placeholder="演示附件名称即可" /></a-form-model-item><a-form-model-item label="异常说明"><a-textarea v-model="form.exceptionNote" :rows="2" /></a-form-model-item></a-form-model></a-modal>
   </a-card>
 </template>
-
 <script>
-import { getAction } from '@/api/manage'
-export default {
-  name: 'TradeDocumentList',
-  data () { return { loading: false, status: '', dataSource: [], columns: [
-    { title: '发运批次', dataIndex: 'shipmentNo' }, { title: '单证类型', dataIndex: 'documentType' },
-    { title: '单证编号', dataIndex: 'documentNo' }, { title: '状态', dataIndex: 'status', scopedSlots: { customRender: 'status' } },
-    { title: '责任人', dataIndex: 'ownerName' }, { title: '截止日期', dataIndex: 'dueDate' },
-    { title: '异常说明', dataIndex: 'exceptionNote', scopedSlots: { customRender: 'exception' } }
-  ] } },
-  created () { this.loadData() },
-  methods: { async loadData () { this.loading = true; try { const res = await getAction('/trade/document/list', { status: this.status }); this.dataSource = res.data.data || [] } finally { this.loading = false } } }
-}
+import { getAction, postAction, putAction } from '@/api/manage'
+const emptyForm = () => ({ shipmentId: undefined, documentType: 'Commercial Invoice', documentNo: '', status: '待准备', ownerName: '', dueDate: '', attachmentName: '', exceptionNote: '' })
+export default { name: 'TradeDocumentList', data () { return { loading: false, saving: false, modalVisible: false, status: '', dataSource: [], shipments: [], form: emptyForm(), types: ['Commercial Invoice', 'Packing List', 'Bill of Lading', 'Pedimento', 'COVE', 'Manifestación de Valor', 'NOM 文件', '产地证', '报关代理账单', '关税缴款凭证', 'Carta Porte'], statuses: ['待准备', '已准备', '已提交', '审核中', '已通过', '缺失', '异常'], columns: [{ title: '发运批次', dataIndex: 'shipmentNo' }, { title: '单证类型', dataIndex: 'documentType' }, { title: '单证编号', dataIndex: 'documentNo' }, { title: '状态', dataIndex: 'status', scopedSlots: { customRender: 'status' } }, { title: '责任人', dataIndex: 'ownerName' }, { title: '截止日期', dataIndex: 'dueDate' }, { title: '异常说明', dataIndex: 'exceptionNote', scopedSlots: { customRender: 'exception' } }, { title: '操作', width: 70, scopedSlots: { customRender: 'action' } }] } }, created () { this.loadData(); this.loadShipments() }, methods: { async loadData () { this.loading = true; try { const res = await getAction('/trade/document/list', { status: this.status }); this.dataSource = res.data.data || [] } finally { this.loading = false } }, async loadShipments () { const res = await getAction('/trade/shipment/list'); this.shipments = res.data.data || [] }, openModal (record) { this.form = record ? Object.assign(emptyForm(), record) : emptyForm(); this.modalVisible = true }, async save () { if (!this.form.shipmentId || !this.form.documentType) return this.$message.warning('请选择发运批次和单证类型'); this.saving = true; try { const res = this.form.id ? await putAction('/trade/document/update', this.form) : await postAction('/trade/document/add', this.form); if (res.code === 200) { this.$message.success('保存成功'); this.modalVisible = false; this.loadData() } else this.$message.error(res.data || '保存失败') } finally { this.saving = false } } } }
 </script>

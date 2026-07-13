@@ -1,58 +1,34 @@
 <template>
   <a-card title="发运批次" :bordered="false">
+    <div class="table-operator"><a-button type="primary" icon="plus" @click="openModal()">新增发运批次</a-button></div>
     <a-table :columns="columns" :dataSource="dataSource" :loading="loading" rowKey="id" :pagination="false">
       <span slot="status" slot-scope="text"><a-tag :color="statusColor(text)">{{ text }}</a-tag></span>
       <span slot="amount" slot-scope="text">¥{{ formatMoney(text) }}</span>
-      <span slot="action" slot-scope="text, record"><a @click="showDetail(record)">查看履约详情</a></span>
+      <span slot="action" slot-scope="text, record"><a @click="showDetail(record)">履约详情</a><a-divider type="vertical" /><a @click="openModal(record)">编辑</a><a-divider v-if="nextStatus(record.status)" type="vertical" /><a v-if="nextStatus(record.status)" @click="advanceStatus(record)">推进至{{ nextStatus(record.status) }}</a></span>
     </a-table>
+    <a-modal :title="form.id ? '编辑发运批次' : '新增发运批次'" :visible="modalVisible" :confirmLoading="saving" @ok="save" @cancel="modalVisible=false">
+      <a-form-model :label-col="{span:6}" :wrapper-col="{span:16}">
+        <a-form-model-item label="发运批次号" required><a-input v-model="form.shipmentNo" :disabled="!!form.id" placeholder="例如 SH-MX-2026-004" /></a-form-model-item>
+        <a-form-model-item label="柜号"><a-input v-model="form.containerNo" /></a-form-model-item>
+        <a-form-model-item label="提单号"><a-input v-model="form.billOfLadingNo" /></a-form-model-item>
+        <a-form-model-item label="起运港" required><a-input v-model="form.originPort" /></a-form-model-item>
+        <a-form-model-item label="目的港" required><a-input v-model="form.destinationPort" /></a-form-model-item>
+        <a-form-model-item label="承运商"><a-input v-model="form.carrierName" /></a-form-model-item>
+        <a-form-model-item label="贸易术语"><a-select v-model="form.incoterms"><a-select-option value="CIF">CIF</a-select-option><a-select-option value="FOB">FOB</a-select-option><a-select-option value="EXW">EXW</a-select-option></a-select></a-form-model-item>
+        <a-form-model-item label="币种 / 汇率"><a-input-group compact><a-select v-model="form.currency" style="width:35%"><a-select-option value="USD">USD</a-select-option><a-select-option value="CNY">CNY</a-select-option><a-select-option value="MXN">MXN</a-select-option></a-select><a-input-number v-model="form.exchangeRate" :min="0" :precision="4" style="width:65%" /></a-input-group></a-form-model-item>
+        <a-form-model-item label="预计到港"><a-input v-model="form.estimatedArrivalDate" placeholder="2026-08-05 10:00:00" /></a-form-model-item>
+        <a-form-model-item label="备注"><a-textarea v-model="form.remark" :rows="2" /></a-form-model-item>
+      </a-form-model>
+    </a-modal>
     <a-drawer title="发运批次详情" :visible="drawerVisible" width="760" @close="drawerVisible=false">
-      <a-descriptions v-if="detail.info" :column="2" bordered size="small">
-        <a-descriptions-item label="发运批次">{{ detail.info.shipmentNo }}</a-descriptions-item>
-        <a-descriptions-item label="当前状态">{{ detail.info.status }}</a-descriptions-item>
-        <a-descriptions-item label="柜号">{{ detail.info.containerNo }}</a-descriptions-item>
-        <a-descriptions-item label="提单号">{{ detail.info.billOfLadingNo }}</a-descriptions-item>
-        <a-descriptions-item label="线路">{{ detail.info.originPort }} → {{ detail.info.destinationPort }}</a-descriptions-item>
-        <a-descriptions-item label="预计到港">{{ detail.info.estimatedArrivalDate }}</a-descriptions-item>
-      </a-descriptions>
-      <a-divider>SKU 明细</a-divider>
-      <a-table :columns="itemColumns" :dataSource="detail.items || []" rowKey="id" :pagination="false" size="small" />
-      <a-divider>运输与清关单证</a-divider>
-      <a-timeline>
-        <a-timeline-item v-for="doc in detail.documents || []" :key="doc.id" :color="doc.status === '缺失' ? 'red' : 'blue'">
-          {{ doc.documentType }}：{{ doc.status }}<span v-if="doc.exceptionNote">（{{ doc.exceptionNote }}）</span>
-        </a-timeline-item>
-      </a-timeline>
+      <a-descriptions v-if="detail.info" :column="2" bordered size="small"><a-descriptions-item label="发运批次">{{ detail.info.shipmentNo }}</a-descriptions-item><a-descriptions-item label="当前状态">{{ detail.info.status }}</a-descriptions-item><a-descriptions-item label="柜号">{{ detail.info.containerNo }}</a-descriptions-item><a-descriptions-item label="提单号">{{ detail.info.billOfLadingNo }}</a-descriptions-item><a-descriptions-item label="线路">{{ detail.info.originPort }} → {{ detail.info.destinationPort }}</a-descriptions-item><a-descriptions-item label="预计到港">{{ detail.info.estimatedArrivalDate }}</a-descriptions-item></a-descriptions>
+      <a-divider>SKU 明细</a-divider><a-table :columns="itemColumns" :dataSource="detail.items || []" rowKey="id" :pagination="false" size="small" />
+      <a-divider>运输与清关单证</a-divider><a-timeline><a-timeline-item v-for="doc in detail.documents || []" :key="doc.id" :color="doc.status === '缺失' ? 'red' : 'blue'">{{ doc.documentType }}：{{ doc.status }}<span v-if="doc.exceptionNote">（{{ doc.exceptionNote }}）</span></a-timeline-item></a-timeline>
     </a-drawer>
   </a-card>
 </template>
-
 <script>
-import { getAction } from '@/api/manage'
-export default {
-  name: 'TradeShipmentList',
-  data () {
-    return {
-      loading: false, drawerVisible: false, dataSource: [], detail: {},
-      columns: [
-        { title: '批次号', dataIndex: 'shipmentNo' }, { title: '柜号', dataIndex: 'containerNo' },
-        { title: '起运港', dataIndex: 'originPort' }, { title: '目的港', dataIndex: 'destinationPort' },
-        { title: '状态', dataIndex: 'status', scopedSlots: { customRender: 'status' } },
-        { title: '采购货值', dataIndex: 'purchaseAmount', scopedSlots: { customRender: 'amount' } },
-        { title: '操作', scopedSlots: { customRender: 'action' } }
-      ],
-      itemColumns: [
-        { title: 'SKU', dataIndex: 'materialName' }, { title: '型号', dataIndex: 'model' },
-        { title: '数量', dataIndex: 'quantity' }, { title: '在途', dataIndex: 'inTransitQuantity' },
-        { title: '已清关', dataIndex: 'clearedQuantity' }, { title: '已入库', dataIndex: 'stockedQuantity' }
-      ]
-    }
-  },
-  created () { this.loadData() },
-  methods: {
-    async loadData () { this.loading = true; try { const res = await getAction('/trade/shipment/list'); this.dataSource = res.data.data || [] } finally { this.loading = false } },
-    async showDetail (record) { const res = await getAction('/trade/shipment/detail', { id: record.id }); this.detail = res.data.data || {}; this.drawerVisible = true },
-    formatMoney (value) { return Number(value || 0).toLocaleString('zh-CN', { maximumFractionDigits: 2 }) },
-    statusColor (status) { return { '已入库': 'green', '清关中': 'orange', '在途': 'blue' }[status] || 'default' }
-  }
-}
+import { getAction, postAction, putAction } from '@/api/manage'
+const emptyForm = () => ({ shipmentNo: '', containerNo: '', billOfLadingNo: '', originPort: '深圳盐田港', destinationPort: 'Manzanillo', carrierName: '', incoterms: 'CIF', currency: 'USD', exchangeRate: 7.2, estimatedArrivalDate: '', remark: '' })
+export default { name: 'TradeShipmentList', data () { return { loading: false, saving: false, drawerVisible: false, modalVisible: false, dataSource: [], detail: {}, form: emptyForm(), columns: [{ title: '批次号', dataIndex: 'shipmentNo' }, { title: '柜号', dataIndex: 'containerNo' }, { title: '起运港', dataIndex: 'originPort' }, { title: '目的港', dataIndex: 'destinationPort' }, { title: '状态', dataIndex: 'status', scopedSlots: { customRender: 'status' } }, { title: '采购货值', dataIndex: 'purchaseAmount', scopedSlots: { customRender: 'amount' } }, { title: '操作', width: 270, scopedSlots: { customRender: 'action' } }], itemColumns: [{ title: 'SKU', dataIndex: 'materialName' }, { title: '型号', dataIndex: 'model' }, { title: '数量', dataIndex: 'quantity' }, { title: '在途', dataIndex: 'inTransitQuantity' }, { title: '已清关', dataIndex: 'clearedQuantity' }, { title: '已入库', dataIndex: 'stockedQuantity' }] } }, created () { this.loadData() }, methods: { async loadData () { this.loading = true; try { const res = await getAction('/trade/shipment/list'); this.dataSource = res.data.data || [] } finally { this.loading = false } }, async showDetail (record) { const res = await getAction('/trade/shipment/detail', { id: record.id }); this.detail = res.data.data || {}; this.drawerVisible = true }, openModal (record) { this.form = record ? Object.assign(emptyForm(), record) : emptyForm(); this.modalVisible = true }, async save () { if (!this.form.shipmentNo || !this.form.originPort || !this.form.destinationPort) return this.$message.warning('请填写批次号、起运港和目的港'); this.saving = true; try { const res = this.form.id ? await putAction('/trade/shipment/update', this.form) : await postAction('/trade/shipment/add', this.form); if (res.code === 200) { this.$message.success('保存成功'); this.modalVisible = false; this.loadData() } else this.$message.error(res.data || '保存失败') } finally { this.saving = false } }, nextStatus (status) { const flow = ['待订舱', '已订舱', '已装柜', '已开船', '在途', '已到港', '清关中', '已入库', '已完成']; const index = flow.indexOf(status); return index >= 0 && index < flow.length - 1 ? flow[index + 1] : '' }, advanceStatus (record) { const target = this.nextStatus(record.status); this.$confirm({ title: '确认推进状态？', content: `${record.shipmentNo} 将从“${record.status}”推进至“${target}”。`, onOk: async () => { const res = await postAction('/trade/shipment/status', { id: record.id, status: target }); if (res.code === 200) { this.$message.success('状态已推进'); this.loadData() } else this.$message.error(res.data || '推进失败') } }) }, formatMoney (value) { return Number(value || 0).toLocaleString('zh-CN', { maximumFractionDigits: 2 }) }, statusColor (status) { return { '已入库': 'green', '已完成': 'green', '清关中': 'orange', '已到港': 'cyan', '在途': 'blue', '异常': 'red' }[status] || 'default' } } }
 </script>

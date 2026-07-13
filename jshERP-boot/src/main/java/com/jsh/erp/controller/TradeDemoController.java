@@ -1,10 +1,15 @@
 package com.jsh.erp.controller;
 
+import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.base.BaseController;
 import com.jsh.erp.utils.ErpInfo;
 import com.jsh.erp.utils.Tools;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -12,7 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -116,6 +123,159 @@ public class TradeDemoController extends BaseController {
         return ok(jdbcTemplate.queryForList(sql, tenantId));
     }
 
+    @PostMapping("/shipment/add")
+    @Transactional(rollbackFor = Exception.class)
+    public String addShipment(@RequestBody JSONObject obj, HttpServletRequest request) {
+        Long tenantId = resolveTenantId(request);
+        String shipmentNo = obj.getString("shipmentNo");
+        if (isBlank(shipmentNo) || isBlank(obj.getString("originPort")) || isBlank(obj.getString("destinationPort"))) {
+            return tradeError("请填写批次号、起运港和目的港");
+        }
+        Long duplicate = count("select count(*) from jsh_trade_shipment where tenant_id=? and shipment_no=? and coalesce(delete_flag,'0')<>'1'", tenantId, shipmentNo);
+        if (duplicate > 0) {
+            return tradeError("发运批次号已存在");
+        }
+        long id = nextId("jsh_trade_shipment");
+        jdbcTemplate.update("insert into jsh_trade_shipment (id,shipment_no,container_no,bill_of_lading_no,origin_port,destination_port,carrier_name,incoterms,currency,exchange_rate,departure_date,estimated_arrival_date,actual_arrival_date,status,remark,tenant_id,delete_flag) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, '0')",
+                id, shipmentNo.trim(), obj.getString("containerNo"), obj.getString("billOfLadingNo"), obj.getString("originPort"), obj.getString("destinationPort"), obj.getString("carrierName"), defaultString(obj.getString("incoterms"), "CIF"), defaultString(obj.getString("currency"), "USD"), decimal(obj, "exchangeRate", BigDecimal.valueOf(7.2)), timestamp(obj.getString("departureDate")), timestamp(obj.getString("estimatedArrivalDate")), null, "待订舱", obj.getString("remark"), tenantId);
+        return ok(singleValue("id", id));
+    }
+
+    @PutMapping("/shipment/update")
+    public String updateShipment(@RequestBody JSONObject obj, HttpServletRequest request) {
+        Long tenantId = resolveTenantId(request);
+        Long id = obj.getLong("id");
+        if (id == null || !exists("jsh_trade_shipment", id, tenantId)) return tradeError("发运批次不存在");
+        jdbcTemplate.update("update jsh_trade_shipment set container_no=?,bill_of_lading_no=?,origin_port=?,destination_port=?,carrier_name=?,incoterms=?,currency=?,exchange_rate=?,departure_date=?,estimated_arrival_date=?,remark=? where id=? and tenant_id=?",
+                obj.getString("containerNo"), obj.getString("billOfLadingNo"), obj.getString("originPort"), obj.getString("destinationPort"), obj.getString("carrierName"), defaultString(obj.getString("incoterms"), "CIF"), defaultString(obj.getString("currency"), "USD"), decimal(obj, "exchangeRate", BigDecimal.valueOf(7.2)), timestamp(obj.getString("departureDate")), timestamp(obj.getString("estimatedArrivalDate")), obj.getString("remark"), id, tenantId);
+        return ok(singleValue("id", id));
+    }
+
+    @PostMapping("/shipment/status")
+    @Transactional(rollbackFor = Exception.class)
+    public String advanceShipmentStatus(@RequestBody JSONObject obj, HttpServletRequest request) {
+        Long tenantId = resolveTenantId(request);
+        Long id = obj.getLong("id");
+        String target = obj.getString("status");
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList("select status from jsh_trade_shipment where id=? and tenant_id=? and coalesce(delete_flag,'0')<>'1'", id, tenantId);
+        if (rows.isEmpty()) return tradeError("发运批次不存在");
+        String current = String.valueOf(rows.get(0).get("status"));
+        List<String> flow = Arrays.asList("待订舱", "已订舱", "已装柜", "已开船", "在途", "已到港", "清关中", "已入库", "已完成");
+        if (!flow.contains(target)) return tradeError("不支持的发运状态");
+        if (flow.indexOf(target) != flow.indexOf(current) + 1) return tradeError("状态只能按业务顺序推进：当前为" + current);
+        jdbcTemplate.update("update jsh_trade_shipment set status=?,actual_arrival_date=case when ?='已到港' then current_timestamp else actual_arrival_date end where id=? and tenant_id=?", target, target, id, tenantId);
+        if ("在途".equals(target)) jdbcTemplate.update("update jsh_trade_shipment_item set in_transit_quantity=quantity where shipment_id=? and tenant_id=?", id, tenantId);
+        if ("清关中".equals(target)) jdbcTemplate.update("update jsh_trade_shipment_item set in_transit_quantity=0,cleared_quantity=quantity where shipment_id=? and tenant_id=?", id, tenantId);
+        if ("已入库".equals(target) || "已完成".equals(target)) jdbcTemplate.update("update jsh_trade_shipment_item set in_transit_quantity=0,cleared_quantity=quantity,stocked_quantity=quantity where shipment_id=? and tenant_id=?", id, tenantId);
+        return ok(singleValue("status", target));
+    }
+
+    @PostMapping("/document/add")
+    public String addDocument(@RequestBody JSONObject obj, HttpServletRequest request) {
+        Long tenantId = resolveTenantId(request);
+        Long shipmentId = obj.getLong("shipmentId");
+        if (shipmentId == null || !exists("jsh_trade_shipment", shipmentId, tenantId) || isBlank(obj.getString("documentType"))) return tradeError("请选择发运批次并填写单证类型");
+        long id = nextId("jsh_trade_document");
+        jdbcTemplate.update("insert into jsh_trade_document (id,shipment_id,document_type,document_no,status,owner_name,due_date,attachment_name,exception_note,tenant_id,delete_flag) values (?,?,?,?,?,?,?,?,?,?, '0')", id, shipmentId, obj.getString("documentType"), obj.getString("documentNo"), defaultString(obj.getString("status"), "待准备"), obj.getString("ownerName"), timestamp(obj.getString("dueDate")), obj.getString("attachmentName"), obj.getString("exceptionNote"), tenantId);
+        return ok(singleValue("id", id));
+    }
+
+    @PutMapping("/document/update")
+    public String updateDocument(@RequestBody JSONObject obj, HttpServletRequest request) {
+        Long tenantId = resolveTenantId(request);
+        Long id = obj.getLong("id");
+        if (id == null || !exists("jsh_trade_document", id, tenantId)) return tradeError("清关单证不存在");
+        jdbcTemplate.update("update jsh_trade_document set document_type=?,document_no=?,status=?,owner_name=?,due_date=?,attachment_name=?,exception_note=? where id=? and tenant_id=?", obj.getString("documentType"), obj.getString("documentNo"), defaultString(obj.getString("status"), "待准备"), obj.getString("ownerName"), timestamp(obj.getString("dueDate")), obj.getString("attachmentName"), obj.getString("exceptionNote"), id, tenantId);
+        return ok(singleValue("id", id));
+    }
+
+    @GetMapping("/cost/list")
+    public String costList(@RequestParam(value = "shipmentId", required = false) Long shipmentId, HttpServletRequest request) {
+        Long tenantId = resolveTenantId(request);
+        String sql = "select c.id,c.shipment_id shipmentId,s.shipment_no shipmentNo,c.cost_type costType,c.original_amount originalAmount,c.currency,c.exchange_rate exchangeRate,c.cny_amount cnyAmount,c.allocated_flag allocatedFlag,c.cost_date costDate,c.remark from jsh_trade_cost c join jsh_trade_shipment s on s.id=c.shipment_id where c.tenant_id=? and coalesce(c.delete_flag,'0')<>'1'";
+        if (shipmentId != null) sql += " and c.shipment_id=" + shipmentId;
+        return ok(jdbcTemplate.queryForList(sql + " order by c.cost_date desc,c.id desc", tenantId));
+    }
+
+    @PostMapping("/cost/add")
+    public String addCost(@RequestBody JSONObject obj, HttpServletRequest request) {
+        Long tenantId = resolveTenantId(request);
+        Long shipmentId = obj.getLong("shipmentId");
+        if (shipmentId == null || !exists("jsh_trade_shipment", shipmentId, tenantId) || isBlank(obj.getString("costType"))) return tradeError("请选择发运批次并填写费用类型");
+        BigDecimal originalAmount = decimal(obj, "originalAmount", BigDecimal.ZERO);
+        BigDecimal exchangeRate = decimal(obj, "exchangeRate", BigDecimal.ONE);
+        long id = nextId("jsh_trade_cost");
+        jdbcTemplate.update("insert into jsh_trade_cost (id,shipment_id,cost_type,original_amount,currency,exchange_rate,cny_amount,allocation_method,allocated_flag,cost_date,remark,tenant_id,delete_flag) values (?,?,?,?,?,?,?,?,?,?,?,?, '0')", id, shipmentId, obj.getString("costType"), originalAmount, defaultString(obj.getString("currency"), "CNY"), exchangeRate, originalAmount.multiply(exchangeRate), "PURCHASE_AMOUNT", "0", timestamp(obj.getString("costDate")), obj.getString("remark"), tenantId);
+        return ok(singleValue("id", id));
+    }
+
+    @PostMapping("/cost/allocate")
+    @Transactional(rollbackFor = Exception.class)
+    public String allocateCost(@RequestBody JSONObject obj, HttpServletRequest request) {
+        Long tenantId = resolveTenantId(request);
+        Long shipmentId = obj.getLong("shipmentId");
+        if (shipmentId == null || !exists("jsh_trade_shipment", shipmentId, tenantId)) return tradeError("请选择有效的发运批次");
+        List<Map<String, Object>> items = jdbcTemplate.queryForList("select material_id, purchase_amount from jsh_trade_shipment_item where shipment_id=? and tenant_id=? and coalesce(delete_flag,'0')<>'1' order by id", shipmentId, tenantId);
+        BigDecimal totalPurchase = BigDecimal.ZERO;
+        for (Map<String, Object> item : items) totalPurchase = totalPurchase.add((BigDecimal) item.get("purchase_amount"));
+        if (items.isEmpty() || totalPurchase.compareTo(BigDecimal.ZERO) <= 0) return tradeError("该批次没有可分摊的 SKU 采购金额");
+        BigDecimal logistics = amount("select coalesce(sum(cny_amount),0) from jsh_trade_cost where shipment_id=? and tenant_id=? and cost_type in ('国内运输','装柜费','海运费','保险费','报关费','港口费','仓储费') and coalesce(delete_flag,'0')<>'1'", shipmentId, tenantId);
+        BigDecimal duty = amount("select coalesce(sum(cny_amount),0) from jsh_trade_cost where shipment_id=? and tenant_id=? and cost_type in ('关税','IVA') and coalesce(delete_flag,'0')<>'1'", shipmentId, tenantId);
+        BigDecimal local = amount("select coalesce(sum(cny_amount),0) from jsh_trade_cost where shipment_id=? and tenant_id=? and cost_type in ('本地配送费','其他费用') and coalesce(delete_flag,'0')<>'1'", shipmentId, tenantId);
+        long costId = nextId("jsh_trade_material_cost");
+        for (Map<String, Object> item : items) {
+            Long materialId = ((Number) item.get("material_id")).longValue();
+            BigDecimal purchase = (BigDecimal) item.get("purchase_amount");
+            BigDecimal ratio = purchase.divide(totalPurchase, 12, BigDecimal.ROUND_HALF_UP);
+            BigDecimal logisticsPart = logistics.multiply(ratio).setScale(2, BigDecimal.ROUND_HALF_UP);
+            BigDecimal dutyPart = duty.multiply(ratio).setScale(2, BigDecimal.ROUND_HALF_UP);
+            BigDecimal localPart = local.multiply(ratio).setScale(2, BigDecimal.ROUND_HALF_UP);
+            jdbcTemplate.update("insert into jsh_trade_material_cost (id,shipment_id,material_id,purchase_cost,logistics_cost,duty_cost,local_cost,landed_cost,calculated_time,tenant_id,delete_flag) values (?,?,?,?,?,?,?,?,current_timestamp,?,'0') on conflict (shipment_id,material_id) do update set purchase_cost=excluded.purchase_cost,logistics_cost=excluded.logistics_cost,duty_cost=excluded.duty_cost,local_cost=excluded.local_cost,landed_cost=excluded.landed_cost,calculated_time=current_timestamp", costId++, shipmentId, materialId, purchase, logisticsPart, dutyPart, localPart, purchase.add(logisticsPart).add(dutyPart).add(localPart), tenantId);
+        }
+        jdbcTemplate.update("update jsh_trade_cost set allocated_flag='1' where shipment_id=? and tenant_id=? and coalesce(delete_flag,'0')<>'1'", shipmentId, tenantId);
+        return ok(singleValue("shipmentId", shipmentId));
+    }
+
+    private boolean exists(String table, Long id, Long tenantId) {
+        return count("select count(*) from " + table + " where id=? and tenant_id=? and coalesce(delete_flag,'0')<>'1'", id, tenantId) > 0;
+    }
+
+    private long nextId(String table) {
+        Long id = jdbcTemplate.queryForObject("select coalesce(max(id),0)+1 from " + table, Long.class);
+        return id == null ? 1L : id;
+    }
+
+    private Timestamp timestamp(String value) {
+        if (isBlank(value)) return null;
+        String normalized = value.trim().replace('T', ' ');
+        return Timestamp.valueOf(normalized.length() == 10 ? normalized + " 00:00:00" : normalized);
+    }
+
+    private BigDecimal decimal(JSONObject obj, String key, BigDecimal defaultValue) {
+        BigDecimal value = obj.getBigDecimal(key);
+        return value == null ? defaultValue : value;
+    }
+
+    private String defaultString(String value, String defaultValue) {
+        return isBlank(value) ? defaultValue : value.trim();
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private Map<String, Object> singleValue(String key, Object value) {
+        Map<String, Object> result = new HashMap<>();
+        result.put(key, value);
+        return result;
+    }
+
+    private String tradeError(String message) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", message);
+        return returnJson(result, ErpInfo.ERROR.name, ErpInfo.ERROR.code);
+    }
+
     private Long resolveTenantId(HttpServletRequest request) {
         Long tenantId = Tools.getTenantIdByToken(request.getHeader("X-Access-Token"));
         if (tenantId != null && tenantId > 0) {
@@ -130,8 +290,18 @@ public class TradeDemoController extends BaseController {
         return result == null ? BigDecimal.ZERO : result;
     }
 
+    private BigDecimal amount(String sql, Object... params) {
+        BigDecimal result = jdbcTemplate.queryForObject(sql, BigDecimal.class, params);
+        return result == null ? BigDecimal.ZERO : result;
+    }
+
     private Long count(String sql, Long tenantId) {
         Long result = jdbcTemplate.queryForObject(sql, Long.class, tenantId);
+        return result == null ? 0L : result;
+    }
+
+    private Long count(String sql, Object... params) {
+        Long result = jdbcTemplate.queryForObject(sql, Long.class, params);
         return result == null ? 0L : result;
     }
 

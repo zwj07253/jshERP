@@ -1,5 +1,8 @@
 <template>
   <div class="page-header-index-wide">
+    <a-alert type="info" show-icon style="margin-bottom: 12px" message="外贸手表 Demo 已就绪：可查看发运、清关、库存与进口成本。">
+      <a slot="action" @click="$router.push('/trade/dashboard')">进入外贸驾驶舱</a>
+    </a-alert>
     <a-row :gutter="24">
       <a-col :sm="24" :md="12" :xl="4" :style="{ paddingRight: '0px',marginBottom: '12px' }">
         <chart-card :loading="loading" title="今日销售" data-step="1" data-title="今日销售" data-intro="统计今日销售单据的总金额">
