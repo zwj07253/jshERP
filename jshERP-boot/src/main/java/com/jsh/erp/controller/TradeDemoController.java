@@ -47,8 +47,11 @@ public class TradeDemoController extends BaseController {
         data.put("salesAmount", amount("select coalesce(sum(total_price),0) from jsh_depot_head where tenant_id=? and type='出库' and sub_type in ('销售','零售') and coalesce(delete_flag,'0')<>'1'", tenantId));
         data.put("inTransitAmount", amount("select coalesce(sum(i.purchase_amount),0) from jsh_trade_shipment s join jsh_trade_shipment_item i on i.shipment_id=s.id and coalesce(i.delete_flag,'0')<>'1' where s.tenant_id=? and s.status='在途' and coalesce(s.delete_flag,'0')<>'1'", tenantId));
         data.put("customsAmount", amount("select coalesce(sum(i.purchase_amount),0) from jsh_trade_shipment s join jsh_trade_shipment_item i on i.shipment_id=s.id and coalesce(i.delete_flag,'0')<>'1' where s.tenant_id=? and s.status='清关中' and coalesce(s.delete_flag,'0')<>'1'", tenantId));
-        data.put("availableStockAmount", amount("select coalesce(sum(i.purchase_amount * case when i.quantity=0 then 0 else i.stocked_quantity/i.quantity end),0) from jsh_trade_shipment_item i where i.tenant_id=? and coalesce(i.delete_flag,'0')<>'1'", tenantId));
+        data.put("availableStockAmount", amount("select coalesce(sum(i.purchase_amount * case when i.quantity=0 then 0 else greatest(i.stocked_quantity-i.sold_quantity,0)/i.quantity end),0) from jsh_trade_shipment_item i where i.tenant_id=? and coalesce(i.delete_flag,'0')<>'1'", tenantId));
         data.put("lockedStockAmount", amount("select coalesce(sum(i.purchase_amount * case when i.quantity=0 then 0 else i.sold_quantity/i.quantity end),0) from jsh_trade_shipment_item i where i.tenant_id=? and coalesce(i.delete_flag,'0')<>'1'", tenantId));
+        data.put("lockedSalesAmount", amount("select coalesce(sum(sales_amount),0) from jsh_trade_shipment_item where tenant_id=? and coalesce(delete_flag,'0')<>'1'", tenantId));
+        data.put("availableQuantity", amount("select coalesce(sum(greatest(stocked_quantity-sold_quantity,0)),0) from jsh_trade_shipment_item where tenant_id=? and coalesce(delete_flag,'0')<>'1'", tenantId));
+        data.put("lockedQuantity", amount("select coalesce(sum(sold_quantity),0) from jsh_trade_shipment_item where tenant_id=? and coalesce(delete_flag,'0')<>'1'", tenantId));
         data.put("receivableAmount", amount("select coalesce(sum(all_need_get),0) from jsh_supplier where tenant_id=? and type='客户' and coalesce(delete_flag,'0')<>'1'", tenantId));
         data.put("landedCost", amount("select coalesce(sum(landed_cost),0) from jsh_trade_material_cost where tenant_id=? and coalesce(delete_flag,'0')<>'1'", tenantId));
         BigDecimal salesAmount = (BigDecimal) data.get("salesAmount");
@@ -59,6 +62,7 @@ public class TradeDemoController extends BaseController {
         data.put("grossMargin", salesAmount.compareTo(BigDecimal.ZERO) == 0 ? BigDecimal.ZERO : grossProfit.multiply(BigDecimal.valueOf(100)).divide(salesAmount, 2, BigDecimal.ROUND_HALF_UP));
         data.put("shipmentCount", count("select count(*) from jsh_trade_shipment where tenant_id=? and coalesce(delete_flag,'0')<>'1'", tenantId));
         data.put("exceptionCount", count("select count(*) from jsh_trade_document where tenant_id=? and status in ('缺失','异常') and coalesce(delete_flag,'0')<>'1'", tenantId));
+        data.put("transitRiskDocumentCount", count("select count(*) from jsh_trade_document d join jsh_trade_shipment s on s.id=d.shipment_id where d.tenant_id=? and s.status in ('在途','已到港','清关中') and d.status in ('缺失','异常','审核中') and coalesce(d.delete_flag,'0')<>'1' and coalesce(s.delete_flag,'0')<>'1'", tenantId));
         data.put("currency", "CNY");
         data.put("demoRateNote", "汇率为演示固定汇率，不代表实时市场汇率");
         return ok(data);
@@ -231,7 +235,7 @@ public class TradeDemoController extends BaseController {
     @GetMapping("/cost/profit")
     public String costProfit(HttpServletRequest request) {
         Long tenantId = resolveTenantId(request);
-        String sql = "select s.shipment_no shipmentNo, m.name materialName, m.model, c.purchase_cost purchaseCost, c.logistics_cost logisticsCost, c.duty_cost dutyCost, c.local_cost localCost, c.landed_cost landedCost, round(c.landed_cost * 1.35, 2) estimatedSales, round(c.landed_cost * 0.35, 2) estimatedGrossProfit, 25.93 grossMargin from jsh_trade_material_cost c join jsh_trade_shipment s on s.id=c.shipment_id join jsh_material m on m.id=c.material_id where c.tenant_id=? and coalesce(c.delete_flag,'0')<>'1' order by c.landed_cost desc";
+        String sql = "select s.shipment_no shipmentNo, m.name materialName, m.model, c.purchase_cost purchaseCost, c.logistics_cost logisticsCost, c.duty_cost dutyCost, c.local_cost localCost, c.landed_cost landedCost, coalesce(i.quantity,0) shipmentQuantity, coalesce(i.sold_quantity,0) soldQuantity, coalesce(i.sales_amount,0) salesAmount, sh.number salesNumber, sp.supplier salesCustomerName, round(c.landed_cost * case when coalesce(i.quantity,0)=0 then 0 else coalesce(i.sold_quantity,0)/i.quantity end, 2) soldLandedCost, round(coalesce(i.sales_amount,0) - c.landed_cost * case when coalesce(i.quantity,0)=0 then 0 else coalesce(i.sold_quantity,0)/i.quantity end, 2) actualGrossProfit, case when coalesce(i.sales_amount,0)=0 then 0 else round((coalesce(i.sales_amount,0) - c.landed_cost * case when coalesce(i.quantity,0)=0 then 0 else coalesce(i.sold_quantity,0)/i.quantity end) * 100 / i.sales_amount, 2) end actualGrossMargin, round(c.landed_cost * 1.35, 2) estimatedSales, round(c.landed_cost * 0.35, 2) estimatedGrossProfit, 25.93 grossMargin from jsh_trade_material_cost c join jsh_trade_shipment s on s.id=c.shipment_id join jsh_material m on m.id=c.material_id left join jsh_trade_shipment_item i on i.shipment_id=c.shipment_id and i.material_id=c.material_id and coalesce(i.delete_flag,'0')<>'1' left join jsh_depot_head sh on sh.id=i.sales_depot_head_id left join jsh_supplier sp on sp.id=sh.organ_id where c.tenant_id=? and coalesce(c.delete_flag,'0')<>'1' order by coalesce(i.sales_amount,0) desc,c.landed_cost desc";
         return ok(jdbcTemplate.queryForList(sql, tenantId));
     }
 
@@ -511,6 +515,12 @@ public class TradeDemoController extends BaseController {
         keyMap.put("landedcost", "landedCost");
         keyMap.put("estimatedsales", "estimatedSales");
         keyMap.put("estimatedgrossprofit", "estimatedGrossProfit");
+        keyMap.put("soldlandedcost", "soldLandedCost");
+        keyMap.put("actualgrossprofit", "actualGrossProfit");
+        keyMap.put("actualgrossmargin", "actualGrossMargin");
+        keyMap.put("lockedsalesamount", "lockedSalesAmount");
+        keyMap.put("availablequantity", "availableQuantity");
+        keyMap.put("transitriskdocumentcount", "transitRiskDocumentCount");
         keyMap.put("grossmargin", "grossMargin");
         keyMap.put("shipmentstatus", "shipmentStatus");
         keyMap.put("shipmentquantity", "shipmentQuantity");
