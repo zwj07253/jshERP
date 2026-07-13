@@ -120,9 +120,23 @@ UPDATE jsh_user_business
 SET value = value || '[300][301][302][303][304][305]'
 WHERE tenant_id = 100 AND type = 'RoleFunctions' AND value NOT LIKE '%[300]%';
 
+-- 修复早期脚本直接拼接 JSON 数组导致的 `][`，否则按钮权限接口会解析失败。
 UPDATE jsh_user_business
-SET btn_str = COALESCE(btn_str, '') || '[{"funId":302,"btnStr":"1,2,3"},{"funId":303,"btnStr":"1,2,3"}]'
+SET btn_str = REPLACE(btn_str, '][', ',')
+WHERE tenant_id = 100 AND type = 'RoleFunctions' AND btn_str LIKE '%][%';
+
+UPDATE jsh_user_business
+SET btn_str = CASE
+    WHEN COALESCE(TRIM(btn_str), '') = '' THEN '[{"funId":302,"btnStr":"1,2,3"},{"funId":303,"btnStr":"1,2,3"}]'
+    ELSE LEFT(TRIM(btn_str), LENGTH(TRIM(btn_str)) - 1)
+         || ',{"funId":302,"btnStr":"1,2,3"},{"funId":303,"btnStr":"1,2,3"}]'
+END
 WHERE tenant_id = 100 AND type = 'RoleFunctions' AND COALESCE(btn_str, '') NOT LIKE '%"funId":302%';
+
+-- 演示账号 zhangwei 的岗位为采购经理，角色名称保持一致，避免权限配置产生误导。
+UPDATE jsh_role
+SET name = '采购经理', description = '采购、请购与供应商相关权限'
+WHERE id = 102 AND tenant_id = 100;
 
 -- 墨西哥演示客户。
 INSERT INTO jsh_supplier (id, supplier, contacts, phone_num, email, description, isystem, type, enabled,
