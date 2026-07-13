@@ -214,6 +214,20 @@ public class TradeDemoController extends BaseController {
         return ok(jdbcTemplate.queryForList(sql, tenantId, tenantId, tenantId, tenantId));
     }
 
+    @GetMapping("/inventory/detail")
+    public String inventoryDetail(@RequestParam(value = "status", required = false) String status, HttpServletRequest request) {
+        Long tenantId = resolveTenantId(request);
+        List<Object> params = new ArrayList<>();
+        params.add(tenantId);
+        StringBuilder sql = new StringBuilder("select s.shipment_no shipmentNo,s.status shipmentStatus,i.material_id materialId,m.name materialName,m.model,m.brand,coalesce(i.quantity,0) shipmentQuantity,coalesce(i.in_transit_quantity,0) inTransitQuantity,coalesce(i.cleared_quantity,0) clearedQuantity,coalesce(i.stocked_quantity,0) stockedQuantity,coalesce(i.sold_quantity,0) lockedQuantity,greatest(coalesce(i.stocked_quantity,0)-coalesce(i.sold_quantity,0),0) availableQuantity,coalesce(i.purchase_amount,0) purchaseAmount,coalesce(i.sales_amount,0) salesAmount,ph.number purchaseNumber,sh.number salesNumber,sp.supplier salesCustomerName,case when coalesce(i.in_transit_quantity,0)>0 then '海运在途' when coalesce(i.cleared_quantity,0)>0 and coalesce(i.stocked_quantity,0)=0 then '清关中' when greatest(coalesce(i.stocked_quantity,0)-coalesce(i.sold_quantity,0),0)>0 then '墨西哥可销售库存' when coalesce(i.sold_quantity,0)>0 then '客户锁定库存' else '已消耗' end statusName from jsh_trade_shipment_item i join jsh_trade_shipment s on s.id=i.shipment_id left join jsh_material m on m.id=i.material_id left join jsh_depot_head ph on ph.id=i.depot_head_id left join jsh_depot_head sh on sh.id=i.sales_depot_head_id left join jsh_supplier sp on sp.id=sh.organ_id where i.tenant_id=? and coalesce(i.delete_flag,'0')<>'1' and coalesce(s.delete_flag,'0')<>'1'");
+        if (status != null && !status.trim().isEmpty()) {
+            sql.append(" and (case when coalesce(i.in_transit_quantity,0)>0 then '海运在途' when coalesce(i.cleared_quantity,0)>0 and coalesce(i.stocked_quantity,0)=0 then '清关中' when greatest(coalesce(i.stocked_quantity,0)-coalesce(i.sold_quantity,0),0)>0 then '墨西哥可销售库存' when coalesce(i.sold_quantity,0)>0 then '客户锁定库存' else '已消耗' end)=?");
+            params.add(status.trim());
+        }
+        sql.append(" order by s.departure_date desc,s.id desc,m.name,i.id");
+        return ok(jdbcTemplate.queryForList(sql.toString(), params.toArray()));
+    }
+
     @GetMapping("/cost/profit")
     public String costProfit(HttpServletRequest request) {
         Long tenantId = resolveTenantId(request);
@@ -498,6 +512,10 @@ public class TradeDemoController extends BaseController {
         keyMap.put("estimatedsales", "estimatedSales");
         keyMap.put("estimatedgrossprofit", "estimatedGrossProfit");
         keyMap.put("grossmargin", "grossMargin");
+        keyMap.put("shipmentstatus", "shipmentStatus");
+        keyMap.put("shipmentquantity", "shipmentQuantity");
+        keyMap.put("lockedquantity", "lockedQuantity");
+        keyMap.put("availablequantity", "availableQuantity");
         return keyMap.getOrDefault(key, key);
     }
 }
