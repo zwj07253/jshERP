@@ -84,10 +84,64 @@ public class TradeDemoController extends BaseController {
         List<Map<String, Object>> headers = jdbcTemplate.queryForList("select id, shipment_no shipmentNo, container_no containerNo, bill_of_lading_no billOfLadingNo, origin_port originPort, destination_port destinationPort, carrier_name carrierName, incoterms, currency, exchange_rate exchangeRate, departure_date departureDate, estimated_arrival_date estimatedArrivalDate, actual_arrival_date actualArrivalDate, status, remark from jsh_trade_shipment where id=? and tenant_id=? and coalesce(delete_flag,'0')<>'1'", id, tenantId);
         Map<String, Object> data = new HashMap<>();
         data.put("info", headers.isEmpty() ? null : headers.get(0));
-        data.put("items", jdbcTemplate.queryForList("select i.id, i.material_id materialId, m.name materialName, m.model, m.brand, i.quantity, i.purchase_amount purchaseAmount, i.in_transit_quantity inTransitQuantity, i.cleared_quantity clearedQuantity, i.stocked_quantity stockedQuantity, i.sold_quantity soldQuantity from jsh_trade_shipment_item i left join jsh_material m on m.id=i.material_id where i.shipment_id=? and i.tenant_id=? and coalesce(i.delete_flag,'0')<>'1' order by i.id", id, tenantId));
+        data.put("items", jdbcTemplate.queryForList("select i.id, i.material_id materialId, i.depot_head_id depotHeadId, i.depot_item_id depotItemId, h.number purchaseNumber, m.name materialName, m.model, m.brand, i.quantity, i.purchase_amount purchaseAmount, i.in_transit_quantity inTransitQuantity, i.cleared_quantity clearedQuantity, i.stocked_quantity stockedQuantity, i.sold_quantity soldQuantity from jsh_trade_shipment_item i left join jsh_depot_head h on h.id=i.depot_head_id left join jsh_material m on m.id=i.material_id where i.shipment_id=? and i.tenant_id=? and coalesce(i.delete_flag,'0')<>'1' order by i.id", id, tenantId));
         data.put("documents", jdbcTemplate.queryForList("select id, document_type documentType, document_no documentNo, status, owner_name ownerName, due_date dueDate, attachment_name attachmentName, exception_note exceptionNote from jsh_trade_document where shipment_id=? and tenant_id=? and coalesce(delete_flag,'0')<>'1' order by id", id, tenantId));
         data.put("costs", jdbcTemplate.queryForList("select id, cost_type costType, original_amount originalAmount, currency, exchange_rate exchangeRate, cny_amount cnyAmount, allocated_flag allocatedFlag, cost_date costDate, remark from jsh_trade_cost where shipment_id=? and tenant_id=? and coalesce(delete_flag,'0')<>'1' order by id", id, tenantId));
         return ok(data);
+    }
+
+    @GetMapping("/shipment/purchase-options")
+    public String purchaseOptions(HttpServletRequest request) {
+        Long tenantId = resolveTenantId(request);
+        String sql = "select h.id depotHeadId,h.number purchaseNumber,i.id depotItemId,i.material_id materialId,m.name materialName,m.model,i.oper_number purchaseQuantity,coalesce(i.purchase_unit_price,i.unit_price,0) purchaseUnitPrice,i.all_price purchaseAmount from jsh_depot_head h join jsh_depot_item i on i.header_id=h.id and coalesce(i.delete_flag,'0')<>'1' join jsh_material m on m.id=i.material_id where h.tenant_id=? and h.type='入库' and h.sub_type='采购' and coalesce(h.delete_flag,'0')<>'1' order by h.oper_time desc,h.id desc,i.id";
+        return ok(jdbcTemplate.queryForList(sql, tenantId));
+    }
+
+    @PostMapping("/shipment/item/add")
+    @Transactional(rollbackFor = Exception.class)
+    public String addShipmentItem(@RequestBody JSONObject obj, HttpServletRequest request) {
+        Long tenantId = resolveTenantId(request);
+        Long shipmentId = obj.getLong("shipmentId");
+        Long depotItemId = obj.getLong("depotItemId");
+        BigDecimal quantity = decimal(obj, "quantity", BigDecimal.ZERO);
+        if (shipmentId == null || depotItemId == null || quantity.compareTo(BigDecimal.ZERO) <= 0 || !exists("jsh_trade_shipment", shipmentId, tenantId)) return tradeError("请选择发运批次、采购明细并填写数量");
+        List<Map<String, Object>> purchaseRows = jdbcTemplate.queryForList("select i.id depot_item_id,i.header_id depot_head_id,i.material_id,coalesce(i.oper_number,0) oper_number,coalesce(i.purchase_unit_price,i.unit_price,0) unit_price from jsh_depot_item i join jsh_depot_head h on h.id=i.header_id where i.id=? and i.tenant_id=? and h.tenant_id=? and h.type='入库' and h.sub_type='采购' and coalesce(i.delete_flag,'0')<>'1' and coalesce(h.delete_flag,'0')<>'1'", depotItemId, tenantId, tenantId);
+        if (purchaseRows.isEmpty()) return tradeError("关联的采购明细不存在");
+        Map<String, Object> purchase = purchaseRows.get(0);
+        BigDecimal allocated = amount("select coalesce(sum(quantity),0) from jsh_trade_shipment_item where depot_item_id=? and tenant_id=? and coalesce(delete_flag,'0')<>'1'", depotItemId, tenantId);
+        BigDecimal available = ((BigDecimal) purchase.get("oper_number")).subtract(allocated);
+        if (quantity.compareTo(available) > 0) return tradeError("可发运数量不足，当前最多可关联 " + available.stripTrailingZeros().toPlainString());
+        String status = jdbcTemplate.queryForObject("select status from jsh_trade_shipment where id=? and tenant_id=?", String.class, shipmentId, tenantId);
+        long id = nextId("jsh_trade_shipment_item");
+        BigDecimal unitPrice = (BigDecimal) purchase.get("unit_price");
+        jdbcTemplate.update("insert into jsh_trade_shipment_item (id,shipment_id,material_id,depot_head_id,depot_item_id,quantity,purchase_amount,in_transit_quantity,cleared_quantity,stocked_quantity,sold_quantity,tenant_id,delete_flag) values (?,?,?,?,?,?,?,?,?,?,?,?, '0')", id, shipmentId, ((Number) purchase.get("material_id")).longValue(), ((Number) purchase.get("depot_head_id")).longValue(), depotItemId, quantity, unitPrice.multiply(quantity), itemInTransit(status, quantity), itemCleared(status, quantity), itemStocked(status, quantity), BigDecimal.ZERO, tenantId);
+        return ok(singleValue("id", id));
+    }
+
+    @PutMapping("/shipment/item/update")
+    public String updateShipmentItem(@RequestBody JSONObject obj, HttpServletRequest request) {
+        Long tenantId = resolveTenantId(request);
+        Long id = obj.getLong("id");
+        BigDecimal quantity = decimal(obj, "quantity", BigDecimal.ZERO);
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList("select i.id,i.shipment_id,i.depot_item_id,coalesce(d.oper_number,0) purchase_quantity,coalesce(d.purchase_unit_price,d.unit_price,0) unit_price,s.status from jsh_trade_shipment_item i join jsh_trade_shipment s on s.id=i.shipment_id left join jsh_depot_item d on d.id=i.depot_item_id where i.id=? and i.tenant_id=? and coalesce(i.delete_flag,'0')<>'1'", id, tenantId);
+        if (rows.isEmpty() || quantity.compareTo(BigDecimal.ZERO) <= 0) return tradeError("发运明细不存在或数量无效");
+        Map<String, Object> row = rows.get(0);
+        if (row.get("depot_item_id") == null) return tradeError("该演示明细尚未关联采购单，请新增关联 SKU 后再修改");
+        Long depotItemId = ((Number) row.get("depot_item_id")).longValue();
+        BigDecimal otherAllocated = amount("select coalesce(sum(quantity),0) from jsh_trade_shipment_item where depot_item_id=? and id<>? and tenant_id=? and coalesce(delete_flag,'0')<>'1'", depotItemId, id, tenantId);
+        if (quantity.add(otherAllocated).compareTo((BigDecimal) row.get("purchase_quantity")) > 0) return tradeError("数量超过该采购明细可发运数量");
+        String status = String.valueOf(row.get("status"));
+        BigDecimal unitPrice = (BigDecimal) row.get("unit_price");
+        jdbcTemplate.update("update jsh_trade_shipment_item set quantity=?,purchase_amount=?,in_transit_quantity=?,cleared_quantity=?,stocked_quantity=? where id=? and tenant_id=?", quantity, unitPrice.multiply(quantity), itemInTransit(status, quantity), itemCleared(status, quantity), itemStocked(status, quantity), id, tenantId);
+        return ok(singleValue("id", id));
+    }
+
+    @PostMapping("/shipment/item/delete")
+    public String deleteShipmentItem(@RequestBody JSONObject obj, HttpServletRequest request) {
+        Long tenantId = resolveTenantId(request);
+        Long id = obj.getLong("id");
+        int updated = jdbcTemplate.update("update jsh_trade_shipment_item set delete_flag='1' where id=? and tenant_id=? and coalesce(delete_flag,'0')<>'1'", id, tenantId);
+        return updated > 0 ? ok(singleValue("id", id)) : tradeError("发运明细不存在");
     }
 
     @GetMapping("/document/list")
@@ -264,6 +318,18 @@ public class TradeDemoController extends BaseController {
         return value == null || value.trim().isEmpty();
     }
 
+    private BigDecimal itemInTransit(String status, BigDecimal quantity) {
+        return "在途".equals(status) || "已到港".equals(status) ? quantity : BigDecimal.ZERO;
+    }
+
+    private BigDecimal itemCleared(String status, BigDecimal quantity) {
+        return "清关中".equals(status) || "已入库".equals(status) || "已完成".equals(status) ? quantity : BigDecimal.ZERO;
+    }
+
+    private BigDecimal itemStocked(String status, BigDecimal quantity) {
+        return "已入库".equals(status) || "已完成".equals(status) ? quantity : BigDecimal.ZERO;
+    }
+
     private Map<String, Object> singleValue(String key, Object value) {
         Map<String, Object> result = new HashMap<>();
         result.put(key, value);
@@ -348,7 +414,12 @@ public class TradeDemoController extends BaseController {
         keyMap.put("estimatedarrivaldate", "estimatedArrivalDate");
         keyMap.put("actualarrivaldate", "actualArrivalDate");
         keyMap.put("purchaseamount", "purchaseAmount");
+        keyMap.put("purchasenumber", "purchaseNumber");
+        keyMap.put("purchasequantity", "purchaseQuantity");
+        keyMap.put("purchaseunitprice", "purchaseUnitPrice");
         keyMap.put("materialid", "materialId");
+        keyMap.put("depotheadid", "depotHeadId");
+        keyMap.put("depotitemid", "depotItemId");
         keyMap.put("materialname", "materialName");
         keyMap.put("intransitquantity", "inTransitQuantity");
         keyMap.put("clearedquantity", "clearedQuantity");
