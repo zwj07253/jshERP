@@ -13,6 +13,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./jshERP-boot/docs/jsh_erp_pg.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./jshERP-boot/docs/jsh_erp_trade_pg.sql:/docker-entrypoint-initdb.d/99-trade.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 5s

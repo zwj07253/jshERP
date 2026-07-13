@@ -13,3 +13,6 @@
 ## env
 .env
 docs/
+!jshERP-boot/docs/
+jshERP-boot/docs/*
+!jshERP-boot/docs/jsh_erp_trade_pg.sql
