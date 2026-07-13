@@ -32,8 +32,11 @@ CREATE TABLE IF NOT EXISTS jsh_trade_shipment_item (
     material_id BIGINT NOT NULL,
     depot_head_id BIGINT,
     depot_item_id BIGINT,
+    sales_depot_head_id BIGINT,
+    sales_depot_item_id BIGINT,
     quantity NUMERIC(24,6) NOT NULL DEFAULT 0,
     purchase_amount NUMERIC(24,6) NOT NULL DEFAULT 0,
+    sales_amount NUMERIC(24,6) NOT NULL DEFAULT 0,
     in_transit_quantity NUMERIC(24,6) NOT NULL DEFAULT 0,
     cleared_quantity NUMERIC(24,6) NOT NULL DEFAULT 0,
     stocked_quantity NUMERIC(24,6) NOT NULL DEFAULT 0,
@@ -181,6 +184,32 @@ shipment_id = EXCLUDED.shipment_id, material_id = EXCLUDED.material_id, depot_he
 quantity = EXCLUDED.quantity, purchase_amount = EXCLUDED.purchase_amount, in_transit_quantity = EXCLUDED.in_transit_quantity,
 cleared_quantity = EXCLUDED.cleared_quantity, stocked_quantity = EXCLUDED.stocked_quantity, sold_quantity = EXCLUDED.sold_quantity,
 tenant_id = EXCLUDED.tenant_id, delete_flag = EXCLUDED.delete_flag;
+
+-- 墨西哥分销销售单，用于演示采购批次到海外客户销售的闭环。
+INSERT INTO jsh_depot_head (id, type, sub_type, default_number, number, create_time, oper_time, organ_id, creator,
+account_id, change_amount, back_amount, total_price, pay_type, bill_type, remark, sales_man, discount, discount_money,
+discount_last_money, other_money, deposit, debt, last_debt, status, purchase_status, source, tenant_id, delete_flag) VALUES
+(510, '出库', '销售', 'MX-SO-20260712-001', 'MX-SO-20260712-001', '2026-07-12 10:00:00', '2026-07-12 10:20:00',
+109, 103, 101, 85600, 0, 85600, '记账', '销售', '墨西哥分销客户订单，关联外贸发运批次 SH-MX-2026-001', '李娜',
+0, 0, 85600, 0, 0, 85600, 0, '1', '2', '0', 100, '0')
+ON CONFLICT (id) DO UPDATE SET
+type = EXCLUDED.type, sub_type = EXCLUDED.sub_type, default_number = EXCLUDED.default_number, number = EXCLUDED.number,
+create_time = EXCLUDED.create_time, oper_time = EXCLUDED.oper_time, organ_id = EXCLUDED.organ_id, creator = EXCLUDED.creator,
+account_id = EXCLUDED.account_id, change_amount = EXCLUDED.change_amount, back_amount = EXCLUDED.back_amount,
+total_price = EXCLUDED.total_price, pay_type = EXCLUDED.pay_type, bill_type = EXCLUDED.bill_type, remark = EXCLUDED.remark,
+sales_man = EXCLUDED.sales_man, discount = EXCLUDED.discount, discount_money = EXCLUDED.discount_money,
+discount_last_money = EXCLUDED.discount_last_money, other_money = EXCLUDED.other_money, deposit = EXCLUDED.deposit,
+debt = EXCLUDED.debt, last_debt = EXCLUDED.last_debt, status = EXCLUDED.status, purchase_status = EXCLUDED.purchase_status,
+source = EXCLUDED.source, tenant_id = EXCLUDED.tenant_id, delete_flag = EXCLUDED.delete_flag;
+
+INSERT INTO jsh_depot_item (id, header_id, material_id, material_extend_id, material_unit, oper_number, basic_number,
+unit_price, purchase_unit_price, all_price, remark, depot_id, tenant_id, delete_flag) VALUES
+(5101, 510, 101, 101, '只', 2, 2, 42800, 12000, 85600, '墨西哥分销销售 天梭力洛克 x2', 101, 100, '0')
+ON CONFLICT (id) DO UPDATE SET
+header_id = EXCLUDED.header_id, material_id = EXCLUDED.material_id, material_extend_id = EXCLUDED.material_extend_id,
+material_unit = EXCLUDED.material_unit, oper_number = EXCLUDED.oper_number, basic_number = EXCLUDED.basic_number,
+unit_price = EXCLUDED.unit_price, purchase_unit_price = EXCLUDED.purchase_unit_price, all_price = EXCLUDED.all_price,
+remark = EXCLUDED.remark, depot_id = EXCLUDED.depot_id, tenant_id = EXCLUDED.tenant_id, delete_flag = EXCLUDED.delete_flag;
 
 INSERT INTO jsh_trade_document (id, shipment_id, document_type, document_no, status, owner_name, due_date,
 attachment_name, exception_note, tenant_id, delete_flag) VALUES
