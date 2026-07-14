@@ -1287,6 +1287,20 @@ remark = EXCLUDED.remark,
 weixin_open_id = EXCLUDED.weixin_open_id,
 tenant_id = EXCLUDED.tenant_id,
 delete_flag = EXCLUDED.delete_flag;
+-- Keep the documented jsh / 123456 account available in fresh PostgreSQL Demo databases.
+INSERT INTO jsh_user (id, username, login_name, password, leader_flag, ismanager, isystem, status, description, tenant_id, delete_flag)
+VALUES (101, 'Demo Administrator', 'jsh', 'e10adc3949ba59abbe56e057f20f883e', '1', 1, 0, 0, 'Foreign trade demo account', 0, '0')
+ON CONFLICT (id) DO UPDATE SET
+username = EXCLUDED.username,
+login_name = EXCLUDED.login_name,
+password = EXCLUDED.password,
+leader_flag = EXCLUDED.leader_flag,
+ismanager = EXCLUDED.ismanager,
+isystem = EXCLUDED.isystem,
+status = EXCLUDED.status,
+description = EXCLUDED.description,
+tenant_id = EXCLUDED.tenant_id,
+delete_flag = EXCLUDED.delete_flag;
 SELECT setval('jsh_user_id_seq', COALESCE((SELECT MAX(id) FROM jsh_user), 1));
 
 -- ============================================================
@@ -1319,6 +1333,16 @@ SELECT setval('jsh_user_business_id_seq', 1);
 INSERT INTO jsh_user_business (id, type, key_id, value, btn_str, tenant_id, delete_flag) VALUES
 (111, 'UserRole', '120', '[4]', NULL, 0, '0'),
 (112, 'RoleFunctions', '4', '[1][13][14][15][16][18][21][22][23][24][25][26][31][32][33][38][40][41][44][59][194][195][197][198][199][200][201][202][203][204][205][206][207][208][209][210][211][212][217][218][220][225][226][227][228][229][232][233][234][235][236][237][239][241][242][243][244][245][246][247][248][258][259][260][261]', '[{"funId":13,"btnStr":"1"},{"funId":14,"btnStr":"1"},{"funId":243,"btnStr":"1"},{"funId":234,"btnStr":"1"},{"funId":236,"btnStr":"1"},{"funId":16,"btnStr":"1"},{"funId":18,"btnStr":"1"},{"funId":258,"btnStr":"1"},{"funId":22,"btnStr":"1"},{"funId":23,"btnStr":"1,3"},{"funId":220,"btnStr":"1"},{"funId":247,"btnStr":"1"},{"funId":25,"btnStr":"1,3"},{"funId":217,"btnStr":"1,3"},{"funId":218,"btnStr":"1,3"},{"funId":26,"btnStr":"1"},{"funId":194,"btnStr":"1"},{"funId":195,"btnStr":"1"},{"funId":31,"btnStr":"1"},{"funId":261,"btnStr":"1,2,7,3"},{"funId":241,"btnStr":"1,2,7,3"},{"funId":33,"btnStr":"1,2,7,3"},{"funId":199,"btnStr":"1,2,7,3"},{"funId":242,"btnStr":"1,2,7,3"},{"funId":41,"btnStr":"1,2,7,3"},{"funId":200,"btnStr":"1,2,7,3"},{"funId":210,"btnStr":"1,2,7,3"},{"funId":211,"btnStr":"1,2,7,3"},{"funId":197,"btnStr":"1,7,2,3"},{"funId":203,"btnStr":"1,7,2,3"},{"funId":204,"btnStr":"1,7,2,3"},{"funId":205,"btnStr":"1,2,7,3"},{"funId":206,"btnStr":"1,2,7,3"},{"funId":212,"btnStr":"1,7,2,3"},{"funId":201,"btnStr":"1,2,7,3"},{"funId":202,"btnStr":"1,2,7,3"},{"funId":40,"btnStr":"1,2,7,3"},{"funId":232,"btnStr":"1,2,7,3"},{"funId":233,"btnStr":"1,2,7,3"}]', 0, '0')
+ON CONFLICT (id) DO UPDATE SET
+type = EXCLUDED.type,
+key_id = EXCLUDED.key_id,
+value = EXCLUDED.value,
+btn_str = EXCLUDED.btn_str,
+tenant_id = EXCLUDED.tenant_id,
+delete_flag = EXCLUDED.delete_flag;
+-- Assign the demo administrator to the built-in administrator role.
+INSERT INTO jsh_user_business (id, type, key_id, value, btn_str, tenant_id, delete_flag)
+VALUES (113, 'UserRole', '101', '[4]', NULL, 0, '0')
 ON CONFLICT (id) DO UPDATE SET
 type = EXCLUDED.type,
 key_id = EXCLUDED.key_id,
