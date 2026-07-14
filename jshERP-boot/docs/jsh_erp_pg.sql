@@ -1350,6 +1350,16 @@ value = EXCLUDED.value,
 btn_str = EXCLUDED.btn_str,
 tenant_id = EXCLUDED.tenant_id,
 delete_flag = EXCLUDED.delete_flag;
+-- Give tenant 0 the same administrator role ceiling used by menu permission checks.
+INSERT INTO jsh_user_business (id, type, key_id, value, btn_str, tenant_id, delete_flag)
+VALUES (114, 'UserRole', '0', '[4]', NULL, 0, '0')
+ON CONFLICT (id) DO UPDATE SET
+type = EXCLUDED.type,
+key_id = EXCLUDED.key_id,
+value = EXCLUDED.value,
+btn_str = EXCLUDED.btn_str,
+tenant_id = EXCLUDED.tenant_id,
+delete_flag = EXCLUDED.delete_flag;
 SELECT setval('jsh_user_business_id_seq', COALESCE((SELECT MAX(id) FROM jsh_user_business), 1));
 SELECT setval('jsh_depot_head_id_seq', 1);
 SELECT setval('jsh_depot_item_id_seq', 1);

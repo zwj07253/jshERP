@@ -282,7 +282,7 @@ public class FunctionService {
             }
             return funIdMap;
         } else {
-            return null;
+            return funIdMap;
         }
     }
 
@@ -330,7 +330,7 @@ public class FunctionService {
             }
             return funIdMap;
         } else {
-            return null;
+            return funIdMap;
         }
     }
 }

@@ -24,3 +24,25 @@ value = EXCLUDED.value,
 btn_str = EXCLUDED.btn_str,
 tenant_id = EXCLUDED.tenant_id,
 delete_flag = EXCLUDED.delete_flag;
+
+INSERT INTO jsh_user_business (id, type, key_id, value, btn_str, tenant_id, delete_flag)
+VALUES (114, 'UserRole', '0', '[4]', NULL, 0, '0')
+ON CONFLICT (id) DO UPDATE SET
+type = EXCLUDED.type,
+key_id = EXCLUDED.key_id,
+value = EXCLUDED.value,
+btn_str = EXCLUDED.btn_str,
+tenant_id = EXCLUDED.tenant_id,
+delete_flag = EXCLUDED.delete_flag;
+
+UPDATE jsh_user_business
+SET value = value || '[300][301][302][303][304][305]'
+WHERE tenant_id = 0 AND type = 'RoleFunctions' AND key_id = '4' AND value NOT LIKE '%[300]%';
+
+UPDATE jsh_user_business
+SET btn_str = CASE
+    WHEN COALESCE(TRIM(btn_str), '') = '' THEN '[{"funId":302,"btnStr":"1,2,3"},{"funId":303,"btnStr":"1,2,3"}]'
+    ELSE LEFT(TRIM(btn_str), LENGTH(TRIM(btn_str)) - 1)
+         || ',{"funId":302,"btnStr":"1,2,3"},{"funId":303,"btnStr":"1,2,3"}]'
+END
+WHERE tenant_id = 0 AND type = 'RoleFunctions' AND key_id = '4' AND COALESCE(btn_str, '') NOT LIKE '%"funId":302%';
