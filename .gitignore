@@ -12,6 +12,7 @@
 
 ## env
 .env
+.env.demo
 docs/
 !jshERP-boot/docs/
 jshERP-boot/docs/*

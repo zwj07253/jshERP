@@ -1,0 +1,72 @@
+name: jsh-foreign-trade-demo
+
+# 外贸手表 Demo 独立部署。
+# 与正式环境完全隔离：独立 Compose 项目、网络、数据卷和数据库；仅暴露 Web 端口。
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${DEMO_DB_NAME:-jsh_erp_trade_demo}
+      POSTGRES_USER: ${DEMO_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DEMO_DB_PASSWORD:?请在 .env.demo 中设置 DEMO_DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./jshERP-boot/docs/jsh_erp_pg.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./jshERP-boot/docs/jsh_erp_trade_pg.sql:/docker-entrypoint-initdb.d/99-trade.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DEMO_DB_USER:-postgres} -d ${DEMO_DB_NAME:-jsh_erp_trade_demo}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${DEMO_REDIS_PASSWORD:?请在 .env.demo 中设置 DEMO_REDIS_PASSWORD}
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${DEMO_REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DEMO_DB_NAME:-jsh_erp_trade_demo}
+      SPRING_DATASOURCE_USERNAME: ${DEMO_DB_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${DEMO_DB_PASSWORD:?请在 .env.demo 中设置 DEMO_DB_PASSWORD}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_PASSWORD: ${DEMO_REDIS_PASSWORD:?请在 .env.demo 中设置 DEMO_REDIS_PASSWORD}
+    volumes:
+      - upload_data:/opt/jshERP/upload
+      - export_data:/opt/jshERP/export
+      - plugin_data:/opt/jshERP/plugins
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./jshERP-web
+      dockerfile: Dockerfile
+    ports:
+      - "${DEMO_WEB_PORT:-18089}:80"
+    depends_on:
+      - app
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  upload_data:
+  export_data:
+  plugin_data:
