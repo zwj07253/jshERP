@@ -467,10 +467,14 @@ public class UserService {
      * @throws Exception
      */
     private void sendEmailToCurrentUser(HttpServletRequest request, User user) throws Exception {
-        String platformName = platformConfigService.getPlatformConfigByKey("platform_name").getPlatformValue();
-        String emailFrom = platformConfigService.getPlatformConfigByKey("email_from").getPlatformValue();
-        String emailAuthCode = platformConfigService.getPlatformConfigByKey("email_auth_code").getPlatformValue();
-        String emailSmtpHost = platformConfigService.getPlatformConfigByKey("email_smtp_host").getPlatformValue();
+        PlatformConfig platformNameConfig = platformConfigService.getPlatformConfigByKey("platform_name");
+        PlatformConfig emailFromConfig = platformConfigService.getPlatformConfigByKey("email_from");
+        PlatformConfig emailAuthCodeConfig = platformConfigService.getPlatformConfigByKey("email_auth_code");
+        PlatformConfig emailSmtpHostConfig = platformConfigService.getPlatformConfigByKey("email_smtp_host");
+        String platformName = platformNameConfig == null ? "" : platformNameConfig.getPlatformValue();
+        String emailFrom = emailFromConfig == null ? null : emailFromConfig.getPlatformValue();
+        String emailAuthCode = emailAuthCodeConfig == null ? null : emailAuthCodeConfig.getPlatformValue();
+        String emailSmtpHost = emailSmtpHostConfig == null ? null : emailSmtpHostConfig.getPlatformValue();
         if(StringUtil.isNotEmpty(emailFrom) && StringUtil.isNotEmpty(emailAuthCode) && StringUtil.isNotEmpty(emailSmtpHost)
                 && StringUtil.isNotEmpty(user.getEmail())) {
             String emailSubject = "用户" + user.getLoginName() + "成功登录" + platformName;
