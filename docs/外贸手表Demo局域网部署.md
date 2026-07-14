@@ -45,6 +45,13 @@ docker compose --env-file .env.demo -f docker-compose.demo.yml ps
 
 首次启动会初始化独立的 PostgreSQL，并自动导入基础 ERP 数据与外贸手表 Demo 数据。初始化脚本只会在 Demo 数据卷首次创建时执行。
 
+若曾使用旧版本启动过 Demo，且登录 `jsh / 123456` 提示用户不存在，请在更新代码后执行一次以下补丁；它不会删除任何演示数据：
+
+```bash
+docker compose --env-file .env.demo -f docker-compose.demo.yml exec -T postgres \
+  psql -U postgres -d jsh_erp_trade_demo < jshERP-boot/docs/jsh_erp_demo_account_fix_pg.sql
+```
+
 ## 验收
 
 ```bash
