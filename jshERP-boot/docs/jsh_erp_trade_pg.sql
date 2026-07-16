@@ -108,7 +108,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_trade_material_cost_shipment_material
 -- 外贸管理菜单。使用 300~305，避免与现有功能 ID 冲突。
 INSERT INTO jsh_function (id, number, name, parent_number, url, component, state, sort, enabled, type, push_btn, icon, delete_flag) VALUES
 (300, '0700', '外贸管理', '0', '/trade', '/layouts/TabLayout', FALSE, '0800', TRUE, '电脑版', '', 'global', '0'),
-(301, '070001', '外贸驾驶舱', '0700', '/trade/dashboard', '/trade/TradeDashboard', FALSE, '0801', TRUE, '电脑版', '', 'dashboard', '0'),
+(301, '070001', '外贸看板', '0700', '/trade/dashboard', '/trade/TradeDashboard', FALSE, '0801', TRUE, '电脑版', '', 'dashboard', '0'),
 (302, '070002', '发运批次', '0700', '/trade/shipment', '/trade/TradeShipmentList', FALSE, '0802', TRUE, '电脑版', '1,2,3', 'car', '0'),
 (303, '070003', '清关单证', '0700', '/trade/document', '/trade/TradeDocumentList', FALSE, '0803', TRUE, '电脑版', '1,2,3', 'file-done', '0'),
 (304, '070004', '外贸库存', '0700', '/trade/inventory', '/trade/TradeInventory', FALSE, '0804', TRUE, '电脑版', '', 'database', '0'),
