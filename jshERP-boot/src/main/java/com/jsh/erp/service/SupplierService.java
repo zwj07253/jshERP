@@ -67,6 +67,16 @@ public class SupplierService {
         return result;
     }
 
+    public Supplier lockSupplier(Long id) {
+        return supplierMapperEx.lockById(id);
+    }
+
+    public BigDecimal calculateAdvanceIn(Long supplierId) {
+        BigDecimal financialAllPrice = accountHeadMapperEx.getFinancialAllPriceByOrganId(supplierId);
+        BigDecimal billAllPrice = depotHeadMapperEx.getBillAllPriceByOrganId(supplierId);
+        return financialAllPrice.subtract(billAllPrice);
+    }
+
     public List<Supplier> getSupplierListByIds(String ids)throws Exception {
         List<Long> idList = StringUtil.strToLongList(ids);
         List<Supplier> list = new ArrayList<>();
@@ -279,13 +289,9 @@ public class SupplierService {
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public void updateAdvanceIn(Long supplierId) {
         try{
-            //查询会员在收预付款单据的总金额
-            BigDecimal financialAllPrice = accountHeadMapperEx.getFinancialAllPriceByOrganId(supplierId);
-            //查询会员在零售出库单据的总金额
-            BigDecimal billAllPrice = depotHeadMapperEx.getBillAllPriceByOrganId(supplierId);
             Supplier supplier = new Supplier();
             supplier.setId(supplierId);
-            supplier.setAdvanceIn(financialAllPrice.subtract(billAllPrice));
+            supplier.setAdvanceIn(calculateAdvanceIn(supplierId));
             supplierMapper.updateByPrimaryKeySelective(supplier);
         } catch (Exception e){
             JshException.writeFail(logger, e);

@@ -908,6 +908,32 @@ public class UserService {
         return btnStrWithUrlArr;
     }
 
+    /**
+     * 校验当前用户是否拥有指定页面的按钮权限。
+     * admin 保持系统原有的超级管理员行为，默认拥有全部按钮权限。
+     */
+    public boolean hasButtonPermission(Long userId, String url, String buttonCode) throws Exception {
+        if (userId == null) {
+            return false;
+        }
+        User user = getUser(userId);
+        if (user != null && "admin".equals(user.getLoginName())) {
+            return true;
+        }
+        JSONArray buttonList = getBtnStrArrById(userId);
+        for (Object item : buttonList) {
+            JSONObject button = JSONObject.parseObject(item.toString());
+            if (url.equals(button.getString("url"))) {
+                String buttonString = button.getString("btnStr");
+                if (StringUtil.isNotEmpty(buttonString)) {
+                    List<String> buttonCodes = Arrays.asList(buttonString.split(","));
+                    return buttonCodes.contains(buttonCode);
+                }
+            }
+        }
+        return false;
+    }
+
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetStatus(Byte status, String ids, HttpServletRequest request)throws Exception {
         int result=0;

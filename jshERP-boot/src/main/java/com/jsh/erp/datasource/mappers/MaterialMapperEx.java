@@ -18,6 +18,8 @@ import java.util.Map;
  */
 public interface MaterialMapperEx {
 
+    Long lockById(@Param("id") Long id);
+
     List<MaterialVo4Unit> selectByConditionMaterial(
             @Param("materialParam") String materialParam,
             @Param("standard") String standard,

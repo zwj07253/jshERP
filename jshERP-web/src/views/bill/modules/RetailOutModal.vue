@@ -133,7 +133,10 @@
                   <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" data-step="6" data-title="收款金额"
                                data-intro="收款金额为收银员收取用户的实际金额">
                     <span slot="label" style="font-size: 20px;line-height:20px">收款金额</span>
-                    <a-input v-decorator.trim="[ 'getAmount' ]" :style="{color:'red'}" defaultValue="0" @change="onChangeGetAmount"/>
+                    <a-input v-decorator.trim="[ 'getAmount', {rules: [
+                      { required: true, message: '请输入收款金额!' },
+                      { validator: validateGetAmount }
+                    ]} ]" :style="{color:'red'}" defaultValue="0" @change="onChangeGetAmount"/>
                   </a-form-item>
                 </a-col>
                 <a-col :lg="24" :md="6" :sm="6">
@@ -261,7 +264,10 @@
             { title: '有效期', key: 'expirationDate',width: '9%', type: FormTypes.input, readonly: true },
             { title: '多属性', key: 'sku', width: '9%', type: FormTypes.normal },
             { title: '数量', key: 'operNumber', width: '6%', type: FormTypes.inputNumber, statistics: true,
-              validateRules: [{ required: true, message: '${title}不能为空' }]
+              validateRules: [
+                { required: true, message: '${title}不能为空' },
+                { pattern: /^(?=.*[1-9])\d+(?:\.\d+)?$/, message: '${title}必须大于0' }
+              ]
             },
             { title: '单价', key: 'unitPrice', width: '6%', type: FormTypes.inputNumber},
             { title: '金额', key: 'allPrice', width: '6%', type: FormTypes.inputNumber, statistics: true },
@@ -431,6 +437,17 @@
         this.$nextTick(() => {
           this.form.setFieldsValue({'backAmount':backAmount})
         });
+      },
+      validateGetAmount(rule, value, callback) {
+        const getAmount = Number(value)
+        const changeAmount = Number(this.form.getFieldValue('changeAmount'))
+        if (!Number.isFinite(getAmount) || getAmount < 0) {
+          callback('收款金额必须是大于等于0的数字')
+        } else if (Number.isFinite(changeAmount) && getAmount < changeAmount) {
+          callback('零售出库不能欠款，收款金额不能小于单据金额')
+        } else {
+          callback()
+        }
       }
     }
   }

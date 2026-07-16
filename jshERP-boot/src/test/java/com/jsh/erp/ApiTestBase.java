@@ -102,6 +102,7 @@ public class ApiTestBase {
         }
         JSONObject body = JSONObject.parseObject(raw);
         assertTrue(body.containsKey("code"), "响应应包含code字段");
+        assertEquals(200, body.getIntValue("code"), "业务响应code应为200，实际响应：" + raw);
     }
 
     /** 校验分页响应 data.total >= 0, data.rows != null */
@@ -114,10 +115,10 @@ public class ApiTestBase {
         assertNotNull(data.getJSONArray("rows"), "rows不应为null");
     }
 
-    /** 校验业务异常响应 code != 0 */
+    /** 校验业务异常响应 code != 200 */
     protected void assertBizError(Response resp) {
         JSONObject body = JSONObject.parseObject(resp.body().asString());
-        assertNotEquals(0, body.getIntValue("code"), "业务异常时code不应为0");
+        assertNotEquals(200, body.getIntValue("code"), "业务异常时code不应为200");
     }
 
     // ========== 工具方法 ==========

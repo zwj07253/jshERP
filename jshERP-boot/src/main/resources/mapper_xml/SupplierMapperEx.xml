@@ -109,4 +109,11 @@
         and COALESCE(delete_flag,'0') !='1'
         limit 1
     </select>
+
+    <select id="lockById" resultMap="com.jsh.erp.datasource.mappers.SupplierMapper.BaseResultMap">
+        select * from jsh_supplier
+        where id = #{id}
+        and COALESCE(delete_flag,'0') !='1'
+        for update
+    </select>
 </mapper>

@@ -344,12 +344,27 @@
         }
       },
       exportExcel() {
+        let params = this.getQueryParams()
+        params.currentPage = 1
+        params.pageSize = Math.max(this.ipagination.total || 0, 1)
+        this.loading = true
+        getAction(this.url.list, params).then((res) => {
+          if (res.code === 200) {
+            this.exportExcelRows(res.data.rows || [])
+          } else {
+            this.$message.warning(res.data && res.data.message ? res.data.message : '导出数据获取失败')
+          }
+        }).finally(() => {
+          this.loading = false
+        })
+      },
+      exportExcelRows(dataSource) {
         let list = []
         let mpStr = getMpListShort(Vue.ls.get('materialPropertyList'))
         let head = '条码,名称,规格,型号,颜色,品牌,制造商,' + mpStr + ',单位,零售数量,零售金额,退货数量,退货金额,实际零售金额'
-        for (let i = 0; i < this.dataSource.length; i++) {
+        for (let i = 0; i < dataSource.length; i++) {
           let item = []
-          let ds = this.dataSource[i]
+          let ds = dataSource[i]
           item.push(ds.barCode, ds.materialName, ds.materialStandard, ds.materialModel, ds.materialColor, ds.materialBrand,
             ds.materialMfrs, ds.otherField1, ds.otherField2, ds.otherField3, ds.materialUnit, ds.outSum,
             ds.outSumPrice, ds.inSum, ds.inSumPrice, ds.outInSumPrice)

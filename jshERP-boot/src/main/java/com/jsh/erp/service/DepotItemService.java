@@ -62,6 +62,8 @@ public class DepotItemService {
     @Resource
     private MaterialCurrentStockMapperEx materialCurrentStockMapperEx;
     @Resource
+    private MaterialMapperEx materialMapperEx;
+    @Resource
     private LogService logService;
 
     public DepotItem getDepotItem(long id)throws Exception {
@@ -323,6 +325,19 @@ public class DepotItemService {
         return list;
     }
 
+    public List<DepotItemVo4WithInfoEx> getRetailOutSummary(String materialParam, String beginTime, String endTime,
+                                                            String[] creatorArray, Long organId, String[] organArray,
+                                                            List<Long> categoryList, List<Long> depotList, Boolean forceFlag,
+                                                            Integer offset, Integer rows) throws Exception {
+        try {
+            return depotItemMapperEx.getRetailOutSummary(materialParam, beginTime, endTime, creatorArray, organId,
+                    organArray, categoryList, depotList, forceFlag, offset, rows);
+        } catch (Exception e) {
+            JshException.readFail(logger, e);
+            return new ArrayList<>();
+        }
+    }
+
     public int getListWithBuyOrSaleCount(String materialParam, String billType,
                                          String beginTime, String endTime, String[] creatorArray, Long organId, String[] organArray, List<Long> categoryList, List<Long> depotList, Boolean forceFlag)throws Exception {
         int result=0;
@@ -395,6 +410,8 @@ public class DepotItemService {
             //校验多行明细当中是否存在重复的序列号
             checkSerialNumberRepeatWithCurrent(rowArr);
             List<DepotItem> depotItemList = new ArrayList<>();
+            Map<String, BigDecimal> outboundQuantityMap = new HashMap<>();
+            Set<String> lockedStockKeys = new HashSet<>();
             for (int i = 0; i < rowArr.size(); i++) {
                 DepotItem depotItem = new DepotItem();
                 JSONObject rowObj = JSONObject.parseObject(rowArr.getString(i));
@@ -520,6 +537,10 @@ public class DepotItemService {
                     } else {
                         depotItem.setBasicNumber(oNumber); //其他情况
                     }
+                }
+                if (depotItem.getOperNumber() == null || depotItem.getOperNumber().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_CODE,
+                            String.format(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_MSG, barCode));
                 }
                 //如果数量+已完成数量>原订单数量，给出预警(判断前提是存在关联订单|关联请购单)
                 String linkStr = StringUtil.isNotEmpty(depotHead.getLinkNumber())? depotHead.getLinkNumber(): depotHead.getLinkApply();
@@ -651,15 +672,23 @@ public class DepotItemService {
                     if(systemConfigService.getForceApprovalFlag() && "0".equals(depotHead.getStatus())) {
                         //如果开启强审核，并且没有保存的同时审核，则跳过库存判断
                     } else {
-                        if(!systemConfigService.getMinusStockFlag() && stock.compareTo(thisRealNumber)<0){
-                            //如果开启出入库管理，并且类型等于采购退货、销售，则跳过
-                            if(systemConfigService.getInOutManageFlag() &&
-                                    (BusinessConstants.SUB_TYPE_PURCHASE_RETURN.equals(depotHead.getSubType())
-                                            ||BusinessConstants.SUB_TYPE_SALES.equals(depotHead.getSubType()))) {
-                                //跳过
-                            } else {
-                                throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_STOCK_NOT_ENOUGH_CODE,
-                                        String.format(ExceptionConstants.MATERIAL_STOCK_NOT_ENOUGH_MSG, stockMsg));
+                        if(!systemConfigService.getMinusStockFlag()) {
+                            lockMaterialForStockCheck(depotItem, lockedStockKeys);
+                            String stockScopeKey = getStockScopeKey(depotItem, barCode);
+                            BigDecimal accumulatedNumber = outboundQuantityMap.getOrDefault(stockScopeKey, BigDecimal.ZERO).add(thisRealNumber);
+                            outboundQuantityMap.put(stockScopeKey, accumulatedNumber);
+                            //加锁后重新读取，避免并发零售出库同时通过库存校验
+                            stock = getStockForDepotItem(depotItem, barCode);
+                            if(stock.compareTo(accumulatedNumber)<0){
+                                //如果开启出入库管理，并且类型等于采购退货、销售，则跳过
+                                if(systemConfigService.getInOutManageFlag() &&
+                                        (BusinessConstants.SUB_TYPE_PURCHASE_RETURN.equals(depotHead.getSubType())
+                                                ||BusinessConstants.SUB_TYPE_SALES.equals(depotHead.getSubType()))) {
+                                    //跳过
+                                } else {
+                                    throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_STOCK_NOT_ENOUGH_CODE,
+                                            String.format(ExceptionConstants.MATERIAL_STOCK_NOT_ENOUGH_MSG, stockMsg));
+                                }
                             }
                         }
                     }
@@ -1520,6 +1549,8 @@ public class DepotItemService {
      */
     public void checkMaterialStock(String number, Long headerId) throws Exception {
         List<DepotItem> depotItemList = getListByHeaderId(headerId);
+        Map<String, BigDecimal> outboundQuantityMap = new HashMap<>();
+        Set<String> lockedStockKeys = new HashSet<>();
         for (DepotItem depotItem : depotItemList) {
             Material material = materialService.getMaterial(depotItem.getMaterialId());
             MaterialExtend materialExtend = materialExtendService.getMaterialExtend(depotItem.getMaterialExtendId());
@@ -1539,10 +1570,48 @@ public class DepotItemService {
                 //对于批次商品，直接使用当前填写的数量
                 thisRealNumber = depotItem.getOperNumber()==null?BigDecimal.ZERO:depotItem.getOperNumber();
             }
-            if(stock.compareTo(thisRealNumber)<0){
+            if(thisRealNumber.compareTo(BigDecimal.ZERO)<=0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_CODE,
+                        String.format(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_MSG, materialExtend.getBarCode()));
+            }
+            lockMaterialForStockCheck(depotItem, lockedStockKeys);
+            String stockScopeKey = getStockScopeKey(depotItem, materialExtend.getBarCode());
+            BigDecimal accumulatedNumber = outboundQuantityMap.getOrDefault(stockScopeKey, BigDecimal.ZERO).add(thisRealNumber);
+            outboundQuantityMap.put(stockScopeKey, accumulatedNumber);
+            stock = getStockForDepotItem(depotItem, materialExtend.getBarCode());
+            if(stock.compareTo(accumulatedNumber)<0){
                 throw new BusinessRunTimeException(ExceptionConstants.BILL_MATERIAL_STOCK_NOT_ENOUGH_CODE,
                         String.format(ExceptionConstants.BILL_MATERIAL_STOCK_NOT_ENOUGH_MSG, number, stockMsg));
             }
         }
+    }
+
+    private void lockMaterialForStockCheck(DepotItem depotItem, Set<String> lockedStockKeys) {
+        String lockKey = String.valueOf(depotItem.getMaterialId());
+        if (lockedStockKeys.add(lockKey)) {
+            // 始终锁定商品主记录，库存汇总行尚未创建时也有稳定的并发锁。
+            materialMapperEx.lockById(depotItem.getMaterialId());
+        }
+    }
+
+    private String getStockScopeKey(DepotItem depotItem, String barCode) {
+        if (StringUtil.isNotEmpty(depotItem.getBatchNumber())) {
+            return "batch:" + depotItem.getDepotId() + ":" + barCode + ":" + depotItem.getBatchNumber();
+        }
+        if (StringUtil.isNotEmpty(depotItem.getSku())) {
+            return "sku:" + depotItem.getDepotId() + ":" + depotItem.getMaterialExtendId();
+        }
+        return "material:" + depotItem.getDepotId() + ":" + depotItem.getMaterialId();
+    }
+
+    private BigDecimal getStockForDepotItem(DepotItem depotItem, String barCode) throws Exception {
+        BigDecimal stock = getCurrentStockByParam(depotItem.getDepotId(), depotItem.getMaterialId());
+        if (StringUtil.isNotEmpty(depotItem.getSku())) {
+            stock = getSkuStockByParam(depotItem.getDepotId(), depotItem.getMaterialExtendId(), null, null);
+        }
+        if (StringUtil.isNotEmpty(depotItem.getBatchNumber())) {
+            stock = getOneBatchNumberStock(depotItem.getDepotId(), barCode, depotItem.getBatchNumber());
+        }
+        return stock;
     }
 }

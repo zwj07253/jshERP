@@ -921,6 +921,12 @@ COMMENT ON COLUMN jsh_sequence.current_val IS '当前值';
 COMMENT ON COLUMN jsh_sequence.increment_val IS '增长步数';
 COMMENT ON COLUMN jsh_sequence.remark IS '备注';
 
+-- 所有业务单据共用的全局编号序列，缺少该记录时新增单据无法自动生成编号
+INSERT INTO jsh_sequence
+    (seq_name, min_value, max_value, current_val, increment_val, remark)
+VALUES
+    ('depot_number_seq', 1, 999999999999999999, 0, 1, '单据编号sequence');
+
 
 -- ============================================================
 -- 24. jsh_serial_number - 序列号表

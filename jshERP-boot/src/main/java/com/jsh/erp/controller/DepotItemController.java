@@ -710,8 +710,9 @@ public class DepotItemController {
             }
             List<Long> depotList = depotService.parseDepotList(depotId);
             Boolean forceFlag = systemConfigService.getForceApprovalFlag();
-            List<DepotItemVo4WithInfoEx> dataList = depotItemService.getListWithBuyOrSale(StringUtil.toNull(materialParam),
-                    "retail", beginTime, endTime, creatorArray, organId, organArray, categoryList, depotList, forceFlag, (currentPage-1)*pageSize, pageSize);
+            List<DepotItemVo4WithInfoEx> dataList = depotItemService.getRetailOutSummary(StringUtil.toNull(materialParam),
+                    beginTime, endTime, creatorArray, organId, organArray, categoryList, depotList, forceFlag,
+                    (currentPage-1)*pageSize, pageSize);
             int total = depotItemService.getListWithBuyOrSaleCount(StringUtil.toNull(materialParam),
                     "retail", beginTime, endTime, creatorArray, organId, organArray, categoryList, depotList, forceFlag);
             map.put("total", total);
@@ -720,11 +721,6 @@ public class DepotItemController {
             if (null != dataList) {
                 for (DepotItemVo4WithInfoEx diEx : dataList) {
                     JSONObject item = new JSONObject();
-                    BigDecimal OutSumRetail = depotItemService.buyOrSale("出库", "零售", diEx.getMaterialExtendId(), beginTime, endTime, creatorArray, organId, organArray, depotList, forceFlag, "number");
-                    BigDecimal InSumRetail = depotItemService.buyOrSale("入库", "零售退货", diEx.getMaterialExtendId(), beginTime, endTime, creatorArray, organId, organArray, depotList, forceFlag, "number");
-                    BigDecimal OutSumRetailPrice = depotItemService.buyOrSale("出库", "零售", diEx.getMaterialExtendId(), beginTime, endTime, creatorArray, organId, organArray, depotList, forceFlag, "price");
-                    BigDecimal InSumRetailPrice = depotItemService.buyOrSale("入库", "零售退货", diEx.getMaterialExtendId(), beginTime, endTime, creatorArray, organId, organArray, depotList, forceFlag, "price");
-                    BigDecimal OutInSumPrice = OutSumRetailPrice.subtract(InSumRetailPrice);
                     item.put("barCode", diEx.getBarCode());
                     item.put("materialName", diEx.getMName());
                     item.put("materialModel", diEx.getMModel());
@@ -738,11 +734,11 @@ public class DepotItemController {
                     item.put("materialMfrs", diEx.getMMfrs());
                     item.put("materialUnit", diEx.getMaterialUnit());
                     item.put("unitName", diEx.getUnitName());
-                    item.put("outSum", OutSumRetail);
-                    item.put("inSum", InSumRetail);
-                    item.put("outSumPrice", OutSumRetailPrice);
-                    item.put("inSumPrice", InSumRetailPrice);
-                    item.put("outInSumPrice",OutInSumPrice);//实际销售金额
+                    item.put("outSum", diEx.getOutSum());
+                    item.put("inSum", diEx.getInSum());
+                    item.put("outSumPrice", diEx.getOutSumPrice());
+                    item.put("inSumPrice", diEx.getInSumPrice());
+                    item.put("outInSumPrice",diEx.getOutInSumPrice());//实际销售金额
                     dataArray.add(item);
                 }
             }

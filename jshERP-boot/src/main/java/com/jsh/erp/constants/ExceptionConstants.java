@@ -467,6 +467,30 @@ public class ExceptionConstants {
     //单据录入-序列号已被出库，不允许修改该单据
     public static final int DEPOT_HEAD_SN_NOT_ALLOW_UPDATE_CODE = 8500035;
     public static final String DEPOT_HEAD_SN_NOT_ALLOW_UPDATE_MSG = "抱歉，序列号:%s已被出库，不允许修改该单据";
+    //单据录入-商品数量必须大于0
+    public static final int DEPOT_HEAD_NUMBER_MUST_POSITIVE_CODE = 8500036;
+    public static final String DEPOT_HEAD_NUMBER_MUST_POSITIVE_MSG = "抱歉，商品条码:%s的数量必须大于0";
+    //零售出库-主表金额和明细金额不一致
+    public static final int DEPOT_HEAD_RETAIL_AMOUNT_MISMATCH_CODE = 8500037;
+    public static final String DEPOT_HEAD_RETAIL_AMOUNT_MISMATCH_MSG = "抱歉，零售出库的单据金额与商品明细金额不一致";
+    //零售出库-收款金额不足
+    public static final int DEPOT_HEAD_RETAIL_RECEIPT_LACK_CODE = 8500038;
+    public static final String DEPOT_HEAD_RETAIL_RECEIPT_LACK_MSG = "抱歉，零售出库不能欠款，收款金额不能小于单据金额";
+    //零售出库-付款类型不正确
+    public static final int DEPOT_HEAD_RETAIL_PAY_TYPE_CODE = 8500039;
+    public static final String DEPOT_HEAD_RETAIL_PAY_TYPE_MSG = "抱歉，零售出库的付款类型只能是现付或预付款";
+    //零售出库-预付款必须选择会员
+    public static final int DEPOT_HEAD_RETAIL_MEMBER_REQUIRED_CODE = 8500040;
+    public static final String DEPOT_HEAD_RETAIL_MEMBER_REQUIRED_MSG = "抱歉，使用预付款时必须选择会员";
+    //零售出库-无按钮权限
+    public static final int DEPOT_HEAD_RETAIL_PERMISSION_CODE = 8500041;
+    public static final String DEPOT_HEAD_RETAIL_PERMISSION_MSG = "抱歉，当前用户没有零售出库的%s权限";
+    //单据录入-不能修改单据业务类型
+    public static final int DEPOT_HEAD_BILL_TYPE_CHANGE_CODE = 8500042;
+    public static final String DEPOT_HEAD_BILL_TYPE_CHANGE_MSG = "抱歉，不能修改单据的业务类型";
+    //单据录入-单据业务类型不合法
+    public static final int DEPOT_HEAD_BILL_TYPE_INVALID_CODE = 8500043;
+    public static final String DEPOT_HEAD_BILL_TYPE_INVALID_MSG = "抱歉，单据类型与业务类型不匹配";
 
 
     /**
