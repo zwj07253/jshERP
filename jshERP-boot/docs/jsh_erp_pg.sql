@@ -856,6 +856,38 @@ COMMENT ON COLUMN jsh_platform_config.platform_value IS '值';
 
 SELECT setval('jsh_platform_config_id_seq', 1);
 
+-- 平台级基础参数，不属于任何租户。部署前请重点核对 platform_name、platform_url、
+-- register_flag 和 checkcode_flag；密钥、邮箱、OSS 等敏感配置默认留空。
+INSERT INTO jsh_platform_config (id, platform_key, platform_key_info, platform_value) VALUES
+(1, 'platform_name', '平台名称', 'YUEWEIERP'),
+(2, 'activation_code', '激活码', ''),
+(3, 'platform_url', '官方网站', ''),
+(4, 'bill_print_flag', '三联打印启用标记', '0'),
+(5, 'bill_print_url', '三联打印地址', ''),
+(6, 'pay_fee_url', '租户续费地址', ''),
+(7, 'register_flag', '注册启用标记', '0'),
+(8, 'app_activation_code', '手机端激活码', ''),
+(9, 'send_workflow_url', '发起流程地址', ''),
+(10, 'weixinUrl', '微信url', ''),
+(11, 'weixinAppid', '微信appid', ''),
+(12, 'weixinSecret', '微信secret', ''),
+(13, 'aliOss_endpoint', '阿里OSS-endpoint', ''),
+(14, 'aliOss_accessKeyId', '阿里OSS-accessKeyId', ''),
+(15, 'aliOss_accessKeySecret', '阿里OSS-accessKeySecret', ''),
+(16, 'aliOss_bucketName', '阿里OSS-bucketName', ''),
+(17, 'aliOss_linkUrl', '阿里OSS-linkUrl', ''),
+(18, 'bill_excel_url', '单据Excel地址', ''),
+(19, 'email_from', '邮件发送端-发件人', ''),
+(20, 'email_auth_code', '邮件发送端-授权码', ''),
+(21, 'email_smtp_host', '邮件发送端-SMTP服务器', ''),
+(22, 'checkcode_flag', '验证码启用标记', '0'),
+(23, 'bill_print_pro_url', '专业打印地址', '')
+ON CONFLICT (id) DO UPDATE SET
+platform_key = EXCLUDED.platform_key,
+platform_key_info = EXCLUDED.platform_key_info,
+platform_value = EXCLUDED.platform_value;
+SELECT setval('jsh_platform_config_id_seq', COALESCE((SELECT MAX(id) FROM jsh_platform_config), 1));
+
 -- ============================================================
 -- 22. jsh_role - 角色表
 -- ============================================================
@@ -888,7 +920,8 @@ COMMENT ON COLUMN jsh_role.delete_flag IS '删除标记，0未删除，1删除';
 SELECT setval('jsh_role_id_seq', 1);
 
 INSERT INTO jsh_role (id, name, type, price_limit, value, description, enabled, sort, tenant_id, delete_flag) VALUES
-(4, '管理员', '全部数据', NULL, NULL, '平台运维管理员', TRUE, NULL, NULL, '0')
+(4, '管理员', '全部数据', NULL, NULL, '平台运维管理员', TRUE, NULL, NULL, '0'),
+(10, '租户', '全部数据', NULL, NULL, '租户管理员', TRUE, NULL, NULL, '0')
 ON CONFLICT (id) DO UPDATE SET
 name = EXCLUDED.name,
 type = EXCLUDED.type,
@@ -920,6 +953,16 @@ COMMENT ON COLUMN jsh_sequence.max_value IS '最大值';
 COMMENT ON COLUMN jsh_sequence.current_val IS '当前值';
 COMMENT ON COLUMN jsh_sequence.increment_val IS '增长步数';
 COMMENT ON COLUMN jsh_sequence.remark IS '备注';
+
+-- current_val 从 0 开始，首次生成单据编号时更新为 1，避免沿用演示库中的历史编号。
+INSERT INTO jsh_sequence (seq_name, min_value, max_value, current_val, increment_val, remark) VALUES
+('depot_number_seq', 1, 999999999999999999, 0, 1, '单据编号sequence')
+ON CONFLICT (seq_name) DO UPDATE SET
+min_value = EXCLUDED.min_value,
+max_value = EXCLUDED.max_value,
+current_val = EXCLUDED.current_val,
+increment_val = EXCLUDED.increment_val,
+remark = EXCLUDED.remark;
 
 
 -- ============================================================
@@ -1095,6 +1138,40 @@ COMMENT ON COLUMN jsh_sys_dict_type.remark IS '备注';
 COMMENT ON COLUMN jsh_sys_dict_type.delete_flag IS '删除标记，0未删除，1删除';
 
 SELECT setval('jsh_sys_dict_type_dict_id_seq', 1);
+
+-- 系统内置字典，不包含业务测试数据。
+INSERT INTO jsh_sys_dict_type (dict_id, dict_name, dict_type, status, create_by, create_time, update_by, update_time, remark, delete_flag) VALUES
+(1, '用户性别', 'sys_user_sex', '0', 'admin', CURRENT_TIMESTAMP, 'admin', CURRENT_TIMESTAMP, '用户性别列表', '0'),
+(12, '系统开关', 'sys_normal_disable', '0', 'admin', CURRENT_TIMESTAMP, 'admin', CURRENT_TIMESTAMP, '系统开关列表', '0')
+ON CONFLICT (dict_id) DO UPDATE SET
+dict_name = EXCLUDED.dict_name,
+dict_type = EXCLUDED.dict_type,
+status = EXCLUDED.status,
+update_by = EXCLUDED.update_by,
+update_time = EXCLUDED.update_time,
+remark = EXCLUDED.remark,
+delete_flag = EXCLUDED.delete_flag;
+SELECT setval('jsh_sys_dict_type_dict_id_seq', COALESCE((SELECT MAX(dict_id) FROM jsh_sys_dict_type), 1));
+
+INSERT INTO jsh_sys_dict_data (dict_code, dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, update_by, update_time, remark, delete_flag) VALUES
+(1, 1, '男', '0', 'sys_user_sex', '', 'default', 'Y', '0', 'admin', CURRENT_TIMESTAMP, 'admin', CURRENT_TIMESTAMP, '性别男', '0'),
+(2, 2, '女', '1', 'sys_user_sex', '', 'default', 'N', '0', 'admin', CURRENT_TIMESTAMP, 'admin', CURRENT_TIMESTAMP, '性别女', '0'),
+(11, 1, '正常', '0', 'sys_normal_disable', NULL, 'green', 'N', '0', 'admin', CURRENT_TIMESTAMP, 'admin', CURRENT_TIMESTAMP, '正常状态', '0'),
+(12, 2, '停用', '1', 'sys_normal_disable', NULL, 'red', 'N', '0', 'admin', CURRENT_TIMESTAMP, 'admin', CURRENT_TIMESTAMP, '停用状态', '0')
+ON CONFLICT (dict_code) DO UPDATE SET
+dict_sort = EXCLUDED.dict_sort,
+dict_label = EXCLUDED.dict_label,
+dict_value = EXCLUDED.dict_value,
+dict_type = EXCLUDED.dict_type,
+css_class = EXCLUDED.css_class,
+list_class = EXCLUDED.list_class,
+is_default = EXCLUDED.is_default,
+status = EXCLUDED.status,
+update_by = EXCLUDED.update_by,
+update_time = EXCLUDED.update_time,
+remark = EXCLUDED.remark,
+delete_flag = EXCLUDED.delete_flag;
+SELECT setval('jsh_sys_dict_data_dict_code_seq', COALESCE((SELECT MAX(dict_code) FROM jsh_sys_dict_data), 1));
 
 -- ============================================================
 -- 28. jsh_system_config - 系统参数
@@ -1318,7 +1395,8 @@ SELECT setval('jsh_user_business_id_seq', 1);
 
 INSERT INTO jsh_user_business (id, type, key_id, value, btn_str, tenant_id, delete_flag) VALUES
 (111, 'UserRole', '120', '[4]', NULL, 0, '0'),
-(112, 'RoleFunctions', '4', '[1][13][14][15][16][18][21][22][23][24][25][26][31][32][33][38][40][41][44][59][194][195][197][198][199][200][201][202][203][204][205][206][207][208][209][210][211][212][217][218][220][225][226][227][228][229][232][233][234][235][236][237][239][241][242][243][244][245][246][247][248][258][259][260][261]', '[{"funId":13,"btnStr":"1"},{"funId":14,"btnStr":"1"},{"funId":243,"btnStr":"1"},{"funId":234,"btnStr":"1"},{"funId":236,"btnStr":"1"},{"funId":16,"btnStr":"1"},{"funId":18,"btnStr":"1"},{"funId":258,"btnStr":"1"},{"funId":22,"btnStr":"1"},{"funId":23,"btnStr":"1,3"},{"funId":220,"btnStr":"1"},{"funId":247,"btnStr":"1"},{"funId":25,"btnStr":"1,3"},{"funId":217,"btnStr":"1,3"},{"funId":218,"btnStr":"1,3"},{"funId":26,"btnStr":"1"},{"funId":194,"btnStr":"1"},{"funId":195,"btnStr":"1"},{"funId":31,"btnStr":"1"},{"funId":261,"btnStr":"1,2,7,3"},{"funId":241,"btnStr":"1,2,7,3"},{"funId":33,"btnStr":"1,2,7,3"},{"funId":199,"btnStr":"1,2,7,3"},{"funId":242,"btnStr":"1,2,7,3"},{"funId":41,"btnStr":"1,2,7,3"},{"funId":200,"btnStr":"1,2,7,3"},{"funId":210,"btnStr":"1,2,7,3"},{"funId":211,"btnStr":"1,2,7,3"},{"funId":197,"btnStr":"1,7,2,3"},{"funId":203,"btnStr":"1,7,2,3"},{"funId":204,"btnStr":"1,7,2,3"},{"funId":205,"btnStr":"1,2,7,3"},{"funId":206,"btnStr":"1,2,7,3"},{"funId":212,"btnStr":"1,7,2,3"},{"funId":201,"btnStr":"1,2,7,3"},{"funId":202,"btnStr":"1,2,7,3"},{"funId":40,"btnStr":"1,2,7,3"},{"funId":232,"btnStr":"1,2,7,3"},{"funId":233,"btnStr":"1,2,7,3"}]', 0, '0')
+(112, 'RoleFunctions', '4', '[1][13][14][15][16][18][21][22][23][24][25][26][31][32][33][38][40][41][44][59][194][195][197][198][199][200][201][202][203][204][205][206][207][208][209][210][211][212][217][218][220][225][226][227][228][229][232][233][234][235][236][237][239][241][242][243][244][245][246][247][248][258][259][260][261]', '[{"funId":13,"btnStr":"1"},{"funId":14,"btnStr":"1"},{"funId":243,"btnStr":"1"},{"funId":234,"btnStr":"1"},{"funId":236,"btnStr":"1"},{"funId":16,"btnStr":"1"},{"funId":18,"btnStr":"1"},{"funId":258,"btnStr":"1"},{"funId":22,"btnStr":"1"},{"funId":23,"btnStr":"1,3"},{"funId":220,"btnStr":"1"},{"funId":247,"btnStr":"1"},{"funId":25,"btnStr":"1,3"},{"funId":217,"btnStr":"1,3"},{"funId":218,"btnStr":"1,3"},{"funId":26,"btnStr":"1"},{"funId":194,"btnStr":"1"},{"funId":195,"btnStr":"1"},{"funId":31,"btnStr":"1"},{"funId":261,"btnStr":"1,2,7,3"},{"funId":241,"btnStr":"1,2,7,3"},{"funId":33,"btnStr":"1,2,7,3"},{"funId":199,"btnStr":"1,2,7,3"},{"funId":242,"btnStr":"1,2,7,3"},{"funId":41,"btnStr":"1,2,7,3"},{"funId":200,"btnStr":"1,2,7,3"},{"funId":210,"btnStr":"1,2,7,3"},{"funId":211,"btnStr":"1,2,7,3"},{"funId":197,"btnStr":"1,7,2,3"},{"funId":203,"btnStr":"1,7,2,3"},{"funId":204,"btnStr":"1,7,2,3"},{"funId":205,"btnStr":"1,2,7,3"},{"funId":206,"btnStr":"1,2,7,3"},{"funId":212,"btnStr":"1,7,2,3"},{"funId":201,"btnStr":"1,2,7,3"},{"funId":202,"btnStr":"1,2,7,3"},{"funId":40,"btnStr":"1,2,7,3"},{"funId":232,"btnStr":"1,2,7,3"},{"funId":233,"btnStr":"1,2,7,3"}]', 0, '0'),
+(113, 'RoleFunctions', '10', '[210][225][211][261][32][241][33][199][242][38][41][200][201][239][202][40][232][233][197][44][203][204][205][206][212][246][198][207][259][208][209][226][227][248][228][229][59][235][237][244][22][21][23][220][247][25][24][217][218][26][194][195][31][13][14][243][15][234][236]', '[{"funId":13,"btnStr":"1"},{"funId":14,"btnStr":"1"},{"funId":243,"btnStr":"1"},{"funId":234,"btnStr":"1"},{"funId":236,"btnStr":"1"},{"funId":22,"btnStr":"1"},{"funId":23,"btnStr":"1,3"},{"funId":220,"btnStr":"1"},{"funId":247,"btnStr":"1"},{"funId":25,"btnStr":"1,3"},{"funId":217,"btnStr":"1,3"},{"funId":218,"btnStr":"1,3"},{"funId":26,"btnStr":"1"},{"funId":194,"btnStr":"1"},{"funId":195,"btnStr":"1"},{"funId":31,"btnStr":"1"},{"funId":261,"btnStr":"1,2,7,3"},{"funId":241,"btnStr":"1,2,7,3"},{"funId":33,"btnStr":"1,2,7,3"},{"funId":199,"btnStr":"1,7,2,3"},{"funId":242,"btnStr":"1,2,7,3"},{"funId":41,"btnStr":"1,2,7,3"},{"funId":200,"btnStr":"1,2,7,3"},{"funId":210,"btnStr":"1,2,7,3"},{"funId":211,"btnStr":"1,2,7,3"},{"funId":197,"btnStr":"1,2,7,3"},{"funId":203,"btnStr":"1,7,2,3"},{"funId":204,"btnStr":"1,7,2,3"},{"funId":205,"btnStr":"1,2,7,3"},{"funId":206,"btnStr":"1,7,2,3"},{"funId":212,"btnStr":"1,2,7,3"},{"funId":201,"btnStr":"1,2,7,3"},{"funId":202,"btnStr":"1,2,7,3"},{"funId":40,"btnStr":"1,2,7,3"},{"funId":232,"btnStr":"1,2,7,3"},{"funId":233,"btnStr":"1,2,7,3"}]', NULL, '0')
 ON CONFLICT (id) DO UPDATE SET
 type = EXCLUDED.type,
 key_id = EXCLUDED.key_id,
