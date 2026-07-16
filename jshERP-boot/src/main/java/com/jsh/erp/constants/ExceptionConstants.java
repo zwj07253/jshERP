@@ -484,13 +484,31 @@ public class ExceptionConstants {
     public static final String DEPOT_HEAD_RETAIL_MEMBER_REQUIRED_MSG = "抱歉，使用预付款时必须选择会员";
     //零售出库-无按钮权限
     public static final int DEPOT_HEAD_RETAIL_PERMISSION_CODE = 8500041;
-    public static final String DEPOT_HEAD_RETAIL_PERMISSION_MSG = "抱歉，当前用户没有零售出库的%s权限";
+    public static final String DEPOT_HEAD_RETAIL_PERMISSION_MSG = "抱歉，当前用户没有%s的%s权限";
     //单据录入-不能修改单据业务类型
     public static final int DEPOT_HEAD_BILL_TYPE_CHANGE_CODE = 8500042;
     public static final String DEPOT_HEAD_BILL_TYPE_CHANGE_MSG = "抱歉，不能修改单据的业务类型";
     //单据录入-单据业务类型不合法
     public static final int DEPOT_HEAD_BILL_TYPE_INVALID_CODE = 8500043;
     public static final String DEPOT_HEAD_BILL_TYPE_INVALID_MSG = "抱歉，单据类型与业务类型不匹配";
+    //零售退货-关联原单不合法
+    public static final int DEPOT_HEAD_RETAIL_RETURN_SOURCE_CODE = 8500044;
+    public static final String DEPOT_HEAD_RETAIL_RETURN_SOURCE_MSG = "抱歉，零售退货关联的原单不存在、未审核或不是零售出库单";
+    //零售退货-会员与原单不一致
+    public static final int DEPOT_HEAD_RETAIL_RETURN_MEMBER_CODE = 8500045;
+    public static final String DEPOT_HEAD_RETAIL_RETURN_MEMBER_MSG = "抱歉，零售退货会员必须与原零售出库单一致";
+    //零售退货-明细不属于原单
+    public static final int DEPOT_HEAD_RETAIL_RETURN_DETAIL_CODE = 8500046;
+    public static final String DEPOT_HEAD_RETAIL_RETURN_DETAIL_MSG = "抱歉，退货商品明细不属于关联的零售出库单";
+    //零售退货-超过原单可退数量
+    public static final int DEPOT_HEAD_RETAIL_RETURN_OVER_CODE = 8500047;
+    public static final String DEPOT_HEAD_RETAIL_RETURN_OVER_MSG = "抱歉，商品条码:%s的累计退货数量超过原零售出库数量";
+    //零售退货-退款金额不足
+    public static final int DEPOT_HEAD_RETAIL_RETURN_REFUND_CODE = 8500048;
+    public static final String DEPOT_HEAD_RETAIL_RETURN_REFUND_MSG = "抱歉，零售退货的付款金额不能小于退货金额";
+    //零售退货-序列号不属于原单
+    public static final int DEPOT_HEAD_RETAIL_RETURN_SN_CODE = 8500049;
+    public static final String DEPOT_HEAD_RETAIL_RETURN_SN_MSG = "抱歉，序列号:%s不属于关联的零售出库单";
 
 
     /**

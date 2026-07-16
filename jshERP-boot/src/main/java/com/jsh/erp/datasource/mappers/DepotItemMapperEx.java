@@ -235,6 +235,12 @@ public interface DepotItemMapperEx {
             @Param("currentHeaderId") Long currentHeaderId,
             @Param("goToType") String goToType);
 
+    DepotItem lockDepotItemById(@Param("id") Long id);
+
+    BigDecimal getReturnedOperNumber(
+            @Param("linkId") Long linkId,
+            @Param("currentHeaderId") Long currentHeaderId);
+
     List<DepotItemVoBatchNumberList> getBatchNumberList(
             @Param("number") String number,
             @Param("name") String name,

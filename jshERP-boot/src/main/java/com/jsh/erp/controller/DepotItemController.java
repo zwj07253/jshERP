@@ -721,6 +721,7 @@ public class DepotItemController {
             if (null != dataList) {
                 for (DepotItemVo4WithInfoEx diEx : dataList) {
                     JSONObject item = new JSONObject();
+                    item.put("id", diEx.getMaterialExtendId());
                     item.put("barCode", diEx.getBarCode());
                     item.put("materialName", diEx.getMName());
                     item.put("materialModel", diEx.getMModel());

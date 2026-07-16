@@ -141,7 +141,7 @@ public class ApiTestBase {
         Response resp = authReqGet().get(CONTEXT + "/sequence/buildNumber");
         assertSuccess(resp);
         JSONObject body = JSONObject.parseObject(resp.body().asString());
-        return body.getJSONObject("data").getString("defaultNumber");
+        return prefix + body.getJSONObject("data").getString("defaultNumber");
     }
 
     /** 获取列表第一个记录的ID */
@@ -263,7 +263,19 @@ public class ApiTestBase {
     protected Long createDepotHeadAndDetail(String type, String subType, Long organId,
                                             Long accountId, Long depotId, Long materialExtendId,
                                             double operNumber, double unitPrice) {
-        String number = generateNumber(subType.equals("采购") ? "CGRK" : subType.equals("销售") ? "XSCK" : "LSCK");
+        String prefix;
+        switch (subType) {
+            case "采购": prefix = "CGRK"; break;
+            case "采购退货": prefix = "CGTH"; break;
+            case "销售": prefix = "XSCK"; break;
+            case "销售退货": prefix = "XSTH"; break;
+            case "零售退货": prefix = "LSTH"; break;
+            case "其它": prefix = "入库".equals(type) ? "QTRK" : "QTCK"; break;
+            default: prefix = "LSCK";
+        }
+        String number = generateNumber(prefix);
+        double signedAmount = "入库".equals(type) && subType.endsWith("退货")
+                ? -operNumber * unitPrice : operNumber * unitPrice;
 
         // 查询商品条码
         String barCode = "";
@@ -289,10 +301,13 @@ public class ApiTestBase {
         info.put("subType", subType);
         info.put("organId", organId);
         info.put("accountId", accountId);
-        info.put("accountIdList", String.valueOf(accountId));
-        info.put("accountMoneyList", String.valueOf(operNumber * unitPrice));
-        info.put("changeAmount", operNumber * unitPrice);
-        info.put("totalPrice", operNumber * unitPrice);
+        if (accountId != null) {
+            info.put("accountIdList", String.valueOf(accountId));
+            info.put("accountMoneyList", String.valueOf(signedAmount));
+        }
+        info.put("changeAmount", signedAmount);
+        info.put("totalPrice", signedAmount);
+        info.put("getAmount", Math.abs(signedAmount));
         info.put("deposit", 0);
         info.put("debt", 0);
         info.put("payType", "现付");

@@ -851,7 +851,8 @@ export const BillListMixin = {
                 deposit: deposit,
                 remark: info.remark,
                 accountId: info.accountId,
-                salesMan: info.salesMan
+                salesMan: info.salesMan,
+                payType: info.payType
               }
               if(type === '转采购订单-以销定购') {
                 let list = transferParam.list

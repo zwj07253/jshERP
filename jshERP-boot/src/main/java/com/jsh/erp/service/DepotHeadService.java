@@ -41,6 +41,7 @@ import static com.jsh.erp.utils.Tools.getNow3;
 public class DepotHeadService {
     private Logger logger = LoggerFactory.getLogger(DepotHeadService.class);
     private static final String RETAIL_OUT_URL = "/bill/retail_out";
+    private static final String RETAIL_BACK_URL = "/bill/retail_back";
 
     @Resource
     private DepotHeadMapper depotHeadMapper;
@@ -56,6 +57,8 @@ public class DepotHeadService {
     DepotItemService depotItemService;
     @Resource
     private SupplierService supplierService;
+    @Resource
+    private MaterialExtendService materialExtendService;
     @Resource
     private UserBusinessService userBusinessService;
     @Resource
@@ -525,15 +528,9 @@ public class DepotHeadService {
                     depotHeadMapper.updateByExampleSelective(dh, example);
                 }
             }
-            //对于零售出库单据，更新会员的预收款信息
-            if (BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
-                    && BusinessConstants.SUB_TYPE_RETAIL.equals(depotHead.getSubType())){
-                if(BusinessConstants.PAY_TYPE_PREPAID.equals(depotHead.getPayType())) {
-                    if (depotHead.getOrganId() != null) {
-                        //更新会员预付款
-                        supplierService.updateAdvanceIn(depotHead.getOrganId());
-                    }
-                }
+            //零售出库或零售退货使用预付款时，重新计算会员预付款
+            if (isPrepaidRetailBill(depotHead) && depotHead.getOrganId() != null) {
+                supplierService.updateAdvanceIn(depotHead.getOrganId());
             }
             for (DepotItem depotItem : list) {
                 //更新当前库存
@@ -1199,7 +1196,7 @@ public class DepotHeadService {
         if (BusinessConstants.BILLS_STATUS_AUDIT.equals(depotHead.getStatus())) {
             checkRetailButtonPermission(depotHead, "2", "审核");
         }
-        rows = validateAndNormalizeRetailOut(depotHead, headJson, rows);
+        rows = validateAndNormalizeRetailBill(depotHead, headJson, rows, null);
         //判断用户是否已经登录过，登录过不再处理
         User userInfo=userService.getCurrentUser();
         //通过redis去校验重复
@@ -1267,7 +1264,7 @@ public class DepotHeadService {
         }
         depotHeadMapper.insertSelective(depotHead);
         /**入库和出库处理预付款信息*/
-        if(isPrepaidRetailOut(depotHead)){
+        if(isPrepaidRetailBill(depotHead)){
             if(depotHead.getOrganId()!=null) {
                 supplierService.updateAdvanceIn(depotHead.getOrganId());
             }
@@ -1316,7 +1313,7 @@ public class DepotHeadService {
         if (BusinessConstants.BILLS_STATUS_AUDIT.equals(depotHead.getStatus())) {
             checkRetailButtonPermission(previousDepotHead, "2", "审核");
         }
-        rows = validateAndNormalizeRetailOut(depotHead, headJson, rows);
+        rows = validateAndNormalizeRetailBill(depotHead, headJson, rows, previousDepotHead);
         //判断用户是否已经登录过，登录过不再处理
         User userInfo=userService.getCurrentUser();
         //通过redis去校验重复
@@ -1413,15 +1410,27 @@ public class DepotHeadService {
     }
 
     private void checkRetailButtonPermission(DepotHead depotHead, String buttonCode, String operationName) throws Exception {
-        if (depotHead == null || !BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
-                || !BusinessConstants.SUB_TYPE_RETAIL.equals(depotHead.getSubType())) {
+        if (depotHead == null) {
+            return;
+        }
+        String url;
+        String billName;
+        if (BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
+                && BusinessConstants.SUB_TYPE_RETAIL.equals(depotHead.getSubType())) {
+            url = RETAIL_OUT_URL;
+            billName = "零售出库";
+        } else if (BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())
+                && BusinessConstants.SUB_TYPE_RETAIL_RETURN.equals(depotHead.getSubType())) {
+            url = RETAIL_BACK_URL;
+            billName = "零售退货";
+        } else {
             return;
         }
         User currentUser = userService.getCurrentUser();
         Long userId = currentUser == null ? null : currentUser.getId();
-        if (!userService.hasButtonPermission(userId, RETAIL_OUT_URL, buttonCode)) {
+        if (!userService.hasButtonPermission(userId, url, buttonCode)) {
             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_RETAIL_PERMISSION_CODE,
-                    String.format(ExceptionConstants.DEPOT_HEAD_RETAIL_PERMISSION_MSG, operationName));
+                    String.format(ExceptionConstants.DEPOT_HEAD_RETAIL_PERMISSION_MSG, billName, operationName));
         }
     }
 
@@ -1457,14 +1466,20 @@ public class DepotHeadService {
         }
     }
 
+    private String validateAndNormalizeRetailBill(DepotHead depotHead, JSONObject headJson, String rows,
+                                                   DepotHead previousDepotHead) throws Exception {
+        if (BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
+                && BusinessConstants.SUB_TYPE_RETAIL.equals(depotHead.getSubType())) {
+            return validateAndNormalizeRetailOut(depotHead, headJson, rows);
+        }
+        if (BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())
+                && BusinessConstants.SUB_TYPE_RETAIL_RETURN.equals(depotHead.getSubType())) {
+            return validateAndNormalizeRetailReturn(depotHead, headJson, rows, previousDepotHead);
+        }
+        return rows;
+    }
+
     private String validateAndNormalizeRetailOut(DepotHead depotHead, JSONObject headJson, String rows) {
-        if (!BusinessConstants.SUB_TYPE_RETAIL.equals(depotHead.getSubType())) {
-            return rows;
-        }
-        if (!BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())) {
-            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_BILL_TYPE_CHANGE_CODE,
-                    ExceptionConstants.DEPOT_HEAD_BILL_TYPE_CHANGE_MSG);
-        }
         JSONArray detailArray = JSONArray.parseArray(rows);
         if (detailArray == null || detailArray.isEmpty()) {
             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ROW_FAILED_CODE,
@@ -1493,9 +1508,11 @@ public class DepotHeadService {
         depotHead.setTotalPrice(totalPrice);
         depotHead.setChangeAmount(totalPrice);
 
-        String payType = StringUtil.isEmpty(depotHead.getPayType()) ? "现付" : depotHead.getPayType();
+        String payType = StringUtil.isEmpty(depotHead.getPayType())
+                ? BusinessConstants.PAY_TYPE_BY_CASH : depotHead.getPayType();
         depotHead.setPayType(payType);
-        if (!"现付".equals(payType) && !BusinessConstants.PAY_TYPE_PREPAID.equals(payType)) {
+        if (!BusinessConstants.PAY_TYPE_BY_CASH.equals(payType)
+                && !BusinessConstants.PAY_TYPE_PREPAID.equals(payType)) {
             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_RETAIL_PAY_TYPE_CODE,
                     ExceptionConstants.DEPOT_HEAD_RETAIL_PAY_TYPE_MSG);
         }
@@ -1524,14 +1541,152 @@ public class DepotHeadService {
         return detailArray.toJSONString();
     }
 
+    private String validateAndNormalizeRetailReturn(DepotHead depotHead, JSONObject headJson, String rows,
+                                                      DepotHead previousDepotHead) throws Exception {
+        JSONArray detailArray = JSONArray.parseArray(rows);
+        if (detailArray == null || detailArray.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ROW_FAILED_CODE,
+                    ExceptionConstants.DEPOT_HEAD_ROW_FAILED_MSG);
+        }
+
+        DepotHead sourceHead = null;
+        if (StringUtil.isNotEmpty(depotHead.getLinkNumber())) {
+            sourceHead = getDepotHead(depotHead.getLinkNumber());
+            if (sourceHead == null || sourceHead.getId() == null
+                    || !BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(sourceHead.getType())
+                    || !BusinessConstants.SUB_TYPE_RETAIL.equals(sourceHead.getSubType())
+                    || !BusinessConstants.BILLS_STATUS_AUDIT.equals(sourceHead.getStatus())) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_RETAIL_RETURN_SOURCE_CODE,
+                        ExceptionConstants.DEPOT_HEAD_RETAIL_RETURN_SOURCE_MSG);
+            }
+            if (!Objects.equals(sourceHead.getOrganId(), depotHead.getOrganId())) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_RETAIL_RETURN_MEMBER_CODE,
+                        ExceptionConstants.DEPOT_HEAD_RETAIL_RETURN_MEMBER_MSG);
+            }
+            depotHead.setPayType(BusinessConstants.PAY_TYPE_PREPAID.equals(sourceHead.getPayType())
+                    ? BusinessConstants.PAY_TYPE_PREPAID : BusinessConstants.PAY_TYPE_BY_CASH);
+        }
+
+        Long currentHeaderId = previousDepotHead == null ? null : previousDepotHead.getId();
+        Map<Long, BigDecimal> currentReturnNumberMap = new HashMap<>();
+        BigDecimal totalPrice = BigDecimal.ZERO;
+        for (int detailIndex = 0; detailIndex < detailArray.size(); detailIndex++) {
+            JSONObject detail = JSONObject.parseObject(detailArray.get(detailIndex).toString());
+            String barCode = detail.getString("barCode");
+            BigDecimal quantity = detail.getBigDecimal("operNumber");
+            if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_CODE,
+                        String.format(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_MSG, barCode));
+            }
+
+            BigDecimal unitPrice;
+            if (sourceHead != null) {
+                Long linkId = detail.getLong("linkId");
+                DepotItem sourceItem = linkId == null ? null : depotItemMapperEx.lockDepotItemById(linkId);
+                MaterialExtend materialExtend = StringUtil.isEmpty(barCode)
+                        ? null : materialExtendService.getInfoByBarCode(barCode);
+                if (sourceItem == null || !Objects.equals(sourceItem.getHeaderId(), sourceHead.getId())
+                        || materialExtend == null
+                        || !Objects.equals(materialExtend.getId(), sourceItem.getMaterialExtendId())
+                        || sourceItem.getOperNumber() == null
+                        || sourceItem.getOperNumber().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_RETAIL_RETURN_DETAIL_CODE,
+                            ExceptionConstants.DEPOT_HEAD_RETAIL_RETURN_DETAIL_MSG);
+                }
+
+                validateRetailReturnSerialNumber(detail.getString("snList"), sourceItem.getSnList());
+                BigDecimal alreadyReturned = depotItemMapperEx.getReturnedOperNumber(linkId, currentHeaderId);
+                BigDecimal currentReturned = currentReturnNumberMap.getOrDefault(linkId, BigDecimal.ZERO).add(quantity);
+                currentReturnNumberMap.put(linkId, currentReturned);
+                if (!systemConfigService.getOverLinkBillFlag()
+                        && alreadyReturned.add(currentReturned).compareTo(sourceItem.getOperNumber()) > 0) {
+                    throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_RETAIL_RETURN_OVER_CODE,
+                            String.format(ExceptionConstants.DEPOT_HEAD_RETAIL_RETURN_OVER_MSG, barCode));
+                }
+
+                unitPrice = sourceItem.getUnitPrice() == null ? BigDecimal.ZERO : sourceItem.getUnitPrice();
+                detail.put("unitPrice", unitPrice);
+                detail.put("unit", sourceItem.getMaterialUnit());
+                detail.put("batchNumber", sourceItem.getBatchNumber());
+                detail.put("expirationDate", sourceItem.getExpirationDate());
+                detail.put("preNumber", sourceItem.getOperNumber());
+                detail.put("finishNumber", alreadyReturned);
+            } else {
+                unitPrice = detail.getBigDecimal("unitPrice");
+                if (unitPrice == null || unitPrice.compareTo(BigDecimal.ZERO) < 0) {
+                    throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_RETAIL_AMOUNT_MISMATCH_CODE,
+                            ExceptionConstants.DEPOT_HEAD_RETAIL_AMOUNT_MISMATCH_MSG);
+                }
+            }
+
+            BigDecimal allPrice = quantity.multiply(unitPrice).setScale(2, BigDecimal.ROUND_HALF_UP);
+            detail.put("allPrice", allPrice);
+            detailArray.set(detailIndex, detail);
+            totalPrice = totalPrice.add(allPrice);
+        }
+
+        totalPrice = totalPrice.setScale(2, BigDecimal.ROUND_HALF_UP);
+        depotHead.setTotalPrice(totalPrice.negate());
+        depotHead.setChangeAmount(totalPrice.negate());
+        String payType = StringUtil.isEmpty(depotHead.getPayType())
+                ? BusinessConstants.PAY_TYPE_BY_CASH : depotHead.getPayType();
+        depotHead.setPayType(payType);
+        if (!BusinessConstants.PAY_TYPE_BY_CASH.equals(payType)
+                && !BusinessConstants.PAY_TYPE_PREPAID.equals(payType)) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_RETAIL_PAY_TYPE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_RETAIL_PAY_TYPE_MSG);
+        }
+        if (BusinessConstants.PAY_TYPE_PREPAID.equals(payType)) {
+            if (depotHead.getOrganId() == null) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_RETAIL_MEMBER_REQUIRED_CODE,
+                        ExceptionConstants.DEPOT_HEAD_RETAIL_MEMBER_REQUIRED_MSG);
+            }
+            depotHead.setAccountId(null);
+            depotHead.setAccountIdList(null);
+            depotHead.setAccountMoneyList(null);
+            depotHead.setBackAmount(BigDecimal.ZERO);
+        } else {
+            if (depotHead.getAccountId() == null && StringUtil.isEmpty(depotHead.getAccountIdList())) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ACCOUNT_FAILED_CODE,
+                        ExceptionConstants.DEPOT_HEAD_ACCOUNT_FAILED_MSG);
+            }
+            BigDecimal getAmount = headJson.getBigDecimal("getAmount");
+            if (getAmount == null || getAmount.compareTo(totalPrice) < 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_RETAIL_RETURN_REFUND_CODE,
+                        ExceptionConstants.DEPOT_HEAD_RETAIL_RETURN_REFUND_MSG);
+            }
+            depotHead.setBackAmount(getAmount.subtract(totalPrice).setScale(2, BigDecimal.ROUND_HALF_UP));
+        }
+        return detailArray.toJSONString();
+    }
+
+    private void validateRetailReturnSerialNumber(String returnSnList, String sourceSnList) {
+        if (StringUtil.isEmpty(returnSnList)) {
+            return;
+        }
+        Set<String> sourceSnSet = StringUtil.isEmpty(sourceSnList) ? Collections.emptySet()
+                : Arrays.stream(sourceSnList.split(","))
+                .map(String::trim).filter(StringUtil::isNotEmpty).collect(Collectors.toSet());
+        for (String serialNumber : returnSnList.split(",")) {
+            String value = serialNumber.trim();
+            if (StringUtil.isNotEmpty(value) && !sourceSnSet.contains(value)) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_RETAIL_RETURN_SN_CODE,
+                        String.format(ExceptionConstants.DEPOT_HEAD_RETAIL_RETURN_SN_MSG, value));
+            }
+        }
+    }
+
     private void validatePrepaidBalance(DepotHead depotHead, DepotHead previousDepotHead) {
-        if (!isPrepaidRetailOut(depotHead) || depotHead.getOrganId() == null) {
+        if (!isPrepaidRetailBill(depotHead) || depotHead.getOrganId() == null) {
             return;
         }
         Supplier supplier = supplierService.lockSupplier(depotHead.getOrganId());
         if (supplier == null) {
             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_RETAIL_MEMBER_REQUIRED_CODE,
                     ExceptionConstants.DEPOT_HEAD_RETAIL_MEMBER_REQUIRED_MSG);
+        }
+        if (isPrepaidRetailReturn(depotHead)) {
+            return;
         }
         BigDecimal availableAdvance = supplierService.calculateAdvanceIn(depotHead.getOrganId());
         if (previousDepotHead != null
@@ -1548,10 +1703,10 @@ public class DepotHeadService {
 
     private void refreshPrepaidBalanceAfterUpdate(DepotHead previousDepotHead, DepotHead depotHead) {
         Set<Long> memberIds = new HashSet<>();
-        if (isPrepaidRetailOut(previousDepotHead) && previousDepotHead.getOrganId() != null) {
+        if (isPrepaidRetailBill(previousDepotHead) && previousDepotHead.getOrganId() != null) {
             memberIds.add(previousDepotHead.getOrganId());
         }
-        if (isPrepaidRetailOut(depotHead) && depotHead.getOrganId() != null) {
+        if (isPrepaidRetailBill(depotHead) && depotHead.getOrganId() != null) {
             memberIds.add(depotHead.getOrganId());
         }
         for (Long memberId : memberIds) {
@@ -1564,6 +1719,17 @@ public class DepotHeadService {
                 && BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
                 && BusinessConstants.SUB_TYPE_RETAIL.equals(depotHead.getSubType())
                 && BusinessConstants.PAY_TYPE_PREPAID.equals(depotHead.getPayType());
+    }
+
+    private boolean isPrepaidRetailReturn(DepotHead depotHead) {
+        return depotHead != null
+                && BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())
+                && BusinessConstants.SUB_TYPE_RETAIL_RETURN.equals(depotHead.getSubType())
+                && BusinessConstants.PAY_TYPE_PREPAID.equals(depotHead.getPayType());
+    }
+
+    private boolean isPrepaidRetailBill(DepotHead depotHead) {
+        return isPrepaidRetailOut(depotHead) || isPrepaidRetailReturn(depotHead);
     }
 
     /**

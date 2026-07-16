@@ -57,6 +57,18 @@
           </a-col>
         </a-row>
         <a-row class="form-row" :gutter="24">
+          <a-col :lg="6" :md="12" :sm="24">
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="退款类型">
+              <a-select placeholder="请选择退款类型" v-decorator="[ 'payType', validatorRules.payType ]"
+                        :disabled="refundTypeLocked" @change="onChangePayType">
+                <a-select-option v-for="(item,index) in payTypeList" :key="index" :value="item.value">
+                  {{ item.text }}
+                </a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row class="form-row" :gutter="24">
           <a-col :lg="18" :md="12" :sm="24">
             <j-editable-table id="billModal"
               :ref="refKeys[0]"
@@ -123,7 +135,10 @@
                 <a-col :lg="24" :md="6" :sm="6">
                   <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol">
                     <span slot="label" style="font-size: 20px;line-height:20px">付款金额</span>
-                    <a-input v-decorator.trim="[ 'getAmount' ]" :style="{color:'red'}" defaultValue="0" @change="onChangeGetAmount"/>
+                    <a-input v-decorator.trim="[ 'getAmount', {rules: [
+                      { required: true, message: '请输入付款金额!' },
+                      { validator: validateGetAmount }
+                    ]} ]" :disabled="isPrepaidRefund" :style="{color:'red'}" defaultValue="0" @change="onChangeGetAmount"/>
                   </a-form-item>
                 </a-col>
                 <a-col :lg="24" :md="6" :sm="6">
@@ -135,7 +150,8 @@
                 <a-col :lg="24" :md="6" :sm="6">
                   <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol">
                     <span slot="label" style="font-size: 20px;line-height:20px">付款账户</span>
-                    <a-select placeholder="请选择付款账户" style="font-size:20px;" v-decorator="[ 'accountId', validatorRules.accountId ]" :dropdownMatchSelectWidth="false">
+                    <a-select placeholder="请选择付款账户" style="font-size:20px;" v-decorator="[ 'accountId', validatorRules.accountId ]"
+                              :disabled="isPrepaidRefund" :dropdownMatchSelectWidth="false">
                       <div slot="dropdownRender" slot-scope="menu">
                         <v-nodes :vnodes="menu" />
                         <a-divider style="margin: 4px 0;" />
@@ -213,6 +229,12 @@
         operTimeStr: '',
         prefixNo: 'LSTH',
         fileList:[],
+        payTypeList: [
+          {value: '现付', text: '退回付款账户'},
+          {value: '预付款', text: '退回会员预付款'}
+        ],
+        isPrepaidRefund: false,
+        refundTypeLocked: false,
         minWidth: 1100,
         rowCanEdit: true,
         model: {},
@@ -254,7 +276,10 @@
             { title: '原数量', key: 'preNumber', width: '6%', type: FormTypes.normal },
             { title: '已退货', key: 'finishNumber', width: '6%', type: FormTypes.normal },
             { title: '数量', key: 'operNumber', width: '6%', type: FormTypes.inputNumber, statistics: true,
-              validateRules: [{ required: true, message: '${title}不能为空' }]
+              validateRules: [
+                { required: true, message: '${title}不能为空' },
+                { pattern: /^(?=.*[1-9])\d+(?:\.\d+)?$/, message: '${title}必须大于0' }
+              ]
             },
             { title: '单价', key: 'unitPrice', width: '6%', type: FormTypes.inputNumber},
             { title: '金额', key: 'allPrice', width: '6%', type: FormTypes.inputNumber, statistics: true },
@@ -276,7 +301,12 @@
           },
           accountId:{
             rules: [
-              { required: true, message: '请选择结算账户!' }
+              { validator: this.validateAccount }
+            ]
+          },
+          payType:{
+            rules: [
+              { required: true, message: '请选择退款类型!' }
             ]
           }
         },
@@ -297,7 +327,11 @@
         this.billStatus = '0'
         this.currentSelectDepotId = ''
         this.rowCanEdit = true
+        this.refundTypeLocked = false
+        this.isPrepaidRefund = false
         this.materialTable.columns[1].type = FormTypes.popupJsh
+        this.materialTable.columns.find(item => item.key === 'unitPrice').type = FormTypes.inputNumber
+        this.materialTable.columns.find(item => item.key === 'allPrice').type = FormTypes.inputNumber
         this.changeColumnHide()
         this.changeFormTypes(this.materialTable.columns, 'snList', 0)
         this.changeFormTypes(this.materialTable.columns, 'batchNumber', 0)
@@ -308,19 +342,27 @@
           this.addInit(this.prefixNo)
           this.fileList = []
           this.$nextTick(() => {
-            this.form.setFieldsValue({'getAmount':0, 'backAmount':0})
+            this.form.setFieldsValue({'payType':'现付', 'getAmount':0, 'backAmount':0})
             if(this.transferParam && this.transferParam.number) {
               let tp = this.transferParam
-              this.linkBillListOk(tp.list, tp.number, tp.organId, tp.discount, tp.deposit, tp.remark)
+              this.linkBillListOk(tp.list, tp.number, tp.organId, tp.discount, tp.deposit, tp.remark,
+                null, tp.accountId, tp.salesMan, tp.payType)
             }
           })
         } else {
           if(this.model.linkNumber) {
             this.rowCanEdit = false
+            this.refundTypeLocked = true
             this.materialTable.columns[1].type = FormTypes.normal
+            this.changeFormTypes(this.materialTable.columns, 'unitPrice', 1)
+            this.changeFormTypes(this.materialTable.columns, 'allPrice', 1)
           }
           this.model.operTime = this.model.operTimeStr
-          if(this.model.backAmount) {
+          this.model.changeAmount = Math.abs(Number(this.model.changeAmount || 0))
+          this.isPrepaidRefund = this.model.payType === '预付款'
+          if(this.isPrepaidRefund) {
+            this.model.getAmount = 0
+          } else if(this.model.backAmount) {
             this.model.getAmount = (this.model.changeAmount + this.model.backAmount).toFixed(2)
           } else {
             this.model.getAmount = this.model.changeAmount
@@ -328,7 +370,7 @@
           this.fileList = this.model.fileName
           this.$nextTick(() => {
             this.form.setFieldsValue(pick(this.model,'organId', 'operTime', 'number', 'linkNumber', 'remark',
-              'discount','discountMoney','discountLastMoney','otherMoney','accountId','changeAmount','getAmount','backAmount'))
+              'payType','discount','discountMoney','discountLastMoney','otherMoney','accountId','changeAmount','getAmount','backAmount'))
           });
           // 加载子表数据
           let params = {
@@ -405,13 +447,51 @@
           this.form.setFieldsValue({'backAmount':backAmount})
         });
       },
+      onChangePayType(value) {
+        this.isPrepaidRefund = value === '预付款'
+        this.$nextTick(() => {
+          if(this.isPrepaidRefund) {
+            this.form.setFieldsValue({'accountId': undefined, 'getAmount': 0, 'backAmount': 0})
+          } else {
+            const changeAmount = Number(this.form.getFieldValue('changeAmount') || 0)
+            this.form.setFieldsValue({'getAmount': changeAmount, 'backAmount': 0})
+          }
+          this.form.validateFields(['accountId', 'getAmount'], { force: true }, () => {})
+        })
+      },
+      validateAccount(rule, value, callback) {
+        if(!this.isPrepaidRefund && !value) {
+          callback('请选择结算账户!')
+        } else {
+          callback()
+        }
+      },
+      validateGetAmount(rule, value, callback) {
+        if(this.isPrepaidRefund) {
+          callback()
+          return
+        }
+        const getAmount = Number(value)
+        const changeAmount = Number(this.form.getFieldValue('changeAmount'))
+        if(!Number.isFinite(getAmount) || getAmount < 0) {
+          callback('付款金额必须是大于等于0的数字')
+        } else if(Number.isFinite(changeAmount) && getAmount < changeAmount) {
+          callback('退款金额不能小于单据金额')
+        } else {
+          callback()
+        }
+      },
       onSearchLinkNumber() {
         this.$refs.linkBillList.show('出库', '零售', '会员', "1")
         this.$refs.linkBillList.title = "请选择零售出库"
       },
-      linkBillListOk(selectBillDetailRows, linkNumber, organId, discount, deposit, remark) {
+      linkBillListOk(selectBillDetailRows, linkNumber, organId, discount, deposit, remark,
+                     depotId, accountId, salesMan, payType) {
         this.rowCanEdit = false
+        this.refundTypeLocked = true
         this.materialTable.columns[1].type = FormTypes.normal
+        this.changeFormTypes(this.materialTable.columns, 'unitPrice', 1)
+        this.changeFormTypes(this.materialTable.columns, 'allPrice', 1)
         this.changeFormTypes(this.materialTable.columns, 'preNumber', 1)
         this.changeFormTypes(this.materialTable.columns, 'finishNumber', 1)
         if(selectBillDetailRows && selectBillDetailRows.length>0) {
@@ -430,11 +510,15 @@
           ///给优惠后金额重新赋值
           allTaxLastMoney = allTaxLastMoney?allTaxLastMoney:0
           let discountLastMoney = (allTaxLastMoney).toFixed(2)-0
+          let refundPayType = payType === '预付款' ? '预付款' : '现付'
+          this.isPrepaidRefund = refundPayType === '预付款'
           this.$nextTick(() => {
             this.form.setFieldsValue({
               'organId': organId,
               'linkNumber': linkNumber,
-              'getAmount': discountLastMoney,
+              'payType': refundPayType,
+              'accountId': this.isPrepaidRefund ? undefined : accountId,
+              'getAmount': this.isPrepaidRefund ? 0 : discountLastMoney,
               'changeAmount': discountLastMoney,
               'backAmount': 0,
               'remark': remark

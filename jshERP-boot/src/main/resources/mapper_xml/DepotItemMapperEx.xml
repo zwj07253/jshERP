@@ -1091,6 +1091,28 @@
         )
     </select>
 
+    <select id="lockDepotItemById" resultMap="com.jsh.erp.datasource.mappers.DepotItemMapper.BaseResultMap">
+        select <include refid="com.jsh.erp.datasource.mappers.DepotItemMapper.Base_Column_List" />
+        from jsh_depot_item
+        where id=#{id}
+          and COALESCE(delete_flag,'0') !='1'
+        for update
+    </select>
+
+    <select id="getReturnedOperNumber" resultType="java.math.BigDecimal">
+        select COALESCE(sum(di.oper_number),0)
+        from jsh_depot_item di
+        inner join jsh_depot_head dh on dh.id=di.header_id
+        where di.link_id=#{linkId}
+          and dh."type"='入库'
+          and dh.sub_type='零售退货'
+          and COALESCE(di.delete_flag,'0') !='1'
+          and COALESCE(dh.delete_flag,'0') !='1'
+        <if test="currentHeaderId != null">
+          and dh.id != #{currentHeaderId}
+        </if>
+    </select>
+
     <select id="getBatchNumberList" resultMap="batchNumberListMap">
         select id, bar_code, name, standard, model, unit_id,
         commodity_unit, batch_number, expiration_date, sum(basic_number) total_num from

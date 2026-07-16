@@ -1441,9 +1441,9 @@
     <select id="getBillAllPriceByOrganId" resultType="java.math.BigDecimal">
         select COALESCE(sum(dh.total_price),0) allPrice from jsh_depot_head dh
         where dh.organ_id=#{organId}::bigint
-        and dh."type" = '出库'
-        and dh.sub_type = '零售'
         and dh.pay_type = '预付款'
+        and ((dh."type" = '出库' and dh.sub_type = '零售')
+          or (dh."type" = '入库' and dh.sub_type = '零售退货'))
         and COALESCE(dh.delete_flag,'0') !='1'
     </select>
 </mapper>
