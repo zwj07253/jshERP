@@ -42,6 +42,8 @@ public class DepotHeadService {
     private Logger logger = LoggerFactory.getLogger(DepotHeadService.class);
     private static final String RETAIL_OUT_URL = "/bill/retail_out";
     private static final String RETAIL_BACK_URL = "/bill/retail_back";
+    private static final String PURCHASE_APPLY_URL = "/bill/purchase_apply";
+    private static final String PURCHASE_ORDER_URL = "/bill/purchase_order";
 
     @Resource
     private DepotHeadMapper depotHeadMapper;
@@ -423,7 +425,7 @@ public class DepotHeadService {
         sb.append(BusinessConstants.LOG_OPERATION_TYPE_DELETE);
         List<DepotHead> dhList = getDepotHeadListByIds(ids);
         for(DepotHead depotHead: dhList){
-            checkRetailButtonPermission(depotHead, "1", "新增、编辑或删除");
+            checkBillButtonPermission(depotHead, "1", "新增、编辑或删除");
             //只有未审核的单据才能被删除
             if(!"0".equals(depotHead.getStatus())) {
                 throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_UN_AUDIT_DELETE_FAILED_CODE,
@@ -609,26 +611,33 @@ public class DepotHeadService {
         int result = 0;
         StringBuilder billNoStr = new StringBuilder();
         List<Long> idList = StringUtil.strToLongList(ids);
+        List<DepotHead> depotHeadList = new ArrayList<>();
         for(Long id: idList) {
             DepotHead depotHead = getDepotHead(id);
+            if (depotHead == null) {
+                throw new BusinessRunTimeException(ExceptionConstants.DATA_READ_FAIL_CODE,
+                        ExceptionConstants.DATA_READ_FAIL_MSG);
+            }
+            checkBillButtonPermission(depotHead, "1", "强制结单");
             //状态里面不包含部分不能强制结单
             if(!"3".equals(depotHead.getStatus())) {
                 throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_FORCE_CLOSE_FAILED_CODE,
                         String.format(ExceptionConstants.DEPOT_HEAD_FORCE_CLOSE_FAILED_MSG, depotHead.getNumber()));
             } else {
                 billNoStr.append(depotHead.getNumber()).append(" ");
+                depotHeadList.add(depotHead);
             }
         }
-        if(idList.size()>0) {
-            DepotHead depotHead = new DepotHead();
-            //完成状态
-            depotHead.setStatus("2");
-            //给备注后面追加：强制结单
-            String remark = StringUtil.isNotEmpty(depotHead.getRemark())? depotHead.getRemark() + "[强制结单]": "[强制结单]";
-            depotHead.setRemark(remark);
-            DepotHeadExample example = new DepotHeadExample();
-            example.createCriteria().andIdIn(idList);
-            result = depotHeadMapper.updateByExampleSelective(depotHead, example);
+        if(!depotHeadList.isEmpty()) {
+            for (DepotHead original : depotHeadList) {
+                DepotHead update = new DepotHead();
+                update.setId(original.getId());
+                update.setStatus("2");
+                String remark = StringUtil.isNotEmpty(original.getRemark())
+                        ? original.getRemark() + "[强制结单]" : "[强制结单]";
+                update.setRemark(remark);
+                result += depotHeadMapper.updateByPrimaryKeySelective(update);
+            }
             //记录日志
             String billNos = billNoStr.toString();
             if(StringUtil.isNotEmpty(billNos)) {
@@ -644,26 +653,33 @@ public class DepotHeadService {
         int result = 0;
         StringBuilder billNoStr = new StringBuilder();
         List<Long> idList = StringUtil.strToLongList(ids);
+        List<DepotHead> depotHeadList = new ArrayList<>();
         for(Long id: idList) {
             DepotHead depotHead = getDepotHead(id);
+            if (depotHead == null) {
+                throw new BusinessRunTimeException(ExceptionConstants.DATA_READ_FAIL_CODE,
+                        ExceptionConstants.DATA_READ_FAIL_MSG);
+            }
+            checkBillButtonPermission(depotHead, "1", "强制结单");
             //状态里面不包含部分不能强制结单
             if(!"3".equals(depotHead.getPurchaseStatus())) {
                 throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_FORCE_CLOSE_FAILED_CODE,
                         String.format(ExceptionConstants.DEPOT_HEAD_FORCE_CLOSE_FAILED_MSG, depotHead.getNumber()));
             } else {
                 billNoStr.append(depotHead.getNumber()).append(" ");
+                depotHeadList.add(depotHead);
             }
         }
-        if(idList.size()>0) {
-            DepotHead depotHead = new DepotHead();
-            //完成状态
-            depotHead.setPurchaseStatus("2");
-            //给备注后面追加：强制结单-以销定购
-            String remark = StringUtil.isNotEmpty(depotHead.getRemark())? depotHead.getRemark() + "[强制结单-以销定购]": "[强制结单-以销定购]";
-            depotHead.setRemark(remark);
-            DepotHeadExample example = new DepotHeadExample();
-            example.createCriteria().andIdIn(idList);
-            result = depotHeadMapper.updateByExampleSelective(depotHead, example);
+        if(!depotHeadList.isEmpty()) {
+            for (DepotHead original : depotHeadList) {
+                DepotHead update = new DepotHead();
+                update.setId(original.getId());
+                update.setPurchaseStatus("2");
+                String remark = StringUtil.isNotEmpty(original.getRemark())
+                        ? original.getRemark() + "[强制结单-以销定购]" : "[强制结单-以销定购]";
+                update.setRemark(remark);
+                result += depotHeadMapper.updateByPrimaryKeySelective(update);
+            }
             //记录日志
             String billNos = billNoStr.toString();
             if(StringUtil.isNotEmpty(billNos)) {
@@ -724,7 +740,7 @@ public class DepotHeadService {
         for(Long id: ids) {
             DepotHead depotHead = getDepotHead(id);
             if("0".equals(status)){
-                checkRetailButtonPermission(depotHead, "7", "反审核");
+                checkBillButtonPermission(depotHead, "7", "反审核");
                 //进行反审核操作
                 if("1".equals(depotHead.getStatus()) && "0".equals(depotHead.getPurchaseStatus())) {
                     dhIds.add(id);
@@ -740,7 +756,7 @@ public class DepotHeadService {
                             String.format(ExceptionConstants.DEPOT_HEAD_AUDIT_TO_UN_AUDIT_FAILED_MSG));
                 }
             } else if("1".equals(status)){
-                checkRetailButtonPermission(depotHead, "2", "审核");
+                checkBillButtonPermission(depotHead, "2", "审核");
                 //进行审核操作
                 if("0".equals(depotHead.getStatus())) {
                     dhIds.add(id);
@@ -1146,6 +1162,7 @@ public class DepotHeadService {
     public List<DepotHead> getListByLinkApplyExceptCurrent(String linkApply, String number, String type)throws Exception {
         DepotHeadExample example = new DepotHeadExample();
         example.createCriteria().andLinkApplyEqualTo(linkApply).andNumberNotEqualTo(number).andTypeEqualTo(type)
+                .andSubTypeEqualTo(BusinessConstants.SUB_TYPE_PURCHASE_ORDER)
                 .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
         return depotHeadMapper.selectByExample(example);
     }
@@ -1192,11 +1209,11 @@ public class DepotHeadService {
         JSONObject headJson = JSONObject.parseObject(beanJson);
         DepotHead depotHead = headJson.toJavaObject(DepotHead.class);
         validateDepotHeadBusinessType(depotHead);
-        checkRetailButtonPermission(depotHead, "1", "新增");
+        checkBillButtonPermission(depotHead, "1", "新增");
         if (BusinessConstants.BILLS_STATUS_AUDIT.equals(depotHead.getStatus())) {
-            checkRetailButtonPermission(depotHead, "2", "审核");
+            checkBillButtonPermission(depotHead, "2", "审核");
         }
-        rows = validateAndNormalizeRetailBill(depotHead, headJson, rows, null);
+        rows = validateAndNormalizeBill(depotHead, headJson, rows, null);
         //判断用户是否已经登录过，登录过不再处理
         User userInfo=userService.getCurrentUser();
         //通过redis去校验重复
@@ -1309,11 +1326,11 @@ public class DepotHeadService {
                     ExceptionConstants.DEPOT_HEAD_BILL_TYPE_CHANGE_MSG);
         }
         validateDepotHeadBusinessType(depotHead);
-        checkRetailButtonPermission(previousDepotHead, "1", "编辑");
+        checkBillButtonPermission(previousDepotHead, "1", "编辑");
         if (BusinessConstants.BILLS_STATUS_AUDIT.equals(depotHead.getStatus())) {
-            checkRetailButtonPermission(previousDepotHead, "2", "审核");
+            checkBillButtonPermission(previousDepotHead, "2", "审核");
         }
-        rows = validateAndNormalizeRetailBill(depotHead, headJson, rows, previousDepotHead);
+        rows = validateAndNormalizeBill(depotHead, headJson, rows, previousDepotHead);
         //判断用户是否已经登录过，登录过不再处理
         User userInfo=userService.getCurrentUser();
         //通过redis去校验重复
@@ -1409,7 +1426,7 @@ public class DepotHeadService {
         }
     }
 
-    private void checkRetailButtonPermission(DepotHead depotHead, String buttonCode, String operationName) throws Exception {
+    private void checkBillButtonPermission(DepotHead depotHead, String buttonCode, String operationName) throws Exception {
         if (depotHead == null) {
             return;
         }
@@ -1423,6 +1440,14 @@ public class DepotHeadService {
                 && BusinessConstants.SUB_TYPE_RETAIL_RETURN.equals(depotHead.getSubType())) {
             url = RETAIL_BACK_URL;
             billName = "零售退货";
+        } else if (BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(depotHead.getType())
+                && BusinessConstants.SUB_TYPE_PURCHASE_APPLY.equals(depotHead.getSubType())) {
+            url = PURCHASE_APPLY_URL;
+            billName = "请购单";
+        } else if (BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(depotHead.getType())
+                && BusinessConstants.SUB_TYPE_PURCHASE_ORDER.equals(depotHead.getSubType())) {
+            url = PURCHASE_ORDER_URL;
+            billName = "采购订单";
         } else {
             return;
         }
@@ -1466,8 +1491,23 @@ public class DepotHeadService {
         }
     }
 
-    private String validateAndNormalizeRetailBill(DepotHead depotHead, JSONObject headJson, String rows,
-                                                   DepotHead previousDepotHead) throws Exception {
+    private String validateAndNormalizeBill(DepotHead depotHead, JSONObject headJson, String rows,
+                                             DepotHead previousDepotHead) throws Exception {
+        if (BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(depotHead.getType())
+                && BusinessConstants.SUB_TYPE_PURCHASE_APPLY.equals(depotHead.getSubType())) {
+            return validateAndNormalizePurchaseApply(depotHead, rows);
+        }
+        if (BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(depotHead.getType())
+                && BusinessConstants.SUB_TYPE_PURCHASE_ORDER.equals(depotHead.getSubType())) {
+            if (previousDepotHead != null && StringUtil.isNotEmpty(previousDepotHead.getLinkApply())
+                    && !Objects.equals(previousDepotHead.getLinkApply(), depotHead.getLinkApply())) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_APPLY_CHANGE_CODE,
+                        ExceptionConstants.DEPOT_HEAD_PURCHASE_APPLY_CHANGE_MSG);
+            }
+            if (StringUtil.isNotEmpty(depotHead.getLinkApply())) {
+                return validateAndNormalizePurchaseOrderFromApply(depotHead, rows, previousDepotHead);
+            }
+        }
         if (BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
                 && BusinessConstants.SUB_TYPE_RETAIL.equals(depotHead.getSubType())) {
             return validateAndNormalizeRetailOut(depotHead, headJson, rows);
@@ -1477,6 +1517,114 @@ public class DepotHeadService {
             return validateAndNormalizeRetailReturn(depotHead, headJson, rows, previousDepotHead);
         }
         return rows;
+    }
+
+    private String validateAndNormalizePurchaseApply(DepotHead depotHead, String rows) throws Exception {
+        JSONArray detailArray = JSONArray.parseArray(rows);
+        if (detailArray == null || detailArray.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ROW_FAILED_CODE,
+                    ExceptionConstants.DEPOT_HEAD_ROW_FAILED_MSG);
+        }
+        for (int detailIndex = 0; detailIndex < detailArray.size(); detailIndex++) {
+            JSONObject detail = JSONObject.parseObject(detailArray.get(detailIndex).toString());
+            String barCode = detail.getString("barCode");
+            MaterialExtend materialExtend = StringUtil.isEmpty(barCode)
+                    ? null : materialExtendService.getInfoByBarCode(barCode);
+            if (materialExtend == null) {
+                throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_BARCODE_IS_NOT_EXIST_CODE,
+                        String.format(ExceptionConstants.MATERIAL_BARCODE_IS_NOT_EXIST_MSG, barCode));
+            }
+            BigDecimal quantity = detail.getBigDecimal("operNumber");
+            if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_CODE,
+                        String.format(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_MSG, barCode));
+            }
+            detail.put("unit", materialExtend.getCommodityUnit());
+            detail.put("unitPrice", BigDecimal.ZERO);
+            detail.put("taxUnitPrice", BigDecimal.ZERO);
+            detail.put("allPrice", BigDecimal.ZERO);
+            detail.put("taxRate", BigDecimal.ZERO);
+            detail.put("taxMoney", BigDecimal.ZERO);
+            detail.put("taxLastMoney", BigDecimal.ZERO);
+            detailArray.set(detailIndex, detail);
+        }
+        depotHead.setOrganId(null);
+        depotHead.setAccountId(null);
+        depotHead.setAccountIdList(null);
+        depotHead.setAccountMoneyList(null);
+        depotHead.setChangeAmount(BigDecimal.ZERO);
+        depotHead.setBackAmount(BigDecimal.ZERO);
+        depotHead.setTotalPrice(BigDecimal.ZERO);
+        depotHead.setDiscount(BigDecimal.ZERO);
+        depotHead.setDiscountMoney(BigDecimal.ZERO);
+        depotHead.setDiscountLastMoney(BigDecimal.ZERO);
+        depotHead.setOtherMoney(BigDecimal.ZERO);
+        depotHead.setDeposit(BigDecimal.ZERO);
+        depotHead.setDebt(BigDecimal.ZERO);
+        return detailArray.toJSONString();
+    }
+
+    private String validateAndNormalizePurchaseOrderFromApply(DepotHead depotHead, String rows,
+                                                               DepotHead previousDepotHead) throws Exception {
+        DepotHead sourceHead = getDepotHead(depotHead.getLinkApply());
+        boolean updatingCurrentAssociation = previousDepotHead != null
+                && Objects.equals(previousDepotHead.getLinkApply(), depotHead.getLinkApply());
+        boolean sourceStatusValid = sourceHead != null
+                && (BusinessConstants.BILLS_STATUS_AUDIT.equals(sourceHead.getStatus())
+                || BusinessConstants.BILLS_STATUS_SKIPING.equals(sourceHead.getStatus())
+                || (updatingCurrentAssociation && BusinessConstants.BILLS_STATUS_SKIPED.equals(sourceHead.getStatus())));
+        if (sourceHead == null || sourceHead.getId() == null
+                || !BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(sourceHead.getType())
+                || !BusinessConstants.SUB_TYPE_PURCHASE_APPLY.equals(sourceHead.getSubType())
+                || !sourceStatusValid) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_APPLY_SOURCE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_PURCHASE_APPLY_SOURCE_MSG);
+        }
+
+        JSONArray detailArray = JSONArray.parseArray(rows);
+        if (detailArray == null || detailArray.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ROW_FAILED_CODE,
+                    ExceptionConstants.DEPOT_HEAD_ROW_FAILED_MSG);
+        }
+        Long currentHeaderId = previousDepotHead == null ? null : previousDepotHead.getId();
+        Map<Long, BigDecimal> currentAppliedNumberMap = new HashMap<>();
+        for (int detailIndex = 0; detailIndex < detailArray.size(); detailIndex++) {
+            JSONObject detail = JSONObject.parseObject(detailArray.get(detailIndex).toString());
+            String barCode = detail.getString("barCode");
+            BigDecimal quantity = detail.getBigDecimal("operNumber");
+            if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_CODE,
+                        String.format(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_MSG, barCode));
+            }
+            Long linkId = detail.getLong("linkId");
+            DepotItem sourceItem = linkId == null ? null : depotItemMapperEx.lockDepotItemById(linkId);
+            MaterialExtend materialExtend = StringUtil.isEmpty(barCode)
+                    ? null : materialExtendService.getInfoByBarCode(barCode);
+            if (sourceItem == null || !Objects.equals(sourceItem.getHeaderId(), sourceHead.getId())
+                    || materialExtend == null
+                    || !Objects.equals(materialExtend.getId(), sourceItem.getMaterialExtendId())
+                    || sourceItem.getOperNumber() == null
+                    || sourceItem.getOperNumber().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_APPLY_DETAIL_CODE,
+                        ExceptionConstants.DEPOT_HEAD_PURCHASE_APPLY_DETAIL_MSG);
+            }
+
+            BigDecimal alreadyApplied = depotItemMapperEx.getPurchaseOrderAppliedNumber(linkId, currentHeaderId);
+            BigDecimal currentApplied = currentAppliedNumberMap.getOrDefault(linkId, BigDecimal.ZERO).add(quantity);
+            currentAppliedNumberMap.put(linkId, currentApplied);
+            if (!systemConfigService.getOverLinkBillFlag()
+                    && alreadyApplied.add(currentApplied).compareTo(sourceItem.getOperNumber()) > 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_APPLY_OVER_CODE,
+                        String.format(ExceptionConstants.DEPOT_HEAD_PURCHASE_APPLY_OVER_MSG, barCode));
+            }
+
+            detail.put("linkId", sourceItem.getId());
+            detail.put("unit", sourceItem.getMaterialUnit());
+            detail.put("preNumber", sourceItem.getOperNumber());
+            detail.put("finishNumber", alreadyApplied);
+            detailArray.set(detailIndex, detail);
+        }
+        return detailArray.toJSONString();
     }
 
     private String validateAndNormalizeRetailOut(DepotHead depotHead, JSONObject headJson, String rows) {
@@ -2280,6 +2428,7 @@ public class DepotHeadService {
                 throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_EDIT_FAILED_CODE,
                         ExceptionConstants.DEPOT_HEAD_EDIT_FAILED_MSG);
             }
+            checkBillButtonPermission(oldDepotHead, "1", "编辑备注");
             DepotHead depotHead = new DepotHead();
             depotHead.setId(id);
             depotHead.setRemark(remark);
@@ -2290,6 +2439,8 @@ public class DepotHeadService {
                     new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_EDIT).append("备注，单据编号:")
                             .append(oldDepotHead.getNumber()).append(oldRemark).toString(),
                     request);
+        } catch (BusinessRunTimeException e) {
+            throw e;
         } catch (Exception e) {
             JshException.writeFail(logger, e);
         }

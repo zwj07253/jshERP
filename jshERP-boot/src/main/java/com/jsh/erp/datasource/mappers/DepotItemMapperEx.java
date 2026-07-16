@@ -241,6 +241,10 @@ public interface DepotItemMapperEx {
             @Param("linkId") Long linkId,
             @Param("currentHeaderId") Long currentHeaderId);
 
+    BigDecimal getPurchaseOrderAppliedNumber(
+            @Param("linkId") Long linkId,
+            @Param("currentHeaderId") Long currentHeaderId);
+
     List<DepotItemVoBatchNumberList> getBatchNumberList(
             @Param("number") String number,
             @Param("name") String name,

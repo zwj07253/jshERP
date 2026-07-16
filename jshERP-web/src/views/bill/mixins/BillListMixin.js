@@ -470,16 +470,19 @@ export const BillListMixin = {
       if(this.btnEnableList.indexOf(2)===-1) {
         this.$refs.modalForm.isCanCheck = false
       }
-      //复制单据的时候需要移除关联单据的相关信息
-      record.linkNumber = ''
-      record.billType = ''
-      record.deposit = ''
-      this.$refs.modalForm.edit(record);
+      //复制单据的时候需要移除关联单据的相关信息，并避免修改列表中的原记录
+      const copyRecord = Object.assign({}, record, {
+        linkNumber: '',
+        linkApply: '',
+        billType: '',
+        deposit: ''
+      })
+      this.$refs.modalForm.edit(copyRecord);
       this.$refs.modalForm.title = "复制新增";
       this.$refs.modalForm.disableSubmit = false;
       //开启明细的编辑模式
       this.$refs.modalForm.rowCanEdit = true
-      let columnIndex = record.subType === '组装单' || record.subType === '拆卸单'?2:1
+      let columnIndex = copyRecord.subType === '组装单' || copyRecord.subType === '拆卸单'?2:1
       this.$refs.modalForm.materialTable.columns[columnIndex].type = FormTypes.popupJsh
     },
     myHandleEdit(record) {

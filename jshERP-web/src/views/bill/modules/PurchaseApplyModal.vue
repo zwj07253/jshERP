@@ -178,7 +178,10 @@
             { title: '单位', key: 'unit', width: '6%', type: FormTypes.normal },
             { title: '多属性', key: 'sku', width: '10%', type: FormTypes.normal },
             { title: '数量', key: 'operNumber', width: '6%', type: FormTypes.inputNumber, statistics: true,
-              validateRules: [{ required: true, message: '${title}不能为空' }]
+              validateRules: [
+                { required: true, message: '${title}不能为空' },
+                { pattern: /^(?=.*[1-9])\d+(?:\.\d+)?$/, message: '${title}必须大于0' }
+              ]
             },
             { title: '备注', key: 'remark', width: '8%', type: FormTypes.input},
           ]
@@ -260,15 +263,20 @@
       },
       /** 整理成formData */
       classifyIntoFormData(allValues) {
-        let totalPrice = 0
         let billMain = Object.assign(this.model, allValues.formValue)
         let detailArr = allValues.tablesValue[0].values
         billMain.type = '其它'
         billMain.subType = '请购单'
         for(let item of detailArr){
-          totalPrice += item.allPrice-0
+          item.unitPrice = 0
+          item.taxUnitPrice = 0
+          item.allPrice = 0
+          item.taxRate = 0
+          item.taxMoney = 0
+          item.taxLastMoney = 0
         }
-        billMain.totalPrice = 0-totalPrice
+        billMain.totalPrice = 0
+        billMain.changeAmount = 0
         if(this.fileList && this.fileList.length > 0) {
           billMain.fileName = this.fileList
         } else {

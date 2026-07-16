@@ -482,7 +482,7 @@ public class ExceptionConstants {
     //零售出库-预付款必须选择会员
     public static final int DEPOT_HEAD_RETAIL_MEMBER_REQUIRED_CODE = 8500040;
     public static final String DEPOT_HEAD_RETAIL_MEMBER_REQUIRED_MSG = "抱歉，使用预付款时必须选择会员";
-    //零售出库-无按钮权限
+    //业务单据-无按钮权限
     public static final int DEPOT_HEAD_RETAIL_PERMISSION_CODE = 8500041;
     public static final String DEPOT_HEAD_RETAIL_PERMISSION_MSG = "抱歉，当前用户没有%s的%s权限";
     //单据录入-不能修改单据业务类型
@@ -509,6 +509,18 @@ public class ExceptionConstants {
     //零售退货-序列号不属于原单
     public static final int DEPOT_HEAD_RETAIL_RETURN_SN_CODE = 8500049;
     public static final String DEPOT_HEAD_RETAIL_RETURN_SN_MSG = "抱歉，序列号:%s不属于关联的零售出库单";
+    //采购订单-关联请购单不合法
+    public static final int DEPOT_HEAD_PURCHASE_APPLY_SOURCE_CODE = 8500050;
+    public static final String DEPOT_HEAD_PURCHASE_APPLY_SOURCE_MSG = "抱歉，关联的请购单不存在、状态不可用或不是请购单";
+    //采购订单-关联请购明细不合法
+    public static final int DEPOT_HEAD_PURCHASE_APPLY_DETAIL_CODE = 8500051;
+    public static final String DEPOT_HEAD_PURCHASE_APPLY_DETAIL_MSG = "抱歉，采购订单明细不属于关联的请购单";
+    //采购订单-超过请购数量
+    public static final int DEPOT_HEAD_PURCHASE_APPLY_OVER_CODE = 8500052;
+    public static final String DEPOT_HEAD_PURCHASE_APPLY_OVER_MSG = "抱歉，商品条码:%s的累计采购数量超过请购数量";
+    //采购订单-不能更换关联请购单
+    public static final int DEPOT_HEAD_PURCHASE_APPLY_CHANGE_CODE = 8500053;
+    public static final String DEPOT_HEAD_PURCHASE_APPLY_CHANGE_MSG = "抱歉，已关联请购单的采购订单不能更换或取消关联";
 
 
     /**

@@ -275,7 +275,10 @@
             { title: '原数量', key: 'preNumber', width: '4%', type: FormTypes.normal },
             { title: '已采购', key: 'finishNumber', width: '4%', type: FormTypes.normal },
             { title: '数量', key: 'operNumber', width: '5%', type: FormTypes.inputNumber, statistics: true,
-              validateRules: [{ required: true, message: '${title}不能为空' }]
+              validateRules: [
+                { required: true, message: '${title}不能为空' },
+                { pattern: /^(?=.*[1-9])\d+(?:\.\d+)?$/, message: '${title}必须大于0' }
+              ]
             },
             { title: '单价', key: 'unitPrice', width: '5%', type: FormTypes.inputNumber },
             { title: '金额', key: 'allPrice', width: '5%', type: FormTypes.inputNumber, statistics: true },
@@ -335,7 +338,7 @@
             }
           })
         } else {
-          if(this.model.linkNumber) {
+          if(this.model.linkNumber || this.model.linkApply) {
             this.rowCanEdit = false
             this.materialTable.columns[1].type = FormTypes.normal
           }
