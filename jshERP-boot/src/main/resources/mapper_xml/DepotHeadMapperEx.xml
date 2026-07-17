@@ -261,7 +261,7 @@
             <foreach collection="organArray" item="organId" separator=",">
                 #{organId}::bigint
             </foreach>
-            ) or dh.sub_type='采购退货' or dh.sub_type='零售' or dh.sub_type='其它')
+            ) or dh.sub_type not in ('销售','销售退货'))
         </if>
         <if test="categoryList.size()>0">
             and m.category_id in
@@ -343,7 +343,7 @@
             <foreach collection="organArray" item="organId" separator=",">
                 #{organId}::bigint
             </foreach>
-            ) or dh.sub_type='采购退货' or dh.sub_type='零售' or dh.sub_type='其它')
+            ) or dh.sub_type not in ('销售','销售退货'))
         </if>
         <if test="categoryList.size()>0">
             and m.category_id in
@@ -411,7 +411,7 @@
             <foreach collection="organArray" item="organId" separator=",">
                 #{organId}::bigint
             </foreach>
-            ) or dh.sub_type='采购退货' or dh.sub_type='零售' or dh.sub_type='其它')
+            ) or dh.sub_type not in ('销售','销售退货'))
         </if>
         <if test="categoryList.size()>0">
             and m.category_id in

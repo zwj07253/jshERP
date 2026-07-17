@@ -411,7 +411,9 @@ public class DepotItemService {
                     && BusinessConstants.SUB_TYPE_PURCHASE_RETURN.equals(depotHead.getSubType());
             boolean salesOutbound = BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
                     && BusinessConstants.SUB_TYPE_SALES.equals(depotHead.getSubType());
-            boolean purchaseDepotPermission = purchaseInbound || purchaseReturn || salesOutbound;
+            boolean salesReturn = BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())
+                    && BusinessConstants.SUB_TYPE_SALES_RETURN.equals(depotHead.getSubType());
+            boolean purchaseDepotPermission = purchaseInbound || purchaseReturn || salesOutbound || salesReturn;
             Set<Long> allowedPurchaseDepotIds = new HashSet<>();
             User currentUser = userService.getCurrentUser();
             boolean adminUser = currentUser != null && "admin".equals(currentUser.getLoginName());
@@ -637,7 +639,7 @@ public class DepotItemService {
                 if (StringUtil.isExist(rowObj.get("depotId"))) {
                     depotItem.setDepotId(rowObj.getLong("depotId"));
                     if (purchaseDepotPermission && !adminUser && !allowedPurchaseDepotIds.contains(depotItem.getDepotId())) {
-                        if (salesOutbound) {
+                        if (salesOutbound || salesReturn) {
                             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_SALES_DATA_PERMISSION_CODE,
                                     ExceptionConstants.DEPOT_HEAD_SALES_DATA_PERMISSION_MSG);
                         }

@@ -629,24 +629,18 @@ export function getCheckFlag(multiBillType, multiLevelApprovalFlag, prefixNo) {
  * @returns {Array}
  */
 export function changeListFmtMinus(str) {
-  let newArr = new Array()
-  if(str) {
-    let arr = []
-    if(str.indexOf(',')>-1) {
-      arr = str.split(',')
-    } else {
-      arr = str
-    }
-    for(let i=0; i<arr.length; i++) {
-      if(arr[i] < 0){
-        newArr.push((arr[i]-0).toString());
+  const newArr = []
+  if (str !== undefined && str !== null && str !== '') {
+    const arr = Array.isArray(str) ? str : String(str).split(',')
+    for (let i = 0; i < arr.length; i++) {
+      if (arr[i] === undefined || arr[i] === null || String(arr[i]).trim() === '') {
+        continue
       }
-      else {
-        newArr.push((0 - arr[i]).toString());
-      }
+      const amount = Number(arr[i])
+      newArr.push((amount < 0 ? amount : 0 - amount).toString())
     }
   }
-  return newArr;
+  return newArr
 }
 
 // 数据合并

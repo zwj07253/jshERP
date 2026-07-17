@@ -214,23 +214,14 @@ public class DepotHeadController extends BaseController {
         BaseResponseInfo res = new BaseResponseInfo();
         Map<String, Object> map = new HashMap<String, Object>();
         try {
-            List<Long> depotList = new ArrayList<>();
-            if(depotId != null) {
-                depotList.add(depotId);
-            } else {
-                //未选择仓库时默认为当前用户有权限的仓库
-                JSONArray depotArr = depotService.findDepotByCurrentUser();
-                for(Object obj: depotArr) {
-                    JSONObject object = JSONObject.parseObject(obj.toString());
-                    depotList.add(object.getLong("id"));
-                }
-            }
+            List<Long> depotList = depotService.parseDepotList(depotId);
             List<DepotHeadVo4InDetail> resList = new ArrayList<DepotHeadVo4InDetail>();
             String [] creatorArray = depotHeadService.getCreatorArray();
             if(creatorArray == null && organizationId != null) {
                 creatorArray = depotHeadService.getCreatorArrayByOrg(organizationId);
             }
-            String subType = "出库".equals(type)? "销售" : "";
+            String subType = "出库".equals(type) ? "销售"
+                    : ("入库".equals(type) ? "销售退货" : "");
             String [] organArray = depotHeadService.getOrganArray(subType, "");
             List<Long> categoryList = new ArrayList<>();
             if(categoryId != null){

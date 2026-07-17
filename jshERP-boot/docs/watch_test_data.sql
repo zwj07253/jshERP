@@ -588,6 +588,19 @@ INSERT INTO jsh_depot_head (id, type, sub_type, default_number, number, create_t
 (411, '其它', '拆卸单', 'CX-20260709-001', 'CX-20260709-001', '2026-07-09 16:00:00', '2026-07-09 16:20:00', NULL, 104, NULL, 0, 0, 0.000000, NULL, '其它', '礼盒套装拆卸为单品', '王强', '1', NULL, '0', 100, '0')
 ON CONFLICT (id) DO NOTHING;
 
+-- 销售退货金额采用“主表总额/退款为负、优惠后金额为正”的业务约定，确保销售统计与客户对账一致。
+UPDATE jsh_depot_head
+SET total_price = -5200.000000,
+    change_amount = -5200.000000,
+    discount = 0,
+    discount_money = 0,
+    discount_last_money = 5200.000000,
+    other_money = 0,
+    deposit = 0,
+    debt = 0,
+    back_amount = 0
+WHERE id = 406 AND tenant_id = 100 AND sub_type = '销售退货';
+
 -- 采购退货已由后续收款单结算，业务单本身不能再次计入账户余额。
 UPDATE jsh_depot_head
 SET link_number = 'PO-20260510-001', change_amount = 0, total_price = 12000,

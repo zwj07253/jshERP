@@ -630,6 +630,22 @@ public class ExceptionConstants {
     public static final int DEPOT_DATA_PERMISSION_CODE = 8500089;
     public static final String DEPOT_DATA_PERMISSION_MSG = "抱歉，当前用户没有所选仓库的数据权限";
 
+    //销售退货-关联销售出库不合法
+    public static final int DEPOT_HEAD_SALES_RETURN_SOURCE_CODE = 8500090;
+    public static final String DEPOT_HEAD_SALES_RETURN_SOURCE_MSG = "抱歉，关联的销售出库单不存在、状态不可用或客户不一致";
+    //销售退货-关联明细不合法
+    public static final int DEPOT_HEAD_SALES_RETURN_DETAIL_CODE = 8500091;
+    public static final String DEPOT_HEAD_SALES_RETURN_DETAIL_MSG = "抱歉，销售退货明细与关联销售出库不一致";
+    //销售退货-累计数量超过销售出库数量
+    public static final int DEPOT_HEAD_SALES_RETURN_OVER_CODE = 8500092;
+    public static final String DEPOT_HEAD_SALES_RETURN_OVER_MSG = "抱歉，商品条码:%s的累计销售退货数量不能超过销售出库数量";
+    //销售退货-序列号与来源不一致
+    public static final int DEPOT_HEAD_SALES_RETURN_SERIAL_CODE = 8500093;
+    public static final String DEPOT_HEAD_SALES_RETURN_SERIAL_MSG = "抱歉，销售退货序列号:%s不属于关联销售出库明细";
+    //销售退货-已关联财务单据
+    public static final int DEPOT_HEAD_SALES_RETURN_HAS_FINANCIAL_CODE = 8500094;
+    public static final String DEPOT_HEAD_SALES_RETURN_HAS_FINANCIAL_MSG = "抱歉，该销售退货单已关联退款或收付款单，不能%s";
+
 
     /**
      *  单据明细信息

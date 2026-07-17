@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @DisplayName("P0: 销售订单闭环校验")
@@ -156,6 +157,90 @@ public class P0SalesOrderValidationTest extends ApiTestBase {
         }
     }
 
+    @Test
+    @DisplayName("销售退货校验来源、累计数量并由服务端重算金额")
+    void validateSalesReturnSourceQuantityAndAmount() {
+        assumeTrue(hasBaseData(), "缺少销售退货测试基础数据");
+        String outboundNumber = generateNumber("XSCK");
+        Long outboundId = null;
+        Long returnId = null;
+        Long standaloneReturnId = null;
+        try {
+            assertSuccess(submitSalesOutbound(outboundNumber, null, null,
+                    2, 100, "1"));
+            outboundId = getHeadId(outboundNumber);
+            Long outboundItemId = getFirstDetail(outboundId).getLong("id");
+
+            assertCode(submitSalesReturn(generateNumber("XSTH"), customerId, outboundNumber,
+                    outboundItemId + 999999, 1, 999, 100, "0"),
+                    ExceptionConstants.DEPOT_HEAD_SALES_RETURN_DETAIL_CODE);
+            assertCode(submitSalesReturn(generateNumber("XSTH"), customerId, outboundNumber,
+                    outboundItemId, 3, 999, 300, "0"),
+                    ExceptionConstants.DEPOT_HEAD_SALES_RETURN_OVER_CODE);
+
+            String returnNumber = generateNumber("XSTH");
+            assertSuccess(submitSalesReturn(returnNumber, customerId, outboundNumber,
+                    outboundItemId, 1, 999, 100, "0"));
+            returnId = getHeadId(returnNumber);
+            JSONObject returnHead = getRawHead(returnId);
+            JSONObject returnDetail = getFirstDetail(returnId);
+            assertEquals(0, returnHead.getBigDecimal("totalPrice").compareTo(new BigDecimal("-100.00")));
+            assertEquals(0, returnHead.getBigDecimal("discountLastMoney").compareTo(new BigDecimal("100.00")));
+            assertEquals(0, returnHead.getBigDecimal("changeAmount").compareTo(new BigDecimal("-100.00")));
+            assertEquals(0, returnHead.getBigDecimal("debt").compareTo(BigDecimal.ZERO));
+            assertEquals(unit, returnDetail.getString("unit"));
+            assertEquals(0, returnDetail.getBigDecimal("unitPrice").compareTo(new BigDecimal("100.000000")));
+            assertEquals(0, returnDetail.getBigDecimal("allPrice").compareTo(new BigDecimal("100.00")));
+
+            assertCode(setDepotHeadStatus(outboundId, "0"),
+                    ExceptionConstants.DEPOT_HEAD_SALES_OUT_HAS_RETURN_CODE);
+
+            JSONObject renamedHead = getRawHead(returnId);
+            renamedHead.put("number", generateNumber("XSTH"));
+            assertCode(updateBill(renamedHead, returnDetail),
+                    ExceptionConstants.DEPOT_HEAD_SALES_LINK_CHANGE_CODE);
+
+            JSONObject relinkedHead = getRawHead(returnId);
+            relinkedHead.put("linkNumber", "不存在的销售出库单");
+            assertCode(updateBill(relinkedHead, returnDetail),
+                    ExceptionConstants.DEPOT_HEAD_SALES_LINK_CHANGE_CODE);
+
+            auditDepotHead(returnId);
+            unauditDepotHead(returnId);
+
+            String standaloneNumber = generateNumber("XSTH");
+            assertSuccess(submitSalesReturn(standaloneNumber, customerId, null,
+                    outboundItemId, 1, 80, 80, "0"));
+            standaloneReturnId = getHeadId(standaloneNumber);
+            assertNull(getFirstDetail(standaloneReturnId).getLong("linkId"),
+                    "无关联销售退货必须清除复制残留的明细关联ID");
+        } finally {
+            if (returnId != null && "1".equals(getRawHead(returnId).getString("status"))) {
+                unauditDepotHead(returnId);
+            }
+            deleteIfPresent(returnId);
+            deleteIfPresent(standaloneReturnId);
+            if (outboundId != null && "1".equals(getRawHead(outboundId).getString("status"))) {
+                unauditDepotHead(outboundId);
+            }
+            deleteIfPresent(outboundId);
+        }
+    }
+
+    @Test
+    @DisplayName("销售退货拒绝伪造状态、无效客户和非法退款金额")
+    void rejectSalesReturnForgedStateCustomerAndAmount() {
+        assumeTrue(hasBaseData(), "缺少销售退货测试基础数据");
+        assertCode(submitSalesReturn(generateNumber("XSTH"), customerId, null,
+                null, 1, 100, 100, "2"), ExceptionConstants.DEPOT_HEAD_SALES_STATUS_CODE);
+        assertCode(submitSalesReturn(generateNumber("XSTH"), supplierId, null,
+                null, 1, 100, 100, "0"), ExceptionConstants.DEPOT_HEAD_SALES_CUSTOMER_CODE);
+        assertCode(submitSalesReturn(generateNumber("XSTH"), customerId, null,
+                null, 1, 100, 1000, "0"), ExceptionConstants.DEPOT_HEAD_SALES_AMOUNT_CODE);
+        assertCode(submitSalesReturn(generateNumber("XSTH"), customerId, null,
+                null, 1, -100, 0, "0"), ExceptionConstants.DEPOT_HEAD_SALES_AMOUNT_CODE);
+    }
+
     private boolean hasBaseData() {
         return barCode != null && unit != null && customerId != null && supplierId != null
                 && depotId != null && accountId != null;
@@ -201,6 +286,24 @@ public class P0SalesOrderValidationTest extends ApiTestBase {
         info.put("changeAmount", quantity * 100);
         info.put("deposit", 0);
         info.put("totalPrice", quantity * submittedPrice);
+        info.put("status", status);
+        return submitBill(info, buildItem(linkId, quantity, submittedPrice,
+                quantity * submittedPrice, depotId));
+    }
+
+    private Response submitSalesReturn(String number, Long organId, String linkNumber, Long linkId,
+                                       double quantity, double submittedPrice, double refund, String status) {
+        JSONObject info = new JSONObject();
+        info.put("number", number);
+        info.put("type", "入库");
+        info.put("subType", "销售退货");
+        info.put("organId", organId);
+        info.put("accountId", accountId);
+        info.put("linkNumber", linkNumber);
+        info.put("changeAmount", 0 - refund);
+        info.put("discount", 0);
+        info.put("otherMoney", 0);
+        info.put("totalPrice", 0 - quantity * submittedPrice);
         info.put("status", status);
         return submitBill(info, buildItem(linkId, quantity, submittedPrice,
                 quantity * submittedPrice, depotId));
