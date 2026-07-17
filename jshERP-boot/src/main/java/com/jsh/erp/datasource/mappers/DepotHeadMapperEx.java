@@ -15,6 +15,8 @@ import java.util.List;
  * @Date: 2019/1/25 14:50
  */
 public interface DepotHeadMapperEx {
+    DepotHead lockDepotHeadByNumber(@Param("number") String number);
+
     List<DepotHeadVo4List> selectByConditionDepotHead(
             @Param("type") String type,
             @Param("subType") String subType,

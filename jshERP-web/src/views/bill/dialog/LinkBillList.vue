@@ -226,9 +226,12 @@
         this.queryParam.type = type
         this.queryParam.subType = subType
         this.queryParam.status = status
+        this.queryParam.purchaseStatus = ''
         this.model = Object.assign({}, {});
         this.visible = true;
+        this.selectedRowKeys = []
         this.selectedDetailRowKeys = []
+        this.selectBillRows = []
         this.initColumns(subType, organType)
         this.loadData(1)
       },
@@ -241,7 +244,9 @@
         this.queryParam.purchaseStatus = purchaseStatus
         this.model = Object.assign({}, {});
         this.visible = true;
+        this.selectedRowKeys = []
         this.selectedDetailRowKeys = []
+        this.selectBillRows = []
         this.initColumns(subType, organType)
         this.loadData(1)
       },

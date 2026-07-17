@@ -29,7 +29,14 @@ public class P0SalesTest extends ApiTestBase {
         Response matResp = authReqGet().param("q", "").param("page", 1).param("rows", 10).get(CONTEXT + "/material/findBySelect");
         JSONObject matData = JSONObject.parseObject(matResp.body().asString());
         if (matData.getLong("total") > 0) {
-            materialExtendId = matData.getJSONArray("rows").getJSONObject(0).getLong("id");
+            for (int index = 0; index < matData.getJSONArray("rows").size(); index++) {
+                JSONObject material = matData.getJSONArray("rows").getJSONObject(index);
+                if (!"1".equals(material.getString("enableBatchNumber"))
+                        && !"1".equals(material.getString("enableSerialNumber"))) {
+                    materialExtendId = material.getLong("id");
+                    break;
+                }
+            }
         }
 
         // 获取仓库

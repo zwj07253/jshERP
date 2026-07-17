@@ -590,6 +590,30 @@ public class ExceptionConstants {
     //采购退货-序列号与来源不一致
     public static final int DEPOT_HEAD_PURCHASE_RETURN_SERIAL_CODE = 8500076;
     public static final String DEPOT_HEAD_PURCHASE_RETURN_SERIAL_MSG = "抱歉，采购退货序列号不属于关联入库明细或所选仓库";
+    //销售订单/销售出库-必须选择有效客户
+    public static final int DEPOT_HEAD_SALES_CUSTOMER_CODE = 8500077;
+    public static final String DEPOT_HEAD_SALES_CUSTOMER_MSG = "抱歉，销售业务必须选择有效且已启用的客户";
+    //销售订单/销售出库-金额不合法
+    public static final int DEPOT_HEAD_SALES_AMOUNT_CODE = 8500078;
+    public static final String DEPOT_HEAD_SALES_AMOUNT_MSG = "抱歉，销售单据的价格、税率、折扣、订金或收款金额不合法";
+    //销售订单/销售出库-状态不允许由客户端伪造
+    public static final int DEPOT_HEAD_SALES_STATUS_CODE = 8500079;
+    public static final String DEPOT_HEAD_SALES_STATUS_MSG = "抱歉，销售单据状态不合法，请通过保存、审核或业务流转操作变更状态";
+    //销售订单/销售出库-保存后不能修改单号或关联来源
+    public static final int DEPOT_HEAD_SALES_LINK_CHANGE_CODE = 8500080;
+    public static final String DEPOT_HEAD_SALES_LINK_CHANGE_MSG = "抱歉，销售单据保存后不能修改单据编号、类型或关联销售订单";
+    //销售出库-来源订单不合法
+    public static final int DEPOT_HEAD_SALES_OUT_SOURCE_CODE = 8500081;
+    public static final String DEPOT_HEAD_SALES_OUT_SOURCE_MSG = "抱歉，关联的销售订单不存在、状态不可用或客户不一致";
+    //销售出库-来源明细不合法
+    public static final int DEPOT_HEAD_SALES_OUT_DETAIL_CODE = 8500082;
+    public static final String DEPOT_HEAD_SALES_OUT_DETAIL_MSG = "抱歉，销售出库明细不属于关联的销售订单";
+    //销售出库-累计数量超过订单
+    public static final int DEPOT_HEAD_SALES_OUT_OVER_CODE = 8500083;
+    public static final String DEPOT_HEAD_SALES_OUT_OVER_MSG = "抱歉，商品条码:%s的累计出库数量超过销售订单数量";
+    //销售业务-数据权限
+    public static final int DEPOT_HEAD_SALES_DATA_PERMISSION_CODE = 8500084;
+    public static final String DEPOT_HEAD_SALES_DATA_PERMISSION_MSG = "抱歉，当前用户没有该销售单据、客户或仓库的数据权限";
 
 
     /**

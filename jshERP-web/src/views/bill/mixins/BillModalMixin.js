@@ -207,7 +207,7 @@ export const BillModalMixin = {
     },
     initSupplier(isChecked) {
       let that = this;
-      findBySelectSup({organId: this.model.organId, limit:1}).then((res)=>{
+      return findBySelectSup({organId: this.model.organId, limit:1}).then((res)=>{
         if(res) {
           that.supList = res
           if(isChecked && res.length>0) {
@@ -218,7 +218,7 @@ export const BillModalMixin = {
     },
     initCustomer(isChecked) {
       let that = this;
-      findBySelectCus({organId: this.model.organId, limit:1}).then((res)=>{
+      return findBySelectCus({organId: this.model.organId, limit:1}).then((res)=>{
         if(res) {
           that.cusList = res
           if(isChecked && res.length>0) {
@@ -229,7 +229,7 @@ export const BillModalMixin = {
     },
     initRetail(isChecked) {
       let that = this;
-      findBySelectRetail({organId: this.model.organId, limit:1}).then((res)=>{
+      return findBySelectRetail({organId: this.model.organId, limit:1}).then((res)=>{
         if(res) {
           that.retailList = res
           if(isChecked && res.length>0) {
@@ -240,7 +240,7 @@ export const BillModalMixin = {
     },
     initSalesman() {
       let that = this;
-      getPersonByNumType({type:1}).then((res)=>{
+      return getPersonByNumType({type:1}).then((res)=>{
         if(res) {
           that.personList.options = res;
         }
@@ -268,11 +268,11 @@ export const BillModalMixin = {
     },
     initAccount(isChecked){
       let that = this;
-      getAccount({}).then((res)=>{
+      return getAccount({}).then((res)=>{
         if(res && res.code === 200) {
           let list = res.data.accountList
           let lastId = list.length>0?list[0].id:''
-          getCurrentSystemConfig().then((res) => {
+          return getCurrentSystemConfig().then((res) => {
             if (res.code === 200 && res.data) {
               let multiAccountFlag = res.data.multiAccountFlag
               if(multiAccountFlag==='1') {

@@ -2,6 +2,14 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.jsh.erp.datasource.mappers.DepotHeadMapperEx">
 
+    <select id="lockDepotHeadByNumber" resultMap="com.jsh.erp.datasource.mappers.DepotHeadMapper.BaseResultMap">
+        select <include refid="com.jsh.erp.datasource.mappers.DepotHeadMapper.Base_Column_List" />
+        from jsh_depot_head
+        where number=#{number}
+          and COALESCE(delete_flag,'0') !='1'
+        for update
+    </select>
+
     <resultMap extends="com.jsh.erp.datasource.mappers.DepotHeadMapper.BaseResultMap" id="ResultMapEx" type="com.jsh.erp.datasource.vo.DepotHeadVo4List">
         <result column="depotHeadType" jdbcType="VARCHAR" property="depotHeadType" />
         <result column="OrganName" jdbcType="VARCHAR" property="organName" />

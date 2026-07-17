@@ -409,7 +409,9 @@ public class DepotItemService {
                     && BusinessConstants.SUB_TYPE_PURCHASE.equals(depotHead.getSubType());
             boolean purchaseReturn = BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
                     && BusinessConstants.SUB_TYPE_PURCHASE_RETURN.equals(depotHead.getSubType());
-            boolean purchaseDepotPermission = purchaseInbound || purchaseReturn;
+            boolean salesOutbound = BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
+                    && BusinessConstants.SUB_TYPE_SALES.equals(depotHead.getSubType());
+            boolean purchaseDepotPermission = purchaseInbound || purchaseReturn || salesOutbound;
             Set<Long> allowedPurchaseDepotIds = new HashSet<>();
             User currentUser = userService.getCurrentUser();
             boolean adminUser = currentUser != null && "admin".equals(currentUser.getLoginName());
@@ -635,6 +637,10 @@ public class DepotItemService {
                 if (StringUtil.isExist(rowObj.get("depotId"))) {
                     depotItem.setDepotId(rowObj.getLong("depotId"));
                     if (purchaseDepotPermission && !adminUser && !allowedPurchaseDepotIds.contains(depotItem.getDepotId())) {
+                        if (salesOutbound) {
+                            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_SALES_DATA_PERMISSION_CODE,
+                                    ExceptionConstants.DEPOT_HEAD_SALES_DATA_PERMISSION_MSG);
+                        }
                         if (purchaseReturn) {
                             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_DATA_PERMISSION_CODE,
                                     ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_DATA_PERMISSION_MSG);
@@ -756,9 +762,13 @@ public class DepotItemService {
                     || BusinessConstants.SUB_TYPE_REPLAY.equals(depotHead.getSubType())
                     || BusinessConstants.SUB_TYPE_OTHER.equals(depotHead.getSubType())) {
                 if(StringUtil.isNotEmpty(depotHead.getLinkNumber())) {
-                    //单据状态:是否全部完成 2-全部完成 3-部分完成（针对订单的分批出入库）
-                    String billStatus = getBillStatusByParam(depotHead, depotHead.getLinkNumber(), "normal");
-                    changeBillStatus(depotHead.getLinkNumber(), billStatus);
+                    if (BusinessConstants.SUB_TYPE_SALES.equals(depotHead.getSubType())) {
+                        depotHeadService.recalculateSalesOrderStatus(depotHead.getLinkNumber());
+                    } else {
+                        //单据状态:是否全部完成 2-全部完成 3-部分完成（针对订单的分批出入库）
+                        String billStatus = getBillStatusByParam(depotHead, depotHead.getLinkNumber(), "normal");
+                        changeBillStatus(depotHead.getLinkNumber(), billStatus);
+                    }
                 }
             }
             //当前单据类型为采购订单的逻辑
@@ -801,6 +811,9 @@ public class DepotItemService {
             linkList = depotItemMapperEx.getSourceBillDetailBasicSum(linkStr);
             batchList = depotItemMapperEx.getLinkedBillDetailBasicSum(linkStr, "normal",
                     BusinessConstants.DEPOTHEAD_TYPE_IN, BusinessConstants.SUB_TYPE_PURCHASE);
+        } else if (BusinessConstants.SUB_TYPE_SALES.equals(depotHead.getSubType())) {
+            linkList = depotItemMapperEx.getSourceBillDetailBasicSum(linkStr);
+            batchList = depotItemMapperEx.getAuditedSalesOutboundBasicSum(linkStr);
         } else {
             //兼容其它原有单据链路
             linkList = depotItemMapperEx.getLinkBillDetailMaterialSum(linkStr);

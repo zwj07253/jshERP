@@ -253,6 +253,10 @@ public interface DepotItemMapperEx {
             @Param("linkId") Long linkId,
             @Param("currentHeaderId") Long currentHeaderId);
 
+    BigDecimal getSalesOutboundShippedBasicNumber(
+            @Param("linkId") Long linkId,
+            @Param("currentHeaderId") Long currentHeaderId);
+
     List<DepotItemVoBatchNumberList> getBatchNumberList(
             @Param("number") String number,
             @Param("name") String name,
@@ -282,6 +286,9 @@ public interface DepotItemMapperEx {
             @Param("linkType") String linkType,
             @Param("type") String type,
             @Param("subType") String subType);
+
+    List<DepotItemVo4MaterialAndSum> getAuditedSalesOutboundBasicSum(
+            @Param("linkStr") String linkStr);
 
     Long getCountByMaterialAndBatchNumber(
             @Param("meId") Long meId,

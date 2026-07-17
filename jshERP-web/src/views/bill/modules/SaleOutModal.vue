@@ -374,6 +374,7 @@
         this.changeFormTypes(this.materialTable.columns, 'expirationDate', 0)
         this.changeFormTypes(this.materialTable.columns, 'preNumber', 0)
         this.changeFormTypes(this.materialTable.columns, 'finishNumber', 0)
+        this.salesConfigReady = Promise.all([this.initSystemConfig(), this.initDepot()])
         if (this.action === 'add') {
           this.depositStatus = false
           this.addInit(this.prefixNo)
@@ -383,7 +384,10 @@
             handleIntroJs(this.prefixNo, 1)
             if(this.transferParam && this.transferParam.number) {
               let tp = this.transferParam
-              this.linkBillListOk(tp.list, tp.number, tp.organId, tp.discount, tp.deposit, tp.remark, this.defaultDepotId, tp.accountId, tp.salesMan)
+              this.salesConfigReady.then(() => {
+                this.linkBillListOk(tp.list, tp.number, tp.organId, tp.discount, tp.deposit, tp.remark,
+                  this.defaultDepotId, tp.accountId, tp.salesMan)
+              })
             }
           })
         } else {
@@ -428,10 +432,8 @@
           this.model.tenantId = ''
           this.copyAddInit(this.prefixNo)
         }
-        this.initSystemConfig()
         this.initCustomer(0)
         this.initSalesman()
-        this.initDepot()
         this.initAccount(0)
         this.initPlatform()
         this.initQuickBtn()
@@ -477,7 +479,10 @@
         this.$refs.linkBillList.show('其它', '销售订单', '客户', "1,3")
         this.$refs.linkBillList.title = "请选择销售订单"
       },
-      linkBillListOk(selectBillDetailRows, linkNumber, organId, discount, deposit, remark, depotId, accountId, salesMan) {
+      async linkBillListOk(selectBillDetailRows, linkNumber, organId, discount, deposit, remark, depotId, accountId, salesMan) {
+        if (this.salesConfigReady) {
+          await this.salesConfigReady
+        }
         let that = this
         this.rowCanEdit = false
         this.materialTable.columns[1].type = FormTypes.normal
@@ -550,9 +555,9 @@
           })
           //判断后进行仓库的切换
           if(depotId) {
-            setTimeout(function () {
+            this.$nextTick(function () {
               that.batchSetDepotModalFormOk(depotId)
-            },1000)
+            })
           }
         }
       },
