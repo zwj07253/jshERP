@@ -140,10 +140,15 @@
             and di.depot_id=#{depotId}::bigint
         </if>
         <if test="depotArray != null and depotArray !=''">
-            and di.depot_id in (
-            <foreach collection="depotArray" item="depotId" separator=",">
-                #{depotId}::bigint
-            </foreach>
+            and not exists (
+                select 1 from jsh_depot_item denied_di
+                where denied_di.header_id=dh.id
+                  and COALESCE(denied_di.delete_flag,'0') !='1'
+                  and (denied_di.depot_id is null or denied_di.depot_id not in (
+                    <foreach collection="depotArray" item="depotId" separator=",">
+                        #{depotId}::bigint
+                    </foreach>
+                  ))
             )
         </if>
         <if test="creatorArray != null">
@@ -154,8 +159,8 @@
             )
         </if>
         <if test="accountId != null">
-            <bind name="bindAccountId" value="'%'+accountId+'%'"/>
-            and (dh.account_id=#{accountId} or dh.account_id_list like #{bindAccountId})
+            and (dh.account_id=#{accountId}
+                or #{accountId}::text = any(string_to_array(replace(COALESCE(dh.account_id_list,''),' ',''), ',')))
         </if>
         <if test="hasDebt != null and hasDebt ==1">
             and

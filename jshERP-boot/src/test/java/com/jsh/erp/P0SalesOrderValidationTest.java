@@ -63,6 +63,8 @@ public class P0SalesOrderValidationTest extends ApiTestBase {
                 1, 100, 9999, 0, "2"), ExceptionConstants.DEPOT_HEAD_SALES_STATUS_CODE);
         assertCode(submitSalesOrder(generateNumber("XSDD"), customerId, null,
                 1, 100, 9999, 10, "0"), ExceptionConstants.DEPOT_HEAD_ACCOUNT_FAILED_CODE);
+        assertCode(submitSalesOutbound(generateNumber("XSCK"), null, null, accountId + 999999,
+                1, 100, "0"), ExceptionConstants.DEPOT_HEAD_SALES_ACCOUNT_INVALID_CODE);
 
         String number = generateNumber("XSDD");
         Long orderId = null;
@@ -72,9 +74,14 @@ public class P0SalesOrderValidationTest extends ApiTestBase {
             orderId = getHeadId(number);
             JSONObject head = getRawHead(orderId);
             JSONObject detail = getFirstDetail(orderId);
+            Long originalCreator = head.getLong("creator");
             assertEquals(0, head.getBigDecimal("totalPrice").compareTo(new BigDecimal("200.00")));
             assertEquals(0, head.getBigDecimal("changeAmount").compareTo(new BigDecimal("10.00")));
             assertEquals(0, detail.getBigDecimal("allPrice").compareTo(new BigDecimal("200.00")));
+
+            head.put("creator", 99999999L);
+            assertSuccess(updateBill(head, detail));
+            assertEquals(originalCreator, getRawHead(orderId).getLong("creator"), "编辑不能覆盖服务端维护字段");
 
             head.put("number", generateNumber("XSDD"));
             assertCode(updateBill(head, detail), ExceptionConstants.DEPOT_HEAD_SALES_LINK_CHANGE_CODE);
@@ -109,6 +116,8 @@ public class P0SalesOrderValidationTest extends ApiTestBase {
             assertEquals(0, getFirstDetail(outboundId).getBigDecimal("unitPrice")
                     .compareTo(new BigDecimal("100.000000")));
             assertEquals("1", getRawHead(orderId).getString("status"), "未审核出库不能改变订单进度");
+            assertCode(setDepotHeadStatus(orderId, "0"),
+                    ExceptionConstants.DEPOT_HEAD_SALES_ORDER_HAS_OUTBOUND_CODE);
 
             auditDepotHead(outboundId);
             assertEquals("3", getRawHead(orderId).getString("status"));
@@ -177,12 +186,17 @@ public class P0SalesOrderValidationTest extends ApiTestBase {
 
     private Response submitSalesOutbound(String number, String linkNumber, Long linkId,
                                          double quantity, double submittedPrice, String status) {
+        return submitSalesOutbound(number, linkNumber, linkId, accountId, quantity, submittedPrice, status);
+    }
+
+    private Response submitSalesOutbound(String number, String linkNumber, Long linkId, Long settlementAccountId,
+                                         double quantity, double submittedPrice, String status) {
         JSONObject info = new JSONObject();
         info.put("number", number);
         info.put("type", "出库");
         info.put("subType", "销售");
         info.put("organId", customerId);
-        info.put("accountId", accountId);
+        info.put("accountId", settlementAccountId);
         info.put("linkNumber", linkNumber);
         info.put("changeAmount", quantity * 100);
         info.put("deposit", 0);
@@ -190,6 +204,13 @@ public class P0SalesOrderValidationTest extends ApiTestBase {
         info.put("status", status);
         return submitBill(info, buildItem(linkId, quantity, submittedPrice,
                 quantity * submittedPrice, depotId));
+    }
+
+    private Response setDepotHeadStatus(Long id, String status) {
+        JSONObject body = new JSONObject();
+        body.put("status", status);
+        body.put("ids", String.valueOf(id));
+        return authReq().body(body.toJSONString()).post(CONTEXT + "/depotHead/batchSetStatus");
     }
 
     private JSONObject buildItem(Long linkId, double quantity, double unitPrice,

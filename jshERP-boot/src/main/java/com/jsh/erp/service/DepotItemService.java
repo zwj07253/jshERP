@@ -1604,9 +1604,40 @@ public class DepotItemService {
      * @throws Exception
      */
     public void checkMaterialStock(String number, Long headerId) throws Exception {
-        List<DepotItem> depotItemList = getListByHeaderId(headerId);
+        DepotHead depotHead = new DepotHead();
+        depotHead.setId(headerId);
+        depotHead.setNumber(number);
+        checkMaterialStock(Collections.singletonList(depotHead));
+    }
+
+    /**
+     * 批量审核时在同一个库存口径内累计所有待审核出库数量，避免多张单据分别校验后造成负库存。
+     */
+    public void checkMaterialStock(List<DepotHead> depotHeadList) throws Exception {
         Map<String, BigDecimal> outboundQuantityMap = new HashMap<>();
         Set<String> lockedStockKeys = new HashSet<>();
+        for (DepotHead depotHead : depotHeadList) {
+            List<DepotItem> depotItemList = getListByHeaderId(depotHead.getId());
+            checkMaterialStock(depotHead.getNumber(), depotItemList, outboundQuantityMap, lockedStockKeys);
+        }
+    }
+
+    public List<DepotItemVo4WithInfoEx> getSaleOutSummary(String materialParam, String beginTime, String endTime,
+                                                          String[] creatorArray, Long organId, String[] organArray,
+                                                          List<Long> categoryList, List<Long> depotList, Boolean forceFlag,
+                                                          Integer offset, Integer rows) throws Exception {
+        try {
+            return depotItemMapperEx.getSaleOutSummary(materialParam, beginTime, endTime, creatorArray, organId,
+                    organArray, categoryList, depotList, forceFlag, offset, rows);
+        } catch (Exception e) {
+            JshException.readFail(logger, e);
+            return new ArrayList<>();
+        }
+    }
+
+    private void checkMaterialStock(String number, List<DepotItem> depotItemList,
+                                    Map<String, BigDecimal> outboundQuantityMap,
+                                    Set<String> lockedStockKeys) throws Exception {
         for (DepotItem depotItem : depotItemList) {
             Material material = materialService.getMaterial(depotItem.getMaterialId());
             MaterialExtend materialExtend = materialExtendService.getMaterialExtend(depotItem.getMaterialExtendId());

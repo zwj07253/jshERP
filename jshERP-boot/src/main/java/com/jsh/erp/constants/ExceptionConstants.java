@@ -615,6 +615,21 @@ public class ExceptionConstants {
     public static final int DEPOT_HEAD_SALES_DATA_PERMISSION_CODE = 8500084;
     public static final String DEPOT_HEAD_SALES_DATA_PERMISSION_MSG = "抱歉，当前用户没有该销售单据、客户或仓库的数据权限";
 
+    public static final int DEPOT_HEAD_SALES_ORDER_HAS_OUTBOUND_CODE = 8500085;
+    public static final String DEPOT_HEAD_SALES_ORDER_HAS_OUTBOUND_MSG = "抱歉，该销售订单已关联销售出库单，不能%s";
+
+    public static final int DEPOT_HEAD_SALES_OUT_HAS_RETURN_CODE = 8500086;
+    public static final String DEPOT_HEAD_SALES_OUT_HAS_RETURN_MSG = "抱歉，该销售出库单已关联销售退货单，不能%s";
+
+    public static final int DEPOT_HEAD_SALES_OUT_HAS_FINANCIAL_CODE = 8500087;
+    public static final String DEPOT_HEAD_SALES_OUT_HAS_FINANCIAL_MSG = "抱歉，该销售出库单已关联收款单，不能%s";
+
+    public static final int DEPOT_HEAD_SALES_ACCOUNT_INVALID_CODE = 8500088;
+    public static final String DEPOT_HEAD_SALES_ACCOUNT_INVALID_MSG = "抱歉，销售单据的结算账户不存在、已停用或多账户数据不合法";
+
+    public static final int DEPOT_DATA_PERMISSION_CODE = 8500089;
+    public static final String DEPOT_DATA_PERMISSION_MSG = "抱歉，当前用户没有所选仓库的数据权限";
+
 
     /**
      *  单据明细信息

@@ -438,6 +438,8 @@ public class DepotHeadService {
             checkBillButtonPermission(depotHead, "1", "新增、编辑或删除");
             checkPurchaseBillDataPermission(depotHead);
             checkPurchaseInboundHasNoReturn(depotHead, "删除");
+            checkSalesOrderHasNoOutbound(depotHead, "删除");
+            checkSalesOutboundHasNoDownstream(depotHead, "删除");
             //只有未审核的单据才能被删除
             if(!"0".equals(depotHead.getStatus())) {
                 throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_UN_AUDIT_DELETE_FAILED_CODE,
@@ -753,6 +755,7 @@ public class DepotHeadService {
         List<Long> dhIds = new ArrayList<>();
         List<String> noList = new ArrayList<>();
         Set<String> salesOrderNumbers = new HashSet<>();
+        List<DepotHead> stockCheckHeadList = new ArrayList<>();
         List<Long> ids = StringUtil.strToLongList(depotHeadIDs);
         for(Long id: ids) {
             DepotHead depotHead = getDepotHead(id);
@@ -763,6 +766,8 @@ public class DepotHeadService {
             if("0".equals(status)){
                 checkBillButtonPermission(depotHead, "7", "反审核");
                 checkPurchaseInboundHasNoReturn(depotHead, "反审核");
+                checkSalesOrderHasNoOutbound(depotHead, "反审核");
+                checkSalesOutboundHasNoDownstream(depotHead, "反审核");
                 //进行反审核操作
                 if("1".equals(depotHead.getStatus())
                         && (isPurchaseReturn(depotHead) || "0".equals(depotHead.getPurchaseStatus()))) {
@@ -782,6 +787,7 @@ public class DepotHeadService {
                 checkBillButtonPermission(depotHead, "2", "审核");
                 //进行审核操作
                 if("0".equals(depotHead.getStatus())) {
+                    validateSalesOutboundBeforeAudit(depotHead);
                     dhIds.add(id);
                     noList.add(depotHead.getNumber());
                 } else {
@@ -799,17 +805,20 @@ public class DepotHeadService {
                     if(inOutManageFlag) {
                         if(retailOut || ("出库".equals(depotHead.getType()) && "其它".equals(depotHead.getSubType()))) {
                             //校验单据中的商品库存是否不足
-                            depotItemService.checkMaterialStock(depotHead.getNumber(), depotHead.getId());
+                            stockCheckHeadList.add(depotHead);
                         }
                     } else {
                         if(retailOut || ("出库".equals(depotHead.getType()) && "销售".equals(depotHead.getSubType()))
                                 || ("出库".equals(depotHead.getType()) && "采购退货".equals(depotHead.getSubType()))) {
                             //校验单据中的商品库存是否不足
-                            depotItemService.checkMaterialStock(depotHead.getNumber(), depotHead.getId());
+                            stockCheckHeadList.add(depotHead);
                         }
                     }
                 }
             }
+        }
+        if (!stockCheckHeadList.isEmpty()) {
+            depotItemService.checkMaterialStock(stockCheckHeadList);
         }
         if(!dhIds.isEmpty()) {
             DepotHead depotHead = new DepotHead();
@@ -1293,7 +1302,7 @@ public class DepotHeadService {
         //判断用户是否已经登录过，登录过不再处理
         User userInfo=userService.getCurrentUser();
         //通过redis去校验重复
-        checkExistByRedis(userInfo, depotHead);
+        checkExistByRedis(userInfo, depotHead, "add");
         //校验单号是否重复
         if(checkIsBillNumberExist(0L, depotHead.getNumber())>0) {
             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_BILL_NUMBER_EXIST_CODE,
@@ -1430,7 +1439,7 @@ public class DepotHeadService {
         //判断用户是否已经登录过，登录过不再处理
         User userInfo=userService.getCurrentUser();
         //通过redis去校验重复
-        checkExistByRedis(userInfo, depotHead);
+        checkExistByRedis(userInfo, depotHead, "update");
         //校验单号是否重复
         if(checkIsBillNumberExist(depotHead.getId(), depotHead.getNumber())>0) {
             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_BILL_NUMBER_EXIST_CODE,
@@ -1485,6 +1494,14 @@ public class DepotHeadService {
             }
         }
         validatePrepaidBalance(depotHead, previousDepotHead);
+        // 以下字段由服务端维护，编辑接口不得通过请求体覆盖。
+        depotHead.setCreator(previousDepotHead.getCreator());
+        depotHead.setCreateTime(previousDepotHead.getCreateTime());
+        depotHead.setTenantId(previousDepotHead.getTenantId());
+        depotHead.setDeleteFlag(previousDepotHead.getDeleteFlag());
+        depotHead.setSource(previousDepotHead.getSource());
+        depotHead.setDefaultNumber(previousDepotHead.getDefaultNumber());
+        depotHead.setLastDebt(previousDepotHead.getLastDebt());
         depotHeadMapper.updateByPrimaryKeySelective(depotHead);
         //如果存在多账户结算需要将原账户的id置空
         if(StringUtil.isNotEmpty(depotHead.getAccountIdList())) {
@@ -1506,8 +1523,8 @@ public class DepotHeadService {
      * @param userInfo
      * @param depotHead
      */
-    private void checkExistByRedis(User userInfo, DepotHead depotHead) {
-        String keyNo = userInfo.getLoginName() + "_" + depotHead.getNumber();
+    private void checkExistByRedis(User userInfo, DepotHead depotHead, String operation) {
+        String keyNo = userInfo.getLoginName() + "_" + operation + "_" + depotHead.getNumber();
         String keyValue = redisService.getCacheObject(keyNo);
         if(StringUtil.isNotEmpty(keyValue)) {
             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_SUBMIT_REPEAT_FAILED_CODE,
@@ -1721,6 +1738,40 @@ public class DepotHeadService {
         }
     }
 
+    private void checkSalesOrderHasNoOutbound(DepotHead depotHead, String operationName) {
+        if (!isSalesOrder(depotHead) || StringUtil.isEmpty(depotHead.getNumber())) {
+            return;
+        }
+        DepotHeadExample example = new DepotHeadExample();
+        example.createCriteria().andLinkNumberEqualTo(depotHead.getNumber())
+                .andTypeEqualTo(BusinessConstants.DEPOTHEAD_TYPE_OUT)
+                .andSubTypeEqualTo(BusinessConstants.SUB_TYPE_SALES)
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        if (!depotHeadMapper.selectByExample(example).isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_SALES_ORDER_HAS_OUTBOUND_CODE,
+                    String.format(ExceptionConstants.DEPOT_HEAD_SALES_ORDER_HAS_OUTBOUND_MSG, operationName));
+        }
+    }
+
+    private void checkSalesOutboundHasNoDownstream(DepotHead depotHead, String operationName) {
+        if (!isSalesOutbound(depotHead) || depotHead.getId() == null) {
+            return;
+        }
+        DepotHeadExample returnExample = new DepotHeadExample();
+        returnExample.createCriteria().andLinkNumberEqualTo(depotHead.getNumber())
+                .andTypeEqualTo(BusinessConstants.DEPOTHEAD_TYPE_IN)
+                .andSubTypeEqualTo(BusinessConstants.SUB_TYPE_SALES_RETURN)
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        if (!depotHeadMapper.selectByExample(returnExample).isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_SALES_OUT_HAS_RETURN_CODE,
+                    String.format(ExceptionConstants.DEPOT_HEAD_SALES_OUT_HAS_RETURN_MSG, operationName));
+        }
+        if (!accountHeadService.getFinancialBillNoByBillId(depotHead.getId()).isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_SALES_OUT_HAS_FINANCIAL_CODE,
+                    String.format(ExceptionConstants.DEPOT_HEAD_SALES_OUT_HAS_FINANCIAL_MSG, operationName));
+        }
+    }
+
     private void validateDepotHeadBusinessType(DepotHead depotHead) {
         if (depotHead == null) {
             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_BILL_TYPE_INVALID_CODE,
@@ -1803,7 +1854,9 @@ public class DepotHeadService {
             validateSalesCustomer(depotHead);
             depotHead.setLinkNumber(null);
             depotHead.setLinkApply(null);
-            return normalizeSalesFinancialFields(depotHead, rows, true);
+            rows = normalizeSalesFinancialFields(depotHead, rows, true);
+            validateSalesSettlementAccounts(depotHead, false);
+            return rows;
         }
         if (isSalesOutbound(depotHead)) {
             validateSalesCustomer(depotHead);
@@ -1812,7 +1865,9 @@ public class DepotHeadService {
             } else {
                 rows = clearSalesRowLinks(rows);
             }
-            return normalizeSalesFinancialFields(depotHead, rows, false);
+            rows = normalizeSalesFinancialFields(depotHead, rows, false);
+            validateSalesSettlementAccounts(depotHead, true);
+            return rows;
         }
         return rows;
     }
@@ -2423,6 +2478,69 @@ public class DepotHeadService {
         checkSalesCustomerPermission(depotHead.getOrganId());
     }
 
+    private void validateSalesSettlementAccounts(DepotHead depotHead, boolean accountRequired) throws Exception {
+        String accountIdList = normalizeListValue(depotHead.getAccountIdList());
+        String accountMoneyList = normalizeListValue(depotHead.getAccountMoneyList());
+        depotHead.setAccountIdList(StringUtil.isEmpty(accountIdList) ? null : accountIdList);
+        depotHead.setAccountMoneyList(StringUtil.isEmpty(accountMoneyList) ? null : accountMoneyList);
+
+        if (StringUtil.isNotEmpty(accountIdList)) {
+            if (StringUtil.isEmpty(accountMoneyList)) {
+                throwSalesAccountInvalid();
+            }
+            String[] idArray = accountIdList.split(",", -1);
+            String[] moneyArray = accountMoneyList.split(",", -1);
+            if (idArray.length != moneyArray.length) {
+                throwSalesAccountInvalid();
+            }
+            Set<Long> accountIds = new HashSet<>();
+            for (int index = 0; index < idArray.length; index++) {
+                try {
+                    Long accountId = Long.valueOf(idArray[index].trim());
+                    if (!accountIds.add(accountId)) {
+                        throwSalesAccountInvalid();
+                    }
+                    validateEnabledAccount(accountId);
+                    BigDecimal accountMoney = new BigDecimal(moneyArray[index].trim());
+                    if (accountMoney.compareTo(BigDecimal.ZERO) < 0) {
+                        throwSalesAccountInvalid();
+                    }
+                } catch (NumberFormatException exception) {
+                    throwSalesAccountInvalid();
+                }
+            }
+            // 多账户结算以列表为准，避免同一笔款项同时落入单账户和多账户。
+            depotHead.setAccountId(null);
+        } else {
+            if (StringUtil.isNotEmpty(accountMoneyList)) {
+                throwSalesAccountInvalid();
+            }
+            if (depotHead.getAccountId() != null) {
+                validateEnabledAccount(depotHead.getAccountId());
+            } else if (accountRequired) {
+                throwSalesAccountInvalid();
+            }
+        }
+    }
+
+    private String normalizeListValue(String value) {
+        return value == null ? null : value.replace("[", "").replace("]", "")
+                .replace("\"", "").replace(" ", "").trim();
+    }
+
+    private void validateEnabledAccount(Long accountId) throws Exception {
+        Account account = accountId == null ? null : accountService.getAccount(accountId);
+        if (account == null || !Boolean.TRUE.equals(account.getEnabled())
+                || BusinessConstants.DELETE_FLAG_DELETED.equals(account.getDeleteFlag())) {
+            throwSalesAccountInvalid();
+        }
+    }
+
+    private void throwSalesAccountInvalid() {
+        throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_SALES_ACCOUNT_INVALID_CODE,
+                ExceptionConstants.DEPOT_HEAD_SALES_ACCOUNT_INVALID_MSG);
+    }
+
     private void checkSalesCustomerPermission(Long customerId) throws Exception {
         if (isCurrentUserAdmin() || !systemConfigService.getCustomerFlag()) {
             return;
@@ -2517,6 +2635,43 @@ public class DepotHeadService {
             detailArray.set(detailIndex, detail);
         }
         return detailArray.toJSONString();
+    }
+
+    /**
+     * 草稿保存后源销售订单可能发生状态或内容变化，审核时必须基于数据库中的最新数据再次校验。
+     */
+    private void validateSalesOutboundBeforeAudit(DepotHead depotHead) throws Exception {
+        if (!isSalesOutbound(depotHead)) {
+            return;
+        }
+        validateSalesCustomer(depotHead);
+        validateSalesSettlementAccounts(depotHead, true);
+        if (StringUtil.isEmpty(depotHead.getLinkNumber())) {
+            return;
+        }
+        JSONArray detailArray = new JSONArray();
+        List<DepotItem> detailList = depotItemService.getListByHeaderId(depotHead.getId());
+        for (DepotItem depotItem : detailList) {
+            MaterialExtend materialExtend = depotItem.getMaterialExtendId() == null ? null
+                    : materialExtendService.getMaterialExtend(depotItem.getMaterialExtendId());
+            JSONObject detail = new JSONObject();
+            detail.put("barCode", materialExtend == null ? null : materialExtend.getBarCode());
+            detail.put("operNumber", depotItem.getOperNumber());
+            detail.put("linkId", depotItem.getLinkId());
+            detailArray.add(detail);
+        }
+        validateAndNormalizeSalesOutboundSource(depotHead, detailArray.toJSONString(), depotHead);
+
+        BigDecimal deposit = depotHead.getDeposit() == null ? BigDecimal.ZERO : depotHead.getDeposit();
+        DepotHead sourceHead = getDepotHead(depotHead.getLinkNumber());
+        BigDecimal orderDeposit = sourceHead == null || sourceHead.getChangeAmount() == null
+                ? BigDecimal.ZERO : sourceHead.getChangeAmount().abs();
+        BigDecimal usedDeposit = depotHeadMapperEx.getFinishDepositByNumberExceptCurrent(
+                depotHead.getLinkNumber(), depotHead.getNumber());
+        if (deposit.add(usedDeposit).compareTo(orderDeposit) > 0) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DEPOSIT_OVER_PRE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_DEPOSIT_OVER_PRE_MSG);
+        }
     }
 
     private String normalizeSalesFinancialFields(DepotHead depotHead, String rows, boolean salesOrder)

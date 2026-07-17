@@ -21,7 +21,9 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class DepotService {
@@ -275,16 +277,15 @@ public class DepotService {
      * @throws Exception
      */
     public List<Long> parseDepotList(Long depotId) throws Exception {
+        Set<Long> allowedDepotIds = getAllowedDepotIds();
         List<Long> depotList = new ArrayList<>();
         if(depotId !=null) {
+            if (!allowedDepotIds.contains(depotId)) {
+                throwDepotDataPermissionException();
+            }
             depotList.add(depotId);
         } else {
-            //未选择仓库时默认为当前用户有权限的仓库
-            JSONArray depotArr = findDepotByCurrentUser();
-            for(Object obj: depotArr) {
-                JSONObject object = JSONObject.parseObject(obj.toString());
-                depotList.add(object.getLong("id"));
-            }
+            depotList.addAll(allowedDepotIds);
         }
         return depotList;
     }
@@ -296,20 +297,41 @@ public class DepotService {
      * @throws Exception
      */
     public List<Long> parseDepotListByArr(String[] depotIdArr) throws Exception {
+        Set<Long> allowedDepotIds = getAllowedDepotIds();
         List<Long> depotList = new ArrayList<>();
         if(depotIdArr !=null) {
             for (int i = 0; i < depotIdArr.length; i++) {
-                depotList.add(Long.parseLong(depotIdArr[i]));
+                Long depotId = Long.parseLong(depotIdArr[i]);
+                if (!allowedDepotIds.contains(depotId)) {
+                    throwDepotDataPermissionException();
+                }
+                depotList.add(depotId);
             }
         } else {
-            //未选择仓库时默认为当前用户有权限的仓库
-            JSONArray depotArr = findDepotByCurrentUser();
-            for(Object obj: depotArr) {
-                JSONObject object = JSONObject.parseObject(obj.toString());
-                depotList.add(object.getLong("id"));
-            }
+            depotList.addAll(allowedDepotIds);
         }
         return depotList;
+    }
+
+    private Set<Long> getAllowedDepotIds() throws Exception {
+        Set<Long> depotIds = new HashSet<>();
+        User currentUser = userService.getCurrentUser();
+        if (currentUser != null && "admin".equals(currentUser.getLoginName())) {
+            for (Depot depot : findUserDepot()) {
+                depotIds.add(depot.getId());
+            }
+            return depotIds;
+        }
+        JSONArray depotArr = findDepotByCurrentUser();
+        for (Object obj : depotArr) {
+            depotIds.add(JSONObject.parseObject(obj.toString()).getLong("id"));
+        }
+        return depotIds;
+    }
+
+    private void throwDepotDataPermissionException() {
+        throw new BusinessRunTimeException(ExceptionConstants.DEPOT_DATA_PERMISSION_CODE,
+                ExceptionConstants.DEPOT_DATA_PERMISSION_MSG);
     }
 
     public JSONArray findDepotByCurrentUser() throws Exception {
@@ -329,7 +351,7 @@ public class DepotService {
                         String[] depotArr = depotStr.split(",");
                         for (Depot depot : dataList) {
                             for(String depotId: depotArr) {
-                                if(depot.getId() == Long.parseLong(depotId)){
+                                if(depot.getId().equals(Long.parseLong(depotId))){
                                     JSONObject item = new JSONObject();
                                     item.put("id", depot.getId());
                                     item.put("depotName", depot.getName());
