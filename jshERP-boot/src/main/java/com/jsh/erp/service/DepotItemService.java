@@ -405,6 +405,17 @@ public class DepotItemService {
         deleteDepotItemHeadId(headerId);
         JSONArray rowArr = JSONArray.parseArray(rows);
         if (null != rowArr && rowArr.size()>0) {
+            boolean purchaseInbound = BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())
+                    && BusinessConstants.SUB_TYPE_PURCHASE.equals(depotHead.getSubType());
+            Set<Long> allowedPurchaseDepotIds = new HashSet<>();
+            User currentUser = userService.getCurrentUser();
+            boolean adminUser = currentUser != null && "admin".equals(currentUser.getLoginName());
+            if (purchaseInbound && !adminUser) {
+                JSONArray allowedDepotArray = depotService.findDepotByCurrentUser();
+                for (Object depotObject : allowedDepotArray) {
+                    allowedPurchaseDepotIds.add(JSONObject.parseObject(depotObject.toString()).getLong("id"));
+                }
+            }
             //针对组装单、拆卸单校验是否存在组合件和普通子件
             checkAssembleWithMaterialType(rowArr, depotHead.getSubType());
             //校验多行明细当中是否存在重复的序列号
@@ -620,6 +631,10 @@ public class DepotItemService {
                 }
                 if (StringUtil.isExist(rowObj.get("depotId"))) {
                     depotItem.setDepotId(rowObj.getLong("depotId"));
+                    if (purchaseInbound && !adminUser && !allowedPurchaseDepotIds.contains(depotItem.getDepotId())) {
+                        throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DATA_PERMISSION_CODE,
+                                ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DATA_PERMISSION_MSG);
+                    }
                 } else {
                     if(!BusinessConstants.SUB_TYPE_PURCHASE_APPLY.equals(depotHead.getSubType())
                             && !BusinessConstants.SUB_TYPE_PURCHASE_ORDER.equals(depotHead.getSubType())

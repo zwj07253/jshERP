@@ -204,6 +204,7 @@ public class DepotItemController {
             String priceLimit = userService.getRoleTypeByUserId(userId).getPriceLimit();
             List<DepotItemVo4WithInfoEx> dataList = new ArrayList<>();
             DepotHead depotHead = depotHeadService.getDepotHead(headerId);
+            depotHeadService.checkPurchaseInboundDataPermission(depotHead);
             String billCategory = depotHeadService.getBillCategory(depotHead != null ? depotHead.getSubType() : null);
             if(headerId != 0) {
                 dataList = depotItemService.getDetailList(headerId);

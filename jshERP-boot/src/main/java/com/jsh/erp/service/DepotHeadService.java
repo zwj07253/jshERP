@@ -44,6 +44,7 @@ public class DepotHeadService {
     private static final String RETAIL_BACK_URL = "/bill/retail_back";
     private static final String PURCHASE_APPLY_URL = "/bill/purchase_apply";
     private static final String PURCHASE_ORDER_URL = "/bill/purchase_order";
+    private static final String PURCHASE_IN_URL = "/bill/purchase_in";
 
     @Resource
     private DepotHeadMapper depotHeadMapper;
@@ -241,8 +242,12 @@ public class DepotHeadService {
         if(!BusinessConstants.SUB_TYPE_PURCHASE_APPLY.equals(subType)
                 && !BusinessConstants.SUB_TYPE_PURCHASE_ORDER.equals(subType)
                 && !BusinessConstants.SUB_TYPE_SALES_ORDER.equals(subType)) {
+            if (isCurrentUserAdmin()) {
+                return null;
+            }
             String depotIds = depotService.findDepotStrByCurrentUser();
-            depotArray = StringUtil.isNotEmpty(depotIds) ? depotIds.split(",") : null;
+            //开启仓库权限但当前用户未分配仓库时，必须返回一个不可能命中的值，不能退化成“不过滤”。
+            depotArray = StringUtil.isNotEmpty(depotIds) ? depotIds.split(",") : new String[]{"-1"};
         }
         return depotArray;
     }
@@ -426,6 +431,8 @@ public class DepotHeadService {
         List<DepotHead> dhList = getDepotHeadListByIds(ids);
         for(DepotHead depotHead: dhList){
             checkBillButtonPermission(depotHead, "1", "新增、编辑或删除");
+            checkPurchaseInboundDataPermission(depotHead);
+            checkPurchaseInboundHasNoReturn(depotHead, "删除");
             //只有未审核的单据才能被删除
             if(!"0".equals(depotHead.getStatus())) {
                 throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_UN_AUDIT_DELETE_FAILED_CODE,
@@ -615,6 +622,7 @@ public class DepotHeadService {
                         ExceptionConstants.DATA_READ_FAIL_MSG);
             }
             checkBillButtonPermission(depotHead, "1", "强制结单");
+            checkPurchaseInboundDataPermission(depotHead);
             //状态里面不包含部分不能强制结单
             if(!"3".equals(depotHead.getStatus())) {
                 throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_FORCE_CLOSE_FAILED_CODE,
@@ -657,6 +665,7 @@ public class DepotHeadService {
                         ExceptionConstants.DATA_READ_FAIL_MSG);
             }
             checkBillButtonPermission(depotHead, "1", "强制结单");
+            checkPurchaseInboundDataPermission(depotHead);
             //状态里面不包含部分不能强制结单
             if(!"3".equals(depotHead.getPurchaseStatus())) {
                 throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_FORCE_CLOSE_FAILED_CODE,
@@ -693,6 +702,8 @@ public class DepotHeadService {
         List<Long> idList = StringUtil.strToLongList(ids);
         for(Long id: idList) {
             DepotHead dh = getDepotHead(id);
+            checkBillButtonPermission(dh, "1", "修正欠款");
+            checkPurchaseInboundDataPermission(dh);
             BigDecimal debt = getDebtByBill(dh);
             if(debt.compareTo(BigDecimal.ZERO)!=0) {
                 //更新最终欠款
@@ -735,8 +746,10 @@ public class DepotHeadService {
         List<Long> ids = StringUtil.strToLongList(depotHeadIDs);
         for(Long id: ids) {
             DepotHead depotHead = getDepotHead(id);
+            checkPurchaseInboundDataPermission(depotHead);
             if("0".equals(status)){
                 checkBillButtonPermission(depotHead, "7", "反审核");
+                checkPurchaseInboundHasNoReturn(depotHead, "反审核");
                 //进行反审核操作
                 if("1".equals(depotHead.getStatus()) && "0".equals(depotHead.getPurchaseStatus())) {
                     dhIds.add(id);
@@ -1067,6 +1080,7 @@ public class DepotHeadService {
                 Map<Long,String> materialsListMap = findMaterialsListMapByHeaderIdList(idList);
                 Map<Long,BigDecimal> materialCountListMap = getMaterialCountListMapByHeaderIdList(idList);
                 DepotHeadVo4List dh = list.get(0);
+                checkPurchaseInboundDataPermission(getDepotHead(dh.getId()));
                 String billCategory = getBillCategory(dh.getSubType());
                 if(accountMap!=null && StringUtil.isNotEmpty(dh.getAccountIdList()) && StringUtil.isNotEmpty(dh.getAccountMoneyList())) {
                     String accountStr = accountService.getAccountStrByIdAndMoney(accountMap, dh.getAccountIdList(), dh.getAccountMoneyList());
@@ -1205,6 +1219,7 @@ public class DepotHeadService {
         JSONObject headJson = JSONObject.parseObject(beanJson);
         DepotHead depotHead = headJson.toJavaObject(DepotHead.class);
         validateDepotHeadBusinessType(depotHead);
+        validatePurchaseInboundSubmittedState(depotHead, null);
         checkBillButtonPermission(depotHead, "1", "新增");
         if (BusinessConstants.BILLS_STATUS_AUDIT.equals(depotHead.getStatus())) {
             checkBillButtonPermission(depotHead, "2", "审核");
@@ -1322,6 +1337,19 @@ public class DepotHeadService {
                     ExceptionConstants.DEPOT_HEAD_BILL_TYPE_CHANGE_MSG);
         }
         validateDepotHeadBusinessType(depotHead);
+        //编辑接口只允许处理未审核单据，且采购入库的完成状态只能由后续业务回写。
+        if(!BusinessConstants.BILLS_STATUS_UN_AUDIT.equals(previousDepotHead.getStatus())) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_BILL_CANNOT_EDIT_CODE,
+                    ExceptionConstants.DEPOT_HEAD_BILL_CANNOT_EDIT_MSG);
+        }
+        validatePurchaseInboundSubmittedState(depotHead, previousDepotHead);
+        checkPurchaseInboundDataPermission(previousDepotHead);
+        checkPurchaseInboundHasNoReturn(previousDepotHead, "编辑");
+        if (isPurchaseInbound(previousDepotHead)
+                && !Objects.equals(previousDepotHead.getNumber(), depotHead.getNumber())) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_NUMBER_CHANGE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_NUMBER_CHANGE_MSG);
+        }
         checkBillButtonPermission(previousDepotHead, "1", "编辑");
         if (BusinessConstants.BILLS_STATUS_AUDIT.equals(depotHead.getStatus())) {
             checkBillButtonPermission(previousDepotHead, "2", "审核");
@@ -1340,11 +1368,6 @@ public class DepotHeadService {
         if(StringUtil.isNotEmpty(depotHead.getLinkNumber()) && StringUtil.isNotEmpty(depotHead.getLinkApply())) {
             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_ITEM_EXIST_REPEAT_NO_FAILED_CODE,
                     String.format(ExceptionConstants.DEPOT_ITEM_EXIST_REPEAT_NO_FAILED_MSG));
-        }
-        //校验单据状态，如果不是未审核则提示
-        if(!"0".equals(getDepotHead(depotHead.getId()).getStatus())) {
-            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_BILL_CANNOT_EDIT_CODE,
-                    String.format(ExceptionConstants.DEPOT_HEAD_BILL_CANNOT_EDIT_MSG));
         }
         String subType = depotHead.getSubType();
         //结算账户校验
@@ -1444,6 +1467,9 @@ public class DepotHeadService {
                 && BusinessConstants.SUB_TYPE_PURCHASE_ORDER.equals(depotHead.getSubType())) {
             url = PURCHASE_ORDER_URL;
             billName = "采购订单";
+        } else if (isPurchaseInbound(depotHead)) {
+            url = PURCHASE_IN_URL;
+            billName = "采购入库";
         } else {
             return;
         }
@@ -1452,6 +1478,81 @@ public class DepotHeadService {
         if (!userService.hasButtonPermission(userId, url, buttonCode)) {
             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_RETAIL_PERMISSION_CODE,
                     String.format(ExceptionConstants.DEPOT_HEAD_RETAIL_PERMISSION_MSG, billName, operationName));
+        }
+    }
+
+    private boolean isPurchaseInbound(DepotHead depotHead) {
+        return depotHead != null
+                && BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())
+                && BusinessConstants.SUB_TYPE_PURCHASE.equals(depotHead.getSubType());
+    }
+
+    private boolean isCurrentUserAdmin() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        return currentUser != null && "admin".equals(currentUser.getLoginName());
+    }
+
+    /**
+     * 采购入库的状态只允许由“保存”或“保存并审核”提交，完成/部分完成状态由后续单据回写。
+     */
+    private void validatePurchaseInboundSubmittedState(DepotHead depotHead, DepotHead previousDepotHead) {
+        if (!isPurchaseInbound(depotHead)) {
+            return;
+        }
+        String status = StringUtil.isEmpty(depotHead.getStatus())
+                ? BusinessConstants.BILLS_STATUS_UN_AUDIT : depotHead.getStatus();
+        if (!BusinessConstants.BILLS_STATUS_UN_AUDIT.equals(status)
+                && !BusinessConstants.BILLS_STATUS_AUDIT.equals(status)) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_STATUS_CODE,
+                    ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_STATUS_MSG);
+        }
+        depotHead.setStatus(status);
+        depotHead.setPurchaseStatus(previousDepotHead == null
+                ? BusinessConstants.PURCHASE_STATUS_UN_AUDIT : previousDepotHead.getPurchaseStatus());
+    }
+
+    /**
+     * 对直接按ID读取或操作的采购入库补充列表查询中已有的操作员、仓库数据权限。
+     */
+    public void checkPurchaseInboundDataPermission(DepotHead depotHead) throws Exception {
+        if (!isPurchaseInbound(depotHead)) {
+            return;
+        }
+        if (isCurrentUserAdmin()) {
+            return;
+        }
+        String[] creatorArray = getCreatorArray();
+        if (creatorArray != null && (depotHead.getCreator() == null
+                || Arrays.stream(creatorArray).noneMatch(depotHead.getCreator().toString()::equals))) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DATA_PERMISSION_CODE,
+                    ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DATA_PERMISSION_MSG);
+        }
+        JSONArray depotArray = depotService.findDepotByCurrentUser();
+        Set<Long> allowedDepotIds = new HashSet<>();
+        for (Object depotObject : depotArray) {
+            allowedDepotIds.add(JSONObject.parseObject(depotObject.toString()).getLong("id"));
+        }
+        List<DepotItem> detailList = depotItemService.getListByHeaderId(depotHead.getId());
+        for (DepotItem depotItem : detailList) {
+            if (depotItem.getDepotId() == null || !allowedDepotIds.contains(depotItem.getDepotId())) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DATA_PERMISSION_CODE,
+                        ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DATA_PERMISSION_MSG);
+            }
+        }
+    }
+
+    private void checkPurchaseInboundHasNoReturn(DepotHead depotHead, String operationName) {
+        if (!isPurchaseInbound(depotHead) || StringUtil.isEmpty(depotHead.getNumber())) {
+            return;
+        }
+        DepotHeadExample example = new DepotHeadExample();
+        example.createCriteria().andLinkNumberEqualTo(depotHead.getNumber())
+                .andTypeEqualTo(BusinessConstants.DEPOTHEAD_TYPE_OUT)
+                .andSubTypeEqualTo(BusinessConstants.SUB_TYPE_PURCHASE_RETURN)
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        if (!depotHeadMapper.selectByExample(example).isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_HAS_RETURN_CODE,
+                    String.format(ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_HAS_RETURN_MSG, operationName));
         }
     }
 
@@ -1920,6 +2021,10 @@ public class DepotHeadService {
             if (otherMoney.compareTo(BigDecimal.ZERO) < 0 || deposit.compareTo(BigDecimal.ZERO) < 0) {
                 throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_AMOUNT_CODE,
                         ExceptionConstants.DEPOT_HEAD_PURCHASE_AMOUNT_MSG);
+            }
+            if (StringUtil.isEmpty(depotHead.getLinkNumber()) && deposit.compareTo(BigDecimal.ZERO) > 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DEPOSIT_SOURCE_CODE,
+                        ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DEPOSIT_SOURCE_MSG);
             }
             BigDecimal payable = discountLastMoney.add(otherMoney).subtract(deposit)
                     .setScale(2, BigDecimal.ROUND_HALF_UP);
@@ -2648,6 +2753,8 @@ public class DepotHeadService {
         StringBuilder sb = new StringBuilder();
         User userInfo=userService.getCurrentUser();
         for(DepotHead depotHead : dhList) {
+            checkBillButtonPermission(depotHead, "1", "转其它出入库");
+            checkPurchaseInboundDataPermission(depotHead);
             String prefixNo = BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())?"QTRK":"QTCK";
             //关联单据单号
             String oldNumber = depotHead.getNumber();
@@ -2737,6 +2844,7 @@ public class DepotHeadService {
                         ExceptionConstants.DEPOT_HEAD_EDIT_FAILED_MSG);
             }
             checkBillButtonPermission(oldDepotHead, "1", "编辑备注");
+            checkPurchaseInboundDataPermission(oldDepotHead);
             DepotHead depotHead = new DepotHead();
             depotHead.setId(id);
             depotHead.setRemark(remark);

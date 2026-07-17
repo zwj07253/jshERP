@@ -2,6 +2,7 @@ package com.jsh.erp;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.jsh.erp.constants.ExceptionConstants;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.*;
 
@@ -65,8 +66,9 @@ public class P1ExceptionTest extends ApiTestBase {
         body.put("rows", rows.toJSONString());
 
         Response resp = authReq().body(body.toJSONString()).post(CONTEXT + "/depotHead/addDepotHeadAndDetail");
-        // 数量为0应该报错或有提示，验证不会产生有效单据
-        assertNotNull(resp);
+        assertBizError(resp);
+        assertEquals(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_CODE,
+                JSONObject.parseObject(resp.body().asString()).getIntValue("code"));
     }
 
     // ===== 42. 采购入库-金额为负 =====
@@ -119,7 +121,9 @@ public class P1ExceptionTest extends ApiTestBase {
         body.put("rows", rows.toJSONString());
 
         Response resp = authReq().body(body.toJSONString()).post(CONTEXT + "/depotHead/addDepotHeadAndDetail");
-        assertNotNull(resp, "接口应有响应");
+        assertBizError(resp);
+        assertEquals(ExceptionConstants.DEPOT_HEAD_PURCHASE_AMOUNT_CODE,
+                JSONObject.parseObject(resp.body().asString()).getIntValue("code"));
     }
 
     // ===== 43. 销售出库-库存不足 =====

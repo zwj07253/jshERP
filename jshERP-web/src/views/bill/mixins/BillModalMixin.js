@@ -184,7 +184,7 @@ export const BillModalMixin = {
       }
     },
     initSystemConfig() {
-      getCurrentSystemConfig().then((res) => {
+      return getCurrentSystemConfig().then((res) => {
         if(res.code === 200 && res.data){
           let multiBillType = res.data.multiBillType
           let multiLevelApprovalFlag = res.data.multiLevelApprovalFlag
@@ -248,7 +248,7 @@ export const BillModalMixin = {
     },
     initDepot() {
       let that = this;
-      getAction('/depot/findDepotByCurrentUser').then((res) => {
+      return getAction('/depot/findDepotByCurrentUser').then((res) => {
         if(res.code === 200){
           let arr = res.data
           for(let item of that.materialTable.columns){

@@ -22,6 +22,7 @@ public class P0PurchaseTest extends ApiTestBase {
     private static Long depotId;
     private static Long accountId;
     private static Long purchaseHeadId;
+    private static double stockBeforePurchase;
 
     @AfterAll
     static void cleanUpCreatedData() {
@@ -167,6 +168,7 @@ public class P0PurchaseTest extends ApiTestBase {
     @Order(8)
     @DisplayName("8a: 创建采购入库单")
     void createPurchaseInbound() {
+        stockBeforePurchase = getMaterialStock(materialExtendId, depotId);
         purchaseHeadId = createDepotHeadAndDetail("入库", "采购", supplierId, accountId,
                 depotId, materialExtendId, 10, 100.0);
         assertNotNull(purchaseHeadId, "采购入库单创建成功应返回ID");
@@ -200,6 +202,9 @@ public class P0PurchaseTest extends ApiTestBase {
     @Order(11)
     @DisplayName("9: 采购审核后库存验证 - 带库存商品列表")
     void verifyStockAfterPurchase() {
+        double stockAfterPurchase = getMaterialStock(materialExtendId, depotId);
+        assertEquals(stockBeforePurchase + 10, stockAfterPurchase, 0.0001,
+                "采购入库审核后指定仓库库存应增加10");
         Response resp = authReqGet()
                 .param("currentPage", 1)
                 .param("pageSize", 10)

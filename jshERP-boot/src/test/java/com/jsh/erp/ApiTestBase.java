@@ -379,8 +379,8 @@ public class ApiTestBase {
     protected double getMaterialStock(Long materialExtendId, Long depotId) {
         Response resp = authReqGet()
                 .param("currentPage", 1)
-                .param("pageSize", 10)
-                .param("depotIds", "")
+                .param("pageSize", 100)
+                .param("depotIds", String.valueOf(depotId))
                 .param("categoryId", "")
                 .param("position", "")
                 .param("materialParam", "")
@@ -390,8 +390,14 @@ public class ApiTestBase {
                 .get(CONTEXT + "/material/getListWithStock");
         assertSuccess(resp);
         JSONObject data = JSONObject.parseObject(resp.body().asString()).getJSONObject("data");
-        if (data != null && data.getJSONArray("rows") != null && !data.getJSONArray("rows").isEmpty()) {
-            return data.getJSONArray("rows").getJSONObject(0).getDoubleValue("currentStock");
+        if (data != null && data.getJSONArray("rows") != null) {
+            JSONArray rows = data.getJSONArray("rows");
+            for (int index = 0; index < rows.size(); index++) {
+                JSONObject row = rows.getJSONObject(index);
+                if (materialExtendId.equals(row.getLong("id"))) {
+                    return row.getDoubleValue("currentStock");
+                }
+            }
         }
         return 0;
     }

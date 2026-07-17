@@ -551,6 +551,21 @@ public class ExceptionConstants {
     //单据明细-商品单位不合法
     public static final int DEPOT_HEAD_MATERIAL_UNIT_CODE = 8500063;
     public static final String DEPOT_HEAD_MATERIAL_UNIT_MSG = "抱歉，商品条码:%s的单位不属于该商品";
+    //采购入库-单据状态只能由服务端按保存或审核流程设置
+    public static final int DEPOT_HEAD_PURCHASE_IN_STATUS_CODE = 8500064;
+    public static final String DEPOT_HEAD_PURCHASE_IN_STATUS_MSG = "抱歉，采购入库单状态不合法，请通过保存或审核操作变更状态";
+    //采购入库-存在采购退货时不能修改、反审核或删除
+    public static final int DEPOT_HEAD_PURCHASE_IN_HAS_RETURN_CODE = 8500065;
+    public static final String DEPOT_HEAD_PURCHASE_IN_HAS_RETURN_MSG = "抱歉，采购入库单已存在采购退货，不能%s，请先删除关联的采购退货单";
+    //采购入库-无仓库或单据数据权限
+    public static final int DEPOT_HEAD_PURCHASE_IN_DATA_PERMISSION_CODE = 8500066;
+    public static final String DEPOT_HEAD_PURCHASE_IN_DATA_PERMISSION_MSG = "抱歉，当前用户没有采购入库单或所选仓库的数据权限";
+    //采购入库-直接入库不能扣除采购订单订金
+    public static final int DEPOT_HEAD_PURCHASE_IN_DEPOSIT_SOURCE_CODE = 8500067;
+    public static final String DEPOT_HEAD_PURCHASE_IN_DEPOSIT_SOURCE_MSG = "抱歉，只有关联采购订单的采购入库单才能扣除订金";
+    //采购入库-保存后不能修改单据编号
+    public static final int DEPOT_HEAD_PURCHASE_IN_NUMBER_CHANGE_CODE = 8500068;
+    public static final String DEPOT_HEAD_PURCHASE_IN_NUMBER_CHANGE_MSG = "抱歉，采购入库单保存后不能修改单据编号";
 
 
     /**

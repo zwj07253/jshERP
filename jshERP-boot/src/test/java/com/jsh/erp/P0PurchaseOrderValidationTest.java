@@ -134,6 +134,10 @@ public class P0PurchaseOrderValidationTest extends ApiTestBase {
             firstInboundId = getHeadId(firstNumber);
             assertEquals(0, getFirstDetail(firstInboundId).getBigDecimal("unitPrice")
                     .compareTo(new BigDecimal("10.000000")));
+            JSONObject renamedHead = getRawHead(firstInboundId);
+            renamedHead.put("number", generateNumber("CGRK"));
+            Response renameResponse = updateBill(renamedHead, getFirstDetail(firstInboundId));
+            assertCode(renameResponse, ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_NUMBER_CHANGE_CODE);
             assertEquals("3", getRawHead(orderId).getString("status"));
 
             String secondNumber = generateNumber("CGRK");
@@ -157,6 +161,62 @@ public class P0PurchaseOrderValidationTest extends ApiTestBase {
                 }
                 deleteIfPresent(orderId);
             }
+        }
+    }
+
+    @Test
+    @DisplayName("采购入库拒绝伪造完成状态和无来源订金")
+    void rejectForgedStatusAndUnlinkedDeposit() {
+        assumeTrue(hasBaseData(), "缺少采购入库测试基础数据");
+
+        Response forgedStatus = submitPurchaseInbound(generateNumber("CGRK"), 101L, null, null,
+                1, 10, 0, "2", unit);
+        assertCode(forgedStatus, ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_STATUS_CODE);
+
+        Response unlinkedDeposit = submitPurchaseInbound(generateNumber("CGRK"), 101L, null, null,
+                1, 10, 1, "0", unit);
+        assertCode(unlinkedDeposit, ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DEPOSIT_SOURCE_CODE);
+    }
+
+    @Test
+    @DisplayName("存在采购退货时禁止反审核原采购入库")
+    void blockUnauditWhenPurchaseReturnExists() {
+        assumeTrue(hasBaseData(), "缺少采购入库测试基础数据");
+        String orderNumber = generateNumber("CGDD");
+        String inboundNumber = generateNumber("CGRK");
+        Long orderId = null;
+        Long inboundId = null;
+        Long returnId = null;
+        try {
+            assertSuccess(submitPurchaseOrder(orderNumber, 101L, null, null,
+                    1, unit, 10, 10, 0, "1"));
+            orderId = getHeadId(orderNumber);
+            Long orderItemId = getFirstDetail(orderId).getLong("id");
+            assertSuccess(submitPurchaseInbound(inboundNumber, 101L, orderNumber, orderItemId, 1, 10));
+            inboundId = getHeadId(inboundNumber);
+            auditDepotHead(inboundId);
+
+            Long inboundItemId = getFirstDetail(inboundId).getLong("id");
+            String returnNumber = generateNumber("CGTH");
+            assertSuccess(submitPurchaseReturn(returnNumber, inboundNumber, inboundItemId));
+            returnId = getHeadId(returnNumber);
+
+            JSONObject statusBody = new JSONObject();
+            statusBody.put("status", "0");
+            statusBody.put("ids", String.valueOf(inboundId));
+            Response unauditResponse = authReq().body(statusBody.toJSONString())
+                    .post(CONTEXT + "/depotHead/batchSetStatus");
+            assertCode(unauditResponse, ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_HAS_RETURN_CODE);
+        } finally {
+            deleteIfPresent(returnId);
+            if (inboundId != null && "1".equals(getRawHead(inboundId).getString("status"))) {
+                unauditDepotHead(inboundId);
+            }
+            deleteIfPresent(inboundId);
+            if (orderId != null && "1".equals(getRawHead(orderId).getString("status"))) {
+                unauditDepotHead(orderId);
+            }
+            deleteIfPresent(orderId);
         }
     }
 
@@ -195,6 +255,13 @@ public class P0PurchaseOrderValidationTest extends ApiTestBase {
 
     private Response submitPurchaseInbound(String number, Long supplierId, String linkNumber, Long linkId,
                                            double quantity, double submittedUnitPrice) {
+        return submitPurchaseInbound(number, supplierId, linkNumber, linkId, quantity,
+                submittedUnitPrice, 0, "0", "伪造单位");
+    }
+
+    private Response submitPurchaseInbound(String number, Long supplierId, String linkNumber, Long linkId,
+                                           double quantity, double submittedUnitPrice, double deposit,
+                                           String status, String submittedUnit) {
         JSONObject info = new JSONObject();
         info.put("number", number);
         info.put("type", "入库");
@@ -203,11 +270,28 @@ public class P0PurchaseOrderValidationTest extends ApiTestBase {
         info.put("accountId", accountId);
         info.put("linkNumber", linkNumber);
         info.put("changeAmount", 0);
-        info.put("deposit", 0);
+        info.put("deposit", deposit);
         info.put("totalPrice", submittedUnitPrice * quantity);
-        info.put("status", "0");
-        JSONObject item = buildItem(linkId, quantity, "伪造单位", submittedUnitPrice,
+        info.put("status", status);
+        JSONObject item = buildItem(linkId, quantity, submittedUnit, submittedUnitPrice,
                 submittedUnitPrice * quantity, 0);
+        item.put("depotId", depotId);
+        return submitBill(info, item);
+    }
+
+    private Response submitPurchaseReturn(String number, String linkNumber, Long linkId) {
+        JSONObject info = new JSONObject();
+        info.put("number", number);
+        info.put("type", "出库");
+        info.put("subType", "采购退货");
+        info.put("organId", 101L);
+        info.put("accountId", accountId);
+        info.put("linkNumber", linkNumber);
+        info.put("changeAmount", 10);
+        info.put("totalPrice", 10);
+        info.put("deposit", 0);
+        info.put("status", "0");
+        JSONObject item = buildItem(linkId, 1, unit, 10, 10, 0);
         item.put("depotId", depotId);
         return submitBill(info, item);
     }
@@ -236,6 +320,15 @@ public class P0PurchaseOrderValidationTest extends ApiTestBase {
         body.put("info", info.toJSONString());
         body.put("rows", rows.toJSONString());
         return authReq().body(body.toJSONString()).post(CONTEXT + "/depotHead/addDepotHeadAndDetail");
+    }
+
+    private Response updateBill(JSONObject info, JSONObject item) {
+        JSONArray rows = new JSONArray();
+        rows.add(item);
+        JSONObject body = new JSONObject();
+        body.put("info", info.toJSONString());
+        body.put("rows", rows.toJSONString());
+        return authReq().body(body.toJSONString()).put(CONTEXT + "/depotHead/updateDepotHeadAndDetail");
     }
 
     private void assertCode(Response response, int code) {
