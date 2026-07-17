@@ -2,10 +2,18 @@ package com.jsh.erp.controller;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.base.BaseController;
+import com.jsh.erp.utils.BaseResponseInfo;
 import com.jsh.erp.utils.ErpInfo;
+import com.jsh.erp.utils.ExcelUtils;
 import com.jsh.erp.utils.Tools;
+import jxl.Sheet;
+import jxl.Workbook;
+import jxl.write.Label;
+import jxl.write.WritableSheet;
+import jxl.write.WritableWorkbook;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -13,17 +21,23 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.jsh.erp.utils.ResponseJsonUtil.returnJson;
 
@@ -232,6 +246,159 @@ public class TradeDemoController extends BaseController {
         return ok(jdbcTemplate.queryForList(sql.toString(), params.toArray()));
     }
 
+    /**
+     * 下载外贸库存导入模板，模板格式与采购订单的明细导入保持一致：前两行为说明和表头。
+     */
+    @GetMapping("/inventory/template")
+    public void inventoryTemplate(HttpServletResponse response) throws Exception {
+        response.reset();
+        response.setContentType("application/vnd.ms-excel");
+        String fileName = URLEncoder.encode("外贸库存导入模板.xls", "UTF-8").replace("+", "%20");
+        response.setHeader("Content-Disposition", "attachment;filename*=UTF-8''" + fileName);
+        OutputStream outputStream = response.getOutputStream();
+        WritableWorkbook workbook = Workbook.createWorkbook(outputStream);
+        WritableSheet sheet = workbook.createSheet("外贸库存", 0);
+        sheet.getSettings().setDefaultColumnWidth(16);
+        sheet.addCell(new Label(0, 0, "*必填：发运批次号、采购单号、商品条码、发运数量；库存数量不得超过发运数量。"));
+        String[] headers = {"发运批次号*", "采购单号*", "商品条码*", "发运数量*", "在途数量", "清关中数量", "已入库数量", "客户锁定数量", "销售金额"};
+        for (int i = 0; i < headers.length; i++) {
+            sheet.addCell(new Label(i, 1, headers[i]));
+        }
+        workbook.write();
+        workbook.close();
+    }
+
+    /**
+     * 导入外贸库存明细。按发运批次号、采购单号和商品条码匹配已有 SKU，匹配到则更新，否则新增。
+     */
+    @PostMapping("/inventory/importExcel")
+    @Transactional(rollbackFor = Exception.class)
+    public BaseResponseInfo importInventoryExcel(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
+        BaseResponseInfo response = new BaseResponseInfo();
+        Map<String, Object> data = new HashMap<>();
+        List<Map<String, Object>> resultRows = new ArrayList<>();
+        Long tenantId = resolveTenantId(request);
+        try {
+            if (file == null || file.isEmpty()) {
+                throw new IllegalArgumentException("请选择要导入的 Excel 文件");
+            }
+            String fileName = file.getOriginalFilename();
+            String extension = fileName != null && fileName.contains(".")
+                    ? fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase() : "";
+            if (!"xls".equals(extension)) {
+                throw new IllegalArgumentException("只支持 .xls 格式，请先下载并使用系统模板");
+            }
+
+            Workbook workbook = Workbook.getWorkbook(file.getInputStream());
+            Sheet sheet = workbook.getSheet(0);
+            if (sheet.getRows() > 1002) {
+                throw new IllegalArgumentException("导入失败，库存明细不能超过 1000 条");
+            }
+            List<Map<String, Object>> importRows = new ArrayList<>();
+            Set<String> rowKeys = new HashSet<>();
+            for (int rowIndex = 2; rowIndex < sheet.getRows(); rowIndex++) {
+                String shipmentNo = excelText(sheet, rowIndex, 0);
+                String purchaseNumber = excelText(sheet, rowIndex, 1);
+                String barCode = excelText(sheet, rowIndex, 2);
+                if (isBlank(shipmentNo) && isBlank(purchaseNumber) && isBlank(barCode)) {
+                    continue;
+                }
+                if (isBlank(shipmentNo) || isBlank(purchaseNumber) || isBlank(barCode)) {
+                    throw new IllegalArgumentException("第 " + (rowIndex + 1) + " 行：发运批次号、采购单号和商品条码不能为空");
+                }
+                BigDecimal quantity = excelDecimal(sheet, rowIndex, 3);
+                if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new IllegalArgumentException("第 " + (rowIndex + 1) + " 行：发运数量必须大于 0");
+                }
+
+                List<Map<String, Object>> shipmentRows = jdbcTemplate.queryForList(
+                        "select id,status from jsh_trade_shipment where shipment_no=? and tenant_id=? and coalesce(delete_flag,'0')<>'1'",
+                        shipmentNo, tenantId);
+                if (shipmentRows.isEmpty()) {
+                    throw new IllegalArgumentException("第 " + (rowIndex + 1) + " 行：发运批次不存在：" + shipmentNo);
+                }
+                Map<String, Object> shipment = shipmentRows.get(0);
+                Long shipmentId = ((Number) shipment.get("id")).longValue();
+                List<Map<String, Object>> purchaseRows = jdbcTemplate.queryForList(
+                        "select i.id depotItemId,i.header_id depotHeadId,i.material_id materialId,coalesce(i.purchase_unit_price,i.unit_price,0) unitPrice " +
+                                "from jsh_depot_item i join jsh_depot_head h on h.id=i.header_id " +
+                                "join jsh_material_extend me on me.material_id=i.material_id and me.bar_code=? and me.default_flag='1' and coalesce(me.delete_flag,'0')<>'1' " +
+                                "where h.number=? and i.tenant_id=? and h.tenant_id=? and h.type='入库' and h.sub_type='采购' " +
+                                "and coalesce(i.delete_flag,'0')<>'1' and coalesce(h.delete_flag,'0')<>'1' order by i.id",
+                        barCode, purchaseNumber, tenantId, tenantId);
+                if (purchaseRows.isEmpty()) {
+                    throw new IllegalArgumentException("第 " + (rowIndex + 1) + " 行：找不到采购单 " + purchaseNumber + " 对应的商品条码 " + barCode);
+                }
+                Map<String, Object> purchase = purchaseRows.get(0);
+                Long depotItemId = ((Number) purchase.get("depotItemId")).longValue();
+                String rowKey = shipmentId + "-" + depotItemId;
+                if (!rowKeys.add(rowKey)) {
+                    throw new IllegalArgumentException("第 " + (rowIndex + 1) + " 行：同一发运批次和采购明细重复导入");
+                }
+
+                List<Map<String, Object>> existingRows = jdbcTemplate.queryForList(
+                        "select id,in_transit_quantity,cleared_quantity,stocked_quantity,sold_quantity,sales_amount " +
+                                "from jsh_trade_shipment_item where shipment_id=? and depot_item_id=? and tenant_id=? and coalesce(delete_flag,'0')<>'1' order by id",
+                        shipmentId, depotItemId, tenantId);
+                Map<String, Object> existing = existingRows.isEmpty() ? null : existingRows.get(0);
+                BigDecimal defaultInTransit = itemInTransit(String.valueOf(shipment.get("status")), quantity);
+                BigDecimal defaultCleared = itemCleared(String.valueOf(shipment.get("status")), quantity);
+                BigDecimal defaultStocked = itemStocked(String.valueOf(shipment.get("status")), quantity);
+                BigDecimal inTransit = excelDecimalOrExisting(sheet, rowIndex, 4, existing, "in_transit_quantity", defaultInTransit);
+                BigDecimal cleared = excelDecimalOrExisting(sheet, rowIndex, 5, existing, "cleared_quantity", defaultCleared);
+                BigDecimal stocked = excelDecimalOrExisting(sheet, rowIndex, 6, existing, "stocked_quantity", defaultStocked);
+                BigDecimal sold = excelDecimalOrExisting(sheet, rowIndex, 7, existing, "sold_quantity", BigDecimal.ZERO);
+                BigDecimal salesAmount = excelDecimalOrExisting(sheet, rowIndex, 8, existing, "sales_amount", BigDecimal.ZERO);
+                validateInventoryNumbers(rowIndex + 1, quantity, inTransit, cleared, stocked, sold, salesAmount);
+
+                Map<String, Object> item = new HashMap<>();
+                item.put("shipmentId", shipmentId);
+                item.put("depotItemId", depotItemId);
+                item.put("depotHeadId", ((Number) purchase.get("depotHeadId")).longValue());
+                item.put("materialId", ((Number) purchase.get("materialId")).longValue());
+                item.put("purchaseAmount", ((BigDecimal) purchase.get("unitPrice")).multiply(quantity));
+                item.put("quantity", quantity);
+                item.put("inTransit", inTransit);
+                item.put("cleared", cleared);
+                item.put("stocked", stocked);
+                item.put("sold", sold);
+                item.put("salesAmount", salesAmount);
+                item.put("existingId", existing == null ? null : ((Number) existing.get("id")).longValue());
+                importRows.add(item);
+            }
+            workbook.close();
+
+            long nextId = nextId("jsh_trade_shipment_item");
+            for (Map<String, Object> item : importRows) {
+                Long existingId = (Long) item.get("existingId");
+                if (existingId == null) {
+                    jdbcTemplate.update("insert into jsh_trade_shipment_item (id,shipment_id,material_id,depot_head_id,depot_item_id,quantity,purchase_amount,sales_amount,in_transit_quantity,cleared_quantity,stocked_quantity,sold_quantity,tenant_id,delete_flag) values (?,?,?,?,?,?,?,?,?,?,?,?,?,'0')",
+                            nextId++, item.get("shipmentId"), item.get("materialId"), item.get("depotHeadId"), item.get("depotItemId"), item.get("quantity"), item.get("purchaseAmount"), item.get("salesAmount"), item.get("inTransit"), item.get("cleared"), item.get("stocked"), item.get("sold"), tenantId);
+                    item.put("action", "新增");
+                } else {
+                    jdbcTemplate.update("update jsh_trade_shipment_item set quantity=?,purchase_amount=?,sales_amount=?,in_transit_quantity=?,cleared_quantity=?,stocked_quantity=?,sold_quantity=? where id=? and tenant_id=?",
+                            item.get("quantity"), item.get("purchaseAmount"), item.get("salesAmount"), item.get("inTransit"), item.get("cleared"), item.get("stocked"), item.get("sold"), existingId, tenantId);
+                    item.put("action", "更新");
+                }
+                Map<String, Object> result = new LinkedHashMap<>();
+                result.put("shipmentId", item.get("shipmentId"));
+                result.put("depotItemId", item.get("depotItemId"));
+                result.put("action", item.get("action"));
+                resultRows.add(result);
+            }
+            data.put("rows", resultRows);
+            response.code = 200;
+            response.data = data;
+        } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            logger.error("外贸库存 Excel 导入失败", e);
+            data.put("message", e.getMessage() == null ? "导入失败，请检查模板内容" : e.getMessage());
+            response.code = 500;
+            response.data = data;
+        }
+        return response;
+    }
+
     @GetMapping("/cost/profit")
     public String costProfit(HttpServletRequest request) {
         Long tenantId = resolveTenantId(request);
@@ -354,6 +521,49 @@ public class TradeDemoController extends BaseController {
 
     private boolean exists(String table, Long id, Long tenantId) {
         return count("select count(*) from " + table + " where id=? and tenant_id=? and coalesce(delete_flag,'0')<>'1'", id, tenantId) > 0;
+    }
+
+    private String excelText(Sheet sheet, int rowIndex, int columnIndex) {
+        if (rowIndex >= sheet.getRows() || columnIndex >= sheet.getColumns()) return "";
+        String value = ExcelUtils.getContent(sheet, rowIndex, columnIndex);
+        return value == null ? "" : value.trim();
+    }
+
+    private BigDecimal excelDecimal(Sheet sheet, int rowIndex, int columnIndex) {
+        String value = excelText(sheet, rowIndex, columnIndex);
+        if (isBlank(value)) return null;
+        try {
+            return new BigDecimal(value.replace(",", ""));
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("第 " + (rowIndex + 1) + " 行第 " + (columnIndex + 1) + " 列必须是数字");
+        }
+    }
+
+    private BigDecimal excelDecimalOrExisting(Sheet sheet, int rowIndex, int columnIndex,
+                                              Map<String, Object> existing, String existingKey,
+                                              BigDecimal defaultValue) {
+        BigDecimal value = excelDecimal(sheet, rowIndex, columnIndex);
+        if (value != null) return value;
+        if (existing != null && existing.get(existingKey) != null) {
+            return new BigDecimal(existing.get(existingKey).toString());
+        }
+        return defaultValue;
+    }
+
+    private void validateInventoryNumbers(int rowNumber, BigDecimal quantity, BigDecimal inTransit,
+                                          BigDecimal cleared, BigDecimal stocked, BigDecimal sold,
+                                          BigDecimal salesAmount) {
+        if (inTransit.compareTo(BigDecimal.ZERO) < 0 || cleared.compareTo(BigDecimal.ZERO) < 0
+                || stocked.compareTo(BigDecimal.ZERO) < 0 || sold.compareTo(BigDecimal.ZERO) < 0
+                || salesAmount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("第 " + rowNumber + " 行：库存数量和销售金额不能为负数");
+        }
+        if (inTransit.compareTo(quantity) > 0 || cleared.compareTo(quantity) > 0 || stocked.compareTo(quantity) > 0) {
+            throw new IllegalArgumentException("第 " + rowNumber + " 行：在途、清关中或已入库数量不能超过发运数量");
+        }
+        if (sold.compareTo(stocked) > 0) {
+            throw new IllegalArgumentException("第 " + rowNumber + " 行：客户锁定数量不能超过已入库数量");
+        }
     }
 
     private long nextId(String table) {

@@ -43,6 +43,7 @@ services:
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
       SPRING_REDIS_PASSWORD: ${DEMO_REDIS_PASSWORD:?请在 .env.demo 中设置 DEMO_REDIS_PASSWORD}
+      AI_CONFIG_MASTER_KEY: ${AI_CONFIG_MASTER_KEY:-}
     volumes:
       - upload_data:/opt/jshERP/upload
       - export_data:/opt/jshERP/export

@@ -48,6 +48,7 @@ services:
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
       SPRING_REDIS_PASSWORD: ${REDIS_PASSWORD:-1234abcd}
+      AI_CONFIG_MASTER_KEY: ${AI_CONFIG_MASTER_KEY:-}
     ports:
       - "${APP_PORT:-9999}:9999"
     volumes:

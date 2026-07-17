@@ -856,6 +856,43 @@ COMMENT ON COLUMN jsh_platform_config.platform_value IS '值';
 
 SELECT setval('jsh_platform_config_id_seq', 1);
 
+-- 默认平台参数。使用 NOT EXISTS，避免覆盖已有环境中管理员修改过的配置。
+INSERT INTO jsh_platform_config (id, platform_key, platform_key_info, platform_value)
+SELECT v.id, v.platform_key, v.platform_key_info, v.platform_value
+FROM (VALUES
+    (1::BIGINT, 'platform_name', '平台名称', 'YUEWEIERP'),
+    (2::BIGINT, 'activation_code', '激活码', ''),
+    (3::BIGINT, 'platform_url', '官方网站', 'http://www.gyjerp.com/'),
+    (4::BIGINT, 'bill_print_flag', '三联打印启用标记', '0'),
+    (5::BIGINT, 'bill_print_url', '三联打印地址', ''),
+    (6::BIGINT, 'pay_fee_url', '租户续费地址', ''),
+    (7::BIGINT, 'register_flag', '注册启用标记', '1'),
+    (8::BIGINT, 'app_activation_code', '手机端激活码', ''),
+    (9::BIGINT, 'send_workflow_url', '发起流程地址', ''),
+    (10::BIGINT, 'weixinUrl', '微信url', ''),
+    (11::BIGINT, 'weixinAppid', '微信appid', ''),
+    (12::BIGINT, 'weixinSecret', '微信secret', ''),
+    (13::BIGINT, 'aliOss_endpoint', '阿里OSS-endpoint', ''),
+    (14::BIGINT, 'aliOss_accessKeyId', '阿里OSS-accessKeyId', ''),
+    (15::BIGINT, 'aliOss_accessKeySecret', '阿里OSS-accessKeySecret', ''),
+    (16::BIGINT, 'aliOss_bucketName', '阿里OSS-bucketName', ''),
+    (17::BIGINT, 'aliOss_linkUrl', '阿里OSS-linkUrl', ''),
+    (18::BIGINT, 'bill_excel_url', '单据Excel地址', ''),
+    (19::BIGINT, 'email_from', '邮件发送端-发件人', ''),
+    (20::BIGINT, 'email_auth_code', '邮件发送端-授权码', ''),
+    (21::BIGINT, 'email_smtp_host', '邮件发送端-SMTP服务器', ''),
+    (22::BIGINT, 'checkcode_flag', '验证码启用标记', '1')
+) AS v(id, platform_key, platform_key_info, platform_value)
+WHERE NOT EXISTS (
+    SELECT 1 FROM jsh_platform_config p
+    WHERE p.platform_key = v.platform_key
+);
+
+SELECT setval(
+    'jsh_platform_config_id_seq',
+    GREATEST((SELECT COALESCE(MAX(id), 1) FROM jsh_platform_config), 1)
+);
+
 -- ============================================================
 -- 22. jsh_role - 角色表
 -- ============================================================
