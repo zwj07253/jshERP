@@ -45,6 +45,7 @@ public class DepotHeadService {
     private static final String PURCHASE_APPLY_URL = "/bill/purchase_apply";
     private static final String PURCHASE_ORDER_URL = "/bill/purchase_order";
     private static final String PURCHASE_IN_URL = "/bill/purchase_in";
+    private static final String PURCHASE_RETURN_URL = "/bill/purchase_back";
 
     @Resource
     private DepotHeadMapper depotHeadMapper;
@@ -431,7 +432,7 @@ public class DepotHeadService {
         List<DepotHead> dhList = getDepotHeadListByIds(ids);
         for(DepotHead depotHead: dhList){
             checkBillButtonPermission(depotHead, "1", "新增、编辑或删除");
-            checkPurchaseInboundDataPermission(depotHead);
+            checkPurchaseBillDataPermission(depotHead);
             checkPurchaseInboundHasNoReturn(depotHead, "删除");
             //只有未审核的单据才能被删除
             if(!"0".equals(depotHead.getStatus())) {
@@ -622,7 +623,7 @@ public class DepotHeadService {
                         ExceptionConstants.DATA_READ_FAIL_MSG);
             }
             checkBillButtonPermission(depotHead, "1", "强制结单");
-            checkPurchaseInboundDataPermission(depotHead);
+            checkPurchaseBillDataPermission(depotHead);
             //状态里面不包含部分不能强制结单
             if(!"3".equals(depotHead.getStatus())) {
                 throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_FORCE_CLOSE_FAILED_CODE,
@@ -665,7 +666,7 @@ public class DepotHeadService {
                         ExceptionConstants.DATA_READ_FAIL_MSG);
             }
             checkBillButtonPermission(depotHead, "1", "强制结单");
-            checkPurchaseInboundDataPermission(depotHead);
+            checkPurchaseBillDataPermission(depotHead);
             //状态里面不包含部分不能强制结单
             if(!"3".equals(depotHead.getPurchaseStatus())) {
                 throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_FORCE_CLOSE_FAILED_CODE,
@@ -703,7 +704,7 @@ public class DepotHeadService {
         for(Long id: idList) {
             DepotHead dh = getDepotHead(id);
             checkBillButtonPermission(dh, "1", "修正欠款");
-            checkPurchaseInboundDataPermission(dh);
+            checkPurchaseBillDataPermission(dh);
             BigDecimal debt = getDebtByBill(dh);
             if(debt.compareTo(BigDecimal.ZERO)!=0) {
                 //更新最终欠款
@@ -746,12 +747,13 @@ public class DepotHeadService {
         List<Long> ids = StringUtil.strToLongList(depotHeadIDs);
         for(Long id: ids) {
             DepotHead depotHead = getDepotHead(id);
-            checkPurchaseInboundDataPermission(depotHead);
+            checkPurchaseBillDataPermission(depotHead);
             if("0".equals(status)){
                 checkBillButtonPermission(depotHead, "7", "反审核");
                 checkPurchaseInboundHasNoReturn(depotHead, "反审核");
                 //进行反审核操作
-                if("1".equals(depotHead.getStatus()) && "0".equals(depotHead.getPurchaseStatus())) {
+                if("1".equals(depotHead.getStatus())
+                        && (isPurchaseReturn(depotHead) || "0".equals(depotHead.getPurchaseStatus()))) {
                     dhIds.add(id);
                     noList.add(depotHead.getNumber());
                 } else if("2".equals(depotHead.getPurchaseStatus())) {
@@ -1080,7 +1082,7 @@ public class DepotHeadService {
                 Map<Long,String> materialsListMap = findMaterialsListMapByHeaderIdList(idList);
                 Map<Long,BigDecimal> materialCountListMap = getMaterialCountListMapByHeaderIdList(idList);
                 DepotHeadVo4List dh = list.get(0);
-                checkPurchaseInboundDataPermission(getDepotHead(dh.getId()));
+                checkPurchaseBillDataPermission(getDepotHead(dh.getId()));
                 String billCategory = getBillCategory(dh.getSubType());
                 if(accountMap!=null && StringUtil.isNotEmpty(dh.getAccountIdList()) && StringUtil.isNotEmpty(dh.getAccountMoneyList())) {
                     String accountStr = accountService.getAccountStrByIdAndMoney(accountMap, dh.getAccountIdList(), dh.getAccountMoneyList());
@@ -1202,7 +1204,11 @@ public class DepotHeadService {
     public List<DepotHead> getBillListByLinkNumber(String linkNumber)throws Exception {
         DepotHeadExample example = new DepotHeadExample();
         example.createCriteria().andLinkNumberEqualTo(linkNumber).andSubTypeLike("退货").andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
-        return depotHeadMapper.selectByExample(example);
+        List<DepotHead> result = depotHeadMapper.selectByExample(example);
+        for (DepotHead depotHead : result) {
+            checkPurchaseBillDataPermission(depotHead);
+        }
+        return result;
     }
 
     /**
@@ -1220,6 +1226,7 @@ public class DepotHeadService {
         DepotHead depotHead = headJson.toJavaObject(DepotHead.class);
         validateDepotHeadBusinessType(depotHead);
         validatePurchaseInboundSubmittedState(depotHead, null);
+        validatePurchaseReturnSubmittedState(depotHead);
         checkBillButtonPermission(depotHead, "1", "新增");
         if (BusinessConstants.BILLS_STATUS_AUDIT.equals(depotHead.getStatus())) {
             checkBillButtonPermission(depotHead, "2", "审核");
@@ -1343,12 +1350,18 @@ public class DepotHeadService {
                     ExceptionConstants.DEPOT_HEAD_BILL_CANNOT_EDIT_MSG);
         }
         validatePurchaseInboundSubmittedState(depotHead, previousDepotHead);
-        checkPurchaseInboundDataPermission(previousDepotHead);
+        validatePurchaseReturnSubmittedState(depotHead);
+        checkPurchaseBillDataPermission(previousDepotHead);
         checkPurchaseInboundHasNoReturn(previousDepotHead, "编辑");
         if (isPurchaseInbound(previousDepotHead)
                 && !Objects.equals(previousDepotHead.getNumber(), depotHead.getNumber())) {
             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_NUMBER_CHANGE_CODE,
                     ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_NUMBER_CHANGE_MSG);
+        }
+        if (isPurchaseReturn(previousDepotHead)
+                && !Objects.equals(previousDepotHead.getNumber(), depotHead.getNumber())) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_LINK_CHANGE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_LINK_CHANGE_MSG);
         }
         checkBillButtonPermission(previousDepotHead, "1", "编辑");
         if (BusinessConstants.BILLS_STATUS_AUDIT.equals(depotHead.getStatus())) {
@@ -1470,6 +1483,9 @@ public class DepotHeadService {
         } else if (isPurchaseInbound(depotHead)) {
             url = PURCHASE_IN_URL;
             billName = "采购入库";
+        } else if (isPurchaseReturn(depotHead)) {
+            url = PURCHASE_RETURN_URL;
+            billName = "采购退货";
         } else {
             return;
         }
@@ -1485,6 +1501,12 @@ public class DepotHeadService {
         return depotHead != null
                 && BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())
                 && BusinessConstants.SUB_TYPE_PURCHASE.equals(depotHead.getSubType());
+    }
+
+    private boolean isPurchaseReturn(DepotHead depotHead) {
+        return depotHead != null
+                && BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
+                && BusinessConstants.SUB_TYPE_PURCHASE_RETURN.equals(depotHead.getSubType());
     }
 
     private boolean isCurrentUserAdmin() throws Exception {
@@ -1511,11 +1533,29 @@ public class DepotHeadService {
                 ? BusinessConstants.PURCHASE_STATUS_UN_AUDIT : previousDepotHead.getPurchaseStatus());
     }
 
+    private void validatePurchaseReturnSubmittedState(DepotHead depotHead) {
+        if (!isPurchaseReturn(depotHead)) {
+            return;
+        }
+        String status = StringUtil.isEmpty(depotHead.getStatus())
+                ? BusinessConstants.BILLS_STATUS_UN_AUDIT : depotHead.getStatus();
+        if (!BusinessConstants.BILLS_STATUS_UN_AUDIT.equals(status)
+                && !BusinessConstants.BILLS_STATUS_AUDIT.equals(status)) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_STATUS_CODE,
+                    ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_STATUS_MSG);
+        }
+        depotHead.setStatus(status);
+        //采购退货的实际出库进度使用status维护，purchaseStatus不允许由客户端写入。
+        depotHead.setPurchaseStatus(BusinessConstants.PURCHASE_STATUS_UN_AUDIT);
+    }
+
     /**
-     * 对直接按ID读取或操作的采购入库补充列表查询中已有的操作员、仓库数据权限。
+     * 对直接按ID读取或操作的采购入库、采购退货补充操作员和仓库数据权限。
      */
-    public void checkPurchaseInboundDataPermission(DepotHead depotHead) throws Exception {
-        if (!isPurchaseInbound(depotHead)) {
+    public void checkPurchaseBillDataPermission(DepotHead depotHead) throws Exception {
+        boolean purchaseInbound = isPurchaseInbound(depotHead);
+        boolean purchaseReturn = isPurchaseReturn(depotHead);
+        if (!purchaseInbound && !purchaseReturn) {
             return;
         }
         if (isCurrentUserAdmin()) {
@@ -1524,8 +1564,7 @@ public class DepotHeadService {
         String[] creatorArray = getCreatorArray();
         if (creatorArray != null && (depotHead.getCreator() == null
                 || Arrays.stream(creatorArray).noneMatch(depotHead.getCreator().toString()::equals))) {
-            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DATA_PERMISSION_CODE,
-                    ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DATA_PERMISSION_MSG);
+            throwPurchaseBillDataPermissionException(purchaseReturn);
         }
         JSONArray depotArray = depotService.findDepotByCurrentUser();
         Set<Long> allowedDepotIds = new HashSet<>();
@@ -1535,10 +1574,18 @@ public class DepotHeadService {
         List<DepotItem> detailList = depotItemService.getListByHeaderId(depotHead.getId());
         for (DepotItem depotItem : detailList) {
             if (depotItem.getDepotId() == null || !allowedDepotIds.contains(depotItem.getDepotId())) {
-                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DATA_PERMISSION_CODE,
-                        ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DATA_PERMISSION_MSG);
+                throwPurchaseBillDataPermissionException(purchaseReturn);
             }
         }
+    }
+
+    private void throwPurchaseBillDataPermissionException(boolean purchaseReturn) {
+        if (purchaseReturn) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_DATA_PERMISSION_CODE,
+                    ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_DATA_PERMISSION_MSG);
+        }
+        throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DATA_PERMISSION_CODE,
+                ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DATA_PERMISSION_MSG);
     }
 
     private void checkPurchaseInboundHasNoReturn(DepotHead depotHead, String operationName) {
@@ -1618,6 +1665,14 @@ public class DepotHeadService {
             }
             return normalizePurchaseFinancialFields(depotHead, rows, false);
         }
+        if (isPurchaseReturn(depotHead)) {
+            validatePurchaseReturnLinkImmutable(depotHead, previousDepotHead);
+            validatePurchaseSupplier(depotHead);
+            if (StringUtil.isEmpty(depotHead.getLinkNumber())) {
+                rows = clearPurchaseRowLinks(rows);
+            }
+            return validateAndNormalizePurchaseReturn(depotHead, rows, previousDepotHead);
+        }
         if (BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
                 && BusinessConstants.SUB_TYPE_RETAIL.equals(depotHead.getSubType())) {
             return validateAndNormalizeRetailOut(depotHead, headJson, rows);
@@ -1627,6 +1682,189 @@ public class DepotHeadService {
             return validateAndNormalizeRetailReturn(depotHead, headJson, rows, previousDepotHead);
         }
         return rows;
+    }
+
+    private void validatePurchaseReturnLinkImmutable(DepotHead depotHead, DepotHead previousDepotHead) {
+        if (previousDepotHead != null
+                && !Objects.equals(StringUtil.toNull(previousDepotHead.getLinkNumber()),
+                StringUtil.toNull(depotHead.getLinkNumber()))) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_LINK_CHANGE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_LINK_CHANGE_MSG);
+        }
+    }
+
+    private String validateAndNormalizePurchaseReturn(DepotHead depotHead, String rows,
+                                                        DepotHead previousDepotHead) throws Exception {
+        JSONArray detailArray = JSONArray.parseArray(rows);
+        if (detailArray == null || detailArray.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ROW_FAILED_CODE,
+                    ExceptionConstants.DEPOT_HEAD_ROW_FAILED_MSG);
+        }
+        DepotHead sourceHead = null;
+        if (StringUtil.isNotEmpty(depotHead.getLinkNumber())) {
+            sourceHead = getDepotHead(depotHead.getLinkNumber());
+            if (sourceHead == null || sourceHead.getId() == null || !isPurchaseInbound(sourceHead)
+                    || !(BusinessConstants.BILLS_STATUS_AUDIT.equals(sourceHead.getStatus())
+                    || BusinessConstants.BILLS_STATUS_SKIPED.equals(sourceHead.getStatus())
+                    || BusinessConstants.BILLS_STATUS_SKIPING.equals(sourceHead.getStatus()))) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_SOURCE_CODE,
+                        ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_SOURCE_MSG);
+            }
+            checkPurchaseBillDataPermission(sourceHead);
+            if (!Objects.equals(sourceHead.getOrganId(), depotHead.getOrganId())) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_SOURCE_CODE,
+                        ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_SOURCE_MSG);
+            }
+        }
+
+        boolean priceIncludesTax = systemConfigService.getMaterialPriceTaxFlag();
+        boolean physicalOutbound = !systemConfigService.getInOutManageFlag();
+        Long currentHeaderId = previousDepotHead == null ? null : previousDepotHead.getId();
+        Map<Long, BigDecimal> currentReturnBasicNumberMap = new HashMap<>();
+        BigDecimal totalPrice = BigDecimal.ZERO;
+        BigDecimal totalTaxLastMoney = BigDecimal.ZERO;
+        for (int detailIndex = 0; detailIndex < detailArray.size(); detailIndex++) {
+            JSONObject detail = JSONObject.parseObject(detailArray.get(detailIndex).toString());
+            String barCode = detail.getString("barCode");
+            MaterialExtend materialExtend = StringUtil.isEmpty(barCode)
+                    ? null : materialExtendService.getInfoByBarCode(barCode);
+            BigDecimal quantity = detail.getBigDecimal("operNumber");
+            if (materialExtend == null) {
+                throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_BARCODE_IS_NOT_EXIST_CODE,
+                        String.format(ExceptionConstants.MATERIAL_BARCODE_IS_NOT_EXIST_MSG, barCode));
+            }
+            if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_CODE,
+                        String.format(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_MSG, barCode));
+            }
+
+            BigDecimal unitPrice;
+            BigDecimal taxRate;
+            if (sourceHead != null) {
+                Long linkId = detail.getLong("linkId");
+                DepotItem sourceItem = linkId == null ? null : depotItemMapperEx.lockDepotItemById(linkId);
+                if (sourceItem == null || !Objects.equals(sourceItem.getHeaderId(), sourceHead.getId())
+                        || !Objects.equals(sourceItem.getMaterialExtendId(), materialExtend.getId())
+                        || sourceItem.getOperNumber() == null
+                        || sourceItem.getOperNumber().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_DETAIL_CODE,
+                            ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_DETAIL_MSG);
+                }
+                BigDecimal sourceBasicNumber = sourceItem.getBasicNumber() == null
+                        ? sourceItem.getOperNumber() : sourceItem.getBasicNumber();
+                if (sourceBasicNumber.compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_DETAIL_CODE,
+                            ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_DETAIL_MSG);
+                }
+                BigDecimal unitRatio = sourceBasicNumber.divide(sourceItem.getOperNumber(), 12,
+                        BigDecimal.ROUND_HALF_UP);
+                BigDecimal requestedBasicNumber = quantity.multiply(unitRatio);
+                BigDecimal alreadyReturnedBasicNumber = depotItemMapperEx
+                        .getPurchaseReturnReturnedBasicNumber(linkId, currentHeaderId);
+                BigDecimal currentRequestedBasicNumber = currentReturnBasicNumberMap
+                        .getOrDefault(linkId, BigDecimal.ZERO).add(requestedBasicNumber);
+                currentReturnBasicNumberMap.put(linkId, currentRequestedBasicNumber);
+                if (!systemConfigService.getOverLinkBillFlag()
+                        && alreadyReturnedBasicNumber.add(currentRequestedBasicNumber)
+                        .compareTo(sourceBasicNumber) > 0) {
+                    throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_OVER_CODE,
+                            String.format(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_OVER_MSG, barCode));
+                }
+
+                detail.put("unit", sourceItem.getMaterialUnit());
+                detail.put("batchNumber", sourceItem.getBatchNumber());
+                detail.put("expirationDate", sourceItem.getExpirationDate());
+                detail.put("preNumber", sourceItem.getOperNumber());
+                detail.put("finishNumber", alreadyReturnedBasicNumber.divide(unitRatio, 6,
+                        BigDecimal.ROUND_HALF_UP));
+                Long depotId = detail.getLong("depotId");
+                serialNumberService.validatePurchaseReturnSerialNumbers(materialExtend.getMaterialId(), depotId,
+                        depotHead.getNumber(), detail.getString("snList"), sourceItem.getSnList(), physicalOutbound);
+                unitPrice = sourceItem.getUnitPrice() == null ? BigDecimal.ZERO : sourceItem.getUnitPrice();
+                taxRate = sourceItem.getTaxRate() == null ? BigDecimal.ZERO : sourceItem.getTaxRate();
+            } else {
+                unitPrice = detail.getBigDecimal("unitPrice");
+                taxRate = detail.getBigDecimal("taxRate");
+                taxRate = taxRate == null ? BigDecimal.ZERO : taxRate;
+            }
+            if (unitPrice == null || unitPrice.compareTo(BigDecimal.ZERO) < 0
+                    || taxRate.compareTo(BigDecimal.ZERO) < 0
+                    || taxRate.compareTo(new BigDecimal("100")) > 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_AMOUNT_CODE,
+                        ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_AMOUNT_MSG);
+            }
+
+            BigDecimal allPrice = quantity.multiply(unitPrice).setScale(2, BigDecimal.ROUND_HALF_UP);
+            BigDecimal taxMoney;
+            BigDecimal taxLastMoney;
+            if (priceIncludesTax) {
+                BigDecimal realAllPrice = allPrice.divide(BigDecimal.ONE.add(taxRate.movePointLeft(2)), 2,
+                        BigDecimal.ROUND_HALF_UP);
+                taxMoney = realAllPrice.multiply(taxRate).movePointLeft(2)
+                        .setScale(2, BigDecimal.ROUND_HALF_UP);
+                taxLastMoney = allPrice;
+            } else {
+                taxMoney = allPrice.multiply(taxRate).movePointLeft(2)
+                        .setScale(2, BigDecimal.ROUND_HALF_UP);
+                taxLastMoney = allPrice.add(taxMoney).setScale(2, BigDecimal.ROUND_HALF_UP);
+            }
+            detail.put("unitPrice", unitPrice);
+            detail.put("allPrice", allPrice);
+            detail.put("taxRate", taxRate);
+            detail.put("taxMoney", taxMoney);
+            detail.put("taxLastMoney", taxLastMoney);
+            detail.put("taxUnitPrice", taxLastMoney.divide(quantity, 4, BigDecimal.ROUND_HALF_UP));
+            detailArray.set(detailIndex, detail);
+            totalPrice = totalPrice.add(allPrice);
+            totalTaxLastMoney = totalTaxLastMoney.add(taxLastMoney);
+        }
+
+        totalPrice = totalPrice.setScale(2, BigDecimal.ROUND_HALF_UP);
+        totalTaxLastMoney = totalTaxLastMoney.setScale(2, BigDecimal.ROUND_HALF_UP);
+        BigDecimal discountMoney = depotHead.getDiscountMoney();
+        BigDecimal discount = depotHead.getDiscount();
+        if (discountMoney != null) {
+            if (discountMoney.compareTo(BigDecimal.ZERO) < 0
+                    || discountMoney.compareTo(totalTaxLastMoney) > 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_AMOUNT_CODE,
+                        ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_AMOUNT_MSG);
+            }
+            discountMoney = discountMoney.setScale(2, BigDecimal.ROUND_HALF_UP);
+            discount = totalTaxLastMoney.compareTo(BigDecimal.ZERO) == 0 ? BigDecimal.ZERO
+                    : discountMoney.multiply(new BigDecimal("100"))
+                    .divide(totalTaxLastMoney, 2, BigDecimal.ROUND_HALF_UP);
+        } else {
+            discount = discount == null ? BigDecimal.ZERO : discount;
+            if (discount.compareTo(BigDecimal.ZERO) < 0
+                    || discount.compareTo(new BigDecimal("100")) > 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_AMOUNT_CODE,
+                        ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_AMOUNT_MSG);
+            }
+            discountMoney = totalTaxLastMoney.multiply(discount).movePointLeft(2)
+                    .setScale(2, BigDecimal.ROUND_HALF_UP);
+        }
+        BigDecimal discountLastMoney = totalTaxLastMoney.subtract(discountMoney)
+                .setScale(2, BigDecimal.ROUND_HALF_UP);
+        BigDecimal otherMoney = depotHead.getOtherMoney() == null
+                ? BigDecimal.ZERO : depotHead.getOtherMoney();
+        BigDecimal refund = depotHead.getChangeAmount() == null
+                ? BigDecimal.ZERO : depotHead.getChangeAmount();
+        BigDecimal refundable = discountLastMoney.add(otherMoney).setScale(2, BigDecimal.ROUND_HALF_UP);
+        if (otherMoney.compareTo(BigDecimal.ZERO) < 0 || refund.compareTo(BigDecimal.ZERO) < 0
+                || refund.compareTo(refundable) > 0) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_AMOUNT_CODE,
+                    ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_AMOUNT_MSG);
+        }
+        depotHead.setTotalPrice(totalPrice);
+        depotHead.setDiscount(discount);
+        depotHead.setDiscountMoney(discountMoney);
+        depotHead.setDiscountLastMoney(discountLastMoney);
+        depotHead.setOtherMoney(otherMoney);
+        depotHead.setDeposit(BigDecimal.ZERO);
+        depotHead.setChangeAmount(refund.setScale(2, BigDecimal.ROUND_HALF_UP));
+        depotHead.setDebt(refundable.subtract(refund).setScale(2, BigDecimal.ROUND_HALF_UP));
+        depotHead.setBackAmount(BigDecimal.ZERO);
+        return detailArray.toJSONString();
     }
 
     private String validateAndNormalizePurchaseApply(DepotHead depotHead, String rows) throws Exception {
@@ -2754,7 +2992,7 @@ public class DepotHeadService {
         User userInfo=userService.getCurrentUser();
         for(DepotHead depotHead : dhList) {
             checkBillButtonPermission(depotHead, "1", "转其它出入库");
-            checkPurchaseInboundDataPermission(depotHead);
+            checkPurchaseBillDataPermission(depotHead);
             String prefixNo = BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())?"QTRK":"QTCK";
             //关联单据单号
             String oldNumber = depotHead.getNumber();
@@ -2844,7 +3082,7 @@ public class DepotHeadService {
                         ExceptionConstants.DEPOT_HEAD_EDIT_FAILED_MSG);
             }
             checkBillButtonPermission(oldDepotHead, "1", "编辑备注");
-            checkPurchaseInboundDataPermission(oldDepotHead);
+            checkPurchaseBillDataPermission(oldDepotHead);
             DepotHead depotHead = new DepotHead();
             depotHead.setId(id);
             depotHead.setRemark(remark);

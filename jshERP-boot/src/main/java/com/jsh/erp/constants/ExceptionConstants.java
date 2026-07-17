@@ -566,6 +566,30 @@ public class ExceptionConstants {
     //采购入库-保存后不能修改单据编号
     public static final int DEPOT_HEAD_PURCHASE_IN_NUMBER_CHANGE_CODE = 8500068;
     public static final String DEPOT_HEAD_PURCHASE_IN_NUMBER_CHANGE_MSG = "抱歉，采购入库单保存后不能修改单据编号";
+    //采购退货-单据状态只能由保存或审核流程设置
+    public static final int DEPOT_HEAD_PURCHASE_RETURN_STATUS_CODE = 8500069;
+    public static final String DEPOT_HEAD_PURCHASE_RETURN_STATUS_MSG = "抱歉，采购退货单状态不合法，请通过保存或审核操作变更状态";
+    //采购退货-关联采购入库不合法
+    public static final int DEPOT_HEAD_PURCHASE_RETURN_SOURCE_CODE = 8500070;
+    public static final String DEPOT_HEAD_PURCHASE_RETURN_SOURCE_MSG = "抱歉，关联的采购入库单不存在、未审核或不允许退货";
+    //采购退货-关联明细不合法
+    public static final int DEPOT_HEAD_PURCHASE_RETURN_DETAIL_CODE = 8500071;
+    public static final String DEPOT_HEAD_PURCHASE_RETURN_DETAIL_MSG = "抱歉，采购退货明细与关联采购入库不一致";
+    //采购退货-退货数量超出采购入库数量
+    public static final int DEPOT_HEAD_PURCHASE_RETURN_OVER_CODE = 8500072;
+    public static final String DEPOT_HEAD_PURCHASE_RETURN_OVER_MSG = "抱歉，商品条码:%s的累计采购退货数量不能超过采购入库数量";
+    //采购退货-数据权限
+    public static final int DEPOT_HEAD_PURCHASE_RETURN_DATA_PERMISSION_CODE = 8500073;
+    public static final String DEPOT_HEAD_PURCHASE_RETURN_DATA_PERMISSION_MSG = "抱歉，当前用户没有采购退货单或所选仓库的数据权限";
+    //采购退货-单号或关联关系不能修改
+    public static final int DEPOT_HEAD_PURCHASE_RETURN_LINK_CHANGE_CODE = 8500074;
+    public static final String DEPOT_HEAD_PURCHASE_RETURN_LINK_CHANGE_MSG = "抱歉，采购退货单保存后不能修改单据编号或关联采购入库单";
+    //采购退货-金额不合法
+    public static final int DEPOT_HEAD_PURCHASE_RETURN_AMOUNT_CODE = 8500075;
+    public static final String DEPOT_HEAD_PURCHASE_RETURN_AMOUNT_MSG = "抱歉，采购退货的价格、税率、优惠、其它费用或退款金额不合法";
+    //采购退货-序列号与来源不一致
+    public static final int DEPOT_HEAD_PURCHASE_RETURN_SERIAL_CODE = 8500076;
+    public static final String DEPOT_HEAD_PURCHASE_RETURN_SERIAL_MSG = "抱歉，采购退货序列号不属于关联入库明细或所选仓库";
 
 
     /**

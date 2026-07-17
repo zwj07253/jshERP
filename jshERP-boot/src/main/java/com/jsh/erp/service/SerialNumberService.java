@@ -18,9 +18,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class SerialNumberService {
@@ -132,6 +130,59 @@ public class SerialNumberService {
         if(depotItem!=null){
             sellSerialNumber(depotItem.getMaterialId(), outBillNo, snList,userInfo);
         }
+    }
+
+    /**
+     * 校验关联采购入库退货时提交的序列号，防止退错入库明细或跨仓库出库。
+     */
+    public void validatePurchaseReturnSerialNumbers(Long materialId, Long depotId, String currentBillNo,
+                                                     String returnSnList, String sourceSnList,
+                                                     boolean physicalOutbound) {
+        Set<String> returnNumbers = parseSerialNumberSet(returnSnList);
+        if (returnNumbers.isEmpty()) {
+            return;
+        }
+        List<String> submittedNumbers = StringUtil.strToStringList(
+                returnSnList.replaceAll("，", ","));
+        if (submittedNumbers == null || returnNumbers.size() != submittedNumbers.size()
+                || !parseSerialNumberSet(sourceSnList).containsAll(returnNumbers)) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_SERIAL_CODE,
+                    ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_SERIAL_MSG);
+        }
+        if (!physicalOutbound) {
+            return;
+        }
+        SerialNumberExample example = new SerialNumberExample();
+        example.createCriteria().andMaterialIdEqualTo(materialId)
+                .andSerialNumberIn(new ArrayList<>(returnNumbers))
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        List<SerialNumber> serialNumbers = serialNumberMapper.selectByExample(example);
+        Set<String> validNumbers = new HashSet<>();
+        for (SerialNumber serialNumber : serialNumbers) {
+            boolean available = "0".equals(serialNumber.getIsSell())
+                    || (StringUtil.isNotEmpty(currentBillNo)
+                    && currentBillNo.equals(serialNumber.getOutBillNo()));
+            if (available && Objects.equals(depotId, serialNumber.getDepotId())) {
+                validNumbers.add(serialNumber.getSerialNumber());
+            }
+        }
+        if (!validNumbers.containsAll(returnNumbers)) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_SERIAL_CODE,
+                    ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_SERIAL_MSG);
+        }
+    }
+
+    private Set<String> parseSerialNumberSet(String serialNumberList) {
+        Set<String> result = new LinkedHashSet<>();
+        if (StringUtil.isEmpty(serialNumberList)) {
+            return result;
+        }
+        for (String serialNumber : serialNumberList.replaceAll("，", ",").split(",")) {
+            if (StringUtil.isNotEmpty(serialNumber)) {
+                result.add(serialNumber.trim());
+            }
+        }
+        return result;
     }
 
     /**

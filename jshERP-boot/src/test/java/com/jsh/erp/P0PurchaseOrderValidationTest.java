@@ -5,6 +5,7 @@ import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.constants.ExceptionConstants;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +19,7 @@ public class P0PurchaseOrderValidationTest extends ApiTestBase {
 
     private static String barCode;
     private static String unit;
+    private static Long materialExtendId;
     private static Long depotId;
     private static Long accountId;
 
@@ -34,6 +36,7 @@ public class P0PurchaseOrderValidationTest extends ApiTestBase {
                         && !"1".equals(material.getString("enableSerialNumber"))) {
                     barCode = material.getString("mBarCode");
                     unit = material.getString("unit").replace("[基本]", "");
+                    materialExtendId = material.getLong("id");
                     break;
                 }
             }
@@ -42,6 +45,11 @@ public class P0PurchaseOrderValidationTest extends ApiTestBase {
         depotId = test.getFirstId(depotResponse);
         Response accountResponse = test.authReqGet().param("search", "{}").get(CONTEXT + "/account/list");
         accountId = test.getFirstId(accountResponse);
+    }
+
+    @BeforeEach
+    void refreshAdminSession() {
+        loginAsAdmin();
     }
 
     @Test
@@ -220,8 +228,100 @@ public class P0PurchaseOrderValidationTest extends ApiTestBase {
         }
     }
 
+    @Test
+    @DisplayName("采购退货校验来源、累计数量并由服务端重算金额")
+    void validatePurchaseReturnSourceQuantityAndAmount() {
+        assumeTrue(hasBaseData(), "缺少采购退货测试基础数据");
+        String inboundNumber = generateNumber("CGRK");
+        Long inboundId = null;
+        Long returnId = null;
+        try {
+            assertSuccess(submitPurchaseInbound(inboundNumber, 101L, null, null, 2, 10));
+            inboundId = getHeadId(inboundNumber);
+            auditDepotHead(inboundId);
+            Long inboundItemId = getFirstDetail(inboundId).getLong("id");
+
+            Response wrongSupplier = submitPurchaseReturn(generateNumber("CGTH"), 102L,
+                    inboundNumber, inboundItemId, 1, 999, 10, "0", "伪造单位");
+            assertCode(wrongSupplier, ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_SOURCE_CODE);
+
+            Response overReturn = submitPurchaseReturn(generateNumber("CGTH"), 101L,
+                    inboundNumber, inboundItemId, 3, 999, 20, "0", "伪造单位");
+            assertCode(overReturn, ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_OVER_CODE);
+
+            double stockBeforeReturn = getMaterialStock(materialExtendId, depotId);
+            String returnNumber = generateNumber("CGTH");
+            assertSuccess(submitPurchaseReturn(returnNumber, 101L, inboundNumber, inboundItemId,
+                    1, 999, 10, "0", "伪造单位"));
+            returnId = getHeadId(returnNumber);
+            JSONObject returnHead = getRawHead(returnId);
+            JSONObject returnDetail = getFirstDetail(returnId);
+            assertEquals(0, returnHead.getBigDecimal("totalPrice").compareTo(new BigDecimal("10.00")));
+            assertEquals(0, returnHead.getBigDecimal("changeAmount").compareTo(new BigDecimal("10.00")));
+            assertEquals(0, returnHead.getBigDecimal("debt").compareTo(BigDecimal.ZERO));
+            assertEquals(unit, returnDetail.getString("unit"));
+            assertEquals(0, returnDetail.getBigDecimal("unitPrice").compareTo(new BigDecimal("10.000000")));
+            assertEquals(0, returnDetail.getBigDecimal("allPrice").compareTo(new BigDecimal("10.00")));
+            assertEquals(stockBeforeReturn - 1, getMaterialStock(materialExtendId, depotId), 0.0001);
+
+            JSONObject renamedHead = getRawHead(returnId);
+            renamedHead.put("number", generateNumber("CGTH"));
+            assertCode(updateBill(renamedHead, returnDetail),
+                    ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_LINK_CHANGE_CODE);
+
+            JSONObject relinkedHead = getRawHead(returnId);
+            relinkedHead.put("linkNumber", "不存在的采购入库单");
+            assertCode(updateBill(relinkedHead, returnDetail),
+                    ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_LINK_CHANGE_CODE);
+
+            waitForBillRepeatGuard();
+            JSONObject normalizedHead = getRawHead(returnId);
+            normalizedHead.put("purchaseStatus", "2");
+            assertSuccess(updateBill(normalizedHead, returnDetail));
+            assertEquals("0", getRawHead(returnId).getString("purchaseStatus"));
+
+            auditDepotHead(returnId);
+            unauditDepotHead(returnId);
+        } finally {
+            if (returnId != null && "1".equals(getRawHead(returnId).getString("status"))) {
+                unauditDepotHead(returnId);
+            }
+            deleteIfPresent(returnId);
+            if (inboundId != null && "1".equals(getRawHead(inboundId).getString("status"))) {
+                unauditDepotHead(inboundId);
+            }
+            deleteIfPresent(inboundId);
+        }
+    }
+
+    @Test
+    @DisplayName("采购退货拒绝伪造状态和非法退款金额")
+    void rejectPurchaseReturnForgedStatusAndAmount() {
+        assumeTrue(hasBaseData(), "缺少采购退货测试基础数据");
+        Response forgedStatus = submitPurchaseReturn(generateNumber("CGTH"), 101L,
+                null, null, 1, 10, 10, "2", unit);
+        assertCode(forgedStatus, ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_STATUS_CODE);
+
+        Response negativePrice = submitPurchaseReturn(generateNumber("CGTH"), 101L,
+                null, null, 1, -10, 0, "0", unit);
+        assertCode(negativePrice, ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_AMOUNT_CODE);
+
+        Response excessiveRefund = submitPurchaseReturn(generateNumber("CGTH"), 101L,
+                null, null, 1, 10, 100, "0", unit);
+        assertCode(excessiveRefund, ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_AMOUNT_CODE);
+    }
+
     private boolean hasBaseData() {
         return barCode != null && unit != null && depotId != null && accountId != null;
+    }
+
+    private void waitForBillRepeatGuard() {
+        try {
+            Thread.sleep(2100L);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("等待单据防重复提交窗口时被中断", e);
+        }
     }
 
     private Response submitSalesOrder(String number, double quantity) {
@@ -256,7 +356,7 @@ public class P0PurchaseOrderValidationTest extends ApiTestBase {
     private Response submitPurchaseInbound(String number, Long supplierId, String linkNumber, Long linkId,
                                            double quantity, double submittedUnitPrice) {
         return submitPurchaseInbound(number, supplierId, linkNumber, linkId, quantity,
-                submittedUnitPrice, 0, "0", "伪造单位");
+                submittedUnitPrice, 0, "0", unit);
     }
 
     private Response submitPurchaseInbound(String number, Long supplierId, String linkNumber, Long linkId,
@@ -280,18 +380,26 @@ public class P0PurchaseOrderValidationTest extends ApiTestBase {
     }
 
     private Response submitPurchaseReturn(String number, String linkNumber, Long linkId) {
+        return submitPurchaseReturn(number, 101L, linkNumber, linkId,
+                1, 10, 10, "0", unit);
+    }
+
+    private Response submitPurchaseReturn(String number, Long supplierId, String linkNumber, Long linkId,
+                                          double quantity, double submittedUnitPrice, double refund,
+                                          String status, String submittedUnit) {
         JSONObject info = new JSONObject();
         info.put("number", number);
         info.put("type", "出库");
         info.put("subType", "采购退货");
-        info.put("organId", 101L);
+        info.put("organId", supplierId);
         info.put("accountId", accountId);
         info.put("linkNumber", linkNumber);
-        info.put("changeAmount", 10);
-        info.put("totalPrice", 10);
+        info.put("changeAmount", refund);
+        info.put("totalPrice", submittedUnitPrice * quantity);
         info.put("deposit", 0);
-        info.put("status", "0");
-        JSONObject item = buildItem(linkId, 1, unit, 10, 10, 0);
+        info.put("status", status);
+        JSONObject item = buildItem(linkId, quantity, submittedUnit, submittedUnitPrice,
+                submittedUnitPrice * quantity, 0);
         item.put("depotId", depotId);
         return submitBill(info, item);
     }

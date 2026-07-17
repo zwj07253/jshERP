@@ -141,7 +141,7 @@
             </template>
             <a-button icon="setting">列设置</a-button>
           </a-popover>
-          <a-tooltip placement="left" title="用于采购入库单据的退货。采购退货单可以由采购出库单转过来，也可以单独创建。" slot="action">
+          <a-tooltip placement="left" title="用于采购入库单据的退货。采购退货单可以由采购入库单转过来，也可以单独创建。" slot="action">
             <a-icon v-if="btnEnableList.indexOf(1)>-1" type="question-circle" style="font-size:20px;float:right;" />
           </a-tooltip>
         </div>

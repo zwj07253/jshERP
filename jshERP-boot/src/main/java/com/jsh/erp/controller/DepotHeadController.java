@@ -68,7 +68,7 @@ public class DepotHeadController extends BaseController {
         DepotHead depotHead = depotHeadService.getDepotHead(id);
         Map<String, Object> objectMap = new HashMap<>();
         if(depotHead != null) {
-            depotHeadService.checkPurchaseInboundDataPermission(depotHead);
+            depotHeadService.checkPurchaseBillDataPermission(depotHead);
             objectMap.put("info", depotHead);
             return returnJson(objectMap, ErpInfo.OK.name, ErpInfo.OK.code);
         } else {

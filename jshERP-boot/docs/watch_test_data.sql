@@ -92,6 +92,13 @@ btn_str = EXCLUDED.btn_str,
 tenant_id = EXCLUDED.tenant_id,
 delete_flag = EXCLUDED.delete_flag;
 
+-- jsh 系统管理员需要采购退货的新增、审核、删除和反审核按钮权限。
+UPDATE jsh_user_business
+SET btn_str = (COALESCE(NULLIF(btn_str, ''), '[]')::jsonb
+    || '[{"funId":199,"btnStr":"1,2,3,7"}]'::jsonb)::text
+WHERE id = 107 AND type = 'RoleFunctions' AND key_id = '101' AND tenant_id = 100
+  AND NOT (COALESCE(NULLIF(btn_str, ''), '[]')::jsonb @> '[{"funId":199}]'::jsonb);
+
 -- ============================================
 -- 7. Persons
 -- ============================================
@@ -581,6 +588,13 @@ INSERT INTO jsh_depot_head (id, type, sub_type, default_number, number, create_t
 (411, '其它', '拆卸单', 'CX-20260709-001', 'CX-20260709-001', '2026-07-09 16:00:00', '2026-07-09 16:20:00', NULL, 104, NULL, 0, 0, 0.000000, NULL, '其它', '礼盒套装拆卸为单品', '王强', '1', NULL, '0', 100, '0')
 ON CONFLICT (id) DO NOTHING;
 
+-- 采购退货已由后续收款单结算，业务单本身不能再次计入账户余额。
+UPDATE jsh_depot_head
+SET link_number = 'PO-20260510-001', change_amount = 0, total_price = 12000,
+    discount = 0, discount_money = 0, discount_last_money = 12000,
+    other_money = 0, deposit = 0, debt = 12000, last_debt = 0, purchase_status = '0'
+WHERE id = 403 AND tenant_id = 100 AND number = 'PT-20260708-001';
+
 INSERT INTO jsh_depot_item (id, header_id, material_id, material_extend_id, material_unit, sku, oper_number, basic_number, unit_price, purchase_unit_price, all_price, remark, depot_id, another_depot_id, material_type, tenant_id, delete_flag) VALUES
 (401, 401, 103, 103, '只', NULL, 5, 5, 0.000000, 0.000000, 0.000000, '请购天梭力洛克 x5', NULL, NULL, NULL, 100, '0'),
 (402, 401, 113, 113, '条', NULL, 60, 60, 0.000000, 0.000000, 0.000000, '请购精钢表带 x60', NULL, NULL, NULL, 100, '0'),
@@ -604,6 +618,11 @@ INSERT INTO jsh_depot_item (id, header_id, material_id, material_extend_id, mate
 (420, 411, 115, 115, '个', NULL, 5, 5, 85.000000, 85.000000, 425.000000, '拆卸产出实木表盒 x5', 101, NULL, '普通子件', 100, '0'),
 (421, 411, 112, 112, '条', NULL, 5, 5, 35.000000, 35.000000, 175.000000, '拆卸产出牛皮表带 x5', 101, NULL, '普通子件', 100, '0')
 ON CONFLICT (id) DO NOTHING;
+
+UPDATE jsh_depot_item
+SET link_id = 102, tax_unit_price = 12000, tax_rate = 0,
+    tax_money = 0, tax_last_money = 12000
+WHERE id = 405 AND tenant_id = 100 AND header_id = 403;
 
 -- ============================================
 -- 34. 扩展财务单据：覆盖转账、预付款和新增收支

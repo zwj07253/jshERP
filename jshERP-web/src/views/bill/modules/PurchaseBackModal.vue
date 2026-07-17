@@ -47,12 +47,14 @@
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
             <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
-              <a-input placeholder="请输入单据编号" v-decorator.trim="[ 'number', validatorRules.number ]" />
+              <a-input placeholder="请输入单据编号" :disabled="action === 'edit'"
+                       v-decorator.trim="[ 'number', validatorRules.number ]" />
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
             <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="关联单据">
-              <a-input-search placeholder="请选择关联单据" v-decorator="[ 'linkNumber' ]" @search="onSearchLinkNumber" :readOnly="true"/>
+              <a-input-search placeholder="请选择关联单据" v-decorator="[ 'linkNumber' ]" @search="onSearchLinkNumber"
+                              :readOnly="true" :disabled="action === 'edit'"/>
             </a-form-item>
           </a-col>
         </a-row>
@@ -108,7 +110,7 @@
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
             <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="退款优惠">
-              <a-input placeholder="请输入付款优惠" v-decorator.trim="[ 'discountMoney' ]" @change="onChangeDiscountMoney"/>
+              <a-input placeholder="请输入退款优惠" v-decorator.trim="[ 'discountMoney' ]" @change="onChangeDiscountMoney"/>
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
@@ -193,7 +195,7 @@
   import JUpload from '@/components/jeecg/JUpload'
   import JDate from '@/components/jeecg/JDate'
   import Vue from 'vue'
-  import { getCurrentSystemConfig, findBySelectSup } from '@/api/api'
+  import { findBySelectSup } from '@/api/api'
   export default {
     name: "PurchaseBackModal",
     mixins: [JEditableTableMixin, BillModalMixin],
@@ -312,6 +314,8 @@
     methods: {
       //调用完edit()方法之后会自动调用此方法
       editAfter() {
+        const systemConfigReady = this.initSystemConfig().catch(() => null)
+        const depotReady = this.initDepot().catch(() => null)
         this.billStatus = '0'
         this.currentSelectDepotId = ''
         this.rowCanEdit = true
@@ -328,7 +332,10 @@
           this.$nextTick(() => {
             if(this.transferParam && this.transferParam.number) {
               let tp = this.transferParam
-              this.linkBillListOk(tp.list, tp.number, tp.organId, tp.discount, tp.deposit, tp.remark, this.defaultDepotId, tp.accountId)
+              Promise.all([systemConfigReady, depotReady]).then(() => {
+                this.linkBillListOk(tp.list, tp.number, tp.organId, tp.discount, tp.deposit, tp.remark,
+                  this.defaultDepotId, tp.accountId)
+              })
             }
           })
         } else {
@@ -366,9 +373,7 @@
           this.model.tenantId = ''
           this.copyAddInit(this.prefixNo)
         }
-        this.initSystemConfig()
         this.initSupplier(0)
-        this.initDepot()
         this.initAccount(0)
         this.initPlatform()
         this.initQuickBtn()
@@ -431,6 +436,10 @@
                 info.taxLastMoney = (info.allPrice + info.taxMoney).toFixed(2)-0
               }
             }
+            if(info.enableSerialNumber === '1') {
+              //关联退货必须重新选择本次实际退回供应商的序列号。
+              info.snList = ''
+            }
             info.linkId = info.id
             allTaxLastMoney += info.taxLastMoney
             if(info.operNumber>0) {
@@ -465,16 +474,15 @@
             findBySelectSup({organId: organId, limit:1}).then((res)=> {
               this.supList = res && Array.isArray(res) ? res : [];
             })
-            getCurrentSystemConfig().then((res) => {
-              if (res.code === 200 && res.data) {
-                let flag = res.data.zeroChangeAmountFlag==='1'?true:false
-                if(flag) {
-                  //切换收付款的金额为0
-                  let oldChangeAmount = this.form.getFieldValue('changeAmount')-0
-                  this.form.setFieldsValue({'changeAmount':0, 'debt':oldChangeAmount})
-                }
-              }
-            })
+            if(this.zeroChangeAmountFlag) {
+              //切换收付款的金额为0
+              let oldChangeAmount = this.form.getFieldValue('changeAmount')-0
+              this.form.setFieldsValue({'changeAmount':0, 'debt':oldChangeAmount})
+            }
+            let targetDepotId = depotId || this.defaultDepotId
+            if(targetDepotId) {
+              this.batchSetDepotModalFormOk(targetDepotId)
+            }
           })
         }
       },

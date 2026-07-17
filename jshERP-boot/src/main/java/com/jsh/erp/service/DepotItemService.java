@@ -407,10 +407,13 @@ public class DepotItemService {
         if (null != rowArr && rowArr.size()>0) {
             boolean purchaseInbound = BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())
                     && BusinessConstants.SUB_TYPE_PURCHASE.equals(depotHead.getSubType());
+            boolean purchaseReturn = BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
+                    && BusinessConstants.SUB_TYPE_PURCHASE_RETURN.equals(depotHead.getSubType());
+            boolean purchaseDepotPermission = purchaseInbound || purchaseReturn;
             Set<Long> allowedPurchaseDepotIds = new HashSet<>();
             User currentUser = userService.getCurrentUser();
             boolean adminUser = currentUser != null && "admin".equals(currentUser.getLoginName());
-            if (purchaseInbound && !adminUser) {
+            if (purchaseDepotPermission && !adminUser) {
                 JSONArray allowedDepotArray = depotService.findDepotByCurrentUser();
                 for (Object depotObject : allowedDepotArray) {
                     allowedPurchaseDepotIds.add(JSONObject.parseObject(depotObject.toString()).getLong("id"));
@@ -631,7 +634,11 @@ public class DepotItemService {
                 }
                 if (StringUtil.isExist(rowObj.get("depotId"))) {
                     depotItem.setDepotId(rowObj.getLong("depotId"));
-                    if (purchaseInbound && !adminUser && !allowedPurchaseDepotIds.contains(depotItem.getDepotId())) {
+                    if (purchaseDepotPermission && !adminUser && !allowedPurchaseDepotIds.contains(depotItem.getDepotId())) {
+                        if (purchaseReturn) {
+                            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_DATA_PERMISSION_CODE,
+                                    ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_DATA_PERMISSION_MSG);
+                        }
                         throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DATA_PERMISSION_CODE,
                                 ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DATA_PERMISSION_MSG);
                     }
