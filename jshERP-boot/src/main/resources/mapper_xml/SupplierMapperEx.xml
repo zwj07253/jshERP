@@ -64,7 +64,7 @@
         where 1=1
         and id in (
         <foreach collection="ids" item="id" separator=",">
-            #{id}
+            #{id}::bigint
         </foreach>
         )
     </update>

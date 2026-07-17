@@ -567,7 +567,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================
 INSERT INTO jsh_depot_head (id, type, sub_type, default_number, number, create_time, oper_time, organ_id, creator, account_id, change_amount, back_amount, total_price, pay_type, bill_type, remark, sales_man, status, purchase_status, source, tenant_id, delete_flag) VALUES
 (401, '其它', '请购单', 'QGD-20260510-001', 'QGD-20260510-001', '2026-05-10 08:00:00', '2026-05-10 08:20:00', NULL, 102, NULL, 0, 0, 0.000000, NULL, '采购', '门店补货请购：机械表和表带', '张伟', '1', '0', '0', 100, '0'),
-(402, '其它', '采购订单', 'CGDD-20260610-001', 'CGDD-20260610-001', '2026-06-10 08:30:00', '2026-06-10 09:00:00', 101, 102, NULL, 0, 0, 96000.000000, NULL, '采购', '瑞士品牌采购订单，部分已入库', '张伟', '2', '3', '0', 100, '0'),
+(402, '其它', '采购订单', 'CGDD-20260610-001', 'CGDD-20260610-001', '2026-06-10 08:30:00', '2026-06-10 09:00:00', 101, 102, NULL, 0, 0, -80000.000000, NULL, '采购', '瑞士品牌采购订单，待入库', '张伟', '1', '0', '0', 100, '0'),
 (403, '出库', '采购退货', 'PT-20260708-001', 'PT-20260708-001', '2026-07-08 15:00:00', '2026-07-08 15:30:00', 101, 102, 101, 12000.000000, 0, 12000.000000, '记账', '采购', '浪琴表镜运输划痕，退回供应商', '张伟', '1', '2', '0', 100, '0'),
 (404, '其它', '销售订单', 'XSDD-20260701-001', 'XSDD-20260701-001', '2026-07-01 08:30:00', '2026-07-01 09:00:00', 105, 103, NULL, 0, 0, 65000.000000, NULL, '销售', '北京瑞表行销售订单，部分已出库', '李娜', '2', '3', '0', 100, '0'),
 (405, '出库', '销售', 'XS-20260708-001', 'XS-20260708-001', '2026-07-08 13:00:00', '2026-07-08 13:20:00', 106, 103, 101, 36980.000000, 0, 36980.000000, '记账', '销售', '上海时光销售出库：精工与华为手表', '李娜', '1', '2', '0', 100, '0'),
@@ -632,7 +632,7 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO jsh_log (id, user_id, operation, client_ip, create_time, status, content, tenant_id) VALUES
 (201, 102, '请购单', '192.168.1.100', '2026-05-10 08:20:00', 0, '创建请购单QGD-20260510-001，数量：65', 100),
-(202, 102, '采购订单', '192.168.1.100', '2026-06-10 09:00:00', 0, '创建采购订单CGDD-20260610-001，金额：¥96,000', 100),
+(202, 102, '采购订单', '192.168.1.100', '2026-06-10 09:00:00', 0, '创建采购订单CGDD-20260610-001，金额：¥80,000', 100),
 (203, 102, '采购退货', '192.168.1.100', '2026-07-08 15:30:00', 0, '创建采购退货PT-20260708-001，金额：¥12,000', 100),
 (204, 103, '销售订单', '192.168.1.101', '2026-07-01 09:00:00', 0, '创建销售订单XSDD-20260701-001，金额：¥65,000', 100),
 (205, 103, '销售出库', '192.168.1.101', '2026-07-08 13:20:00', 0, '创建销售出库XS-20260708-001，金额：¥36,980', 100),
@@ -806,6 +806,7 @@ SELECT setval('jsh_msg_id_seq', COALESCE((SELECT MAX(id) FROM jsh_msg), 1));
 SELECT setval('jsh_platform_config_id_seq', COALESCE((SELECT MAX(id) FROM jsh_platform_config), 1));
 SELECT setval('jsh_system_config_id_seq', COALESCE((SELECT MAX(id) FROM jsh_system_config), 1));
 SELECT setval('jsh_serial_number_id_seq', COALESCE((SELECT MAX(id) FROM jsh_serial_number), 1));
+SELECT setval('jsh_log_id_seq', COALESCE((SELECT MAX(id) FROM jsh_log), 1));
 SELECT setval('jsh_sys_dict_type_dict_id_seq', COALESCE((SELECT MAX(dict_id) FROM jsh_sys_dict_type), 1));
 SELECT setval('jsh_sys_dict_data_dict_code_seq', COALESCE((SELECT MAX(dict_code) FROM jsh_sys_dict_data), 1));
 

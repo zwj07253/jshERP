@@ -32,7 +32,7 @@ public class P0RetailReturnValidationTest extends ApiTestBase {
                 if (!"1".equals(material.getString("enableBatchNumber"))
                         && !"1".equals(material.getString("enableSerialNumber"))) {
                     barCode = material.getString("mBarCode");
-                    unit = material.getString("unit");
+                    unit = material.getString("unit").replaceAll("\\[[^]]*]$", "");
                     break;
                 }
             }

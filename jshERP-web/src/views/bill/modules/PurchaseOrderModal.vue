@@ -424,12 +424,33 @@
         this.$refs.linkBillList.purchaseShow('其它', '请购单', '客户', "1,3")
         this.$refs.linkBillList.title = "请选择请购单"
       },
-      linkBillListOk(selectBillDetailRows, linkNumber, organId) {
-        this.rowCanEdit = false
-        this.materialTable.columns[1].type = FormTypes.normal
-        this.changeFormTypes(this.materialTable.columns, 'preNumber', 1)
-        this.changeFormTypes(this.materialTable.columns, 'finishNumber', 1)
-        if(selectBillDetailRows && selectBillDetailRows.length>0) {
+      async linkBillListOk(selectBillDetailRows, linkNumber, organId) {
+        if(!selectBillDetailRows || selectBillDetailRows.length === 0) {
+          return
+        }
+        this.confirmLoading = true
+        try {
+          //先确认来源类型并写入关联字段，避免明细已载入但关联单号尚未设置时被提交
+          const res = await findBillDetailByNumber({'number':linkNumber})
+          if (!res || res.code !== 200 || !res.data) {
+            this.$message.error('关联单据不存在或已失效，请重新选择')
+            return
+          }
+          const isPurchaseApply = res.data.subType === '请购单'
+          await new Promise(resolve => {
+            this.$nextTick(() => {
+              this.form.setFieldsValue({
+                'linkApply': isPurchaseApply ? linkNumber : '',
+                'linkNumber': isPurchaseApply ? '' : linkNumber
+              })
+              resolve()
+            })
+          })
+
+          this.rowCanEdit = false
+          this.materialTable.columns[1].type = FormTypes.normal
+          this.changeFormTypes(this.materialTable.columns, 'preNumber', 1)
+          this.changeFormTypes(this.materialTable.columns, 'finishNumber', 1)
           let listEx = []
           let discountLastMoney = 0
           for(let j=0; j<selectBillDetailRows.length; j++) {
@@ -450,25 +471,6 @@
             }
           }
           this.materialTable.dataSource = listEx
-          //根据单号查询单据类型
-          findBillDetailByNumber({'number':linkNumber}).then((res) => {
-            if (res.code === 200) {
-              if(res.data && res.data.subType === '请购单') {
-                //关联请购单
-                this.$nextTick(() => {
-                  this.form.setFieldsValue({
-                    'linkApply': linkNumber
-                  })
-                })
-              } else {
-                this.$nextTick(() => {
-                  this.form.setFieldsValue({
-                    'linkNumber': linkNumber
-                  })
-                })
-              }
-            }
-          })
           //给优惠后金额重新赋值
           discountLastMoney = discountLastMoney?discountLastMoney:0
           this.$nextTick(() => {
@@ -477,6 +479,8 @@
               'changeAmount': 0
             })
           })
+        } finally {
+          this.confirmLoading = false
         }
       }
     }

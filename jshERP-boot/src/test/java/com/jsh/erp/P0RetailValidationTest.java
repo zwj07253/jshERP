@@ -29,7 +29,7 @@ public class P0RetailValidationTest extends ApiTestBase {
         if (materialData.getLongValue("total") > 0) {
             JSONObject material = materialData.getJSONArray("rows").getJSONObject(0);
             barCode = material.getString("mBarCode");
-            unit = material.getString("unit");
+            unit = material.getString("unit").replaceAll("\\[[^]]*]$", "");
         }
 
         Response depotResponse = test.authReqGet().param("search", "{}").get(CONTEXT + "/depot/list");

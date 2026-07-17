@@ -521,6 +521,36 @@ public class ExceptionConstants {
     //采购订单-不能更换关联请购单
     public static final int DEPOT_HEAD_PURCHASE_APPLY_CHANGE_CODE = 8500053;
     public static final String DEPOT_HEAD_PURCHASE_APPLY_CHANGE_MSG = "抱歉，已关联请购单的采购订单不能更换或取消关联";
+    //采购业务-必须选择有效供应商
+    public static final int DEPOT_HEAD_PURCHASE_SUPPLIER_CODE = 8500054;
+    public static final String DEPOT_HEAD_PURCHASE_SUPPLIER_MSG = "抱歉，采购业务必须选择有效且已启用的供应商";
+    //采购业务-金额字段不合法
+    public static final int DEPOT_HEAD_PURCHASE_AMOUNT_CODE = 8500055;
+    public static final String DEPOT_HEAD_PURCHASE_AMOUNT_MSG = "抱歉，采购单据的价格、税率、折扣或付款金额不合法";
+    //采购订单-关联销售订单不合法
+    public static final int DEPOT_HEAD_PURCHASE_SALES_SOURCE_CODE = 8500056;
+    public static final String DEPOT_HEAD_PURCHASE_SALES_SOURCE_MSG = "抱歉，关联的销售订单不存在、状态不可用或不是销售订单";
+    //采购订单-关联销售订单明细不合法
+    public static final int DEPOT_HEAD_PURCHASE_SALES_DETAIL_CODE = 8500057;
+    public static final String DEPOT_HEAD_PURCHASE_SALES_DETAIL_MSG = "抱歉，采购订单明细不属于关联的销售订单";
+    //采购订单-超过销售订单数量
+    public static final int DEPOT_HEAD_PURCHASE_SALES_OVER_CODE = 8500058;
+    public static final String DEPOT_HEAD_PURCHASE_SALES_OVER_MSG = "抱歉，商品条码:%s的累计采购数量超过销售订单数量";
+    //采购订单-不能修改来源
+    public static final int DEPOT_HEAD_PURCHASE_LINK_CHANGE_CODE = 8500059;
+    public static final String DEPOT_HEAD_PURCHASE_LINK_CHANGE_MSG = "抱歉，采购订单保存后不能更换或取消关联来源";
+    //采购入库-关联采购订单不合法
+    public static final int DEPOT_HEAD_PURCHASE_IN_SOURCE_CODE = 8500060;
+    public static final String DEPOT_HEAD_PURCHASE_IN_SOURCE_MSG = "抱歉，关联的采购订单不存在、状态不可用或不是采购订单";
+    //采购入库-关联采购订单明细不合法
+    public static final int DEPOT_HEAD_PURCHASE_IN_DETAIL_CODE = 8500061;
+    public static final String DEPOT_HEAD_PURCHASE_IN_DETAIL_MSG = "抱歉，采购入库明细不属于关联的采购订单";
+    //采购入库-超过采购订单数量
+    public static final int DEPOT_HEAD_PURCHASE_IN_OVER_CODE = 8500062;
+    public static final String DEPOT_HEAD_PURCHASE_IN_OVER_MSG = "抱歉，商品条码:%s的累计入库数量超过采购订单数量";
+    //单据明细-商品单位不合法
+    public static final int DEPOT_HEAD_MATERIAL_UNIT_CODE = 8500063;
+    public static final String DEPOT_HEAD_MATERIAL_UNIT_MSG = "抱歉，商品条码:%s的单位不属于该商品";
 
 
     /**

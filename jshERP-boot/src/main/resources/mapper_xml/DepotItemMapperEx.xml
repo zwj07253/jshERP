@@ -1131,6 +1131,20 @@
         </if>
     </select>
 
+    <select id="getPurchaseInboundReceivedNumber" resultType="java.math.BigDecimal">
+        select COALESCE(sum(di.oper_number),0)
+        from jsh_depot_item di
+        inner join jsh_depot_head dh on dh.id=di.header_id
+        where di.link_id=#{linkId}
+          and dh."type"='入库'
+          and dh.sub_type='采购'
+          and COALESCE(di.delete_flag,'0') !='1'
+          and COALESCE(dh.delete_flag,'0') !='1'
+        <if test="currentHeaderId != null">
+          and dh.id != #{currentHeaderId}
+        </if>
+    </select>
+
     <select id="getBatchNumberList" resultMap="batchNumberListMap">
         select id, bar_code, name, standard, model, unit_id,
         commodity_unit, batch_number, expiration_date, sum(basic_number) total_num from
@@ -1196,6 +1210,35 @@
         </if>
         and COALESCE(dh.delete_flag,'0') !='1'
         group by di.material_extend_id
+    </select>
+
+    <select id="getSourceBillDetailBasicSum" resultMap="materialSumMap">
+        select di.id material_extend_id,
+               COALESCE(di.basic_number, di.oper_number) oper_number
+        from jsh_depot_head dh
+        inner join jsh_depot_item di on dh.id=di.header_id
+        where dh.number=#{linkStr}
+          and COALESCE(di.delete_flag,'0') !='1'
+          and COALESCE(dh.delete_flag,'0') !='1'
+    </select>
+
+    <select id="getLinkedBillDetailBasicSum" resultMap="materialSumMap">
+        select di.link_id material_extend_id,
+               sum(COALESCE(di.basic_number, di.oper_number)) oper_number
+        from jsh_depot_head dh
+        inner join jsh_depot_item di on dh.id=di.header_id
+        where dh."type"=#{type}
+          and dh.sub_type=#{subType}
+          and di.link_id is not null
+        <if test="linkType == 'normal'">
+            and dh.link_number=#{linkStr}
+        </if>
+        <if test="linkType == 'apply'">
+            and dh.link_apply=#{linkStr}
+        </if>
+          and COALESCE(di.delete_flag,'0') !='1'
+          and COALESCE(dh.delete_flag,'0') !='1'
+        group by di.link_id
     </select>
 
     <select id="getCountByMaterialAndBatchNumber" resultType="java.lang.Long">

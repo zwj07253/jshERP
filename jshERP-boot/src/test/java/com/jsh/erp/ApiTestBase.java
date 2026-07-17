@@ -319,7 +319,7 @@ public class ApiTestBase {
         if (matRows != null) {
             for (int i = 0; i < matRows.size(); i++) {
                 if (materialExtendId.equals(matRows.getJSONObject(i).getLong("id"))) {
-                    unit = matRows.getJSONObject(i).getString("unit");
+                    unit = matRows.getJSONObject(i).getString("unit").replaceAll("\\[[^]]*]$", "");
                     break;
                 }
             }
@@ -349,16 +349,12 @@ public class ApiTestBase {
         Response resp = authReq().body(body.toJSONString()).post(CONTEXT + "/depotHead/addDepotHeadAndDetail");
         assertSuccess(resp);
 
-        // 查询单据获取ID
-        Response listResp = authReqGet()
-                .param("search", "{\"number\":\"" + number + "\"}")
-                .get(CONTEXT + "/depotHead/list");
-        JSONObject data = JSONObject.parseObject(listResp.body().asString()).getJSONObject("data");
-        JSONArray listRows = data.getJSONArray("rows");
-        if (listRows != null && !listRows.isEmpty()) {
-            return listRows.getJSONObject(0).getLong("id");
-        }
-        return null;
+        // 按单号直接查询，避免列表接口的往来单位/用户权限过滤影响测试数据定位
+        Response detailResp = authReqGet().param("number", number)
+                .get(CONTEXT + "/depotHead/getDetailByNumber");
+        assertSuccess(detailResp);
+        JSONObject data = JSONObject.parseObject(detailResp.body().asString()).getJSONObject("data");
+        return data == null ? null : data.getLong("id");
     }
 
     /** 审核单据 */

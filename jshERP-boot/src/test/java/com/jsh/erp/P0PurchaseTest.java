@@ -1,6 +1,7 @@
 package com.jsh.erp;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.JSONArray;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.*;
 
@@ -15,10 +16,33 @@ import static org.junit.jupiter.api.Assertions.*;
 public class P0PurchaseTest extends ApiTestBase {
 
     private static Long supplierId;
+    private static Long existingSupplierId;
+    private static Long createdSupplierId;
     private static Long materialExtendId;
     private static Long depotId;
     private static Long accountId;
     private static Long purchaseHeadId;
+
+    @AfterAll
+    static void cleanUpCreatedData() {
+        P0PurchaseTest test = new P0PurchaseTest();
+        if (purchaseHeadId != null) {
+            Response infoResponse = test.authReqGet().param("id", purchaseHeadId)
+                    .get(CONTEXT + "/depotHead/info");
+            JSONObject responseBody = JSONObject.parseObject(infoResponse.body().asString());
+            JSONObject data = responseBody.getJSONObject("data");
+            JSONObject info = data == null ? null : data.getJSONObject("info");
+            if (info != null && "1".equals(info.getString("status"))) {
+                test.unauditDepotHead(purchaseHeadId);
+            }
+            test.assertSuccess(test.authReq().param("id", purchaseHeadId)
+                    .delete(CONTEXT + "/depotHead/delete"));
+        }
+        if (createdSupplierId != null) {
+            test.assertSuccess(test.authReq().param("id", createdSupplierId)
+                    .delete(CONTEXT + "/supplier/delete"));
+        }
+    }
 
     // ===== 6. 商品建档 =====
 
@@ -34,7 +58,16 @@ public class P0PurchaseTest extends ApiTestBase {
         assertEquals(200, resp.statusCode());
         JSONObject data = JSONObject.parseObject(resp.body().asString());
         assertTrue(data.getLong("total") >= 1, "应至少有1个商品");
-        materialExtendId = data.getJSONArray("rows").getJSONObject(0).getLong("id");
+        JSONArray materials = data.getJSONArray("rows");
+        for (int index = 0; index < materials.size(); index++) {
+            JSONObject material = materials.getJSONObject(index);
+            if (!"1".equals(material.getString("enableBatchNumber"))
+                    && !"1".equals(material.getString("enableSerialNumber"))) {
+                materialExtendId = material.getLong("id");
+                break;
+            }
+        }
+        assertNotNull(materialExtendId, "应至少有一个未启用批号和序列号的普通商品");
     }
 
     @Test
@@ -64,7 +97,15 @@ public class P0PurchaseTest extends ApiTestBase {
         assertPaged(resp);
         JSONObject data = JSONObject.parseObject(resp.body().asString()).getJSONObject("data");
         if (data.getLong("total") > 0) {
-            supplierId = data.getJSONArray("rows").getJSONObject(0).getLong("id");
+            JSONArray suppliers = data.getJSONArray("rows");
+            for (int index = 0; index < suppliers.size(); index++) {
+                JSONObject supplier = suppliers.getJSONObject(index);
+                if (!supplier.getString("supplier").startsWith("测试供应商_")) {
+                    existingSupplierId = supplier.getLong("id");
+                    break;
+                }
+            }
+            supplierId = existingSupplierId;
         }
     }
 
@@ -73,7 +114,8 @@ public class P0PurchaseTest extends ApiTestBase {
     @DisplayName("7b: 新建供应商")
     void createSupplier() {
         String name = "测试供应商_" + System.currentTimeMillis();
-        supplierId = createSupplier(name, "供应商");
+        createdSupplierId = createSupplier(name, "供应商");
+        supplierId = createdSupplierId;
         assertNotNull(supplierId, "供应商创建成功应返回ID");
     }
 
@@ -85,6 +127,10 @@ public class P0PurchaseTest extends ApiTestBase {
                 .param("id", supplierId)
                 .get(CONTEXT + "/supplier/info");
         assertSuccess(resp);
+        assertSuccess(authReq().param("id", createdSupplierId).delete(CONTEXT + "/supplier/delete"));
+        createdSupplierId = null;
+        supplierId = existingSupplierId;
+        assertNotNull(supplierId, "初始化数据应至少包含一个可用于采购测试的供应商");
     }
 
     // ===== 准备仓库和账户 =====

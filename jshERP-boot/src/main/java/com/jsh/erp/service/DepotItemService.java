@@ -517,9 +517,14 @@ public class DepotItemService {
                 }
                 //以下进行单位换算
                 Unit unitInfo = materialService.findUnit(materialExtend.getMaterialId()); //查询多单位信息
+                String submittedUnit = rowObj.getString("unit");
+                if (!isMaterialUnitValid(submittedUnit, materialExtend, unitInfo)) {
+                    throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_MATERIAL_UNIT_CODE,
+                            String.format(ExceptionConstants.DEPOT_HEAD_MATERIAL_UNIT_MSG, barCode));
+                }
                 if (StringUtil.isExist(rowObj.get("operNumber"))) {
                     depotItem.setOperNumber(rowObj.getBigDecimal("operNumber"));
-                    String unit = rowObj.get("unit").toString();
+                    String unit = submittedUnit;
                     BigDecimal oNumber = rowObj.getBigDecimal("operNumber");
                     if (StringUtil.isNotEmpty(unitInfo.getName())) {
                         String basicUnit = unitInfo.getBasicUnit(); //基本单位
@@ -762,14 +767,30 @@ public class DepotItemService {
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public String getBillStatusByParam(DepotHead depotHead, String linkStr, String linkType) {
         String res = BusinessConstants.BILLS_STATUS_SKIPED;
-        //获取原单据的商品和商品数量（汇总）
-        List<DepotItemVo4MaterialAndSum> linkList = depotItemMapperEx.getLinkBillDetailMaterialSum(linkStr);
-        //获取分批操作后单据的商品和商品数量（汇总）
-        List<DepotItemVo4MaterialAndSum> batchList = depotItemMapperEx.getBatchBillDetailMaterialSum(linkStr, linkType, depotHead.getType());
+        List<DepotItemVo4MaterialAndSum> linkList;
+        List<DepotItemVo4MaterialAndSum> batchList;
+        if (BusinessConstants.SUB_TYPE_PURCHASE_ORDER.equals(depotHead.getSubType())) {
+            //采购订单按来源明细和基本数量统计，避免同一商品使用不同单位时误判状态
+            linkList = depotItemMapperEx.getSourceBillDetailBasicSum(linkStr);
+            batchList = depotItemMapperEx.getLinkedBillDetailBasicSum(linkStr, linkType,
+                    BusinessConstants.DEPOTHEAD_TYPE_OTHER, BusinessConstants.SUB_TYPE_PURCHASE_ORDER);
+        } else if (BusinessConstants.SUB_TYPE_PURCHASE.equals(depotHead.getSubType())) {
+            //采购入库只统计关联采购订单的采购入库明细
+            linkList = depotItemMapperEx.getSourceBillDetailBasicSum(linkStr);
+            batchList = depotItemMapperEx.getLinkedBillDetailBasicSum(linkStr, "normal",
+                    BusinessConstants.DEPOTHEAD_TYPE_IN, BusinessConstants.SUB_TYPE_PURCHASE);
+        } else {
+            //兼容其它原有单据链路
+            linkList = depotItemMapperEx.getLinkBillDetailMaterialSum(linkStr);
+            batchList = depotItemMapperEx.getBatchBillDetailMaterialSum(linkStr, linkType, depotHead.getType());
+        }
+        if (batchList == null || batchList.isEmpty()) {
+            return BusinessConstants.BILLS_STATUS_AUDIT;
+        }
         //将分批操作后的单据的商品和商品数据构造成Map
         Map<Long, BigDecimal> materialSumMap = new HashMap<>();
         for(DepotItemVo4MaterialAndSum materialAndSum : batchList) {
-            materialSumMap.put(materialAndSum.getMaterialExtendId(), materialAndSum.getOperNumber());
+            materialSumMap.merge(materialAndSum.getMaterialExtendId(), materialAndSum.getOperNumber(), BigDecimal::add);
         }
         for(DepotItemVo4MaterialAndSum materialAndSum : linkList) {
             //过滤掉原单里面有数量为0的商品
@@ -1584,6 +1605,19 @@ public class DepotItemService {
                         String.format(ExceptionConstants.BILL_MATERIAL_STOCK_NOT_ENOUGH_MSG, number, stockMsg));
             }
         }
+    }
+
+    private boolean isMaterialUnitValid(String submittedUnit, MaterialExtend materialExtend, Unit unitInfo) {
+        if (StringUtil.isEmpty(submittedUnit)) {
+            return false;
+        }
+        if (unitInfo != null && StringUtil.isNotEmpty(unitInfo.getName())) {
+            return submittedUnit.equals(unitInfo.getBasicUnit())
+                    || submittedUnit.equals(unitInfo.getOtherUnit())
+                    || submittedUnit.equals(unitInfo.getOtherUnitTwo())
+                    || submittedUnit.equals(unitInfo.getOtherUnitThree());
+        }
+        return submittedUnit.equals(materialExtend.getCommodityUnit());
     }
 
     private void lockMaterialForStockCheck(DepotItem depotItem, Set<String> lockedStockKeys) {

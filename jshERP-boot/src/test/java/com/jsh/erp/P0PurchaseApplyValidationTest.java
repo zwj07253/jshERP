@@ -160,6 +160,7 @@ public class P0PurchaseApplyValidationTest extends ApiTestBase {
         info.put("number", number);
         info.put("type", "其它");
         info.put("subType", "采购订单");
+        info.put("organId", 101);
         info.put("linkApply", linkApply);
         info.put("changeAmount", 0);
         info.put("totalPrice", 10 * quantity);
