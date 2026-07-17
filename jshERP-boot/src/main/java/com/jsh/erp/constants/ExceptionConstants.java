@@ -646,6 +646,31 @@ public class ExceptionConstants {
     public static final int DEPOT_HEAD_SALES_RETURN_HAS_FINANCIAL_CODE = 8500094;
     public static final String DEPOT_HEAD_SALES_RETURN_HAS_FINANCIAL_MSG = "抱歉，该销售退货单已关联退款或收付款单，不能%s";
 
+    //其它出入库
+    public static final int DEPOT_HEAD_OTHER_STATUS_CODE = 8500095;
+    public static final String DEPOT_HEAD_OTHER_STATUS_MSG = "抱歉，其它出入库单状态不合法，请通过保存或审核操作变更状态";
+
+    public static final int DEPOT_HEAD_OTHER_LINK_CHANGE_CODE = 8500096;
+    public static final String DEPOT_HEAD_OTHER_LINK_CHANGE_MSG = "抱歉，其它出入库单的编号或关联单据不能修改";
+
+    public static final int DEPOT_HEAD_OTHER_IN_SOURCE_CODE = 8500097;
+    public static final String DEPOT_HEAD_OTHER_IN_SOURCE_MSG = "抱歉，关联单据不存在、状态不可用或不是采购入库/销售退货单";
+
+    public static final int DEPOT_HEAD_OTHER_IN_DETAIL_CODE = 8500098;
+    public static final String DEPOT_HEAD_OTHER_IN_DETAIL_MSG = "抱歉，其它入库明细与关联单据不一致";
+
+    public static final int DEPOT_HEAD_OTHER_IN_OVER_CODE = 8500099;
+    public static final String DEPOT_HEAD_OTHER_IN_OVER_MSG = "抱歉，商品条码:%s的累计其它入库数量不能超过来源单数量";
+
+    public static final int DEPOT_HEAD_OTHER_IN_AMOUNT_CODE = 8500100;
+    public static final String DEPOT_HEAD_OTHER_IN_AMOUNT_MSG = "抱歉，其它入库的单价或金额不合法";
+
+    public static final int DEPOT_HEAD_OTHER_DATA_PERMISSION_CODE = 8500101;
+    public static final String DEPOT_HEAD_OTHER_DATA_PERMISSION_MSG = "抱歉，当前用户没有该其它出入库单或所选仓库的数据权限";
+
+    public static final int DEPOT_HEAD_OTHER_BATCH_SOURCE_CODE = 8500102;
+    public static final String DEPOT_HEAD_OTHER_BATCH_SOURCE_MSG = "抱歉，批量转其它入库/出库的来源单类型不合法";
+
 
     /**
      *  单据明细信息

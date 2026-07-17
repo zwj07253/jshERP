@@ -1229,6 +1229,20 @@
         </if>
     </select>
 
+    <select id="getOtherInboundReceivedBasicNumber" resultType="java.math.BigDecimal">
+        select COALESCE(sum(di.basic_number), 0)
+        from jsh_depot_item di
+        inner join jsh_depot_head dh on dh.id=di.header_id
+        where di.link_id=#{linkId}
+          and dh."type"='入库'
+          and dh.sub_type='其它'
+          and COALESCE(di.delete_flag,'0') !='1'
+          and COALESCE(dh.delete_flag,'0') !='1'
+        <if test="currentHeaderId != null">
+            and dh.id != #{currentHeaderId}
+        </if>
+    </select>
+
     <select id="getSalesReturnReturnedBasicNumber" resultType="java.math.BigDecimal">
         select COALESCE(sum(COALESCE(di.basic_number, di.oper_number)),0)
         from jsh_depot_item di

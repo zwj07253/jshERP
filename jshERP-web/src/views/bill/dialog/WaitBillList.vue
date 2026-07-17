@@ -185,6 +185,12 @@
       show(type, subType, status) {
         this.selectType = 'list'
         this.showType = 'other'
+        this.selectedRowKeys = []
+        this.selectedDetailRowKeys = []
+        this.selectBillRows = []
+        this.selectBillDetailRows = []
+        this.dataSourceDetail = []
+        this.linkNumber = ''
         this.queryParam.type = type
         this.queryParam.subType = subType
         this.queryParam.status = status
@@ -227,6 +233,10 @@
             this.organId = record.organId
             this.remark = record.remark
             this.loadDetailData(1)
+          } else {
+            this.selectType = 'list'
+            this.title = "请选择单据"
+            this.$message.warning('抱歉，请选择一条单据！')
           }
         } else {
           if(this.selectedDetailRowKeys.length) {

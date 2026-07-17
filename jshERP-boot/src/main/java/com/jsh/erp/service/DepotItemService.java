@@ -413,7 +413,10 @@ public class DepotItemService {
                     && BusinessConstants.SUB_TYPE_SALES.equals(depotHead.getSubType());
             boolean salesReturn = BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())
                     && BusinessConstants.SUB_TYPE_SALES_RETURN.equals(depotHead.getSubType());
-            boolean purchaseDepotPermission = purchaseInbound || purchaseReturn || salesOutbound || salesReturn;
+            boolean otherStockBill = (BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())
+                    || BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType()))
+                    && BusinessConstants.SUB_TYPE_OTHER.equals(depotHead.getSubType());
+            boolean purchaseDepotPermission = purchaseInbound || purchaseReturn || salesOutbound || salesReturn || otherStockBill;
             Set<Long> allowedPurchaseDepotIds = new HashSet<>();
             User currentUser = userService.getCurrentUser();
             boolean adminUser = currentUser != null && "admin".equals(currentUser.getLoginName());
@@ -639,6 +642,10 @@ public class DepotItemService {
                 if (StringUtil.isExist(rowObj.get("depotId"))) {
                     depotItem.setDepotId(rowObj.getLong("depotId"));
                     if (purchaseDepotPermission && !adminUser && !allowedPurchaseDepotIds.contains(depotItem.getDepotId())) {
+                        if (otherStockBill) {
+                            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_OTHER_DATA_PERMISSION_CODE,
+                                    ExceptionConstants.DEPOT_HEAD_OTHER_DATA_PERMISSION_MSG);
+                        }
                         if (salesOutbound || salesReturn) {
                             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_SALES_DATA_PERMISSION_CODE,
                                     ExceptionConstants.DEPOT_HEAD_SALES_DATA_PERMISSION_MSG);
@@ -816,6 +823,11 @@ public class DepotItemService {
         } else if (BusinessConstants.SUB_TYPE_SALES.equals(depotHead.getSubType())) {
             linkList = depotItemMapperEx.getSourceBillDetailBasicSum(linkStr);
             batchList = depotItemMapperEx.getAuditedSalesOutboundBasicSum(linkStr);
+        } else if (BusinessConstants.SUB_TYPE_OTHER.equals(depotHead.getSubType())) {
+            //其它出入库按来源明细ID和基本数量统计，避免同商品多行、多单位时误判完成状态。
+            linkList = depotItemMapperEx.getSourceBillDetailBasicSum(linkStr);
+            batchList = depotItemMapperEx.getLinkedBillDetailBasicSum(linkStr, "normal",
+                    depotHead.getType(), BusinessConstants.SUB_TYPE_OTHER);
         } else {
             //兼容其它原有单据链路
             linkList = depotItemMapperEx.getLinkBillDetailMaterialSum(linkStr);

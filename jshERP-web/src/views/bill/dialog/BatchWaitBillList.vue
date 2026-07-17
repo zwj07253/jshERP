@@ -153,6 +153,8 @@
     },
     methods: {
       show(type, subType, status) {
+        this.selectedRowKeys = []
+        this.confirmLoading = false
         this.queryParam.type = type
         this.queryParam.subType = subType
         this.queryParam.status = status
@@ -214,12 +216,12 @@
                 if (res.code === 200) {
                   that.$emit('ok')
                   that.selectedRowKeys = []
-                  that.confirmLoading = false
                   that.close()
                 } else {
                   that.$message.warning(res.data.message)
-                  that.confirmLoading = false
                 }
+              }).finally(() => {
+                that.confirmLoading = false
               })
             }
           })

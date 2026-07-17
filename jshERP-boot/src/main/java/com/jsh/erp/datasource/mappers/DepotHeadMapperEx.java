@@ -17,6 +17,8 @@ import java.util.List;
 public interface DepotHeadMapperEx {
     DepotHead lockDepotHeadByNumber(@Param("number") String number);
 
+    DepotHead lockDepotHeadById(@Param("id") Long id);
+
     List<DepotHeadVo4List> selectByConditionDepotHead(
             @Param("type") String type,
             @Param("subType") String subType,

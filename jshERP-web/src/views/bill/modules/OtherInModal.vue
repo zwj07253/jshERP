@@ -279,12 +279,28 @@
             linkType: 'basic'
           }
           let url = this.readOnly ? this.url.detailList : this.url.detailList;
-          this.requestSubTableData(url, params, this.materialTable);
+          this.requestSubTableData(url, params, this.materialTable, () => {
+            if(this.action === 'copyAdd') {
+              this.materialTable.dataSource.forEach(info => {
+                this.$delete(info, 'linkId')
+                this.$delete(info, 'preNumber')
+                this.$delete(info, 'finishNumber')
+              })
+            }
+          });
         }
         //复制新增单据-初始化单号和日期
         if(this.action === 'copyAdd') {
           this.model.id = ''
           this.model.tenantId = ''
+          this.model.linkNumber = ''
+          this.rowCanEdit = true
+          this.materialTable.columns[1].type = FormTypes.popupJsh
+          this.changeFormTypes(this.materialTable.columns, 'preNumber', 0)
+          this.changeFormTypes(this.materialTable.columns, 'finishNumber', 0)
+          this.$nextTick(() => {
+            this.form.setFieldsValue({'linkNumber': ''})
+          })
           this.copyAddInit(this.prefixNo)
         }
         this.initSystemConfig()
