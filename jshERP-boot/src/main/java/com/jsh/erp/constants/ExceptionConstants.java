@@ -671,6 +671,18 @@ public class ExceptionConstants {
     public static final int DEPOT_HEAD_OTHER_BATCH_SOURCE_CODE = 8500102;
     public static final String DEPOT_HEAD_OTHER_BATCH_SOURCE_MSG = "抱歉，批量转其它入库/出库的来源单类型不合法";
 
+    public static final int DEPOT_HEAD_OTHER_OUT_SOURCE_CODE = 8500103;
+    public static final String DEPOT_HEAD_OTHER_OUT_SOURCE_MSG = "抱歉，关联单据不存在、状态不可用或不是销售出库/采购退货单";
+
+    public static final int DEPOT_HEAD_OTHER_OUT_DETAIL_CODE = 8500104;
+    public static final String DEPOT_HEAD_OTHER_OUT_DETAIL_MSG = "抱歉，其它出库明细与关联单据不一致";
+
+    public static final int DEPOT_HEAD_OTHER_OUT_OVER_CODE = 8500105;
+    public static final String DEPOT_HEAD_OTHER_OUT_OVER_MSG = "抱歉，商品条码:%s的累计其它出库数量不能超过来源单数量";
+
+    public static final int DEPOT_HEAD_OTHER_OUT_AMOUNT_CODE = 8500106;
+    public static final String DEPOT_HEAD_OTHER_OUT_AMOUNT_MSG = "抱歉，其它出库的单价或金额不合法";
+
 
     /**
      *  单据明细信息

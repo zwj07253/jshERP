@@ -266,6 +266,10 @@ public interface DepotItemMapperEx {
             @Param("linkId") Long linkId,
             @Param("currentHeaderId") Long currentHeaderId);
 
+    BigDecimal getOtherOutboundIssuedBasicNumber(
+            @Param("linkId") Long linkId,
+            @Param("currentHeaderId") Long currentHeaderId);
+
     BigDecimal getPurchaseReturnReturnedBasicNumber(
             @Param("linkId") Long linkId,
             @Param("currentHeaderId") Long currentHeaderId);

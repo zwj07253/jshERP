@@ -279,12 +279,28 @@
             linkType: 'basic'
           }
           let url = this.readOnly ? this.url.detailList : this.url.detailList;
-          this.requestSubTableData(url, params, this.materialTable);
+          this.requestSubTableData(url, params, this.materialTable, () => {
+            if(this.action === 'copyAdd') {
+              this.materialTable.dataSource.forEach(info => {
+                this.$delete(info, 'linkId')
+                this.$delete(info, 'preNumber')
+                this.$delete(info, 'finishNumber')
+              })
+            }
+          });
         }
         //复制新增单据-初始化单号和日期
         if(this.action === 'copyAdd') {
           this.model.id = ''
           this.model.tenantId = ''
+          this.model.linkNumber = ''
+          this.rowCanEdit = true
+          this.materialTable.columns[1].type = FormTypes.popupJsh
+          this.changeFormTypes(this.materialTable.columns, 'preNumber', 0)
+          this.changeFormTypes(this.materialTable.columns, 'finishNumber', 0)
+          this.$nextTick(() => {
+            this.form.setFieldsValue({'linkNumber': ''})
+          })
           this.copyAddInit(this.prefixNo)
         }
         this.initSystemConfig()
@@ -323,7 +339,7 @@
         this.$refs.waitBillList.show('出库', '销售,采购退货', "1,3")
         this.$refs.waitBillList.title = "请选择销售出库或采购退货"
       },
-      waitBillListOk(selectBillDetailRows, linkNumber, remark) {
+      waitBillListOk(selectBillDetailRows, linkNumber, remark, organId) {
         this.rowCanEdit = false
         this.materialTable.columns[1].type = FormTypes.normal
         this.changeFormTypes(this.materialTable.columns, 'preNumber', 1)
@@ -344,6 +360,7 @@
           this.materialTable.dataSource = listEx
           this.$nextTick(() => {
             this.form.setFieldsValue({
+              'organId': organId,
               'linkNumber': linkNumber,
               'remark': remark
             })

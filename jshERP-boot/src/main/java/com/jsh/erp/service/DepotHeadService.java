@@ -797,6 +797,7 @@ public class DepotHeadService {
                     validateSalesOutboundBeforeAudit(depotHead);
                     validateSalesReturnBeforeAudit(depotHead);
                     validateOtherInboundBeforeAudit(depotHead);
+                    validateOtherOutboundBeforeAudit(depotHead);
                     dhIds.add(id);
                     noList.add(depotHead.getNumber());
                 } else {
@@ -811,13 +812,15 @@ public class DepotHeadService {
                 if(forceApprovalFlag && !minusStockFlag) {
                     boolean retailOut = BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
                             && BusinessConstants.SUB_TYPE_RETAIL.equals(depotHead.getSubType());
+                    boolean otherOut = isOtherOutbound(depotHead);
                     if(inOutManageFlag) {
-                        if(retailOut || ("出库".equals(depotHead.getType()) && "其它".equals(depotHead.getSubType()))) {
+                        if(retailOut || otherOut) {
                             //校验单据中的商品库存是否不足
                             stockCheckHeadList.add(depotHead);
                         }
                     } else {
-                        if(retailOut || ("出库".equals(depotHead.getType()) && "销售".equals(depotHead.getSubType()))
+                        if(retailOut || otherOut
+                                || ("出库".equals(depotHead.getType()) && "销售".equals(depotHead.getSubType()))
                                 || ("出库".equals(depotHead.getType()) && "采购退货".equals(depotHead.getSubType()))) {
                             //校验单据中的商品库存是否不足
                             stockCheckHeadList.add(depotHead);
@@ -1965,6 +1968,16 @@ public class DepotHeadService {
             }
             return normalizeOtherInboundFinancialFields(depotHead, rows);
         }
+        if (isOtherOutbound(depotHead)) {
+            depotHead.setLinkApply(null);
+            if (StringUtil.isNotEmpty(depotHead.getLinkNumber())) {
+                rows = validateAndNormalizeOtherOutboundSource(depotHead, rows, previousDepotHead);
+            } else {
+                depotHead.setLinkNumber(null);
+                rows = clearOtherOutboundRowLinks(rows);
+            }
+            return normalizeOtherOutboundFinancialFields(depotHead, rows);
+        }
         return rows;
     }
 
@@ -2107,6 +2120,160 @@ public class DepotHeadService {
             totalPrice = totalPrice.add(allPrice);
         }
         depotHead.setTotalPrice(totalPrice.setScale(2, BigDecimal.ROUND_HALF_UP).negate());
+        depotHead.setDiscount(BigDecimal.ZERO);
+        depotHead.setDiscountMoney(BigDecimal.ZERO);
+        depotHead.setDiscountLastMoney(BigDecimal.ZERO);
+        depotHead.setOtherMoney(BigDecimal.ZERO);
+        depotHead.setDeposit(BigDecimal.ZERO);
+        depotHead.setChangeAmount(BigDecimal.ZERO);
+        depotHead.setDebt(BigDecimal.ZERO);
+        depotHead.setBackAmount(BigDecimal.ZERO);
+        depotHead.setAccountId(null);
+        depotHead.setAccountIdList(null);
+        depotHead.setAccountMoneyList(null);
+        return detailArray.toJSONString();
+    }
+
+    private String clearOtherOutboundRowLinks(String rows) {
+        JSONArray detailArray = JSONArray.parseArray(rows);
+        if (detailArray == null || detailArray.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ROW_FAILED_CODE,
+                    ExceptionConstants.DEPOT_HEAD_ROW_FAILED_MSG);
+        }
+        for (int detailIndex = 0; detailIndex < detailArray.size(); detailIndex++) {
+            JSONObject detail = JSONObject.parseObject(detailArray.get(detailIndex).toString());
+            detail.remove("linkId");
+            detail.remove("preNumber");
+            detail.remove("finishNumber");
+            detailArray.set(detailIndex, detail);
+        }
+        return detailArray.toJSONString();
+    }
+
+    private String validateAndNormalizeOtherOutboundSource(DepotHead depotHead, String rows,
+                                                              DepotHead previousDepotHead) throws Exception {
+        DepotHead sourceHead = depotHeadMapperEx.lockDepotHeadByNumber(depotHead.getLinkNumber());
+        boolean updatingCurrentAssociation = previousDepotHead != null
+                && Objects.equals(normalizeLink(previousDepotHead.getLinkNumber()),
+                normalizeLink(depotHead.getLinkNumber()));
+        boolean sourceTypeValid = sourceHead != null
+                && BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(sourceHead.getType())
+                && (BusinessConstants.SUB_TYPE_SALES.equals(sourceHead.getSubType())
+                || BusinessConstants.SUB_TYPE_PURCHASE_RETURN.equals(sourceHead.getSubType()));
+        boolean sourceStatusValid = sourceHead != null
+                && (BusinessConstants.BILLS_STATUS_AUDIT.equals(sourceHead.getStatus())
+                || BusinessConstants.BILLS_STATUS_SKIPING.equals(sourceHead.getStatus())
+                || (updatingCurrentAssociation
+                && BusinessConstants.BILLS_STATUS_SKIPED.equals(sourceHead.getStatus())));
+        if (!sourceTypeValid || !sourceStatusValid) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_OTHER_OUT_SOURCE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_OTHER_OUT_SOURCE_MSG);
+        }
+        checkPurchaseBillDataPermission(sourceHead);
+        JSONArray detailArray = JSONArray.parseArray(rows);
+        if (detailArray == null || detailArray.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ROW_FAILED_CODE,
+                    ExceptionConstants.DEPOT_HEAD_ROW_FAILED_MSG);
+        }
+        depotHead.setLinkNumber(sourceHead.getNumber());
+        depotHead.setOrganId(sourceHead.getOrganId());
+        Long currentHeaderId = previousDepotHead == null ? null : previousDepotHead.getId();
+        Map<Long, BigDecimal> currentIssuedBasicMap = new HashMap<>();
+        for (int detailIndex = 0; detailIndex < detailArray.size(); detailIndex++) {
+            JSONObject detail = JSONObject.parseObject(detailArray.get(detailIndex).toString());
+            String barCode = detail.getString("barCode");
+            BigDecimal quantity = detail.getBigDecimal("operNumber");
+            Long linkId = detail.getLong("linkId");
+            DepotItem sourceItem = linkId == null ? null : depotItemMapperEx.lockDepotItemById(linkId);
+            MaterialExtend materialExtend = StringUtil.isEmpty(barCode)
+                    ? null : materialExtendService.getInfoByBarCode(barCode);
+            if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0
+                    || sourceItem == null || !Objects.equals(sourceItem.getHeaderId(), sourceHead.getId())
+                    || materialExtend == null
+                    || !Objects.equals(materialExtend.getId(), sourceItem.getMaterialExtendId())
+                    || sourceItem.getOperNumber() == null || sourceItem.getOperNumber().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_OTHER_OUT_DETAIL_CODE,
+                        ExceptionConstants.DEPOT_HEAD_OTHER_OUT_DETAIL_MSG);
+            }
+            BigDecimal sourceBasicNumber = sourceItem.getBasicNumber() == null
+                    ? sourceItem.getOperNumber() : sourceItem.getBasicNumber();
+            BigDecimal unitRatio = sourceBasicNumber.divide(sourceItem.getOperNumber(), 10, BigDecimal.ROUND_HALF_UP);
+            BigDecimal currentBasicNumber = quantity.multiply(unitRatio);
+            BigDecimal alreadyIssued = depotItemMapperEx.getOtherOutboundIssuedBasicNumber(linkId, currentHeaderId);
+            BigDecimal currentIssued = currentIssuedBasicMap.getOrDefault(linkId, BigDecimal.ZERO)
+                    .add(currentBasicNumber);
+            currentIssuedBasicMap.put(linkId, currentIssued);
+            if (!systemConfigService.getOverLinkBillFlag()
+                    && alreadyIssued.add(currentIssued).compareTo(sourceBasicNumber) > 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_OTHER_OUT_OVER_CODE,
+                        String.format(ExceptionConstants.DEPOT_HEAD_OTHER_OUT_OVER_MSG, barCode));
+            }
+            detail.put("linkId", sourceItem.getId());
+            detail.put("unit", sourceItem.getMaterialUnit());
+            detail.put("depotId", sourceItem.getDepotId());
+            detail.put("preNumber", sourceItem.getOperNumber());
+            BigDecimal finishNumber = unitRatio.compareTo(BigDecimal.ZERO) == 0 ? BigDecimal.ZERO
+                    : alreadyIssued.divide(unitRatio, 10, BigDecimal.ROUND_HALF_UP);
+            detail.put("finishNumber", finishNumber);
+            detail.put("unitPrice", BigDecimal.ZERO);
+            detail.put("allPrice", BigDecimal.ZERO);
+            detail.put("taxRate", BigDecimal.ZERO);
+            detail.put("taxMoney", BigDecimal.ZERO);
+            detail.put("taxLastMoney", BigDecimal.ZERO);
+            detail.put("taxUnitPrice", BigDecimal.ZERO);
+            detailArray.set(detailIndex, detail);
+        }
+        return detailArray.toJSONString();
+    }
+
+    private void validateOtherOutboundBeforeAudit(DepotHead depotHead) throws Exception {
+        if (!isOtherOutbound(depotHead) || StringUtil.isEmpty(depotHead.getLinkNumber())) {
+            return;
+        }
+        List<DepotItemVo4WithInfoEx> itemList = depotItemService.getDetailList(depotHead.getId());
+        JSONArray rowArray = new JSONArray();
+        for (DepotItemVo4WithInfoEx item : itemList) {
+            JSONObject row = JSONObject.parseObject(JSONObject.toJSONString(item));
+            row.put("unit", item.getMaterialUnit());
+            rowArray.add(row);
+        }
+        validateAndNormalizeOtherOutboundSource(depotHead, rowArray.toJSONString(), depotHead);
+    }
+
+    private String normalizeOtherOutboundFinancialFields(DepotHead depotHead, String rows) {
+        JSONArray detailArray = JSONArray.parseArray(rows);
+        if (detailArray == null || detailArray.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ROW_FAILED_CODE,
+                    ExceptionConstants.DEPOT_HEAD_ROW_FAILED_MSG);
+        }
+        boolean linked = StringUtil.isNotEmpty(depotHead.getLinkNumber());
+        BigDecimal totalPrice = BigDecimal.ZERO;
+        for (int detailIndex = 0; detailIndex < detailArray.size(); detailIndex++) {
+            JSONObject detail = JSONObject.parseObject(detailArray.get(detailIndex).toString());
+            String barCode = detail.getString("barCode");
+            BigDecimal quantity = detail.getBigDecimal("operNumber");
+            BigDecimal unitPrice = linked ? BigDecimal.ZERO : detail.getBigDecimal("unitPrice");
+            unitPrice = unitPrice == null ? BigDecimal.ZERO : unitPrice;
+            if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_CODE,
+                        String.format(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_MSG, barCode));
+            }
+            if (unitPrice.compareTo(BigDecimal.ZERO) < 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_OTHER_OUT_AMOUNT_CODE,
+                        ExceptionConstants.DEPOT_HEAD_OTHER_OUT_AMOUNT_MSG);
+            }
+            BigDecimal allPrice = quantity.multiply(unitPrice).setScale(2, BigDecimal.ROUND_HALF_UP);
+            detail.put("unitPrice", unitPrice);
+            detail.put("allPrice", allPrice);
+            detail.put("taxRate", BigDecimal.ZERO);
+            detail.put("taxMoney", BigDecimal.ZERO);
+            detail.put("taxLastMoney", allPrice);
+            detail.put("taxUnitPrice", quantity.compareTo(BigDecimal.ZERO) == 0 ? BigDecimal.ZERO
+                    : allPrice.divide(quantity, 4, BigDecimal.ROUND_HALF_UP));
+            detailArray.set(detailIndex, detail);
+            totalPrice = totalPrice.add(allPrice);
+        }
+        depotHead.setTotalPrice(totalPrice.setScale(2, BigDecimal.ROUND_HALF_UP));
         depotHead.setDiscount(BigDecimal.ZERO);
         depotHead.setDiscountMoney(BigDecimal.ZERO);
         depotHead.setDiscountLastMoney(BigDecimal.ZERO);
@@ -4113,6 +4280,9 @@ public class DepotHeadService {
             if (inboundSource) {
                 rows = validateAndNormalizeOtherInboundSource(depotHead, rows, null);
                 rows = normalizeOtherInboundFinancialFields(depotHead, rows);
+            } else {
+                rows = validateAndNormalizeOtherOutboundSource(depotHead, rows, null);
+                rows = normalizeOtherOutboundFinancialFields(depotHead, rows);
             }
             //新增其它入库单或其它出库单
             sb.append("[").append(depotHead.getNumber()).append("]");

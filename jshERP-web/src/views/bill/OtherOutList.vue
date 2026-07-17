@@ -283,13 +283,13 @@
       this.initCustomer()
       this.getDepotData()
       this.initUser()
-      this.initWaitBillCount('出库', '销售,采购退货', '1,3')
+      this.initWaitBillCount('出库', '销售,采购退货', '1')
     },
     methods: {
       searchQuery() {
         this.loadData(1)
         if(this.inOutManageFlag) {
-          this.initWaitBillCount('出库', '销售,采购退货', '1,3')
+          this.initWaitBillCount('出库', '销售,采购退货', '1')
         }
       },
       searchReset() {
@@ -299,7 +299,7 @@
         }
         this.loadData(1)
         if(this.inOutManageFlag) {
-          this.initWaitBillCount('出库', '销售,采购退货', '1,3')
+          this.initWaitBillCount('出库', '销售,采购退货', '1')
         }
       },
       myHandleDelete(record) {
@@ -309,7 +309,7 @@
             if(res.code === 200){
               that.loadData(1)
               if(that.inOutManageFlag) {
-                that.initWaitBillCount('出库', '销售,采购退货', '1,3')
+                that.initWaitBillCount('出库', '销售,采购退货', '1')
               }
             } else {
               that.$message.warning(res.data.message);
@@ -338,7 +338,7 @@
                   that.loadData()
                   that.onClearSelected()
                   if(that.inOutManageFlag) {
-                    that.initWaitBillCount('出库', '销售,采购退货', '1,3')
+                    that.initWaitBillCount('出库', '销售,采购退货', '1')
                   }
                 } else {
                   that.$message.warning(res.data.message)
@@ -352,12 +352,12 @@
       },
       //待出库
       handleWaitBill() {
-        this.$refs.batchWaitBill.show('出库', '销售,采购退货', "1,3")
+        this.$refs.batchWaitBill.show('出库', '销售,采购退货', "1")
         this.$refs.batchWaitBill.title = "批量选择销售出库或采购退货"
       },
       waitModalFormClose() {
         this.loadData()
-        this.initWaitBillCount('出库', '销售,采购退货', '1,3')
+        this.initWaitBillCount('出库', '销售,采购退货', '1')
       },
     }
   }
