@@ -361,28 +361,11 @@ public class DepotHeadController extends BaseController {
         BaseResponseInfo res = new BaseResponseInfo();
         Map<String, Object> map = new HashMap<String, Object>();
         try {
-            List<Long> depotList = new ArrayList<>();
-            List<Long> depotFList = new ArrayList<>();
-            if(depotId != null) {
-                depotList.add(depotId);
-            } else {
-                //未选择仓库时默认为当前用户有权限的仓库
-                JSONArray depotArr = depotService.findDepotByCurrentUser();
-                for(Object obj: depotArr) {
-                    JSONObject object = JSONObject.parseObject(obj.toString());
-                    depotList.add(object.getLong("id"));
-                }
-            }
-            if(depotIdF != null) {
-                depotFList.add(depotIdF);
-            } else {
-                //未选择仓库时默认为当前用户有权限的仓库
-                JSONArray depotArr = depotService.findDepotByCurrentUser();
-                for(Object obj: depotArr) {
-                    JSONObject object = JSONObject.parseObject(obj.toString());
-                    depotFList.add(object.getLong("id"));
-                }
-            }
+            //显式传入仓库时也必须校验当前用户权限，未传时默认使用全部有权限仓库。
+            List<Long> depotList = depotService.parseDepotList(depotId);
+            List<Long> depotFList = depotService.parseDepotList(depotIdF);
+            //该接口只允许查询调拨明细，不能利用subType参数查询其它单据类型。
+            subType = BusinessConstants.SUB_TYPE_TRANSFER;
             String [] creatorArray = depotHeadService.getCreatorArray();
             if(creatorArray == null && organizationId != null) {
                 creatorArray = depotHeadService.getCreatorArrayByOrg(organizationId);

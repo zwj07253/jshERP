@@ -156,7 +156,12 @@
                     <foreach collection="depotArray" item="depotId" separator=",">
                         #{depotId}::bigint
                     </foreach>
-                  ))
+                  ) or (dh.sub_type='调拨' and (denied_di.another_depot_id is null
+                  or denied_di.another_depot_id not in (
+                    <foreach collection="depotArray" item="depotId" separator=",">
+                        #{depotId}::bigint
+                    </foreach>
+                  ))))
             )
         </if>
         <if test="creatorArray != null">

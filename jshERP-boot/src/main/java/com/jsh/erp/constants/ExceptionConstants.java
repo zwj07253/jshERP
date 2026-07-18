@@ -683,6 +683,16 @@ public class ExceptionConstants {
     public static final int DEPOT_HEAD_OTHER_OUT_AMOUNT_CODE = 8500106;
     public static final String DEPOT_HEAD_OTHER_OUT_AMOUNT_MSG = "抱歉，其它出库的单价或金额不合法";
 
+    //调拨出库
+    public static final int DEPOT_HEAD_TRANSFER_STATUS_CODE = 8500107;
+    public static final String DEPOT_HEAD_TRANSFER_STATUS_MSG = "抱歉，调拨出库单状态不合法，请通过保存或审核操作变更状态";
+
+    public static final int DEPOT_HEAD_TRANSFER_NUMBER_CHANGE_CODE = 8500108;
+    public static final String DEPOT_HEAD_TRANSFER_NUMBER_CHANGE_MSG = "抱歉，调拨出库单编号不能修改";
+
+    public static final int DEPOT_HEAD_TRANSFER_AMOUNT_CODE = 8500109;
+    public static final String DEPOT_HEAD_TRANSFER_AMOUNT_MSG = "抱歉，调拨出库的单价或金额不合法";
+
 
     /**
      *  单据明细信息

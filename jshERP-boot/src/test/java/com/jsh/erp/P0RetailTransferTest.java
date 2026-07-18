@@ -6,6 +6,7 @@ import io.restassured.response.Response;
 import org.junit.jupiter.api.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * P0: 零售闭环 + 调拨与仓库测试 (ID 15-20)
@@ -15,6 +16,8 @@ import static org.junit.jupiter.api.Assertions.*;
 public class P0RetailTransferTest extends ApiTestBase {
 
     private static Long materialExtendId;
+    private static String materialBarCode;
+    private static String materialUnit;
     private static Long depotId;
     private static Long depotId2;
     private static Long accountId;
@@ -26,7 +29,19 @@ public class P0RetailTransferTest extends ApiTestBase {
     void prepareData() {
         Response matResp = authReqGet().param("q", "").param("page", 1).param("rows", 10).get(CONTEXT + "/material/findBySelect");
         JSONObject matData = JSONObject.parseObject(matResp.body().asString());
-        if (matData.getLong("total") > 0) materialExtendId = matData.getJSONArray("rows").getJSONObject(0).getLong("id");
+        JSONArray materialRows = matData.getJSONArray("rows");
+        if (materialRows != null) {
+            for (int index = 0; index < materialRows.size(); index++) {
+                JSONObject material = materialRows.getJSONObject(index);
+                if (!"1".equals(material.getString("enableSerialNumber"))
+                        && !"1".equals(material.getString("enableBatchNumber"))) {
+                    materialExtendId = material.getLong("id");
+                    materialBarCode = material.getString("mBarCode");
+                    materialUnit = material.getString("unit").replace("[基本]", "");
+                    break;
+                }
+            }
+        }
 
         Response depResp = authReqGet().param("search", "{}").get(CONTEXT + "/depot/list");
         JSONObject depData = JSONObject.parseObject(depResp.body().asString()).getJSONObject("data");
@@ -90,57 +105,66 @@ public class P0RetailTransferTest extends ApiTestBase {
     @Order(5)
     @DisplayName("18: 调拨单创建与审核")
     void transferDepot() {
+        assumeTrue(materialExtendId != null && materialBarCode != null && materialUnit != null,
+                "缺少非序列号、非批次调拨商品");
         if (depotId2 == null) {
             // 如果只有一个仓库，创建第二个
             depotId2 = createDepot("测试仓库B_" + System.currentTimeMillis());
         }
         assertNotNull(depotId2, "需要至少2个仓库");
 
-        String number = generateNumber("DBCK");
-        JSONObject info = new JSONObject();
-        info.put("number", number);
-        info.put("type", "出库");
-        info.put("subType", "调拨");
-        info.put("organId", 0);
-        info.put("accountId", 0);
-        info.put("changeAmount", 0);
-        info.put("totalPrice", 0);
-        info.put("deposit", 0);
-        info.put("debt", 0);
-        info.put("payType", "");
-        info.put("status", 0);
-        info.put("remark", "自动化测试调拨");
+        Long headId = null;
+        boolean audited = false;
+        try {
+            String number = generateNumber("DBCK");
+            JSONObject info = new JSONObject();
+            info.put("number", number);
+            info.put("type", "出库");
+            info.put("subType", "调拨");
+            info.put("totalPrice", 99999);
+            info.put("status", 0);
+            info.put("remark", "自动化测试调拨");
 
-        JSONArray rows = new JSONArray();
-        JSONObject item = new JSONObject();
-        item.put("materialExtendId", materialExtendId);
-        item.put("depotId", depotId);
-        item.put("anotherDepotId", depotId2);
-        item.put("operNumber", 1);
-        item.put("unitPrice", 100);
-        item.put("allPrice", 100);
-        item.put("taxRate", 0);
-        item.put("taxUnitPrice", 100);
-        item.put("taxMoney", 100);
-        item.put("taxLastMoney", 100);
-        rows.add(item);
+            JSONArray rows = new JSONArray();
+            JSONObject item = new JSONObject();
+            item.put("materialExtendId", materialExtendId);
+            item.put("barCode", materialBarCode);
+            item.put("unit", materialUnit);
+            item.put("depotId", depotId);
+            item.put("anotherDepotId", depotId2);
+            item.put("operNumber", 1);
+            item.put("unitPrice", 100);
+            item.put("allPrice", 99999);
+            item.put("taxRate", 99);
+            item.put("taxMoney", 99999);
+            rows.add(item);
 
-        JSONObject body = new JSONObject();
-        body.put("info", info.toJSONString());
-        body.put("rows", rows.toJSONString());
+            JSONObject body = new JSONObject();
+            body.put("info", info.toJSONString());
+            body.put("rows", rows.toJSONString());
 
-        Response resp = authReq().body(body.toJSONString()).post(CONTEXT + "/depotHead/addDepotHeadAndDetail");
-        assertSuccess(resp);
+            Response resp = authReq().body(body.toJSONString()).post(CONTEXT + "/depotHead/addDepotHeadAndDetail");
+            assertSuccess(resp);
 
-        // 查询并审核
-        Response listResp = authReqGet()
-                .param("search", "{\"number\":\"" + number + "\"}")
-                .get(CONTEXT + "/depotHead/list");
-        JSONObject data = JSONObject.parseObject(listResp.body().asString()).getJSONObject("data");
-        JSONArray listRows = data.getJSONArray("rows");
-        if (listRows != null && !listRows.isEmpty()) {
-            Long headId = listRows.getJSONObject(0).getLong("id");
+            Response listResp = authReqGet()
+                    .param("search", "{\"number\":\"" + number + "\"}")
+                    .get(CONTEXT + "/depotHead/list");
+            JSONObject data = JSONObject.parseObject(listResp.body().asString()).getJSONObject("data");
+            JSONArray listRows = data.getJSONArray("rows");
+            assertNotNull(listRows);
+            assertFalse(listRows.isEmpty());
+            headId = listRows.getJSONObject(0).getLong("id");
+            assertEquals(0, listRows.getJSONObject(0).getBigDecimal("totalPrice")
+                    .compareTo(new java.math.BigDecimal("100.00")));
             auditDepotHead(headId);
+            audited = true;
+        } finally {
+            if (headId != null) {
+                if (audited) {
+                    unauditDepotHead(headId);
+                }
+                assertSuccess(authReq().param("id", headId).delete(CONTEXT + "/depotHead/delete"));
+            }
         }
     }
 

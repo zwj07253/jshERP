@@ -164,7 +164,9 @@
             { title: '扩展2', key: 'otherField2', width: '4%', type: FormTypes.normal },
             { title: '扩展3', key: 'otherField3', width: '4%', type: FormTypes.normal },
             { title: '库存', key: 'stock', width: '5%', type: FormTypes.normal },
-            { title: '调入仓库', key: 'anotherDepotId', width: '8%', type: FormTypes.select, placeholder: '请选择${title}', options: [], allowSearch:true},
+            { title: '调入仓库', key: 'anotherDepotId', width: '8%', type: FormTypes.select, placeholder: '请选择${title}', options: [], allowSearch:true,
+              validateRules: [{ required: true, message: '${title}不能为空' }]
+            },
             { title: '单位', key: 'unit', width: '4%', type: FormTypes.normal },
             { title: '多属性', key: 'sku', width: '9%', type: FormTypes.normal },
             { title: '数量', key: 'operNumber', width: '5%', type: FormTypes.inputNumber, statistics: true,
