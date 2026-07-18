@@ -109,6 +109,9 @@ public class BusinessConstants {
     public static final String TYPE_MONEY_IN = "收款";
     public static final String TYPE_MONEY_OUT = "付款";
     public static final String TYPE_GIRO = "转账";
+    public static final String TYPE_ADVANCE_IN = "收预付款";
+    public static final String TYPE_INCOME = "收入";
+    public static final String TYPE_EXPENSE = "支出";
     /**
      * 批量插入sql时最大的数据条数
      * */

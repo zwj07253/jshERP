@@ -786,6 +786,27 @@ public class ExceptionConstants {
     //财务信息反审核-只有已审核的单据才能反审核
     public static final int ACCOUNT_HEAD_AUDIT_TO_UN_AUDIT_FAILED_CODE = 9500008;
     public static final String ACCOUNT_HEAD_AUDIT_TO_UN_AUDIT_FAILED_MSG = "抱歉，只有已审核的单据才能反审核";
+
+    public static final int ACCOUNT_HEAD_PERMISSION_CODE = 9500009;
+    public static final String ACCOUNT_HEAD_PERMISSION_MSG = "抱歉，当前用户没有%s的%s权限";
+
+    public static final int ACCOUNT_HEAD_DATA_PERMISSION_CODE = 9500010;
+    public static final String ACCOUNT_HEAD_DATA_PERMISSION_MSG = "抱歉，当前用户没有该财务单据的数据权限";
+
+    public static final int ACCOUNT_HEAD_STATUS_FAILED_CODE = 9500011;
+    public static final String ACCOUNT_HEAD_STATUS_FAILED_MSG = "抱歉，财务单据状态不合法，请通过保存、审核或反审核操作变更状态";
+
+    public static final int ACCOUNT_HEAD_TYPE_FAILED_CODE = 9500012;
+    public static final String ACCOUNT_HEAD_TYPE_FAILED_MSG = "抱歉，财务单据类型不合法或不允许变更";
+
+    public static final int ACCOUNT_HEAD_INCOME_AMOUNT_FAILED_CODE = 9500013;
+    public static final String ACCOUNT_HEAD_INCOME_AMOUNT_FAILED_MSG = "抱歉，收入单金额必须大于零且主表金额必须等于明细合计";
+
+    public static final int ACCOUNT_HEAD_INCOME_DETAIL_FAILED_CODE = 9500014;
+    public static final String ACCOUNT_HEAD_INCOME_DETAIL_FAILED_MSG = "抱歉，收入单明细中的收入项目、账户或关联单据信息不合法";
+
+    public static final int ACCOUNT_HEAD_ACCOUNT_FAILED_CODE = 9500015;
+    public static final String ACCOUNT_HEAD_ACCOUNT_FAILED_MSG = "抱歉，收入账户不存在或已停用";
     /**
      *  财务明细信息
      * type = 100

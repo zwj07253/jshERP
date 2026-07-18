@@ -44,7 +44,7 @@ public class AccountHeadController extends BaseController {
     @Operation(summary = "根据id获取信息")
     public String getList(@RequestParam("id") Long id,
                           HttpServletRequest request) throws Exception {
-        AccountHead accountHead = accountHeadService.getAccountHead(id);
+        AccountHead accountHead = accountHeadService.getAccountHeadWithPermission(id);
         Map<String, Object> objectMap = new HashMap<>();
         if(accountHead != null) {
             objectMap.put("info", accountHead);

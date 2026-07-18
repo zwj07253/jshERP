@@ -73,6 +73,9 @@ CREATE INDEX idx_account_head_account_id ON jsh_account_head(account_id);
 CREATE INDEX idx_account_head_hands_person_id ON jsh_account_head(hands_person_id);
 CREATE INDEX idx_account_head_bill_no ON jsh_account_head(bill_no);
 CREATE INDEX idx_account_head_tenant_id ON jsh_account_head(tenant_id);
+CREATE UNIQUE INDEX uk_account_head_tenant_bill_no_active
+ON jsh_account_head(COALESCE(tenant_id, 0), bill_no)
+WHERE COALESCE(delete_flag, '0') != '1' AND bill_no IS NOT NULL;
 COMMENT ON TABLE jsh_account_head IS '财务主表';
 COMMENT ON COLUMN jsh_account_head.id IS '主键';
 COMMENT ON COLUMN jsh_account_head.type IS '类型(支出/收入/收款/付款/转账)';

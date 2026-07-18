@@ -934,6 +934,45 @@ public class UserService {
         return false;
     }
 
+    /**
+     * 校验当前用户是否拥有指定页面的菜单功能权限。
+     * 按钮权限只覆盖增删改审，详情查询仍需用菜单权限兜底。
+     */
+    public boolean hasFunctionPermission(Long userId, String url) throws Exception {
+        if (userId == null) {
+            return false;
+        }
+        User user = getUser(userId);
+        if (user != null && "admin".equals(user.getLoginName())) {
+            return true;
+        }
+        List<UserBusiness> userRoleList = userBusinessService.getBasicData(userId.toString(), "UserRole");
+        if (userRoleList == null || userRoleList.isEmpty()) {
+            return false;
+        }
+        String roleValue = userRoleList.get(0).getValue();
+        if (StringUtil.isEmpty(roleValue)) {
+            return false;
+        }
+        String roleId = roleValue.replace("[", "").replace("]", "");
+        List<UserBusiness> roleFunctionsList = userBusinessService.getBasicData(roleId, "RoleFunctions");
+        if (roleFunctionsList == null || roleFunctionsList.isEmpty()) {
+            return false;
+        }
+        String functionValue = roleFunctionsList.get(0).getValue();
+        if (StringUtil.isEmpty(functionValue)) {
+            return false;
+        }
+        List<Long> functionIds = StringUtil.strToLongList(
+                functionValue.substring(1, functionValue.length() - 1).replace("][", ","));
+        for (Function function : functionService.getFunction()) {
+            if (functionIds.contains(function.getId()) && url.equals(function.getUrl())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetStatus(Byte status, String ids, HttpServletRequest request)throws Exception {
         int result=0;
