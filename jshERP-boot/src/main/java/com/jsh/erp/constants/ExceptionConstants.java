@@ -807,6 +807,15 @@ public class ExceptionConstants {
 
     public static final int ACCOUNT_HEAD_ACCOUNT_FAILED_CODE = 9500015;
     public static final String ACCOUNT_HEAD_ACCOUNT_FAILED_MSG = "抱歉，收入账户不存在或已停用";
+
+    public static final int ACCOUNT_HEAD_EXPENSE_AMOUNT_FAILED_CODE = 9500016;
+    public static final String ACCOUNT_HEAD_EXPENSE_AMOUNT_FAILED_MSG = "抱歉，支出单金额必须大于零且主表金额必须等于明细合计";
+
+    public static final int ACCOUNT_HEAD_EXPENSE_DETAIL_FAILED_CODE = 9500017;
+    public static final String ACCOUNT_HEAD_EXPENSE_DETAIL_FAILED_MSG = "抱歉，支出单明细中的支出项目、账户或关联单据信息不合法";
+
+    public static final int ACCOUNT_HEAD_EXPENSE_ACCOUNT_FAILED_CODE = 9500018;
+    public static final String ACCOUNT_HEAD_EXPENSE_ACCOUNT_FAILED_MSG = "抱歉，支出账户不存在或已停用";
     /**
      *  财务明细信息
      * type = 100

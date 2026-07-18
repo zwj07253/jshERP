@@ -95,6 +95,8 @@
             #{id}::bigint
         </foreach>
         )
+        and status='0'
+        and COALESCE(delete_flag,'0') !='1'
     </update>
     <select id="getAccountHeadListByAccountIds"  resultMap="com.jsh.erp.datasource.mappers.AccountHeadMapper.BaseResultMap">
         select

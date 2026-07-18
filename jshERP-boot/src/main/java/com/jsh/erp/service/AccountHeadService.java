@@ -9,6 +9,7 @@ import com.jsh.erp.datasource.mappers.AccountHeadMapper;
 import com.jsh.erp.datasource.mappers.AccountHeadMapperEx;
 import com.jsh.erp.datasource.mappers.AccountItemMapperEx;
 import com.jsh.erp.datasource.mappers.AccountMapper;
+import com.jsh.erp.datasource.vo.AccountItemVo4List;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.exception.JshException;
 import com.jsh.erp.utils.PageUtils;
@@ -264,27 +265,34 @@ public class AccountHeadService {
         }
     }
 
-    private void validateIncomeBill(AccountHead accountHead, String rows) throws Exception {
-        if(!BusinessConstants.TYPE_INCOME.equals(accountHead.getType())) {
+    private void validateIncomeExpenseBill(AccountHead accountHead, String rows) throws Exception {
+        boolean income = BusinessConstants.TYPE_INCOME.equals(accountHead.getType());
+        boolean expense = BusinessConstants.TYPE_EXPENSE.equals(accountHead.getType());
+        if(!income && !expense) {
             return;
         }
+        int detailFailedCode = income ? ExceptionConstants.ACCOUNT_HEAD_INCOME_DETAIL_FAILED_CODE
+                : ExceptionConstants.ACCOUNT_HEAD_EXPENSE_DETAIL_FAILED_CODE;
+        String detailFailedMsg = income ? ExceptionConstants.ACCOUNT_HEAD_INCOME_DETAIL_FAILED_MSG
+                : ExceptionConstants.ACCOUNT_HEAD_EXPENSE_DETAIL_FAILED_MSG;
         if(StringUtil.isEmpty(accountHead.getBillNo()) || accountHead.getBillTime() == null) {
-            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_INCOME_DETAIL_FAILED_CODE,
-                    ExceptionConstants.ACCOUNT_HEAD_INCOME_DETAIL_FAILED_MSG);
+            throw new BusinessRunTimeException(detailFailedCode, detailFailedMsg);
         }
         Account account = accountHead.getAccountId() == null
                 ? null : accountMapper.selectByPrimaryKey(accountHead.getAccountId());
         if(account == null || !Boolean.TRUE.equals(account.getEnabled())
                 || BusinessConstants.DELETE_FLAG_DELETED.equals(account.getDeleteFlag())) {
-            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ACCOUNT_FAILED_CODE,
-                    ExceptionConstants.ACCOUNT_HEAD_ACCOUNT_FAILED_MSG);
+            throw new BusinessRunTimeException(
+                    income ? ExceptionConstants.ACCOUNT_HEAD_ACCOUNT_FAILED_CODE
+                            : ExceptionConstants.ACCOUNT_HEAD_EXPENSE_ACCOUNT_FAILED_CODE,
+                    income ? ExceptionConstants.ACCOUNT_HEAD_ACCOUNT_FAILED_MSG
+                            : ExceptionConstants.ACCOUNT_HEAD_EXPENSE_ACCOUNT_FAILED_MSG);
         }
         JSONArray rowArray;
         try {
             rowArray = JSONArray.parseArray(rows);
         } catch (Exception e) {
-            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_INCOME_DETAIL_FAILED_CODE,
-                    ExceptionConstants.ACCOUNT_HEAD_INCOME_DETAIL_FAILED_MSG);
+            throw new BusinessRunTimeException(detailFailedCode, detailFailedMsg);
         }
         if(rowArray == null || rowArray.isEmpty()) {
             throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ROW_FAILED_CODE,
@@ -296,28 +304,70 @@ public class AccountHeadService {
             Long inOutItemId = row.getLong("inOutItemId");
             InOutItem inOutItem = inOutItemId == null ? null : inOutItemService.getInOutItem(inOutItemId);
             BigDecimal eachAmount = row.getBigDecimal("eachAmount");
-            if(inOutItem == null || !BusinessConstants.TYPE_INCOME.equals(inOutItem.getType())
+            String expectedItemType = income ? BusinessConstants.TYPE_INCOME : BusinessConstants.TYPE_EXPENSE;
+            if(inOutItem == null || !expectedItemType.equals(inOutItem.getType())
                     || !Boolean.TRUE.equals(inOutItem.getEnabled())
                     || BusinessConstants.DELETE_FLAG_DELETED.equals(inOutItem.getDeleteFlag())
                     || eachAmount == null || eachAmount.compareTo(BigDecimal.ZERO) <= 0
                     || hasValue(row, "accountId") || hasValue(row, "billId")
                     || hasValue(row, "billNumber") || hasValue(row, "needDebt")
                     || hasValue(row, "finishDebt")) {
-                throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_INCOME_DETAIL_FAILED_CODE,
-                        ExceptionConstants.ACCOUNT_HEAD_INCOME_DETAIL_FAILED_MSG);
+                throw new BusinessRunTimeException(detailFailedCode, detailFailedMsg);
             }
             detailTotal = detailTotal.add(eachAmount);
         }
         BigDecimal totalPrice = accountHead.getTotalPrice();
         BigDecimal changeAmount = accountHead.getChangeAmount();
         BigDecimal discountMoney = accountHead.getDiscountMoney();
-        if(totalPrice == null || changeAmount == null
-                || totalPrice.compareTo(BigDecimal.ZERO) <= 0 || changeAmount.compareTo(BigDecimal.ZERO) <= 0
-                || !sameMoney(totalPrice, detailTotal) || !sameMoney(changeAmount, detailTotal)
-                || (discountMoney != null && discountMoney.compareTo(BigDecimal.ZERO) != 0)) {
-            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_INCOME_AMOUNT_FAILED_CODE,
-                    ExceptionConstants.ACCOUNT_HEAD_INCOME_AMOUNT_FAILED_MSG);
+        boolean invalidAmount = totalPrice == null || changeAmount == null
+                || (discountMoney != null && discountMoney.compareTo(BigDecimal.ZERO) != 0);
+        if(!invalidAmount) {
+            if(income) {
+                invalidAmount = totalPrice.compareTo(BigDecimal.ZERO) <= 0
+                        || changeAmount.compareTo(BigDecimal.ZERO) <= 0
+                        || !sameMoney(totalPrice, detailTotal) || !sameMoney(changeAmount, detailTotal);
+            } else {
+                invalidAmount = totalPrice.compareTo(BigDecimal.ZERO) >= 0
+                        || changeAmount.compareTo(BigDecimal.ZERO) >= 0
+                        || !sameMoney(totalPrice.abs(), detailTotal) || !sameMoney(changeAmount.abs(), detailTotal);
+            }
         }
+        if(invalidAmount) {
+            throw new BusinessRunTimeException(
+                    income ? ExceptionConstants.ACCOUNT_HEAD_INCOME_AMOUNT_FAILED_CODE
+                            : ExceptionConstants.ACCOUNT_HEAD_EXPENSE_AMOUNT_FAILED_CODE,
+                    income ? ExceptionConstants.ACCOUNT_HEAD_INCOME_AMOUNT_FAILED_MSG
+                            : ExceptionConstants.ACCOUNT_HEAD_EXPENSE_AMOUNT_FAILED_MSG);
+        }
+    }
+
+    private void validatePersistedIncomeExpenseBill(AccountHead accountHead) throws Exception {
+        if(!BusinessConstants.TYPE_INCOME.equals(accountHead.getType())
+                && !BusinessConstants.TYPE_EXPENSE.equals(accountHead.getType())) {
+            return;
+        }
+        List<AccountItemVo4List> detailList = accountItemService.getDetailList(accountHead.getId());
+        JSONArray rows = new JSONArray();
+        if(detailList != null) {
+            for(AccountItemVo4List detail : detailList) {
+                JSONObject row = new JSONObject();
+                row.put("inOutItemId", detail.getInOutItemId());
+                row.put("eachAmount", detail.getEachAmount());
+                row.put("accountId", detail.getAccountId());
+                row.put("billId", detail.getBillId());
+                if(StringUtil.isNotEmpty(detail.getBillNumber())) {
+                    row.put("billNumber", detail.getBillNumber());
+                }
+                if(detail.getNeedDebt() != null && detail.getNeedDebt().compareTo(BigDecimal.ZERO) != 0) {
+                    row.put("needDebt", detail.getNeedDebt());
+                }
+                if(detail.getFinishDebt() != null && detail.getFinishDebt().compareTo(BigDecimal.ZERO) != 0) {
+                    row.put("finishDebt", detail.getFinishDebt());
+                }
+                rows.add(row);
+            }
+        }
+        validateIncomeExpenseBill(accountHead, rows.toJSONString());
     }
 
     private boolean hasValue(JSONObject row, String key) {
@@ -392,7 +442,12 @@ public class AccountHeadService {
         //删除主表
         accountItemMapperEx.batchDeleteAccountItemByHeadIds(new Date(),userInfo==null?null:userInfo.getId(),idArray);
         //删除子表
-        accountHeadMapperEx.batchDeleteAccountHeadByIds(new Date(),userInfo==null?null:userInfo.getId(),idArray);
+        int deleteResult = accountHeadMapperEx.batchDeleteAccountHeadByIds(
+                new Date(),userInfo==null?null:userInfo.getId(),idArray);
+        if(deleteResult != idArray.length) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_DELETE_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_HEAD_DELETE_FAILED_MSG);
+        }
         //路径列表
         List<String> pathList = new ArrayList<>();
         for(AccountHead accountHead: list){
@@ -465,6 +520,7 @@ public class AccountHeadService {
                 checkAccountHeadButtonPermission(accountHead.getType(), "2", "审核");
                 //进行审核操作
                 if("0".equals(accountHead.getStatus())) {
+                    validatePersistedIncomeExpenseBill(accountHead);
                     ahIds.add(id);
                     noList.add(accountHead.getBillNo());
                 } else {
@@ -509,7 +565,7 @@ public class AccountHeadService {
         if(BusinessConstants.BILLS_STATUS_AUDIT.equals(accountHead.getStatus())) {
             checkAccountHeadButtonPermission(accountHead.getType(), "2", "审核");
         }
-        validateIncomeBill(accountHead, rows);
+        validateIncomeExpenseBill(accountHead, rows);
         //校验单号是否重复
         if(checkIsBillNoExist(0L, accountHead.getBillNo())>0) {
             throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_BILL_NO_EXIST_CODE,
@@ -589,7 +645,7 @@ public class AccountHeadService {
             checkAccountHeadButtonPermission(previousAccountHead.getType(), "2", "审核");
         }
         accountHead.setCreator(previousAccountHead.getCreator());
-        validateIncomeBill(accountHead, rows);
+        validateIncomeExpenseBill(accountHead, rows);
         //校验单号是否重复
         if(checkIsBillNoExist(accountHead.getId(), accountHead.getBillNo())>0) {
             throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_BILL_NO_EXIST_CODE,
