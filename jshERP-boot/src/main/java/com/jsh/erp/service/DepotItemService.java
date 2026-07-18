@@ -230,6 +230,7 @@ public class DepotItemService {
         try{
             DepotItemExample example = new DepotItemExample();
             example.createCriteria().andHeaderIdEqualTo(headerId).andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+            example.setOrderByClause("id asc");
             list = depotItemMapper.selectByExample(example);
         }catch(Exception e){
             JshException.readFail(logger, e);
@@ -418,8 +419,10 @@ public class DepotItemService {
                     && BusinessConstants.SUB_TYPE_OTHER.equals(depotHead.getSubType());
             boolean assemble = BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(depotHead.getType())
                     && BusinessConstants.SUB_TYPE_ASSEMBLE.equals(depotHead.getSubType());
+            boolean disassemble = BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(depotHead.getType())
+                    && BusinessConstants.SUB_TYPE_DISASSEMBLE.equals(depotHead.getSubType());
             boolean purchaseDepotPermission = purchaseInbound || purchaseReturn || salesOutbound || salesReturn
-                    || otherStockBill || assemble;
+                    || otherStockBill || assemble || disassemble;
             Set<Long> allowedPurchaseDepotIds = new HashSet<>();
             User currentUser = userService.getCurrentUser();
             boolean adminUser = currentUser != null && "admin".equals(currentUser.getLoginName());
@@ -645,7 +648,7 @@ public class DepotItemService {
                 if (StringUtil.isExist(rowObj.get("depotId"))) {
                     depotItem.setDepotId(rowObj.getLong("depotId"));
                     if (purchaseDepotPermission && !adminUser && !allowedPurchaseDepotIds.contains(depotItem.getDepotId())) {
-                        if (assemble) {
+                        if (assemble || disassemble) {
                             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_DATA_PERMISSION_CODE,
                                     ExceptionConstants.DEPOT_DATA_PERMISSION_MSG);
                         }
@@ -768,6 +771,14 @@ public class DepotItemService {
                         && (!systemConfigService.getForceApprovalFlag()
                         || BusinessConstants.BILLS_STATUS_AUDIT.equals(depotHead.getStatus()))) {
                     checkAssembleMaterialStock(depotHead.getNumber(), depotItemList);
+                }
+            }
+            if (disassemble) {
+                normalizeDisassembleCost(depotHead, depotItemList);
+                if (!systemConfigService.getMinusStockFlag()
+                        && (!systemConfigService.getForceApprovalFlag()
+                        || BusinessConstants.BILLS_STATUS_AUDIT.equals(depotHead.getStatus()))) {
+                    checkDisassembleMaterialStock(depotHead.getNumber(), depotItemList);
                 }
             }
             //批量写入单据明细数据
@@ -940,9 +951,10 @@ public class DepotItemService {
             DepotItemExample example = new DepotItemExample();
             example.createCriteria().andHeaderIdEqualTo(headerId);
             depotItemMapper.deleteByExample(example);
-            //3、计算删除之后单据明细中商品的库存
+            //3、计算删除之后单据明细中商品的库存和移动平均成本，避免编辑时沿用旧明细成本。
             for(DepotItem depotItem : depotItemList){
                 updateCurrentStock(depotItem);
+                updateCurrentUnitPrice(depotItem);
             }
         }catch(Exception e){
             JshException.writeFail(logger, e);
@@ -1249,7 +1261,10 @@ public class DepotItemService {
             BigDecimal basicNumber = item.getBnum()!=null?item.getBnum():BigDecimal.ZERO;
             //数量*单价  另外计算新的成本价
             BigDecimal allPrice = unitService.parseAllPriceByUnit(item.getAllPrice()!=null?item.getAllPrice():BigDecimal.ZERO, unitInfo, item.getMaterialUnit());
-            if(basicNumber.compareTo(BigDecimal.ZERO)!=0 && allPrice.compareTo(BigDecimal.ZERO)!=0) {
+            boolean zeroCostStockBill = BusinessConstants.SUB_TYPE_ASSEMBLE.equals(item.getSubType())
+                    || BusinessConstants.SUB_TYPE_DISASSEMBLE.equals(item.getSubType());
+            if (basicNumber.compareTo(BigDecimal.ZERO) != 0
+                    && (allPrice.compareTo(BigDecimal.ZERO) != 0 || zeroCostStockBill)) {
                 //入库
                 if (BusinessConstants.DEPOTHEAD_TYPE_IN.equals(item.getType())) {
                     //零售退货、销售退货
@@ -1299,9 +1314,18 @@ public class DepotItemService {
                         currentAllPrice = currentAllPrice.add(basicNumber.multiply(currentUnitPrice));
                     }
                 }
-                //拆卸和盘点复盘继续按当前移动平均价处理。
-                if(BusinessConstants.SUB_TYPE_DISASSEMBLE.equals(item.getSubType())||
-                        BusinessConstants.SUB_TYPE_REPLAY.equals(item.getSubType())) {
+                //拆卸使用已固化且守恒的成本：组合件出库为负，普通子件入库为正。
+                if (BusinessConstants.SUB_TYPE_DISASSEMBLE.equals(item.getSubType())) {
+                    currentNumber = currentNumber.add(basicNumber);
+                    currentAllPrice = currentAllPrice.add(zeroIfNull(item.getAllPrice()));
+                    if (currentAllPrice.compareTo(BigDecimal.ZERO) > 0
+                            && currentNumber.compareTo(BigDecimal.ZERO) > 0) {
+                        currentUnitPrice = currentAllPrice.divide(currentNumber, 4, BigDecimal.ROUND_HALF_UP);
+                    } else if (basicNumber.compareTo(BigDecimal.ZERO) > 0 && item.getUnitPrice() != null) {
+                        currentUnitPrice = item.getUnitPrice();
+                    }
+                }
+                if (BusinessConstants.SUB_TYPE_REPLAY.equals(item.getSubType())) {
                     //数量*当前的成本单价
                     currentNumber = currentNumber.add(basicNumber);
                     currentAllPrice = currentAllPrice.add(basicNumber.multiply(currentUnitPrice));
@@ -1740,6 +1764,135 @@ public class DepotItemService {
         depotHead.setTotalPrice(combinationItem.getAllPrice());
     }
 
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
+    public void refreshDisassembleCost(DepotHead depotHead) throws Exception {
+        if (depotHead == null || depotHead.getId() == null) {
+            return;
+        }
+        List<DepotItem> detailList = getListByHeaderId(depotHead.getId());
+        normalizeDisassembleCost(depotHead, detailList);
+        for (DepotItem detail : detailList) {
+            depotItemMapper.updateByPrimaryKeySelective(detail);
+        }
+    }
+
+    /**
+     * 拆卸以组合件当前移动平均成本作为总投入成本，并按各子件当前成本权重分摊。
+     * 当所有子件成本权重均为零时按基本数量分摊，最后一行承接分币差，确保成本严格守恒。
+     */
+    private void normalizeDisassembleCost(DepotHead depotHead, List<DepotItem> detailList) throws Exception {
+        if (detailList == null || detailList.size() < 2) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_MSG);
+        }
+        DepotItem combinationItem = null;
+        List<DepotItem> componentItems = new ArrayList<>();
+        for (int index = 0; index < detailList.size(); index++) {
+            DepotItem detail = detailList.get(index);
+            String expectedMaterialType = index == 0 ? "组合件" : "普通子件";
+            if (!expectedMaterialType.equals(detail.getMaterialType())) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_CODE,
+                        ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_MSG);
+            }
+            if ("组合件".equals(detail.getMaterialType())) {
+                if (combinationItem != null) {
+                    throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_CODE,
+                            ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_MSG);
+                }
+                combinationItem = detail;
+            } else {
+                componentItems.add(detail);
+            }
+        }
+        if (combinationItem == null || componentItems.isEmpty()
+                || combinationItem.getBasicNumber() == null
+                || combinationItem.getBasicNumber().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_MSG);
+        }
+        for (DepotItem component : componentItems) {
+            if (component.getBasicNumber() == null || component.getBasicNumber().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_CODE,
+                        ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_MSG);
+            }
+            if (Objects.equals(component.getMaterialExtendId(), combinationItem.getMaterialExtendId())) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_SAME_MATERIAL_CODE,
+                        String.format(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_SAME_MATERIAL_MSG,
+                                combinationItem.getMaterialExtendId()));
+            }
+        }
+
+        Set<String> lockedCostKeys = new HashSet<>();
+        lockMaterialForStockCheck(combinationItem, lockedCostKeys);
+        BigDecimal combinationBasicUnitCost = getCurrentBasicUnitCost(combinationItem);
+        BigDecimal totalInputCost = combinationItem.getBasicNumber().multiply(combinationBasicUnitCost)
+                .setScale(2, BigDecimal.ROUND_HALF_UP);
+        setDisassembleItemCost(combinationItem, combinationBasicUnitCost, totalInputCost);
+
+        List<BigDecimal> allocationWeights = new ArrayList<>();
+        BigDecimal totalWeight = BigDecimal.ZERO;
+        BigDecimal totalQuantity = BigDecimal.ZERO;
+        for (DepotItem component : componentItems) {
+            lockMaterialForStockCheck(component, lockedCostKeys);
+            BigDecimal weight = component.getBasicNumber().multiply(getCurrentBasicUnitCost(component));
+            allocationWeights.add(weight);
+            totalWeight = totalWeight.add(weight);
+            totalQuantity = totalQuantity.add(component.getBasicNumber());
+        }
+        boolean allocateByCost = totalWeight.compareTo(BigDecimal.ZERO) > 0;
+        BigDecimal denominator = allocateByCost ? totalWeight : totalQuantity;
+        BigDecimal allocatedCost = BigDecimal.ZERO;
+        for (int index = 0; index < componentItems.size(); index++) {
+            DepotItem component = componentItems.get(index);
+            BigDecimal componentCost;
+            if (index == componentItems.size() - 1) {
+                componentCost = totalInputCost.subtract(allocatedCost).setScale(2, BigDecimal.ROUND_HALF_UP);
+            } else {
+                BigDecimal weight = allocateByCost ? allocationWeights.get(index) : component.getBasicNumber();
+                componentCost = denominator.compareTo(BigDecimal.ZERO) == 0 ? BigDecimal.ZERO
+                        : totalInputCost.multiply(weight).divide(denominator, 2, BigDecimal.ROUND_HALF_UP);
+                allocatedCost = allocatedCost.add(componentCost);
+            }
+            BigDecimal componentBasicUnitCost = componentCost.divide(component.getBasicNumber(),
+                    4, BigDecimal.ROUND_HALF_UP);
+            setDisassembleItemCost(component, componentBasicUnitCost, componentCost);
+        }
+
+        DepotHead costHead = new DepotHead();
+        costHead.setId(depotHead.getId());
+        costHead.setTotalPrice(totalInputCost);
+        depotHeadMapper.updateByPrimaryKeySelective(costHead);
+        depotHead.setTotalPrice(totalInputCost);
+    }
+
+    private BigDecimal getCurrentBasicUnitCost(DepotItem item) throws Exception {
+        BigDecimal basicUnitCost = materialCurrentStockMapperEx.getCurrentUnitPriceByMId(item.getMaterialId());
+        if (basicUnitCost == null) {
+            MaterialExtend materialExtend = materialExtendService.getMaterialExtend(item.getMaterialExtendId());
+            basicUnitCost = materialExtend == null || materialExtend.getPurchaseDecimal() == null
+                    ? BigDecimal.ZERO : materialExtend.getPurchaseDecimal();
+        }
+        if (basicUnitCost.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_AMOUNT_CODE,
+                    ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_AMOUNT_MSG);
+        }
+        return basicUnitCost;
+    }
+
+    private void setDisassembleItemCost(DepotItem item, BigDecimal basicUnitCost,
+                                        BigDecimal allPrice) throws Exception {
+        Unit unitInfo = materialService.findUnit(item.getMaterialId());
+        BigDecimal submittedUnitCost = unitService.parseUnitPriceByUnit(basicUnitCost, unitInfo,
+                item.getMaterialUnit()).setScale(4, BigDecimal.ROUND_HALF_UP);
+        item.setUnitPrice(submittedUnitCost);
+        item.setPurchaseUnitPrice(submittedUnitCost);
+        item.setAllPrice(allPrice.setScale(2, BigDecimal.ROUND_HALF_UP));
+        item.setTaxUnitPrice(submittedUnitCost);
+        item.setTaxRate(BigDecimal.ZERO);
+        item.setTaxMoney(BigDecimal.ZERO);
+        item.setTaxLastMoney(item.getAllPrice());
+    }
+
     public void checkAssembleMaterialStock(List<DepotHead> depotHeadList) throws Exception {
         Map<String, BigDecimal> outboundQuantityMap = new HashMap<>();
         Set<String> lockedStockKeys = new HashSet<>();
@@ -1747,6 +1900,35 @@ public class DepotItemService {
             checkAssembleMaterialStock(depotHead.getNumber(), getListByHeaderId(depotHead.getId()),
                     outboundQuantityMap, lockedStockKeys);
         }
+    }
+
+    public void checkDisassembleMaterialStock(List<DepotHead> depotHeadList) throws Exception {
+        Map<String, BigDecimal> outboundQuantityMap = new HashMap<>();
+        Set<String> lockedStockKeys = new HashSet<>();
+        for (DepotHead depotHead : depotHeadList) {
+            checkDisassembleMaterialStock(depotHead.getNumber(), getListByHeaderId(depotHead.getId()),
+                    outboundQuantityMap, lockedStockKeys);
+        }
+    }
+
+    private void checkDisassembleMaterialStock(String number, List<DepotItem> detailList) throws Exception {
+        checkDisassembleMaterialStock(number, detailList, new HashMap<>(), new HashSet<>());
+    }
+
+    private void checkDisassembleMaterialStock(String number, List<DepotItem> detailList,
+                                               Map<String, BigDecimal> outboundQuantityMap,
+                                               Set<String> lockedStockKeys) throws Exception {
+        List<DepotItem> combinationItems = new ArrayList<>();
+        for (DepotItem detail : detailList) {
+            if ("组合件".equals(detail.getMaterialType())) {
+                combinationItems.add(detail);
+            }
+        }
+        if (combinationItems.size() != 1) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_MSG);
+        }
+        checkMaterialStock(number, combinationItems, outboundQuantityMap, lockedStockKeys);
     }
 
     private void checkAssembleMaterialStock(String number, List<DepotItem> detailList) throws Exception {

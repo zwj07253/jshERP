@@ -247,7 +247,10 @@
         billMain.type = '其它'
         billMain.subType = '拆卸单'
         for(let item of detailArr){
-          totalPrice += item.allPrice-0
+          //拆卸单金额代表投入组合件的成本，最终值仍由服务端按当前库存成本重算。
+          if(item.mType === '组合件') {
+            totalPrice += item.allPrice-0
+          }
         }
         billMain.totalPrice = totalPrice
         if(this.fileList && this.fileList.length > 0) {
@@ -281,6 +284,17 @@
         } else {
           target.setValues([{rowKey: row.id, values: {mType: '组合件'}}])
         }
+      },
+      onDeleted(ids, target) {
+        const typeValues = target.rows.map((row, index) => ({
+          rowKey: row.id,
+          values: {mType: index === 0 ? '组合件' : '普通子件'}
+        }))
+        if(typeValues.length > 0) {
+          target.setValues(typeValues)
+        }
+        target.recalcAllStatisticsColumns()
+        this.autoChangePrice(target)
       }
     }
   }

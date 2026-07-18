@@ -53,6 +53,7 @@ public class DepotHeadService {
     private static final String OTHER_OUT_URL = "/bill/other_out";
     private static final String TRANSFER_OUT_URL = "/bill/allocation_out";
     private static final String ASSEMBLE_URL = "/bill/assemble";
+    private static final String DISASSEMBLE_URL = "/bill/disassemble";
 
     @Resource
     private DepotHeadMapper depotHeadMapper;
@@ -765,6 +766,7 @@ public class DepotHeadService {
         Set<String> salesOrderNumbers = new HashSet<>();
         List<DepotHead> stockCheckHeadList = new ArrayList<>();
         List<DepotHead> assembleStockCheckHeadList = new ArrayList<>();
+        List<DepotHead> disassembleStockCheckHeadList = new ArrayList<>();
         List<Long> ids = StringUtil.strToLongList(depotHeadIDs);
         for(Long id: ids) {
             DepotHead depotHead = getDepotHead(id);
@@ -803,8 +805,12 @@ public class DepotHeadService {
                     validateOtherOutboundBeforeAudit(depotHead);
                     validateTransferOutboundBeforeAudit(depotHead);
                     validateAssembleBeforeAudit(depotHead);
+                    validateDisassembleBeforeAudit(depotHead);
                     if (isAssemble(depotHead)) {
                         depotItemService.refreshAssembleCost(depotHead);
+                    }
+                    if (isDisassemble(depotHead) && forceApprovalFlag) {
+                        depotItemService.refreshDisassembleCost(depotHead);
                     }
                     dhIds.add(id);
                     noList.add(depotHead.getNumber());
@@ -823,8 +829,12 @@ public class DepotHeadService {
                     boolean otherOut = isOtherOutbound(depotHead);
                     boolean transferOut = isTransferOutbound(depotHead);
                     boolean assemble = isAssemble(depotHead);
+                    boolean disassemble = isDisassemble(depotHead);
                     if (assemble) {
                         assembleStockCheckHeadList.add(depotHead);
+                    }
+                    if (disassemble) {
+                        disassembleStockCheckHeadList.add(depotHead);
                     }
                     if(inOutManageFlag) {
                         if(retailOut || otherOut || transferOut) {
@@ -847,6 +857,9 @@ public class DepotHeadService {
         }
         if (!assembleStockCheckHeadList.isEmpty()) {
             depotItemService.checkAssembleMaterialStock(assembleStockCheckHeadList);
+        }
+        if (!disassembleStockCheckHeadList.isEmpty()) {
+            depotItemService.checkDisassembleMaterialStock(disassembleStockCheckHeadList);
         }
         if(!dhIds.isEmpty()) {
             DepotHead depotHead = new DepotHead();
@@ -1326,6 +1339,7 @@ public class DepotHeadService {
         validateOtherSubmittedState(depotHead, null);
         validateTransferSubmittedState(depotHead, null);
         validateAssembleSubmittedState(depotHead, null);
+        validateDisassembleSubmittedState(depotHead, null);
         checkBillButtonPermission(depotHead, "1", "新增");
         if (BusinessConstants.BILLS_STATUS_AUDIT.equals(depotHead.getStatus())) {
             checkBillButtonPermission(depotHead, "2", "审核");
@@ -1454,6 +1468,7 @@ public class DepotHeadService {
         validateOtherSubmittedState(depotHead, previousDepotHead);
         validateTransferSubmittedState(depotHead, previousDepotHead);
         validateAssembleSubmittedState(depotHead, previousDepotHead);
+        validateDisassembleSubmittedState(depotHead, previousDepotHead);
         checkPurchaseBillDataPermission(previousDepotHead);
         checkPurchaseInboundHasNoReturn(previousDepotHead, "编辑");
         if (isPurchaseInbound(previousDepotHead)
@@ -1618,6 +1633,9 @@ public class DepotHeadService {
         } else if (isAssemble(depotHead)) {
             url = ASSEMBLE_URL;
             billName = "组装单";
+        } else if (isDisassemble(depotHead)) {
+            url = DISASSEMBLE_URL;
+            billName = "拆卸单";
         } else {
             return;
         }
@@ -1681,6 +1699,12 @@ public class DepotHeadService {
         return depotHead != null
                 && BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(depotHead.getType())
                 && BusinessConstants.SUB_TYPE_ASSEMBLE.equals(depotHead.getSubType());
+    }
+
+    private boolean isDisassemble(DepotHead depotHead) {
+        return depotHead != null
+                && BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(depotHead.getType())
+                && BusinessConstants.SUB_TYPE_DISASSEMBLE.equals(depotHead.getSubType());
     }
 
     private boolean isCurrentUserAdmin() throws Exception {
@@ -1820,6 +1844,27 @@ public class DepotHeadService {
                 ? BusinessConstants.PURCHASE_STATUS_UN_AUDIT : previousDepotHead.getPurchaseStatus());
     }
 
+    private void validateDisassembleSubmittedState(DepotHead depotHead, DepotHead previousDepotHead) {
+        if (!isDisassemble(depotHead)) {
+            return;
+        }
+        String status = StringUtil.isEmpty(depotHead.getStatus())
+                ? BusinessConstants.BILLS_STATUS_UN_AUDIT : depotHead.getStatus();
+        if (!BusinessConstants.BILLS_STATUS_UN_AUDIT.equals(status)
+                && !BusinessConstants.BILLS_STATUS_AUDIT.equals(status)) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STATUS_CODE,
+                    ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STATUS_MSG);
+        }
+        if (previousDepotHead != null
+                && !Objects.equals(previousDepotHead.getNumber(), depotHead.getNumber())) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_NUMBER_CHANGE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_NUMBER_CHANGE_MSG);
+        }
+        depotHead.setStatus(status);
+        depotHead.setPurchaseStatus(previousDepotHead == null
+                ? BusinessConstants.PURCHASE_STATUS_UN_AUDIT : previousDepotHead.getPurchaseStatus());
+    }
+
     /**
      * 对直接按ID读取或操作的采购、销售和其它出入库单据补充操作员、往来单位和仓库数据权限。
      */
@@ -1832,8 +1877,9 @@ public class DepotHeadService {
         boolean otherStockBill = isOtherInbound(depotHead) || isOtherOutbound(depotHead);
         boolean transferOutbound = isTransferOutbound(depotHead);
         boolean assemble = isAssemble(depotHead);
+        boolean disassemble = isDisassemble(depotHead);
         if (!purchaseInbound && !purchaseReturn && !salesOrder && !salesOutbound && !salesReturn
-                && !otherStockBill && !transferOutbound && !assemble) {
+                && !otherStockBill && !transferOutbound && !assemble && !disassemble) {
             return;
         }
         if (isCurrentUserAdmin()) {
@@ -1842,7 +1888,7 @@ public class DepotHeadService {
         String[] creatorArray = getCreatorArray();
         if (creatorArray != null && (depotHead.getCreator() == null
                 || Arrays.stream(creatorArray).noneMatch(depotHead.getCreator().toString()::equals))) {
-            if (transferOutbound || assemble) {
+            if (transferOutbound || assemble || disassemble) {
                 throw new BusinessRunTimeException(ExceptionConstants.DEPOT_DATA_PERMISSION_CODE,
                         ExceptionConstants.DEPOT_DATA_PERMISSION_MSG);
             }
@@ -1866,7 +1912,7 @@ public class DepotHeadService {
             boolean targetDepotDenied = transferOutbound && (depotItem.getAnotherDepotId() == null
                     || !allowedDepotIds.contains(depotItem.getAnotherDepotId()));
             if (sourceDepotDenied || targetDepotDenied) {
-                if (transferOutbound || assemble) {
+                if (transferOutbound || assemble || disassemble) {
                     throw new BusinessRunTimeException(ExceptionConstants.DEPOT_DATA_PERMISSION_CODE,
                             ExceptionConstants.DEPOT_DATA_PERMISSION_MSG);
                 }
@@ -2080,6 +2126,9 @@ public class DepotHeadService {
         if (isAssemble(depotHead)) {
             return validateAndNormalizeAssemble(depotHead, rows);
         }
+        if (isDisassemble(depotHead)) {
+            return validateAndNormalizeDisassemble(depotHead, rows);
+        }
         return rows;
     }
 
@@ -2145,7 +2194,7 @@ public class DepotHeadService {
     }
 
     private void normalizeAssembleHeadFields(DepotHead depotHead) {
-        //最终成本由明细服务按照普通子件当前成本计算并回写。
+        //组装和拆卸的最终成本由明细服务按实时库存成本计算并回写。
         depotHead.setTotalPrice(BigDecimal.ZERO);
         depotHead.setOrganId(null);
         depotHead.setAccountId(null);
@@ -2163,6 +2212,66 @@ public class DepotHeadService {
         depotHead.setLinkNumber(null);
         depotHead.setLinkApply(null);
         depotHead.setPayType("");
+    }
+
+    private String validateAndNormalizeDisassemble(DepotHead depotHead, String rows) throws Exception {
+        JSONArray detailArray = JSONArray.parseArray(rows);
+        if (detailArray == null || detailArray.size() < 2) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_MSG);
+        }
+        String combinationBarCode = null;
+        Set<String> componentBarCodes = new HashSet<>();
+        for (int index = 0; index < detailArray.size(); index++) {
+            JSONObject detail = JSONObject.parseObject(detailArray.get(index).toString());
+            String expectedMaterialType = index == 0 ? "组合件" : "普通子件";
+            if (!expectedMaterialType.equals(detail.getString("mType"))) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_CODE,
+                        ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_MSG);
+            }
+            String barCode = detail.getString("barCode");
+            if (index == 0) {
+                combinationBarCode = barCode;
+            } else {
+                componentBarCodes.add(barCode);
+            }
+            Long depotId = detail.getLong("depotId");
+            if (depotId == null) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DEPOT_FAILED_CODE,
+                        ExceptionConstants.DEPOT_HEAD_DEPOT_FAILED_MSG);
+            }
+            depotService.parseDepotList(depotId);
+            BigDecimal quantity = detail.getBigDecimal("operNumber");
+            if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_CODE,
+                        String.format(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_MSG, barCode));
+            }
+            BigDecimal unitPrice = detail.getBigDecimal("unitPrice");
+            if (unitPrice != null && unitPrice.compareTo(BigDecimal.ZERO) < 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_AMOUNT_CODE,
+                        ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_AMOUNT_MSG);
+            }
+            //客户端成本仅用于录入展示，持久化前会按实时库存成本重新计算。
+            detail.put("unitPrice", BigDecimal.ZERO);
+            detail.put("allPrice", BigDecimal.ZERO);
+            detail.put("taxRate", BigDecimal.ZERO);
+            detail.put("taxMoney", BigDecimal.ZERO);
+            detail.put("taxLastMoney", BigDecimal.ZERO);
+            detail.put("taxUnitPrice", BigDecimal.ZERO);
+            detail.remove("linkId");
+            detail.remove("preNumber");
+            detail.remove("finishNumber");
+            detail.remove("snList");
+            detail.remove("batchNumber");
+            detail.remove("expirationDate");
+            detailArray.set(index, detail);
+        }
+        if (StringUtil.isNotEmpty(combinationBarCode) && componentBarCodes.contains(combinationBarCode)) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_SAME_MATERIAL_CODE,
+                    String.format(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_SAME_MATERIAL_MSG, combinationBarCode));
+        }
+        normalizeAssembleHeadFields(depotHead);
+        return detailArray.toJSONString();
     }
 
     private void validateAssembleBeforeAudit(DepotHead depotHead) throws Exception {
@@ -2217,6 +2326,64 @@ public class DepotHeadService {
                 || depotHead.getOrganId() != null || depotHead.getAccountId() != null) {
             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_AMOUNT_CODE,
                     ExceptionConstants.DEPOT_HEAD_ASSEMBLE_AMOUNT_MSG);
+        }
+    }
+
+    private void validateDisassembleBeforeAudit(DepotHead depotHead) throws Exception {
+        if (!isDisassemble(depotHead)) {
+            return;
+        }
+        List<DepotItem> detailList = depotItemService.getListByHeaderId(depotHead.getId());
+        if (detailList == null || detailList.size() < 2) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_MSG);
+        }
+        int combinationCount = 0;
+        Long combinationMaterialExtendId = null;
+        Set<Long> componentMaterialExtendIds = new HashSet<>();
+        for (int index = 0; index < detailList.size(); index++) {
+            DepotItem detail = detailList.get(index);
+            String expectedMaterialType = index == 0 ? "组合件" : "普通子件";
+            if (!expectedMaterialType.equals(detail.getMaterialType())) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_CODE,
+                        ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_MSG);
+            }
+            if ("组合件".equals(detail.getMaterialType())) {
+                combinationCount++;
+                combinationMaterialExtendId = detail.getMaterialExtendId();
+            } else {
+                componentMaterialExtendIds.add(detail.getMaterialExtendId());
+            }
+            if (detail.getDepotId() == null) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DEPOT_FAILED_CODE,
+                        ExceptionConstants.DEPOT_HEAD_DEPOT_FAILED_MSG);
+            }
+            depotService.parseDepotList(detail.getDepotId());
+            if (detail.getOperNumber() == null || detail.getOperNumber().compareTo(BigDecimal.ZERO) <= 0
+                    || detail.getBasicNumber() == null || detail.getBasicNumber().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_CODE,
+                        String.format(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_MSG,
+                                detail.getMaterialExtendId()));
+            }
+            if (detail.getLinkId() != null || StringUtil.isNotEmpty(detail.getSnList())
+                    || StringUtil.isNotEmpty(detail.getBatchNumber())) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_AMOUNT_CODE,
+                        ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_AMOUNT_MSG);
+            }
+        }
+        if (combinationCount != 1 || componentMaterialExtendIds.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_MSG);
+        }
+        if (combinationMaterialExtendId != null && componentMaterialExtendIds.contains(combinationMaterialExtendId)) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_SAME_MATERIAL_CODE,
+                    String.format(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_SAME_MATERIAL_MSG,
+                            combinationMaterialExtendId));
+        }
+        if (StringUtil.isNotEmpty(depotHead.getLinkNumber()) || StringUtil.isNotEmpty(depotHead.getLinkApply())
+                || depotHead.getOrganId() != null || depotHead.getAccountId() != null) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_AMOUNT_CODE,
+                    ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_AMOUNT_MSG);
         }
     }
 

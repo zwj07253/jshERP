@@ -709,6 +709,22 @@ public class ExceptionConstants {
     public static final int DEPOT_HEAD_ASSEMBLE_SAME_MATERIAL_CODE = 8500114;
     public static final String DEPOT_HEAD_ASSEMBLE_SAME_MATERIAL_MSG = "抱歉，组合件不能同时作为普通子件投入:%s";
 
+    //拆卸单
+    public static final int DEPOT_HEAD_DISASSEMBLE_STATUS_CODE = 8500115;
+    public static final String DEPOT_HEAD_DISASSEMBLE_STATUS_MSG = "抱歉，拆卸单状态不合法，请通过保存或审核操作变更状态";
+
+    public static final int DEPOT_HEAD_DISASSEMBLE_NUMBER_CHANGE_CODE = 8500116;
+    public static final String DEPOT_HEAD_DISASSEMBLE_NUMBER_CHANGE_MSG = "抱歉，拆卸单编号不能修改";
+
+    public static final int DEPOT_HEAD_DISASSEMBLE_AMOUNT_CODE = 8500117;
+    public static final String DEPOT_HEAD_DISASSEMBLE_AMOUNT_MSG = "抱歉，拆卸单的成本或金额不合法";
+
+    public static final int DEPOT_HEAD_DISASSEMBLE_STRUCTURE_CODE = 8500118;
+    public static final String DEPOT_HEAD_DISASSEMBLE_STRUCTURE_MSG = "抱歉，拆卸单必须且只能包含一个组合件，后续明细必须全部为普通子件";
+
+    public static final int DEPOT_HEAD_DISASSEMBLE_SAME_MATERIAL_CODE = 8500119;
+    public static final String DEPOT_HEAD_DISASSEMBLE_SAME_MATERIAL_MSG = "抱歉，组合件不能同时作为拆卸产出的普通子件:%s";
+
 
     /**
      *  单据明细信息

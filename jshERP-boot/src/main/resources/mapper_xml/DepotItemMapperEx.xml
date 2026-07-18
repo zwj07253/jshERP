@@ -172,6 +172,10 @@
         select tb.number, tb.bar_code, tb.material_name, tb."type", tb.sub_type, tb.material_type, tb.b_num, tb.unit_price,
         case when tb.sub_type='组装单' and tb.material_type='组合件'
             then COALESCE(tb.source_all_price,0)
+            when tb.sub_type='拆卸单' and tb.material_type='组合件'
+            then 0-COALESCE(tb.source_all_price,0)
+            when tb.sub_type='拆卸单' and tb.material_type='普通子件'
+            then COALESCE(tb.source_all_price,0)
             else COALESCE(tb.b_num*tb.unit_price,0)
         end as all_price, tb.material_unit, tb.depotName, tb.oTime from
         (select dh.number,me.bar_code,m."name" material_name,dh."type",dh.sub_type,di.material_type,

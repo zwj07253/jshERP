@@ -108,7 +108,7 @@
             </template>
             <a-button icon="setting">列设置</a-button>
           </a-popover>
-          <a-tooltip placement="left" title="用于将一个商品拆分成多种商品，被拆分的商品库存增加，拆分后的商品库存减少。" slot="action">
+          <a-tooltip placement="left" title="用于将一个商品拆分成多种商品，被拆分的组合件库存减少，拆分后的子件库存增加。" slot="action">
             <a-icon v-if="btnEnableList.indexOf(1)>-1" type="question-circle" style="font-size:20px;float:right;" />
           </a-tooltip>
         </div>
