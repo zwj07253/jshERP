@@ -4391,16 +4391,16 @@ public class DepotHeadService {
         return depotHead;
     }
 
-    public List<DepotHeadVo4List> debtList(Long organId, String materialParam, String number, String beginTime, String endTime,
+    public List<DepotHeadVo4List> debtList(Long organId, String type, String subType, String materialParam, String number, String beginTime, String endTime,
                                            String status, Integer offset, Integer rows) {
         List<DepotHeadVo4List> resList = new ArrayList<>();
         try{
             String depotIds = depotService.findDepotStrByCurrentUser();
-            String [] depotArray=depotIds.split(",");
+            String [] depotArray=StringUtil.isNotEmpty(depotIds) ? depotIds.split(",") : null;
             String [] creatorArray = getCreatorArray();
             beginTime = Tools.parseDayToTime(beginTime,BusinessConstants.DAY_FIRST_TIME);
             endTime = Tools.parseDayToTime(endTime,BusinessConstants.DAY_LAST_TIME);
-            List<DepotHeadVo4List> list=depotHeadMapperEx.debtList(organId, creatorArray, status, number,
+            List<DepotHeadVo4List> list=depotHeadMapperEx.debtList(organId, type, subType, creatorArray, status, number,
                     beginTime, endTime, materialParam, depotArray, offset, rows);
             if (null != list) {
                 resList = parseDebtBillList(list);
@@ -4411,16 +4411,16 @@ public class DepotHeadService {
         return resList;
     }
 
-    public int debtListCount(Long organId, String materialParam, String number, String beginTime, String endTime,
-                             String status) {
+    public int debtListCount(Long organId, String type, String subType, String materialParam, String number, String beginTime, String endTime,
+                              String status) {
         int total = 0;
         try {
             String depotIds = depotService.findDepotStrByCurrentUser();
-            String[] depotArray = depotIds.split(",");
+            String[] depotArray = StringUtil.isNotEmpty(depotIds) ? depotIds.split(",") : null;
             String[] creatorArray = getCreatorArray();
             beginTime = Tools.parseDayToTime(beginTime, BusinessConstants.DAY_FIRST_TIME);
             endTime = Tools.parseDayToTime(endTime, BusinessConstants.DAY_LAST_TIME);
-            total = depotHeadMapperEx.debtListCount(organId, creatorArray, status, number,
+            total = depotHeadMapperEx.debtListCount(organId, type, subType, creatorArray, status, number,
                     beginTime, endTime, materialParam, depotArray);
         } catch(Exception e){
             JshException.readFail(logger, e);
@@ -4436,13 +4436,13 @@ public class DepotHeadService {
             String priceLimit = userService.getRoleTypeByUserId(userId).getPriceLimit();
             String billCategory = getBillCategory(subType);
             String depotIds = depotService.findDepotStrByCurrentUser();
-            String[] depotArray = depotIds.split(",");
+            String[] depotArray = StringUtil.isNotEmpty(depotIds) ? depotIds.split(",") : null;
             String[] creatorArray = getCreatorArray();
             status = StringUtil.isNotEmpty(status) ? status : null;
             beginTime = Tools.parseDayToTime(beginTime, BusinessConstants.DAY_FIRST_TIME);
             endTime = Tools.parseDayToTime(endTime, BusinessConstants.DAY_LAST_TIME);
             List<DepotHeadVo4List> dhList = new ArrayList<>();
-            List<DepotHeadVo4List> list = depotHeadMapperEx.debtList(organId, creatorArray, status, number,
+            List<DepotHeadVo4List> list = depotHeadMapperEx.debtList(organId, type, subType, creatorArray, status, number,
                     beginTime, endTime, materialParam, depotArray, null, null);
             if (null != list) {
                 dhList = parseDebtBillList(list);

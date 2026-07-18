@@ -669,14 +669,16 @@ public class DepotHeadController extends BaseController {
         Map<String, Object> objectMap = new HashMap<>();
         String organIdStr = StringUtil.getInfo(search, "organId");
         Long organId = Long.parseLong(organIdStr);
+        String type = StringUtil.getInfo(search, "type");
+        String subType = StringUtil.getInfo(search, "subType");
         String materialParam = StringUtil.getInfo(search, "materialParam");
         String number = StringUtil.getInfo(search, "number");
         String beginTime = StringUtil.getInfo(search, "beginTime");
         String endTime = StringUtil.getInfo(search, "endTime");
         String status = StringUtil.getInfo(search, "status");
-        List<DepotHeadVo4List> list = depotHeadService.debtList(organId, materialParam, number, beginTime, endTime,
+        List<DepotHeadVo4List> list = depotHeadService.debtList(organId, type, subType, materialParam, number, beginTime, endTime,
                 status, (currentPage-1)*pageSize, pageSize);
-        int total = depotHeadService.debtListCount(organId, materialParam, number, beginTime, endTime, status);
+        int total = depotHeadService.debtListCount(organId, type, subType, materialParam, number, beginTime, endTime, status);
         if (list != null) {
             objectMap.put("rows", list);
             objectMap.put("total", total);

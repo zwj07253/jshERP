@@ -90,6 +90,17 @@
         )
         and COALESCE(delete_flag,'0') !='1'
     </select>
+
+    <select id="getBillIdsByHeaderIds" resultType="java.lang.Long">
+        select distinct bill_id
+        from jsh_account_item
+        where header_id in
+        <foreach collection="headerIds" item="headerId" separator="," open="(" close=")">
+            #{headerId}::bigint
+        </foreach>
+        and bill_id is not null
+        and COALESCE(delete_flag,'0') !='1'
+    </select>
     <select id="getAccountItemListByInOutItemIds" resultMap="com.jsh.erp.datasource.mappers.AccountItemMapper.BaseResultMap">
         select
         <include refid="com.jsh.erp.datasource.mappers.AccountItemMapper.Base_Column_List" />
@@ -116,13 +127,15 @@
 
     <select id="getEachAmountByBillId" resultType="java.math.BigDecimal">
         select
-        COALESCE(sum(each_amount),0)
-        from jsh_account_item
-        where 1=1
+        COALESCE(sum(ai.each_amount),0)
+        from jsh_account_item ai
+        join jsh_account_head ah on ah.id=ai.header_id
+        where ah.status='1'
         <if test="billId != null">
-            and bill_id=#{billId}
+            and ai.bill_id=#{billId}
         </if>
-        and COALESCE(delete_flag,'0') !='1'
+        and COALESCE(ai.delete_flag,'0') !='1'
+        and COALESCE(ah.delete_flag,'0') !='1'
     </select>
 
     <select id="getFinishDebtByOrganId" resultType="java.math.BigDecimal">
@@ -130,6 +143,7 @@
         left join jsh_account_item ai on ah.id = ai.header_id and COALESCE(ai.delete_flag,'0') !='1'
         where ah.organ_id = #{organId}
         and (ah."type" = '收款' or ah."type" = '付款')
+        and ah.status = '1'
         and ai.bill_id is null
         and COALESCE(ah.delete_flag,'0') !='1'
     </select>

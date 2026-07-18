@@ -246,6 +246,8 @@ public interface DepotHeadMapperEx {
 
     List<DepotHeadVo4List> debtList(
             @Param("organId") Long organId,
+            @Param("type") String type,
+            @Param("subType") String subType,
             @Param("creatorArray") String[] creatorArray,
             @Param("status") String status,
             @Param("number") String number,
@@ -258,6 +260,8 @@ public interface DepotHeadMapperEx {
 
     int debtListCount(
             @Param("organId") Long organId,
+            @Param("type") String type,
+            @Param("subType") String subType,
             @Param("creatorArray") String[] creatorArray,
             @Param("status") String status,
             @Param("number") String number,

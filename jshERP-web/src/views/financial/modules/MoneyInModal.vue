@@ -211,7 +211,10 @@
             { title: '应收欠款',key: 'needDebt', width: '10%', type: FormTypes.inputNumber, statistics: true, readonly: true },
             { title: '已收欠款', key: 'finishDebt', width: '10%', type: FormTypes.inputNumber, statistics: true, readonly: true },
             { title: '本次收款',key: 'eachAmount', width: '10%', type: FormTypes.inputNumber, statistics: true, placeholder: '请输入${title}',
-              validateRules: [{ required: true, message: '${title}不能为空' }]
+              validateRules: [
+                { required: true, message: '${title}不能为空' },
+                { pattern: /^(?=.*[1-9])\d+(?:\.\d+)?$/, message: '${title}必须大于0' }
+              ]
             },
             { title: '备注',key: 'remark', width: '20%', type: FormTypes.input, placeholder: '请输入${title}'}
           ]
@@ -231,7 +234,10 @@
             rules: [{ required: true, message: '请选择收款账户!' }]
           },
           discountMoney:{
-            rules: [{ required: true, message: '请输入优惠金额!' }]
+            rules: [
+              { required: true, message: '请输入优惠金额!' },
+              { pattern: /^(?:0|[1-9]\d*)(?:\.\d+)?$/, message: '优惠金额不能为负数!' }
+            ]
           }
         },
         url: {

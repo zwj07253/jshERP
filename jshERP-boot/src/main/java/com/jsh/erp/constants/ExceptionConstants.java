@@ -816,6 +816,18 @@ public class ExceptionConstants {
 
     public static final int ACCOUNT_HEAD_EXPENSE_ACCOUNT_FAILED_CODE = 9500018;
     public static final String ACCOUNT_HEAD_EXPENSE_ACCOUNT_FAILED_MSG = "抱歉，支出账户不存在或已停用";
+
+    public static final int ACCOUNT_HEAD_MONEY_IN_AMOUNT_FAILED_CODE = 9500019;
+    public static final String ACCOUNT_HEAD_MONEY_IN_AMOUNT_FAILED_MSG = "抱歉，收款金额必须大于零、不能超过待收欠款，且主表金额必须与明细及优惠金额一致";
+
+    public static final int ACCOUNT_HEAD_MONEY_IN_DETAIL_FAILED_CODE = 9500020;
+    public static final String ACCOUNT_HEAD_MONEY_IN_DETAIL_FAILED_MSG = "抱歉，收款明细只能关联当前客户已审核且仍有欠款的销售出库单";
+
+    public static final int ACCOUNT_HEAD_MONEY_IN_ACCOUNT_FAILED_CODE = 9500021;
+    public static final String ACCOUNT_HEAD_MONEY_IN_ACCOUNT_FAILED_MSG = "抱歉，收款账户不存在或已停用";
+
+    public static final int ACCOUNT_HEAD_MONEY_IN_ORGAN_FAILED_CODE = 9500022;
+    public static final String ACCOUNT_HEAD_MONEY_IN_ORGAN_FAILED_MSG = "抱歉，收款客户不存在、已停用或类型不正确";
     /**
      *  财务明细信息
      * type = 100

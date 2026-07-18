@@ -9,6 +9,7 @@ import com.jsh.erp.datasource.mappers.AccountHeadMapper;
 import com.jsh.erp.datasource.mappers.AccountHeadMapperEx;
 import com.jsh.erp.datasource.mappers.AccountItemMapperEx;
 import com.jsh.erp.datasource.mappers.AccountMapper;
+import com.jsh.erp.datasource.mappers.DepotHeadMapperEx;
 import com.jsh.erp.datasource.vo.AccountItemVo4List;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.exception.JshException;
@@ -30,7 +31,9 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static com.jsh.erp.utils.Tools.getCenternTime;
 
@@ -59,6 +62,8 @@ public class AccountHeadService {
     private AccountMapper accountMapper;
     @Resource
     private InOutItemService inOutItemService;
+    @Resource
+    private DepotHeadMapperEx depotHeadMapperEx;
 
     private static final String ADVANCE_IN_URL = "/financial/advance_in";
     private static final String MONEY_IN_URL = "/financial/money_in";
@@ -341,9 +346,128 @@ public class AccountHeadService {
         }
     }
 
-    private void validatePersistedIncomeExpenseBill(AccountHead accountHead) throws Exception {
+    private String validateFinancialBill(AccountHead accountHead, String rows, Long excludeHeadId) throws Exception {
+        validateIncomeExpenseBill(accountHead, rows);
+        if(BusinessConstants.TYPE_MONEY_IN.equals(accountHead.getType())) {
+            return validateMoneyInBill(accountHead, rows, excludeHeadId);
+        }
+        return rows;
+    }
+
+    private String validateMoneyInBill(AccountHead accountHead, String rows, Long excludeHeadId) throws Exception {
+        if(StringUtil.isEmpty(accountHead.getBillNo()) || accountHead.getBillTime() == null) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_DETAIL_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_DETAIL_FAILED_MSG);
+        }
+        Account account = accountHead.getAccountId() == null
+                ? null : accountMapper.selectByPrimaryKey(accountHead.getAccountId());
+        if(account == null || !Boolean.TRUE.equals(account.getEnabled())
+                || BusinessConstants.DELETE_FLAG_DELETED.equals(account.getDeleteFlag())) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_ACCOUNT_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_ACCOUNT_FAILED_MSG);
+        }
+        Supplier customer = accountHead.getOrganId() == null
+                ? null : supplierService.lockSupplier(accountHead.getOrganId());
+        if(customer == null || !"客户".equals(customer.getType()) || !Boolean.TRUE.equals(customer.getEnabled())
+                || BusinessConstants.DELETE_FLAG_DELETED.equals(customer.getDeleteFlag())) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_ORGAN_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_ORGAN_FAILED_MSG);
+        }
+        JSONArray rowArray;
+        try {
+            rowArray = JSONArray.parseArray(rows);
+        } catch (Exception e) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_DETAIL_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_DETAIL_FAILED_MSG);
+        }
+        if(rowArray == null || rowArray.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ROW_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_HEAD_ROW_FAILED_MSG);
+        }
+        BigDecimal detailTotal = BigDecimal.ZERO;
+        Set<String> billNumbers = new HashSet<>();
+        for(int rowIndex = 0; rowIndex < rowArray.size(); rowIndex++) {
+            Object rowValue = rowArray.get(rowIndex);
+            JSONObject row;
+            String billNumber;
+            BigDecimal eachAmount;
+            try {
+                row = JSONObject.parseObject(rowValue.toString());
+                billNumber = row.getString("billNumber");
+                eachAmount = row.getBigDecimal("eachAmount");
+            } catch (Exception e) {
+                throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_DETAIL_FAILED_CODE,
+                        ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_DETAIL_FAILED_MSG);
+            }
+            if(StringUtil.isEmpty(billNumber) || !billNumbers.add(billNumber) || eachAmount == null
+                    || hasValue(row, "accountId") || hasValue(row, "inOutItemId") || hasValue(row, "billId")) {
+                throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_DETAIL_FAILED_CODE,
+                        ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_DETAIL_FAILED_MSG);
+            }
+            if(eachAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_AMOUNT_FAILED_CODE,
+                        ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_AMOUNT_FAILED_MSG);
+            }
+            BigDecimal needDebt;
+            BigDecimal finishDebt;
+            if("QiChu".equals(billNumber)) {
+                needDebt = customer.getBeginNeedGet() == null ? BigDecimal.ZERO : customer.getBeginNeedGet();
+                finishDebt = accountHeadMapperEx.getAuditedOpeningAmount(customer.getId(),
+                        BusinessConstants.TYPE_MONEY_IN, excludeHeadId);
+            } else {
+                DepotHead depotHead = depotHeadMapperEx.lockDepotHeadByNumber(billNumber);
+                if(depotHead == null || !"出库".equals(depotHead.getType()) || !"销售".equals(depotHead.getSubType())
+                        || !BusinessConstants.BILLS_STATUS_AUDIT.equals(depotHead.getStatus())
+                        || !customer.getId().equals(depotHead.getOrganId())) {
+                    throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_DETAIL_FAILED_CODE,
+                            ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_DETAIL_FAILED_MSG);
+                }
+                BigDecimal discountLastMoney = depotHead.getDiscountLastMoney() == null
+                        ? BigDecimal.ZERO : depotHead.getDiscountLastMoney();
+                BigDecimal otherMoney = depotHead.getOtherMoney() == null ? BigDecimal.ZERO : depotHead.getOtherMoney();
+                BigDecimal deposit = depotHead.getDeposit() == null ? BigDecimal.ZERO : depotHead.getDeposit();
+                BigDecimal changeAmount = depotHead.getChangeAmount() == null
+                        ? BigDecimal.ZERO : depotHead.getChangeAmount().abs();
+                needDebt = discountLastMoney.add(otherMoney).subtract(deposit.add(changeAmount)).abs();
+                finishDebt = accountHeadMapperEx.getAuditedFinancialAmountByBillId(depotHead.getId(),
+                        BusinessConstants.TYPE_MONEY_IN, excludeHeadId);
+            }
+            if(finishDebt == null) {
+                finishDebt = BigDecimal.ZERO;
+            }
+            BigDecimal remainingDebt = needDebt.subtract(finishDebt);
+            if(needDebt.compareTo(BigDecimal.ZERO) <= 0 || remainingDebt.compareTo(BigDecimal.ZERO) <= 0
+                    || eachAmount.compareTo(remainingDebt) > 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_AMOUNT_FAILED_CODE,
+                        ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_AMOUNT_FAILED_MSG);
+            }
+            row.remove("accountId");
+            row.remove("inOutItemId");
+            row.remove("billId");
+            row.put("needDebt", needDebt);
+            row.put("finishDebt", finishDebt);
+            rowArray.set(rowIndex, row);
+            detailTotal = detailTotal.add(eachAmount);
+        }
+        BigDecimal totalPrice = accountHead.getTotalPrice();
+        BigDecimal changeAmount = accountHead.getChangeAmount();
+        BigDecimal discountMoney = accountHead.getDiscountMoney();
+        boolean invalidAmount = totalPrice == null || changeAmount == null || discountMoney == null
+                || totalPrice.compareTo(BigDecimal.ZERO) <= 0 || changeAmount.compareTo(BigDecimal.ZERO) <= 0
+                || discountMoney.compareTo(BigDecimal.ZERO) < 0 || discountMoney.compareTo(totalPrice) >= 0
+                || !sameMoney(totalPrice, detailTotal)
+                || !sameMoney(changeAmount, totalPrice.subtract(discountMoney));
+        if(invalidAmount) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_AMOUNT_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_HEAD_MONEY_IN_AMOUNT_FAILED_MSG);
+        }
+        return rowArray.toJSONString();
+    }
+
+    private void validatePersistedFinancialBill(AccountHead accountHead) throws Exception {
         if(!BusinessConstants.TYPE_INCOME.equals(accountHead.getType())
-                && !BusinessConstants.TYPE_EXPENSE.equals(accountHead.getType())) {
+                && !BusinessConstants.TYPE_EXPENSE.equals(accountHead.getType())
+                && !BusinessConstants.TYPE_MONEY_IN.equals(accountHead.getType())) {
             return;
         }
         List<AccountItemVo4List> detailList = accountItemService.getDetailList(accountHead.getId());
@@ -351,12 +475,16 @@ public class AccountHeadService {
         if(detailList != null) {
             for(AccountItemVo4List detail : detailList) {
                 JSONObject row = new JSONObject();
-                row.put("inOutItemId", detail.getInOutItemId());
                 row.put("eachAmount", detail.getEachAmount());
-                row.put("accountId", detail.getAccountId());
-                row.put("billId", detail.getBillId());
+                if(!BusinessConstants.TYPE_MONEY_IN.equals(accountHead.getType())) {
+                    row.put("inOutItemId", detail.getInOutItemId());
+                    row.put("accountId", detail.getAccountId());
+                    row.put("billId", detail.getBillId());
+                }
                 if(StringUtil.isNotEmpty(detail.getBillNumber())) {
                     row.put("billNumber", detail.getBillNumber());
+                } else if(BusinessConstants.TYPE_MONEY_IN.equals(accountHead.getType())) {
+                    row.put("billNumber", "QiChu");
                 }
                 if(detail.getNeedDebt() != null && detail.getNeedDebt().compareTo(BigDecimal.ZERO) != 0) {
                     row.put("needDebt", detail.getNeedDebt());
@@ -367,7 +495,7 @@ public class AccountHeadService {
                 rows.add(row);
             }
         }
-        validateIncomeExpenseBill(accountHead, rows.toJSONString());
+        validateFinancialBill(accountHead, rows.toJSONString(), accountHead.getId());
     }
 
     private boolean hasValue(JSONObject row, String key) {
@@ -439,6 +567,7 @@ public class AccountHeadService {
                         String.format(ExceptionConstants.ACCOUNT_HEAD_UN_AUDIT_DELETE_FAILED_MSG));
             }
         }
+        Set<Long> affectedBillIds = new HashSet<>(accountItemService.getBillIdsByHeaderIds(idArray));
         //删除主表
         accountItemMapperEx.batchDeleteAccountItemByHeadIds(new Date(),userInfo==null?null:userInfo.getId(),idArray);
         //删除子表
@@ -464,6 +593,7 @@ public class AccountHeadService {
         }
         //逻辑删除文件
         systemConfigService.deleteFileByPathList(pathList);
+        accountItemService.refreshLastDebtByBillIds(affectedBillIds);
         logService.insertLog("财务单据", sb.toString(),
                 ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
         return 1;
@@ -520,7 +650,7 @@ public class AccountHeadService {
                 checkAccountHeadButtonPermission(accountHead.getType(), "2", "审核");
                 //进行审核操作
                 if("0".equals(accountHead.getStatus())) {
-                    validatePersistedIncomeExpenseBill(accountHead);
+                    validatePersistedFinancialBill(accountHead);
                     ahIds.add(id);
                     noList.add(accountHead.getBillNo());
                 } else {
@@ -530,6 +660,8 @@ public class AccountHeadService {
             }
         }
         if(!ahIds.isEmpty()) {
+            String[] affectedHeadIds = ahIds.stream().map(String::valueOf).toArray(String[]::new);
+            Set<Long> affectedBillIds = new HashSet<>(accountItemService.getBillIdsByHeaderIds(affectedHeadIds));
             AccountHead accountHead = new AccountHead();
             accountHead.setStatus(status);
             AccountHeadExample example = new AccountHeadExample();
@@ -542,6 +674,7 @@ public class AccountHeadService {
                 throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_STATUS_FAILED_CODE,
                         ExceptionConstants.ACCOUNT_HEAD_STATUS_FAILED_MSG);
             }
+            accountItemService.refreshLastDebtByBillIds(affectedBillIds);
             //记录日志
             if(!noList.isEmpty() && ("0".equals(status) || "1".equals(status))) {
                 String statusStr = status.equals("1")?"[审核]":"[反审核]";
@@ -565,7 +698,7 @@ public class AccountHeadService {
         if(BusinessConstants.BILLS_STATUS_AUDIT.equals(accountHead.getStatus())) {
             checkAccountHeadButtonPermission(accountHead.getType(), "2", "审核");
         }
-        validateIncomeExpenseBill(accountHead, rows);
+        rows = validateFinancialBill(accountHead, rows, null);
         //校验单号是否重复
         if(checkIsBillNoExist(0L, accountHead.getBillNo())>0) {
             throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_BILL_NO_EXIST_CODE,
@@ -645,7 +778,7 @@ public class AccountHeadService {
             checkAccountHeadButtonPermission(previousAccountHead.getType(), "2", "审核");
         }
         accountHead.setCreator(previousAccountHead.getCreator());
-        validateIncomeExpenseBill(accountHead, rows);
+        rows = validateFinancialBill(accountHead, rows, previousAccountHead.getId());
         //校验单号是否重复
         if(checkIsBillNoExist(accountHead.getId(), accountHead.getBillNo())>0) {
             throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_BILL_NO_EXIST_CODE,
