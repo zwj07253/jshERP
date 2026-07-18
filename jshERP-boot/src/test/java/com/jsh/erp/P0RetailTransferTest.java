@@ -198,13 +198,15 @@ public class P0RetailTransferTest extends ApiTestBase {
     void assemblyList() {
         // 查询所有单据类型验证接口可用
         Response resp = authReqGet()
-                .param("search", "{\"subType\":\"组装\"}")
+                .param("search", "{\"subType\":\"组装单\"}")
                 .get(CONTEXT + "/depotHead/list");
         assertPaged(resp);
+        assertTrue(resp.jsonPath().getInt("data.total") > 0, "应查询到组装单初始化数据");
 
         Response resp2 = authReqGet()
-                .param("search", "{\"subType\":\"拆卸\"}")
+                .param("search", "{\"subType\":\"拆卸单\"}")
                 .get(CONTEXT + "/depotHead/list");
         assertPaged(resp2);
+        assertTrue(resp2.jsonPath().getInt("data.total") > 0, "应查询到拆卸单初始化数据");
     }
 }

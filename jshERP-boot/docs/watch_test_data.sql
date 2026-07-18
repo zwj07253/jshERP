@@ -106,6 +106,13 @@ SET btn_str = (COALESCE(NULLIF(btn_str, ''), '[]')::jsonb
 WHERE id = 107 AND type = 'RoleFunctions' AND key_id = '101' AND tenant_id = 100
   AND NOT (COALESCE(NULLIF(btn_str, ''), '[]')::jsonb @> '[{"funId":40}]'::jsonb);
 
+-- jsh 系统管理员需要组装单的新增、审核、删除和反审核按钮权限。
+UPDATE jsh_user_business
+SET btn_str = (COALESCE(NULLIF(btn_str, ''), '[]')::jsonb
+    || '[{"funId":232,"btnStr":"1,2,3,7"}]'::jsonb)::text
+WHERE id = 107 AND type = 'RoleFunctions' AND key_id = '101' AND tenant_id = 100
+  AND NOT (COALESCE(NULLIF(btn_str, ''), '[]')::jsonb @> '[{"funId":232}]'::jsonb);
+
 -- jsh 系统管理员需要其它入库、其它出库的新增、审核、删除和反审核按钮权限。
 UPDATE jsh_user_business
 SET btn_str = (COALESCE(NULLIF(btn_str, ''), '[]')::jsonb
@@ -604,9 +611,16 @@ INSERT INTO jsh_depot_head (id, type, sub_type, default_number, number, create_t
 (407, '入库', '零售退货', 'RT-20260709-001', 'RT-20260709-001', '2026-07-09 15:00:00', '2026-07-09 15:10:00', 107, 103, 103, -990.000000, 0, -990.000000, '现付', '销售', '线上客户退回G-SHOCK一只', '陈晨', '1', '2', '1', 100, '0'),
 (408, '入库', '其它', 'QTRK-20260610-001', 'QTRK-20260610-001', '2026-06-10 16:00:00', '2026-06-10 16:20:00', NULL, 104, NULL, 0, 0, -5200.000000, NULL, '其它', '盘盈及样品入库', '王强', '1', NULL, '0', 100, '0'),
 (409, '出库', '其它', 'QTCK-20260708-001', 'QTCK-20260708-001', '2026-07-08 16:00:00', '2026-07-08 16:20:00', NULL, 104, NULL, 0, 0, 5800.000000, NULL, '其它', '展会样品领用出库', '王强', '1', NULL, '0', 100, '0'),
-(410, '其它', '组装单', 'ZZ-20260708-001', 'ZZ-20260708-001', '2026-07-08 17:00:00', '2026-07-08 17:20:00', NULL, 104, NULL, 0, 0, 0.000000, NULL, '其它', '表带礼盒套装组装', '王强', '1', NULL, '0', 100, '0'),
+(410, '其它', '组装单', 'ZZD-20260708-001', 'ZZD-20260708-001', '2026-07-08 17:00:00', '2026-07-08 17:20:00', NULL, 104, NULL, 0, 0, 1200.000000, NULL, '其它', '表带礼盒套装组装', '王强', '1', '0', '0', 100, '0'),
 (411, '其它', '拆卸单', 'CX-20260709-001', 'CX-20260709-001', '2026-07-09 16:00:00', '2026-07-09 16:20:00', NULL, 104, NULL, 0, 0, 0.000000, NULL, '其它', '礼盒套装拆卸为单品', '王强', '1', NULL, '0', 100, '0')
 ON CONFLICT (id) DO NOTHING;
+
+UPDATE jsh_depot_head
+SET default_number = 'ZZD-20260708-001', number = 'ZZD-20260708-001', total_price = 1200,
+    purchase_status = '0', link_number = NULL, link_apply = NULL, organ_id = NULL, account_id = NULL,
+    change_amount = 0, back_amount = 0, discount = 0, discount_money = 0,
+    discount_last_money = 0, other_money = 0, deposit = 0, debt = 0, last_debt = 0
+WHERE id = 410 AND tenant_id = 100 AND sub_type = '组装单';
 
 -- 销售退货金额采用“主表总额/退款为负、优惠后金额为正”的业务约定，确保销售统计与客户对账一致。
 UPDATE jsh_depot_head
@@ -644,13 +658,37 @@ INSERT INTO jsh_depot_item (id, header_id, material_id, material_extend_id, mate
 (413, 408, 115, 115, '个', NULL, 20, 20, 85.000000, 85.000000, 1700.000000, '样品实木表盒 x20', 101, NULL, NULL, 100, '0'),
 (414, 409, 111, 111, '只', NULL, 1, 1, 4200.000000, 4200.000000, 4200.000000, '展会样品佳明Fenix 8 x1', 101, NULL, NULL, 100, '0'),
 (415, 409, 113, 113, '条', NULL, 20, 20, 80.000000, 80.000000, 1600.000000, '展会样品精钢表带 x20', 101, NULL, NULL, 100, '0'),
-(416, 410, 115, 115, '个', NULL, 10, 10, 85.000000, 85.000000, 850.000000, '组装投入表盒 x10', 101, NULL, '普通子件', 100, '0'),
-(417, 410, 112, 112, '条', NULL, 10, 10, 35.000000, 35.000000, 350.000000, '组装投入牛皮表带 x10', 101, NULL, '普通子件', 100, '0'),
-(418, 410, 116, 116, '个', NULL, 10, 10, 25.000000, 25.000000, 250.000000, '组装产出旅行表盒套装 x10', 101, NULL, '组合件', 100, '0'),
+(416, 410, 116, 116, '个', NULL, 10, 10, 120.000000, 120.000000, 1200.000000, '组装产出旅行表盒套装 x10', 101, NULL, '组合件', 100, '0'),
+(417, 410, 115, 115, '个', NULL, 10, 10, 85.000000, 85.000000, 850.000000, '组装投入表盒 x10', 101, NULL, '普通子件', 100, '0'),
+(418, 410, 112, 112, '条', NULL, 10, 10, 35.000000, 35.000000, 350.000000, '组装投入牛皮表带 x10', 101, NULL, '普通子件', 100, '0'),
 (419, 411, 116, 116, '个', NULL, 5, 5, 25.000000, 25.000000, 125.000000, '拆卸投入旅行表盒套装 x5', 101, NULL, '组合件', 100, '0'),
 (420, 411, 115, 115, '个', NULL, 5, 5, 85.000000, 85.000000, 425.000000, '拆卸产出实木表盒 x5', 101, NULL, '普通子件', 100, '0'),
 (421, 411, 112, 112, '条', NULL, 5, 5, 35.000000, 35.000000, 175.000000, '拆卸产出牛皮表带 x5', 101, NULL, '普通子件', 100, '0')
 ON CONFLICT (id) DO NOTHING;
+
+UPDATE jsh_depot_item
+SET material_id = 116, material_extend_id = 116, material_unit = '个', oper_number = 10,
+    basic_number = 10, unit_price = 120, purchase_unit_price = 120, all_price = 1200,
+    tax_unit_price = 120, tax_rate = 0, tax_money = 0, tax_last_money = 1200,
+    remark = '组装产出旅行表盒套装 x10', depot_id = 101, another_depot_id = NULL,
+    material_type = '组合件', link_id = NULL, sn_list = NULL, batch_number = NULL, expiration_date = NULL
+WHERE id = 416 AND header_id = 410 AND tenant_id = 100;
+
+UPDATE jsh_depot_item
+SET material_id = 115, material_extend_id = 115, material_unit = '个', oper_number = 10,
+    basic_number = 10, unit_price = 85, purchase_unit_price = 85, all_price = 850,
+    tax_unit_price = 85, tax_rate = 0, tax_money = 0, tax_last_money = 850,
+    remark = '组装投入表盒 x10', depot_id = 101, another_depot_id = NULL,
+    material_type = '普通子件', link_id = NULL, sn_list = NULL, batch_number = NULL, expiration_date = NULL
+WHERE id = 417 AND header_id = 410 AND tenant_id = 100;
+
+UPDATE jsh_depot_item
+SET material_id = 112, material_extend_id = 112, material_unit = '条', oper_number = 10,
+    basic_number = 10, unit_price = 35, purchase_unit_price = 35, all_price = 350,
+    tax_unit_price = 35, tax_rate = 0, tax_money = 0, tax_last_money = 350,
+    remark = '组装投入牛皮表带 x10', depot_id = 101, another_depot_id = NULL,
+    material_type = '普通子件', link_id = NULL, sn_list = NULL, batch_number = NULL, expiration_date = NULL
+WHERE id = 418 AND header_id = 410 AND tenant_id = 100;
 
 UPDATE jsh_depot_item
 SET link_id = 102, tax_unit_price = 12000, tax_rate = 0,
@@ -694,7 +732,7 @@ INSERT INTO jsh_log (id, user_id, operation, client_ip, create_time, status, con
 (207, 103, '零售退货', '192.168.1.101', '2026-07-09 15:10:00', 0, '创建零售退货RT-20260709-001，金额：¥990', 100),
 (208, 104, '其它入库', '192.168.1.102', '2026-06-10 16:20:00', 0, '创建其它入库QTRK-20260610-001，金额：¥5,200', 100),
 (209, 104, '其它出库', '192.168.1.102', '2026-07-08 16:20:00', 0, '创建其它出库QTCK-20260708-001，金额：¥5,800', 100),
-(210, 104, '组装拆卸', '192.168.1.102', '2026-07-09 16:20:00', 0, '完成组装单ZZ-20260708-001和拆卸单CX-20260709-001', 100),
+(210, 104, '组装拆卸', '192.168.1.102', '2026-07-09 16:20:00', 0, '完成组装单ZZD-20260708-001和拆卸单CX-20260709-001', 100),
 (211, 105, '转账', '192.168.1.103', '2026-07-08 10:30:00', 0, '创建转账单ZZ-20260708-001，金额：¥20,000', 100),
 (212, 105, '收预付款', '192.168.1.103', '2026-07-08 10:00:00', 0, '创建收预付款YF-20260708-001，金额：¥20,000', 100)
 ON CONFLICT (id) DO NOTHING;

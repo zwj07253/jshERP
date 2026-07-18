@@ -693,6 +693,22 @@ public class ExceptionConstants {
     public static final int DEPOT_HEAD_TRANSFER_AMOUNT_CODE = 8500109;
     public static final String DEPOT_HEAD_TRANSFER_AMOUNT_MSG = "抱歉，调拨出库的单价或金额不合法";
 
+    //组装单
+    public static final int DEPOT_HEAD_ASSEMBLE_STATUS_CODE = 8500110;
+    public static final String DEPOT_HEAD_ASSEMBLE_STATUS_MSG = "抱歉，组装单状态不合法，请通过保存或审核操作变更状态";
+
+    public static final int DEPOT_HEAD_ASSEMBLE_NUMBER_CHANGE_CODE = 8500111;
+    public static final String DEPOT_HEAD_ASSEMBLE_NUMBER_CHANGE_MSG = "抱歉，组装单编号不能修改";
+
+    public static final int DEPOT_HEAD_ASSEMBLE_AMOUNT_CODE = 8500112;
+    public static final String DEPOT_HEAD_ASSEMBLE_AMOUNT_MSG = "抱歉，组装单的成本或金额不合法";
+
+    public static final int DEPOT_HEAD_ASSEMBLE_STRUCTURE_CODE = 8500113;
+    public static final String DEPOT_HEAD_ASSEMBLE_STRUCTURE_MSG = "抱歉，组装单必须且只能包含一个组合件，后续明细必须全部为普通子件";
+
+    public static final int DEPOT_HEAD_ASSEMBLE_SAME_MATERIAL_CODE = 8500114;
+    public static final String DEPOT_HEAD_ASSEMBLE_SAME_MATERIAL_MSG = "抱歉，组合件不能同时作为普通子件投入:%s";
+
 
     /**
      *  单据明细信息

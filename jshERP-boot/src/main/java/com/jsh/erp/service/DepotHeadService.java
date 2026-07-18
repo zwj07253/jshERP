@@ -52,6 +52,7 @@ public class DepotHeadService {
     private static final String OTHER_IN_URL = "/bill/other_in";
     private static final String OTHER_OUT_URL = "/bill/other_out";
     private static final String TRANSFER_OUT_URL = "/bill/allocation_out";
+    private static final String ASSEMBLE_URL = "/bill/assemble";
 
     @Resource
     private DepotHeadMapper depotHeadMapper;
@@ -763,6 +764,7 @@ public class DepotHeadService {
         List<String> noList = new ArrayList<>();
         Set<String> salesOrderNumbers = new HashSet<>();
         List<DepotHead> stockCheckHeadList = new ArrayList<>();
+        List<DepotHead> assembleStockCheckHeadList = new ArrayList<>();
         List<Long> ids = StringUtil.strToLongList(depotHeadIDs);
         for(Long id: ids) {
             DepotHead depotHead = getDepotHead(id);
@@ -800,6 +802,10 @@ public class DepotHeadService {
                     validateOtherInboundBeforeAudit(depotHead);
                     validateOtherOutboundBeforeAudit(depotHead);
                     validateTransferOutboundBeforeAudit(depotHead);
+                    validateAssembleBeforeAudit(depotHead);
+                    if (isAssemble(depotHead)) {
+                        depotItemService.refreshAssembleCost(depotHead);
+                    }
                     dhIds.add(id);
                     noList.add(depotHead.getNumber());
                 } else {
@@ -816,6 +822,10 @@ public class DepotHeadService {
                             && BusinessConstants.SUB_TYPE_RETAIL.equals(depotHead.getSubType());
                     boolean otherOut = isOtherOutbound(depotHead);
                     boolean transferOut = isTransferOutbound(depotHead);
+                    boolean assemble = isAssemble(depotHead);
+                    if (assemble) {
+                        assembleStockCheckHeadList.add(depotHead);
+                    }
                     if(inOutManageFlag) {
                         if(retailOut || otherOut || transferOut) {
                             //校验单据中的商品库存是否不足
@@ -835,6 +845,9 @@ public class DepotHeadService {
         if (!stockCheckHeadList.isEmpty()) {
             depotItemService.checkMaterialStock(stockCheckHeadList);
         }
+        if (!assembleStockCheckHeadList.isEmpty()) {
+            depotItemService.checkAssembleMaterialStock(assembleStockCheckHeadList);
+        }
         if(!dhIds.isEmpty()) {
             DepotHead depotHead = new DepotHead();
             depotHead.setStatus(status);
@@ -847,6 +860,7 @@ public class DepotHeadService {
                     List<DepotItem> list = depotItemService.getListByHeaderId(dhId);
                     for (DepotItem depotItem : list) {
                         depotItemService.updateCurrentStock(depotItem);
+                        depotItemService.updateCurrentUnitPrice(depotItem);
                     }
                 }
             }
@@ -1311,6 +1325,7 @@ public class DepotHeadService {
         validateSalesSubmittedState(depotHead, null);
         validateOtherSubmittedState(depotHead, null);
         validateTransferSubmittedState(depotHead, null);
+        validateAssembleSubmittedState(depotHead, null);
         checkBillButtonPermission(depotHead, "1", "新增");
         if (BusinessConstants.BILLS_STATUS_AUDIT.equals(depotHead.getStatus())) {
             checkBillButtonPermission(depotHead, "2", "审核");
@@ -1438,6 +1453,7 @@ public class DepotHeadService {
         validateSalesSubmittedState(depotHead, previousDepotHead);
         validateOtherSubmittedState(depotHead, previousDepotHead);
         validateTransferSubmittedState(depotHead, previousDepotHead);
+        validateAssembleSubmittedState(depotHead, previousDepotHead);
         checkPurchaseBillDataPermission(previousDepotHead);
         checkPurchaseInboundHasNoReturn(previousDepotHead, "编辑");
         if (isPurchaseInbound(previousDepotHead)
@@ -1599,6 +1615,9 @@ public class DepotHeadService {
         } else if (isTransferOutbound(depotHead)) {
             url = TRANSFER_OUT_URL;
             billName = "调拨出库";
+        } else if (isAssemble(depotHead)) {
+            url = ASSEMBLE_URL;
+            billName = "组装单";
         } else {
             return;
         }
@@ -1656,6 +1675,12 @@ public class DepotHeadService {
         return depotHead != null
                 && BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
                 && BusinessConstants.SUB_TYPE_TRANSFER.equals(depotHead.getSubType());
+    }
+
+    private boolean isAssemble(DepotHead depotHead) {
+        return depotHead != null
+                && BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(depotHead.getType())
+                && BusinessConstants.SUB_TYPE_ASSEMBLE.equals(depotHead.getSubType());
     }
 
     private boolean isCurrentUserAdmin() throws Exception {
@@ -1774,6 +1799,27 @@ public class DepotHeadService {
                 ? BusinessConstants.PURCHASE_STATUS_UN_AUDIT : previousDepotHead.getPurchaseStatus());
     }
 
+    private void validateAssembleSubmittedState(DepotHead depotHead, DepotHead previousDepotHead) {
+        if (!isAssemble(depotHead)) {
+            return;
+        }
+        String status = StringUtil.isEmpty(depotHead.getStatus())
+                ? BusinessConstants.BILLS_STATUS_UN_AUDIT : depotHead.getStatus();
+        if (!BusinessConstants.BILLS_STATUS_UN_AUDIT.equals(status)
+                && !BusinessConstants.BILLS_STATUS_AUDIT.equals(status)) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STATUS_CODE,
+                    ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STATUS_MSG);
+        }
+        if (previousDepotHead != null
+                && !Objects.equals(previousDepotHead.getNumber(), depotHead.getNumber())) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_NUMBER_CHANGE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_ASSEMBLE_NUMBER_CHANGE_MSG);
+        }
+        depotHead.setStatus(status);
+        depotHead.setPurchaseStatus(previousDepotHead == null
+                ? BusinessConstants.PURCHASE_STATUS_UN_AUDIT : previousDepotHead.getPurchaseStatus());
+    }
+
     /**
      * 对直接按ID读取或操作的采购、销售和其它出入库单据补充操作员、往来单位和仓库数据权限。
      */
@@ -1785,8 +1831,9 @@ public class DepotHeadService {
         boolean salesReturn = isSalesReturn(depotHead);
         boolean otherStockBill = isOtherInbound(depotHead) || isOtherOutbound(depotHead);
         boolean transferOutbound = isTransferOutbound(depotHead);
+        boolean assemble = isAssemble(depotHead);
         if (!purchaseInbound && !purchaseReturn && !salesOrder && !salesOutbound && !salesReturn
-                && !otherStockBill && !transferOutbound) {
+                && !otherStockBill && !transferOutbound && !assemble) {
             return;
         }
         if (isCurrentUserAdmin()) {
@@ -1795,7 +1842,7 @@ public class DepotHeadService {
         String[] creatorArray = getCreatorArray();
         if (creatorArray != null && (depotHead.getCreator() == null
                 || Arrays.stream(creatorArray).noneMatch(depotHead.getCreator().toString()::equals))) {
-            if (transferOutbound) {
+            if (transferOutbound || assemble) {
                 throw new BusinessRunTimeException(ExceptionConstants.DEPOT_DATA_PERMISSION_CODE,
                         ExceptionConstants.DEPOT_DATA_PERMISSION_MSG);
             }
@@ -1819,7 +1866,7 @@ public class DepotHeadService {
             boolean targetDepotDenied = transferOutbound && (depotItem.getAnotherDepotId() == null
                     || !allowedDepotIds.contains(depotItem.getAnotherDepotId()));
             if (sourceDepotDenied || targetDepotDenied) {
-                if (transferOutbound) {
+                if (transferOutbound || assemble) {
                     throw new BusinessRunTimeException(ExceptionConstants.DEPOT_DATA_PERMISSION_CODE,
                             ExceptionConstants.DEPOT_DATA_PERMISSION_MSG);
                 }
@@ -2030,7 +2077,147 @@ public class DepotHeadService {
         if (isTransferOutbound(depotHead)) {
             return validateAndNormalizeTransferOutbound(depotHead, rows);
         }
+        if (isAssemble(depotHead)) {
+            return validateAndNormalizeAssemble(depotHead, rows);
+        }
         return rows;
+    }
+
+    private String validateAndNormalizeAssemble(DepotHead depotHead, String rows) throws Exception {
+        JSONArray detailArray = JSONArray.parseArray(rows);
+        if (detailArray == null || detailArray.size() < 2) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_MSG);
+        }
+        String combinationBarCode = null;
+        Set<String> componentBarCodes = new HashSet<>();
+        for (int index = 0; index < detailArray.size(); index++) {
+            JSONObject detail = JSONObject.parseObject(detailArray.get(index).toString());
+            String expectedMaterialType = index == 0 ? "组合件" : "普通子件";
+            if (!expectedMaterialType.equals(detail.getString("mType"))) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_CODE,
+                        ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_MSG);
+            }
+            String barCode = detail.getString("barCode");
+            if (index == 0) {
+                combinationBarCode = barCode;
+            } else {
+                componentBarCodes.add(barCode);
+            }
+            Long depotId = detail.getLong("depotId");
+            if (depotId == null) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DEPOT_FAILED_CODE,
+                        ExceptionConstants.DEPOT_HEAD_DEPOT_FAILED_MSG);
+            }
+            depotService.parseDepotList(depotId);
+            BigDecimal quantity = detail.getBigDecimal("operNumber");
+            if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_CODE,
+                        String.format(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_MSG, barCode));
+            }
+            BigDecimal unitPrice = detail.getBigDecimal("unitPrice");
+            unitPrice = unitPrice == null ? BigDecimal.ZERO : unitPrice;
+            if (unitPrice.compareTo(BigDecimal.ZERO) < 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_AMOUNT_CODE,
+                        ExceptionConstants.DEPOT_HEAD_ASSEMBLE_AMOUNT_MSG);
+            }
+            BigDecimal allPrice = quantity.multiply(unitPrice).setScale(2, BigDecimal.ROUND_HALF_UP);
+            detail.put("unitPrice", unitPrice);
+            detail.put("allPrice", allPrice);
+            detail.put("taxRate", BigDecimal.ZERO);
+            detail.put("taxMoney", BigDecimal.ZERO);
+            detail.put("taxLastMoney", allPrice);
+            detail.put("taxUnitPrice", unitPrice.setScale(4, BigDecimal.ROUND_HALF_UP));
+            detail.remove("linkId");
+            detail.remove("preNumber");
+            detail.remove("finishNumber");
+            detail.remove("snList");
+            detail.remove("batchNumber");
+            detail.remove("expirationDate");
+            detailArray.set(index, detail);
+        }
+        if (StringUtil.isNotEmpty(combinationBarCode) && componentBarCodes.contains(combinationBarCode)) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_SAME_MATERIAL_CODE,
+                    String.format(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_SAME_MATERIAL_MSG, combinationBarCode));
+        }
+        normalizeAssembleHeadFields(depotHead);
+        return detailArray.toJSONString();
+    }
+
+    private void normalizeAssembleHeadFields(DepotHead depotHead) {
+        //最终成本由明细服务按照普通子件当前成本计算并回写。
+        depotHead.setTotalPrice(BigDecimal.ZERO);
+        depotHead.setOrganId(null);
+        depotHead.setAccountId(null);
+        depotHead.setAccountIdList(null);
+        depotHead.setAccountMoneyList(null);
+        depotHead.setDiscount(BigDecimal.ZERO);
+        depotHead.setDiscountMoney(BigDecimal.ZERO);
+        depotHead.setDiscountLastMoney(BigDecimal.ZERO);
+        depotHead.setOtherMoney(BigDecimal.ZERO);
+        depotHead.setDeposit(BigDecimal.ZERO);
+        depotHead.setChangeAmount(BigDecimal.ZERO);
+        depotHead.setBackAmount(BigDecimal.ZERO);
+        depotHead.setDebt(BigDecimal.ZERO);
+        depotHead.setLastDebt(BigDecimal.ZERO);
+        depotHead.setLinkNumber(null);
+        depotHead.setLinkApply(null);
+        depotHead.setPayType("");
+    }
+
+    private void validateAssembleBeforeAudit(DepotHead depotHead) throws Exception {
+        if (!isAssemble(depotHead)) {
+            return;
+        }
+        List<DepotItem> detailList = depotItemService.getListByHeaderId(depotHead.getId());
+        if (detailList == null || detailList.size() < 2) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_MSG);
+        }
+        int combinationCount = 0;
+        Long combinationMaterialExtendId = null;
+        Set<Long> componentMaterialExtendIds = new HashSet<>();
+        for (DepotItem detail : detailList) {
+            if ("组合件".equals(detail.getMaterialType())) {
+                combinationCount++;
+                combinationMaterialExtendId = detail.getMaterialExtendId();
+            } else if ("普通子件".equals(detail.getMaterialType())) {
+                componentMaterialExtendIds.add(detail.getMaterialExtendId());
+            } else {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_CODE,
+                        ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_MSG);
+            }
+            if (detail.getDepotId() == null) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DEPOT_FAILED_CODE,
+                        ExceptionConstants.DEPOT_HEAD_DEPOT_FAILED_MSG);
+            }
+            depotService.parseDepotList(detail.getDepotId());
+            if (detail.getOperNumber() == null || detail.getOperNumber().compareTo(BigDecimal.ZERO) <= 0
+                    || detail.getBasicNumber() == null || detail.getBasicNumber().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_CODE,
+                        String.format(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_MSG,
+                                detail.getMaterialExtendId()));
+            }
+            if (detail.getLinkId() != null || StringUtil.isNotEmpty(detail.getSnList())
+                    || StringUtil.isNotEmpty(detail.getBatchNumber())) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_AMOUNT_CODE,
+                        ExceptionConstants.DEPOT_HEAD_ASSEMBLE_AMOUNT_MSG);
+            }
+        }
+        if (combinationCount != 1 || componentMaterialExtendIds.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_MSG);
+        }
+        if (combinationMaterialExtendId != null && componentMaterialExtendIds.contains(combinationMaterialExtendId)) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_SAME_MATERIAL_CODE,
+                    String.format(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_SAME_MATERIAL_MSG,
+                            combinationMaterialExtendId));
+        }
+        if (StringUtil.isNotEmpty(depotHead.getLinkNumber()) || StringUtil.isNotEmpty(depotHead.getLinkApply())
+                || depotHead.getOrganId() != null || depotHead.getAccountId() != null) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_AMOUNT_CODE,
+                    ExceptionConstants.DEPOT_HEAD_ASSEMBLE_AMOUNT_MSG);
+        }
     }
 
     private String validateAndNormalizeTransferOutbound(DepotHead depotHead, String rows) throws Exception {

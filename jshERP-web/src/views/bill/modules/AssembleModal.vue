@@ -248,7 +248,10 @@
         billMain.type = '其它'
         billMain.subType = '组装单'
         for(let item of detailArr){
-          totalPrice += item.allPrice-0
+          //组装单金额代表产出的组合件成本，最终值仍由服务端按子件当前成本重算。
+          if(item.mType === '组合件') {
+            totalPrice += item.allPrice-0
+          }
         }
         billMain.totalPrice = totalPrice
         if(this.fileList && this.fileList.length > 0) {

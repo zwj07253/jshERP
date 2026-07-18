@@ -8,6 +8,7 @@
         <result column="material_name" jdbcType="VARCHAR" property="materialName" />
         <result column="type" jdbcType="VARCHAR" property="type" />
         <result column="sub_type" jdbcType="VARCHAR" property="subType" />
+        <result column="material_type" jdbcType="VARCHAR" property="materialType" />
         <result column="b_num" jdbcType="DECIMAL" property="bnum" />
         <result column="unit_price" jdbcType="DECIMAL" property="unitPrice" />
         <result column="all_price" jdbcType="DECIMAL" property="allPrice" />
@@ -168,9 +169,12 @@
     </select>
 
     <select id="findDetailByDepotIdsAndMaterialIdList" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="DetailByTypeAndMIdResultMap">
-        select tb.number, tb.bar_code, tb.material_name, tb."type", tb.sub_type, tb.b_num, tb.unit_price,
-        COALESCE(tb.b_num*tb.unit_price,0) as all_price, tb.material_unit, tb.depotName, tb.oTime from
-        (select dh.number,me.bar_code,m."name" material_name,dh."type",dh.sub_type,
+        select tb.number, tb.bar_code, tb.material_name, tb."type", tb.sub_type, tb.material_type, tb.b_num, tb.unit_price,
+        case when tb.sub_type='组装单' and tb.material_type='组合件'
+            then COALESCE(tb.source_all_price,0)
+            else COALESCE(tb.b_num*tb.unit_price,0)
+        end as all_price, tb.material_unit, tb.depotName, tb.oTime from
+        (select dh.number,me.bar_code,m."name" material_name,dh."type",dh.sub_type,di.material_type,
         case
             when dh."type"='入库' then COALESCE(di.basic_number,0)
             when dh."type"='出库' then 0-COALESCE(di.basic_number,0)
@@ -181,7 +185,7 @@
             when dh.sub_type='盘点复盘' then COALESCE(di.basic_number,0)
             else 0
         end
-        as b_num, di.unit_price, di.material_unit,
+        as b_num, di.unit_price, di.all_price as source_all_price, di.material_unit,
         (select "name" from jsh_depot d where d.id=di.depot_id and COALESCE(d.delete_flag,'0') !='1') as depotName,
         TO_CHAR(dh.oper_time, 'YYYY-MM-DD HH24:MI:SS') as oTime
         from jsh_depot_head dh
@@ -223,8 +227,8 @@
         and COALESCE(dh.delete_flag,'0') !='1'
         union all
         --单独构造记录：调拨入库
-        select dh.number,me.bar_code,m."name" material_name,dh."type",dh.sub_type,
-        COALESCE(di.basic_number,0) as b_num, di.unit_price, di.material_unit,
+        select dh.number,me.bar_code,m."name" material_name,dh."type",dh.sub_type,NULL::varchar material_type,
+        COALESCE(di.basic_number,0) as b_num, di.unit_price, di.all_price as source_all_price, di.material_unit,
         (select concat("name",'[调入]') from jsh_depot d where d.id=di.another_depot_id and COALESCE(d.delete_flag,'0') !='1') as depotName,
         TO_CHAR(dh.oper_time, 'YYYY-MM-DD HH24:MI:SS') as oTime
         from jsh_depot_head dh
