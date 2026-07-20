@@ -1145,7 +1145,7 @@
         where 1=1
         and account_id in (
         <foreach collection="accountIds" item="accountId" separator=",">
-            #{accountId}
+            #{accountId}::bigint
         </foreach>
         )
         and COALESCE(delete_flag,'0') !='1'

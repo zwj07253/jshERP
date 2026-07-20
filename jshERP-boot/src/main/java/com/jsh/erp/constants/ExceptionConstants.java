@@ -237,6 +237,12 @@ public class ExceptionConstants {
     //修改账户信息失败
     public static final int ACCOUNT_EDIT_FAILED_CODE = 6500002;
     public static final String ACCOUNT_EDIT_FAILED_MSG = "修改账户信息失败";
+    //账户统计查看权限
+    public static final int ACCOUNT_REPORT_PERMISSION_CODE = 6500003;
+    public static final String ACCOUNT_REPORT_PERMISSION_MSG = "抱歉，当前用户没有账户统计的查看权限";
+    //账户统计请求的账户不存在或已删除
+    public static final int ACCOUNT_REPORT_ACCOUNT_FAILED_CODE = 6500004;
+    public static final String ACCOUNT_REPORT_ACCOUNT_FAILED_MSG = "抱歉，结算账户不存在或已删除";
     /**
      *  供应商信息
      * type = 70

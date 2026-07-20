@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 
 public class AccountVo4InOutList {
 
+    private String rowKey;
+
     private Long accountId;
 
     private String number;
@@ -27,6 +29,14 @@ public class AccountVo4InOutList {
     private String remark;
 
     private Long tenantId;
+
+    public String getRowKey() {
+        return rowKey;
+    }
+
+    public void setRowKey(String rowKey) {
+        this.rowKey = rowKey;
+    }
 
     public Long getAccountId() {
         return accountId;

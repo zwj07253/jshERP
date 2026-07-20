@@ -50,7 +50,7 @@
         bordered
         ref="table"
         size="middle"
-        rowKey="id"
+        rowKey="rowKey"
         :columns="columns"
         :dataSource="dataSource"
         :components="handleDrag(columns)"
@@ -101,6 +101,7 @@
   import {mixinDevice} from '@/utils/mixin'
   import JEllipsis from '@/components/jeecg/JEllipsis'
   import {findBillDetailByNumber, findFinancialDetailByNumber} from '@/api/api'
+  import {getAction} from '@/api/manage'
   export default {
     name: "AccountInOutList",
     mixins:[JeecgListMixin, mixinDevice],
@@ -116,11 +117,9 @@
         disableMixinCreated: true,
         toFromType: '',
         currentAccountId: '',
-        currentInitialAmount: '',
         // 查询条件
         queryParam: {
           accountId:'',
-          initialAmount:'',
           number: '',
           beginTime: '',
           endTime: '',
@@ -148,26 +147,11 @@
           { title: '单位信息', dataIndex: 'supplierName', width: 180, ellipsis:true},
           { title: '金额', dataIndex: 'changeAmount', width: 100, ellipsis:true,
             customRender:function (t,r,index) {
-              if (r.aList && r.amList) {
-                let aListArr = r.aList.toString().split(",");
-                let amListArr = r.amList.toString().split(",");
-                let res = 0;
-                for (let i = 0; i < aListArr.length; i++) {
-                  if (aListArr[i] == r.accountId) {
-                    res = amListArr[i];
-                  }
-                }
-                if(res>0) {
-                  res = '+' + res
-                }
-                return res + "[多账户]";
-              } else {
-                if(r.changeAmount>0) {
-                  return '+' + r.changeAmount
-                } else {
-                  return r.changeAmount
-                }
+              let amount = t
+              if(Number(amount) > 0) {
+                amount = '+' + amount
               }
+              return amount + (r.aList ? '[多账户]' : '')
             }
           },
           { title: '余额', dataIndex: 'balance', width: 80},
@@ -195,7 +179,6 @@
         let param = Object.assign({}, this.queryParam, this.isorter);
         param.field = this.getQueryField();
         param.accountId = this.currentAccountId
-        param.initialAmount = this.currentInitialAmount
         param.currentPage = this.ipagination.current;
         param.pageSize = this.ipagination.pageSize;
         return param;
@@ -203,10 +186,8 @@
       show(record) {
         this.model = Object.assign({}, record);
         this.currentAccountId = record.id
-        this.currentInitialAmount = record.initialAmount
         this.visible = true;
         this.queryParam.accountId = record.id
-        this.queryParam.initialAmount = record.initialAmount
         this.loadData(1)
       },
       close () {
@@ -245,38 +226,33 @@
         }
       },
       exportExcel() {
-        let list = []
-        let head = '单据编号,类型,单位信息,金额,余额,单据日期,备注'
-        for (let i = 0; i < this.dataSource.length; i++) {
-          let item = []
-          let ds = this.dataSource[i]
-          item.push(ds.number, ds.type, ds.supplierName, this.getRealChangeAmount(ds), ds.balance, ds.operTime, ds.remark)
-          list.push(item)
-        }
-        let tip = '账户流水'
-        this.handleExportXlsPost('账户流水', '账户流水', head, tip, list)
+        const params = Object.assign({}, this.getQueryParams(), {currentPage: 1, pageSize: 10000})
+        this.loading = true
+        getAction(this.url.list, params).then((res) => {
+          if(res && res.code === 200) {
+            if(res.data.total > 10000) {
+              this.$message.warning('单次最多导出1万条，请缩小查询范围')
+              return
+            }
+            const list = (res.data.rows || []).map(ds => [
+              ds.number, ds.type, ds.supplierName, this.getRealChangeAmount(ds),
+              ds.balance, ds.operTime, ds.remark
+            ])
+            this.handleExportXlsPost('账户流水', '账户流水',
+              '单据编号,类型,单位信息,金额,余额,单据日期,备注', '账户流水', list)
+          } else {
+            this.$message.warning((res && res.data) || '导出数据查询失败')
+          }
+        }).finally(() => {
+          this.loading = false
+        })
       },
       getRealChangeAmount(r) {
-        if (r.aList && r.amList) {
-          let aListArr = r.aList.toString().split(",");
-          let amListArr = r.amList.toString().split(",");
-          let res = 0;
-          for (let i = 0; i < aListArr.length; i++) {
-            if (aListArr[i] == r.accountId) {
-              res = amListArr[i];
-            }
-          }
-          if(res>0) {
-            res = '+' + res
-          }
-          return res + "[多账户]";
-        } else {
-          if(r.changeAmount>0) {
-            return '+' + r.changeAmount
-          } else {
-            return r.changeAmount
-          }
+        let amount = r.changeAmount
+        if(Number(amount) > 0) {
+          amount = '+' + amount
         }
+        return amount + (r.aList ? '[多账户]' : '')
       }
     }
   }

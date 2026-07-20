@@ -86,9 +86,9 @@
                 :page-size="ipagination.pageSize"
                 :page-size-options="ipagination.pageSizeOptions"
                 :total="ipagination.total"
-                :show-total="(total, range) => `共 ${total-Math.ceil(total/ipagination.pageSize)} 条`">
+                :show-total="total => `共 ${total} 条`">
                 <template slot="buildOptionText" slot-scope="props">
-                  <span>{{ props.value-1 }}条/页</span>
+                  <span>{{ props.value }}条/页</span>
                 </template>
               </a-pagination>
             </a-col>
@@ -127,8 +127,8 @@
           serialNo:''
         },
         ipagination:{
-          pageSize: 11,
-          pageSizeOptions: ['11', '21', '31', '101', '201']
+          pageSize: 10,
+          pageSizeOptions: ['10', '20', '30', '100', '200']
         },
         allMonthAmount: '',
         allCurrentAmount: '',
@@ -150,7 +150,7 @@
           { title: '名称', dataIndex: 'name', width: 150},
           { title: '编号', dataIndex: 'serialNo', width: 150},
           { title: '期初金额', dataIndex: 'initialAmount', sorter: (a, b) => a.initialAmount - b.initialAmount, width: 100},
-          { title: '本月发生额', dataIndex: 'thisMonthAmount', sorter: (a, b) => a.thisMonthAmount - b.thisMonthAmount, width: 100},
+          { title: '本月净发生额', dataIndex: 'thisMonthAmount', sorter: (a, b) => a.thisMonthAmount - b.thisMonthAmount, width: 110},
           { title: '当前余额', dataIndex: 'currentAmount', sorter: (a, b) => a.currentAmount - b.currentAmount, width: 100}
         ],
         url: {
@@ -168,7 +168,7 @@
         let param = Object.assign({}, this.queryParam, this.isorter);
         param.field = this.getQueryField();
         param.currentPage = this.ipagination.current;
-        param.pageSize = this.ipagination.pageSize-1;
+        param.pageSize = this.ipagination.pageSize;
         return param;
       },
       getAccountStatistics() {
@@ -191,16 +191,25 @@
         this.$refs.accountInOutList.disableSubmit = false;
       },
       exportExcel() {
-        let list = []
-        let head = '名称,编号,期初金额,本月发生额,当前余额'
-        for (let i = 0; i < this.dataSource.length; i++) {
-          let item = []
-          let ds = this.dataSource[i]
-          item.push(ds.name, ds.serialNo, ds.initialAmount, ds.thisMonthAmount, ds.currentAmount)
-          list.push(item)
-        }
-        let tip = '账户统计查询'
-        this.handleExportXlsPost('账户统计', '账户统计', head, tip, list)
+        const params = Object.assign({}, this.queryParam, {currentPage: 1, pageSize: 10000})
+        this.loading = true
+        getAction(this.url.list, params).then((res) => {
+          if(res && res.code === 200) {
+            if(res.data.total > 10000) {
+              this.$message.warning('单次最多导出1万条，请缩小查询范围')
+              return
+            }
+            const list = (res.data.rows || []).map(ds => [
+              ds.name, ds.serialNo, ds.initialAmount, ds.thisMonthAmount, ds.currentAmount
+            ])
+            this.handleExportXlsPost('账户统计', '账户统计',
+              '名称,编号,期初金额,本月净发生额,当前余额', '账户统计查询', list)
+          } else {
+            this.$message.warning((res && res.data) || '导出数据查询失败')
+          }
+        }).finally(() => {
+          this.loading = false
+        })
       }
     }
   }

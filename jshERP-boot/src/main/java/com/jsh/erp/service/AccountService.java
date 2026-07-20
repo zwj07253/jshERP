@@ -62,6 +62,24 @@ public class AccountService {
         return accountMapper.selectByPrimaryKey(id);
     }
 
+    public void checkAccountReportPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if(!userService.hasFunctionPermission(userId, "/report/account_report")) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_REPORT_PERMISSION_CODE,
+                    ExceptionConstants.ACCOUNT_REPORT_PERMISSION_MSG);
+        }
+    }
+
+    public Account checkAccountForReport(Long accountId) throws Exception {
+        Account account = accountId == null ? null : accountMapper.selectByPrimaryKey(accountId);
+        if(account == null || BusinessConstants.DELETE_FLAG_DELETED.equals(account.getDeleteFlag())) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_REPORT_ACCOUNT_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_REPORT_ACCOUNT_FAILED_MSG);
+        }
+        return account;
+    }
+
     public List<Account> getAccountListByIds(String ids)throws Exception {
         List<Long> idList = StringUtil.strToLongList(ids);
         List<Account> list = new ArrayList<>();
@@ -99,60 +117,11 @@ public class AccountService {
     }
 
     public List<AccountVo4List> select(String name, String serialNo, String remark) throws Exception{
-        List<AccountVo4List> list = null;
-        try{
-            PageUtils.startPage();
-            list = accountMapperEx.selectByConditionAccount(name, serialNo, remark);
-            String timeStr = Tools.getCurrentMonth();
-            String bTime = Tools.firstDayOfMonth(timeStr) + BusinessConstants.DAY_FIRST_TIME;
-            String eTime = Tools.lastDayOfMonth(timeStr) + BusinessConstants.DAY_LAST_TIME;
-            Boolean forceFlag = systemConfigService.getForceApprovalFlag();
-            Map<Long, BigDecimal> thisMonthAccountSumMap = new HashMap<>();
-            Map<Long, BigDecimal> thisMonthAccountSumByHeadMap = new HashMap<>();
-            Map<Long, BigDecimal> thisMonthAccountSumByDetailMap = new HashMap<>();
-            Map<Long, BigDecimal> currentAccountSumMap = new HashMap<>();
-            Map<Long, BigDecimal> currentAccountSumByHeadMap = new HashMap<>();
-            Map<Long, BigDecimal> currentAccountSumByDetailMap = new HashMap<>();
-            PageDomain pageDomain = TableSupport.buildPageRequest();
-            int offset = (pageDomain.getCurrentPage() - 1) * pageDomain.getPageSize();
-            int rows = pageDomain.getPageSize();
-            List<AccountVo4Sum> thisMonthAmountList = accountMapperEx.getAccountSumByParam(name, serialNo, bTime, eTime, forceFlag, offset, rows);
-            List<AccountVo4Sum> currentAmountList = accountMapperEx.getAccountSumByParam(name, serialNo, null, null, forceFlag, offset, rows);
-            List<DepotHead> thisMonthManyAmountList = accountMapperEx.getManyAccountSumByParam(bTime, eTime, forceFlag);
-            List<DepotHead> currentManyAmountList = accountMapperEx.getManyAccountSumByParam(null, null, forceFlag);
-            for (AccountVo4Sum thisMonthAmount: thisMonthAmountList) {
-                thisMonthAccountSumMap.put(thisMonthAmount.getId(), thisMonthAmount.getAccountSum());
-                thisMonthAccountSumByHeadMap.put(thisMonthAmount.getId(), thisMonthAmount.getAccountSumByHead());
-                thisMonthAccountSumByDetailMap.put(thisMonthAmount.getId(), thisMonthAmount.getAccountSumByDetail());
-            }
-            for (AccountVo4Sum currentAmount: currentAmountList) {
-                currentAccountSumMap.put(currentAmount.getId(), currentAmount.getAccountSum());
-                currentAccountSumByHeadMap.put(currentAmount.getId(), currentAmount.getAccountSumByHead());
-                currentAccountSumByDetailMap.put(currentAmount.getId(), currentAmount.getAccountSumByDetail());
-            }
-            if (null != list) {
-                for (AccountVo4List al : list) {
-                    DecimalFormat df = new DecimalFormat(".##");
-                    BigDecimal thisMonthAmount = thisMonthAccountSumMap.get(al.getId())
-                            .add(thisMonthAccountSumByHeadMap.get(al.getId()))
-                            .add(thisMonthAccountSumByDetailMap.get(al.getId()))
-                            .add(getManyAccountSumParse(al.getId(), thisMonthManyAmountList));
-                    String thisMonthAmountFmt = "0";
-                    if ((thisMonthAmount.compareTo(BigDecimal.ZERO))!=0) {
-                        thisMonthAmountFmt = df.format(thisMonthAmount);
-                    }
-                    al.setThisMonthAmount(thisMonthAmountFmt);  //本月发生额
-                    BigDecimal currentAmount = currentAccountSumMap.get(al.getId())
-                            .add(currentAccountSumByHeadMap.get(al.getId()))
-                            .add(currentAccountSumByDetailMap.get(al.getId()))
-                            .add(getManyAccountSumParse(al.getId(), currentManyAmountList))
-                            .add(al.getInitialAmount()) ;
-                    al.setCurrentAmount(currentAmount);
-                }
-            }
-        } catch(Exception e){
-            JshException.readFail(logger, e);
-        }
+        PageUtils.startPage();
+        List<AccountVo4List> list = accountMapperEx.selectByConditionAccount(name, serialNo, remark);
+        PageDomain pageDomain = TableSupport.buildPageRequest();
+        int offset = (pageDomain.getCurrentPage() - 1) * pageDomain.getPageSize();
+        fillAccountBalances(list, name, serialNo, offset, pageDomain.getPageSize());
         return list;
     }
 
@@ -325,19 +294,8 @@ public class AccountService {
         if (dataList != null) {
             for (DepotHead depotHead : dataList) {
                 if(depotHead != null) {
-                    String accountIdList = depotHead.getAccountIdList();
-                    String accountMoneyList = depotHead.getAccountMoneyList();
-                    if(StringUtil.isNotEmpty(accountIdList) && StringUtil.isNotEmpty(accountMoneyList)) {
-                        String[] aList = accountIdList.split(",");
-                        String[] amList = accountMoneyList.split(",");
-                        for (int i = 0; i < aList.length; i++) {
-                            if (aList[i].equals(accountId.toString())) {
-                                if(amList.length>0) {
-                                    accountSum = accountSum.add(new BigDecimal(amList[i]));
-                                }
-                            }
-                        }
-                    }
+                    accountSum = accountSum.add(getAccountAmountFromLists(accountId,
+                            depotHead.getAccountIdList(), depotHead.getAccountMoneyList()));
                 }
             }
         }
@@ -352,43 +310,61 @@ public class AccountService {
         BigDecimal accountSum = BigDecimal.ZERO;
         if (manyAmountList != null) {
             for (DepotHead depotHead : manyAmountList) {
-                String accountIdList = depotHead.getAccountIdList();
-                String accountMoneyList = depotHead.getAccountMoneyList();
-                if(StringUtil.isNotEmpty(accountIdList) && StringUtil.isNotEmpty(accountMoneyList)) {
-                    String[] aList = accountIdList.split(",");
-                    String[] amList = accountMoneyList.split(",");
-                    for (int i = 0; i < aList.length; i++) {
-                        if (aList[i].equals(accountId.toString())) {
-                            if(amList.length>0) {
-                                accountSum = accountSum.add(new BigDecimal(amList[i]));
-                            }
-                        }
-                    }
-                }
+                accountSum = accountSum.add(getAccountAmountFromLists(accountId,
+                        depotHead.getAccountIdList(), depotHead.getAccountMoneyList()));
             }
         }
         return accountSum;
     }
 
     public List<AccountVo4InOutList> findAccountInOutList(Long accountId, String number, String beginTime, String endTime,
-                                                          Boolean forceFlag, Integer offset, Integer rows) throws Exception{
-        List<AccountVo4InOutList> list=null;
-        try{
-            list = accountMapperEx.findAccountInOutList(accountId, number, beginTime, endTime, forceFlag, offset, rows);
-        }catch(Exception e){
-            JshException.readFail(logger, e);
+                                                           Boolean forceFlag) throws Exception{
+        Account account = checkAccountForReport(accountId);
+        List<AccountVo4InOutList> allEntries = accountMapperEx.findAccountInOutList(accountId, forceFlag);
+        BigDecimal runningBalance = zeroIfNull(account.getInitialAmount());
+        for(int index = allEntries.size() - 1; index >= 0; index--) {
+            AccountVo4InOutList entry = allEntries.get(index);
+            BigDecimal changeAmount = entry.getChangeAmount();
+            if(StringUtil.isNotEmpty(entry.getaList())) {
+                changeAmount = getAccountAmountFromLists(accountId, entry.getaList(), entry.getAmList());
+                entry.setChangeAmount(changeAmount);
+            }
+            runningBalance = runningBalance.add(zeroIfNull(changeAmount));
+            entry.setBalance(runningBalance);
         }
-        return list;
+        List<AccountVo4InOutList> filteredEntries = new ArrayList<>();
+        for(AccountVo4InOutList entry : allEntries) {
+            if(StringUtil.isNotEmpty(number) && (entry.getNumber() == null || !entry.getNumber().contains(number))) {
+                continue;
+            }
+            if(StringUtil.isNotEmpty(beginTime) && entry.getOperTime().compareTo(beginTime) < 0) {
+                continue;
+            }
+            if(StringUtil.isNotEmpty(endTime) && entry.getOperTime().compareTo(endTime) > 0) {
+                continue;
+            }
+            filteredEntries.add(entry);
+        }
+        return filteredEntries;
     }
 
-    public int findAccountInOutListCount(Long accountId, String number, String beginTime, String endTime, Boolean forceFlag) throws Exception{
-        int result=0;
-        try{
-            result = accountMapperEx.findAccountInOutListCount(accountId, number, beginTime, endTime, forceFlag);
-        }catch(Exception e){
-            JshException.readFail(logger, e);
+    private BigDecimal getAccountAmountFromLists(Long accountId, String accountIdList, String accountMoneyList) {
+        if(accountId == null || StringUtil.isEmpty(accountIdList) || StringUtil.isEmpty(accountMoneyList)) {
+            return BigDecimal.ZERO;
         }
-        return result;
+        String[] accountIds = accountIdList.split(",");
+        String[] accountAmounts = accountMoneyList.split(",");
+        for(int index = 0; index < accountIds.length; index++) {
+            if(accountId.toString().equals(accountIds[index].trim()) && index < accountAmounts.length) {
+                try {
+                    return new BigDecimal(accountAmounts[index].trim());
+                } catch (NumberFormatException e) {
+                    logger.warn("忽略非法的多账户金额，accountId={}, amount={}", accountId, accountAmounts[index]);
+                    return BigDecimal.ZERO;
+                }
+            }
+        }
+        return BigDecimal.ZERO;
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
@@ -438,114 +414,78 @@ public class AccountService {
     }
 
     public List<AccountVo4List> listWithBalance(String name, String serialNo) throws Exception {
-        List<AccountVo4List> list = null;
-        try{
-            PageUtils.startPage();
-            list = accountMapperEx.selectByConditionAccount(name, serialNo, null);
-            String timeStr = Tools.getCurrentMonth();
-            String bTime = Tools.firstDayOfMonth(timeStr) + BusinessConstants.DAY_FIRST_TIME;
-            String eTime = Tools.lastDayOfMonth(timeStr) + BusinessConstants.DAY_LAST_TIME;
-            Boolean forceFlag = systemConfigService.getForceApprovalFlag();
-            Map<Long, BigDecimal> thisMonthAccountSumMap = new HashMap<>();
-            Map<Long, BigDecimal> thisMonthAccountSumByHeadMap = new HashMap<>();
-            Map<Long, BigDecimal> thisMonthAccountSumByDetailMap = new HashMap<>();
-            Map<Long, BigDecimal> currentAccountSumMap = new HashMap<>();
-            Map<Long, BigDecimal> currentAccountSumByHeadMap = new HashMap<>();
-            Map<Long, BigDecimal> currentAccountSumByDetailMap = new HashMap<>();
-            PageDomain pageDomain = TableSupport.buildPageRequest();
-            int offset = (pageDomain.getCurrentPage() - 1) * pageDomain.getPageSize();
-            int rows = pageDomain.getPageSize();
-            List<AccountVo4Sum> thisMonthAmountList = accountMapperEx.getAccountSumByParam(name, serialNo, bTime, eTime, forceFlag, offset, rows);
-            List<AccountVo4Sum> currentAmountList = accountMapperEx.getAccountSumByParam(name, serialNo, null, null, forceFlag, offset, rows);
-            List<DepotHead> thisMonthManyAmountList = accountMapperEx.getManyAccountSumByParam(bTime, eTime, forceFlag);
-            List<DepotHead> currentManyAmountList = accountMapperEx.getManyAccountSumByParam(null, null, forceFlag);
-            for (AccountVo4Sum thisMonthAmount: thisMonthAmountList) {
-                thisMonthAccountSumMap.put(thisMonthAmount.getId(), thisMonthAmount.getAccountSum());
-                thisMonthAccountSumByHeadMap.put(thisMonthAmount.getId(), thisMonthAmount.getAccountSumByHead());
-                thisMonthAccountSumByDetailMap.put(thisMonthAmount.getId(), thisMonthAmount.getAccountSumByDetail());
-            }
-            for (AccountVo4Sum currentAmount: currentAmountList) {
-                currentAccountSumMap.put(currentAmount.getId(), currentAmount.getAccountSum());
-                currentAccountSumByHeadMap.put(currentAmount.getId(), currentAmount.getAccountSumByHead());
-                currentAccountSumByDetailMap.put(currentAmount.getId(), currentAmount.getAccountSumByDetail());
-            }
-            if (null != list) {
-                for (AccountVo4List al : list) {
-                    DecimalFormat df = new DecimalFormat(".##");
-                    BigDecimal thisMonthAmount = thisMonthAccountSumMap.get(al.getId())
-                            .add(thisMonthAccountSumByHeadMap.get(al.getId()))
-                            .add(thisMonthAccountSumByDetailMap.get(al.getId()))
-                            .add(getManyAccountSumParse(al.getId(), thisMonthManyAmountList));
-                    String thisMonthAmountFmt = "0";
-                    if ((thisMonthAmount.compareTo(BigDecimal.ZERO))!=0) {
-                        thisMonthAmountFmt = df.format(thisMonthAmount);
-                    }
-                    al.setThisMonthAmount(thisMonthAmountFmt);  //本月发生额
-                    BigDecimal currentAmount = currentAccountSumMap.get(al.getId())
-                            .add(currentAccountSumByHeadMap.get(al.getId()))
-                            .add(currentAccountSumByDetailMap.get(al.getId()))
-                            .add(getManyAccountSumParse(al.getId(), currentManyAmountList))
-                            .add(al.getInitialAmount());
-                    al.setCurrentAmount(currentAmount);
-                }
-            }
-        } catch(Exception e){
-            JshException.readFail(logger, e);
-        }
+        PageUtils.startPage();
+        List<AccountVo4List> list = accountMapperEx.selectByConditionAccount(name, serialNo, null);
+        PageDomain pageDomain = TableSupport.buildPageRequest();
+        int offset = (pageDomain.getCurrentPage() - 1) * pageDomain.getPageSize();
+        fillAccountBalances(list, name, serialNo, offset, pageDomain.getPageSize());
         return list;
     }
 
-    public Map<String, Object> getStatistics(String name, String serialNo) {
+    public Map<String, Object> getStatistics(String name, String serialNo) throws Exception {
         Map<String, Object> map = new HashMap<>();
-        try {
-            List<Account> list = getAccountByParam(name, serialNo);
-            String timeStr = Tools.getCurrentMonth();
-            String bTime = Tools.firstDayOfMonth(timeStr) + BusinessConstants.DAY_FIRST_TIME;
-            String eTime = Tools.lastDayOfMonth(timeStr) + BusinessConstants.DAY_LAST_TIME;
-            BigDecimal allMonthAmount = BigDecimal.ZERO;
-            BigDecimal allCurrentAmount = BigDecimal.ZERO;
-            Boolean forceFlag = systemConfigService.getForceApprovalFlag();
-            Map<Long, BigDecimal> thisMonthAccountSumMap = new HashMap<>();
-            Map<Long, BigDecimal> thisMonthAccountSumByHeadMap = new HashMap<>();
-            Map<Long, BigDecimal> thisMonthAccountSumByDetailMap = new HashMap<>();
-            Map<Long, BigDecimal> currentAccountSumMap = new HashMap<>();
-            Map<Long, BigDecimal> currentAccountSumByHeadMap = new HashMap<>();
-            Map<Long, BigDecimal> currentAccountSumByDetailMap = new HashMap<>();
-            List<AccountVo4Sum> thisMonthAmountList = accountMapperEx.getAccountSumByParam(name, serialNo, bTime, eTime, forceFlag, null, null);
-            List<AccountVo4Sum> currentAmountList = accountMapperEx.getAccountSumByParam(name, serialNo, null, null, forceFlag, null, null);
-            List<DepotHead> thisMonthManyAmountList = accountMapperEx.getManyAccountSumByParam(bTime, eTime, forceFlag);
-            List<DepotHead> currentManyAmountList = accountMapperEx.getManyAccountSumByParam(null, null, forceFlag);
-            for (AccountVo4Sum thisMonthAmount: thisMonthAmountList) {
-                thisMonthAccountSumMap.put(thisMonthAmount.getId(), thisMonthAmount.getAccountSum());
-                thisMonthAccountSumByHeadMap.put(thisMonthAmount.getId(), thisMonthAmount.getAccountSumByHead());
-                thisMonthAccountSumByDetailMap.put(thisMonthAmount.getId(), thisMonthAmount.getAccountSumByDetail());
-            }
-            for (AccountVo4Sum currentAmount: currentAmountList) {
-                currentAccountSumMap.put(currentAmount.getId(), currentAmount.getAccountSum());
-                currentAccountSumByHeadMap.put(currentAmount.getId(), currentAmount.getAccountSumByHead());
-                currentAccountSumByDetailMap.put(currentAmount.getId(), currentAmount.getAccountSumByDetail());
-            }
-            if (null != list) {
-                for (Account a : list) {
-                    BigDecimal monthAmount = thisMonthAccountSumMap.get(a.getId())
-                            .add(thisMonthAccountSumByHeadMap.get(a.getId()))
-                            .add(thisMonthAccountSumByDetailMap.get(a.getId()))
-                            .add(getManyAccountSumParse(a.getId(), thisMonthManyAmountList));
-                    BigDecimal currentAmount = currentAccountSumMap.get(a.getId())
-                            .add(currentAccountSumByHeadMap.get(a.getId()))
-                            .add(currentAccountSumByDetailMap.get(a.getId()))
-                            .add(getManyAccountSumParse(a.getId(), currentManyAmountList))
-                            .add(a.getInitialAmount());
-                    allMonthAmount = allMonthAmount.add(monthAmount);
-                    allCurrentAmount = allCurrentAmount.add(currentAmount);
-                }
-            }
-            map.put("allMonthAmount", priceFormat(allMonthAmount));  //本月发生额
-            map.put("allCurrentAmount", priceFormat(allCurrentAmount));  //当前总金额
-        } catch (Exception e) {
-            JshException.readFail(logger, e);
+        List<AccountVo4List> list = accountMapperEx.selectByConditionAccount(name, serialNo, null);
+        fillAccountBalances(list, name, serialNo, null, null);
+        BigDecimal allMonthAmount = BigDecimal.ZERO;
+        BigDecimal allCurrentAmount = BigDecimal.ZERO;
+        for (AccountVo4List account : list) {
+            allMonthAmount = allMonthAmount.add(new BigDecimal(account.getThisMonthAmount()));
+            allCurrentAmount = allCurrentAmount.add(zeroIfNull(account.getCurrentAmount()));
         }
+        map.put("allMonthAmount", priceFormat(allMonthAmount));  //本月净发生额
+        map.put("allCurrentAmount", priceFormat(allCurrentAmount));  //当前总金额
         return map;
+    }
+
+    private void fillAccountBalances(List<AccountVo4List> accounts, String name, String serialNo,
+                                     Integer offset, Integer rows) throws Exception {
+        if(accounts == null || accounts.isEmpty()) {
+            return;
+        }
+        String timeStr = Tools.getCurrentMonth();
+        String beginTime = Tools.firstDayOfMonth(timeStr) + BusinessConstants.DAY_FIRST_TIME;
+        String endTime = Tools.lastDayOfMonth(timeStr) + BusinessConstants.DAY_LAST_TIME;
+        Boolean forceFlag = systemConfigService.getForceApprovalFlag();
+        Map<Long, AccountVo4Sum> monthSums = toAccountSumMap(accountMapperEx.getAccountSumByParam(
+                name, serialNo, beginTime, endTime, forceFlag, offset, rows));
+        Map<Long, AccountVo4Sum> currentSums = toAccountSumMap(accountMapperEx.getAccountSumByParam(
+                name, serialNo, null, null, forceFlag, offset, rows));
+        List<DepotHead> monthManyAmounts = accountMapperEx.getManyAccountSumByParam(beginTime, endTime, forceFlag);
+        List<DepotHead> currentManyAmounts = accountMapperEx.getManyAccountSumByParam(null, null, forceFlag);
+        for(AccountVo4List account : accounts) {
+            AccountVo4Sum month = monthSums.get(account.getId());
+            AccountVo4Sum current = currentSums.get(account.getId());
+            BigDecimal monthAmount = sumAccountAmounts(month)
+                    .add(getManyAccountSumParse(account.getId(), monthManyAmounts));
+            BigDecimal currentAmount = sumAccountAmounts(current)
+                    .add(getManyAccountSumParse(account.getId(), currentManyAmounts))
+                    .add(zeroIfNull(account.getInitialAmount()));
+            account.setThisMonthAmount(priceFormat(monthAmount));
+            account.setCurrentAmount(currentAmount);
+        }
+    }
+
+    private Map<Long, AccountVo4Sum> toAccountSumMap(List<AccountVo4Sum> sums) {
+        Map<Long, AccountVo4Sum> result = new HashMap<>();
+        if(sums != null) {
+            for(AccountVo4Sum sum : sums) {
+                result.put(sum.getId(), sum);
+            }
+        }
+        return result;
+    }
+
+    private BigDecimal sumAccountAmounts(AccountVo4Sum sum) {
+        if(sum == null) {
+            return BigDecimal.ZERO;
+        }
+        return zeroIfNull(sum.getAccountSum())
+                .add(zeroIfNull(sum.getAccountSumByHead()))
+                .add(zeroIfNull(sum.getAccountSumByDetail()));
+    }
+
+    private BigDecimal zeroIfNull(BigDecimal amount) {
+        return amount == null ? BigDecimal.ZERO : amount;
     }
 
     /**

@@ -7,22 +7,24 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.base.BaseController;
 import com.jsh.erp.base.TableDataInfo;
+import com.jsh.erp.constants.BusinessConstants;
 import com.jsh.erp.datasource.entities.Account;
 import com.jsh.erp.datasource.vo.AccountVo4InOutList;
 import com.jsh.erp.datasource.vo.AccountVo4List;
+import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.service.AccountService;
 import com.jsh.erp.service.SystemConfigService;
 import com.jsh.erp.utils.BaseResponseInfo;
 import com.jsh.erp.utils.Constants;
 import com.jsh.erp.utils.ErpInfo;
 import com.jsh.erp.utils.StringUtil;
+import com.jsh.erp.utils.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -174,7 +176,6 @@ public class AccountController extends BaseController {
      * @param currentPage
      * @param pageSize
      * @param accountId
-     * @param initialAmount
      * @param request
      * @return
      */
@@ -183,7 +184,6 @@ public class AccountController extends BaseController {
     public BaseResponseInfo findAccountInOutList(@RequestParam("currentPage") Integer currentPage,
                                                  @RequestParam("pageSize") Integer pageSize,
                                                  @RequestParam("accountId") Long accountId,
-                                                 @RequestParam("initialAmount") BigDecimal initialAmount,
                                                  @RequestParam(value = "number",required = false) String number,
                                                  @RequestParam(value = "beginTime",required = false) String beginTime,
                                                  @RequestParam(value = "endTime",required = false) String endTime,
@@ -191,11 +191,19 @@ public class AccountController extends BaseController {
         BaseResponseInfo res = new BaseResponseInfo();
         Map<String, Object> map = new HashMap<String, Object>();
         try {
+            accountService.checkAccountReportPermission();
+            beginTime = Tools.parseDayToTime(beginTime, BusinessConstants.DAY_FIRST_TIME);
+            endTime = Tools.parseDayToTime(endTime, BusinessConstants.DAY_LAST_TIME);
             Boolean forceFlag = systemConfigService.getForceApprovalFlag();
-            List<AccountVo4InOutList> dataList = accountService.findAccountInOutList(accountId, StringUtil.toNull(number),
-                    beginTime, endTime, forceFlag, (currentPage-1)*pageSize, pageSize);
-            int total = accountService.findAccountInOutListCount(accountId, StringUtil.toNull(number),
+            List<AccountVo4InOutList> allDataList = accountService.findAccountInOutList(accountId, StringUtil.toNull(number),
                     beginTime, endTime, forceFlag);
+            int total = allDataList.size();
+            int safeCurrentPage = Math.max(currentPage, 1);
+            int safePageSize = Math.min(Math.max(pageSize, 1), 10000);
+            long requestedFromIndex = (long) (safeCurrentPage - 1) * safePageSize;
+            int fromIndex = (int) Math.min(requestedFromIndex, total);
+            int toIndex = Math.min(fromIndex + safePageSize, total);
+            List<AccountVo4InOutList> dataList = allDataList.subList(fromIndex, toIndex);
             map.put("total", total);
             //存放数据json数组
             JSONArray dataArray = new JSONArray();
@@ -203,12 +211,6 @@ public class AccountController extends BaseController {
                 for (AccountVo4InOutList aEx : dataList) {
                     String type = aEx.getType().replace("其它", "");
                     aEx.setType(type);
-                    String operTime = aEx.getOperTime();
-                    BigDecimal balance = accountService.getAccountSum(accountId, null, operTime, forceFlag)
-                            .add(accountService.getAccountSumByHead(accountId, null, operTime, forceFlag))
-                            .add(accountService.getAccountSumByDetail(accountId, null, operTime, forceFlag))
-                            .add(accountService.getManyAccountSum(accountId, null, operTime, forceFlag)).add(initialAmount);
-                    aEx.setBalance(balance);
                     aEx.setAccountId(accountId);
                     dataArray.add(aEx);
                 }
@@ -216,6 +218,9 @@ public class AccountController extends BaseController {
             map.put("rows", dataArray);
             res.code = 200;
             res.data = map;
+        } catch (BusinessRunTimeException e) {
+            res.code = e.getCode();
+            res.data = e.getData().get("message");
         } catch(Exception e){
             logger.error(e.getMessage(), e);
             res.code = 500;
@@ -255,6 +260,7 @@ public class AccountController extends BaseController {
     public TableDataInfo listWithBalance(@RequestParam("name") String name,
                                             @RequestParam("serialNo") String serialNo,
                                             HttpServletRequest request) throws Exception {
+        accountService.checkAccountReportPermission();
         List<AccountVo4List> list = accountService.listWithBalance(StringUtil.toNull(name), StringUtil.toNull(serialNo));
         return getDataTable(list);
     }
@@ -271,9 +277,13 @@ public class AccountController extends BaseController {
                                           HttpServletRequest request) throws Exception {
         BaseResponseInfo res = new BaseResponseInfo();
         try {
+            accountService.checkAccountReportPermission();
             Map<String, Object> map = accountService.getStatistics(StringUtil.toNull(name), StringUtil.toNull(serialNo));
             res.code = 200;
             res.data = map;
+        } catch (BusinessRunTimeException e) {
+            res.code = e.getCode();
+            res.data = e.getData().get("message");
         } catch(Exception e){
             logger.error(e.getMessage(), e);
             res.code = 500;
