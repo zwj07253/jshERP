@@ -193,13 +193,13 @@ public class P1ReportTest extends ApiTestBase {
                 .param("depotId", "")
                 .param("beginTime", BEGIN_TIME)
                 .param("endTime", END_TIME)
-                .param("type", "")
+                .param("type", "入库")
                 .param("creator", "")
                 .param("categoryId", "")
                 .param("organizationId", "")
                 .param("remark", "")
-                .param("column", "")
-                .param("order", "")
+                .param("column", "createTime")
+                .param("order", "desc")
                 .get(CONTEXT + "/depotHead/findInOutDetail");
         assertPaged(resp);
     }

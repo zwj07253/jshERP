@@ -236,9 +236,9 @@
     </select>
 
     <select id="findInOutDetail" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultWithInfoExMap">
-        select dh.number,me.bar_code barCode, m."name" mname,m.model,m.standard,m.color,m.brand,m.mfrs,di.unit_price unitPrice,di.material_unit as mUnit, di.sku,
+        select di.id,dh.number,me.bar_code barCode, m."name" mname,m.model,m.standard,m.color,m.brand,m.mfrs,di.unit_price unitPrice,di.material_unit as mUnit, di.sku,
         di.oper_number operNumber,di.all_price allPrice, COALESCE(di.tax_rate,0) taxRate, COALESCE(di.tax_money,0) taxMoney, COALESCE(di.tax_last_money,0) taxLastMoney,
-        s.supplier sname,d.dname dname, TO_CHAR(dh.oper_time, 'YYYY-MM-DD') operTime, concat(dh.sub_type,dh."type") as newType,
+        s.supplier sname,d.dname dname, TO_CHAR(dh.oper_time, 'YYYY-MM-DD') operTime, dh.sub_type subType, concat(dh.sub_type,dh."type") as newType,
         concat_ws('  ',dh.remark,di.remark) as newRemark
         from jsh_depot_head dh
         left join jsh_depot_item di on di.header_id=dh.id and COALESCE(di.delete_flag,'0') !='1'
@@ -303,18 +303,21 @@
             and (dh.remark like #{bindRemark} or di.remark like #{bindRemark})
         </if>
         and dh.sub_type!='调拨'
+        and di.id is not null
         and COALESCE(dh.delete_flag,'0') !='1'
-        <if test="column == 'createTime'">
-            order by oper_time desc,number desc
-        </if>
-        <if test="column != 'createTime'">
-            <if test="column == 'barCode' or column == 'operNumber' or column == 'unitPrice' or column == 'allPrice' or column == 'taxMoney'">
-                order by ${column}
-                <if test="order == 'asc' or order == 'desc'">
-                    ${order}
-                </if>
-            </if>
-        </if>
+        <choose>
+            <when test="column == 'barCode'">order by me.bar_code</when>
+            <when test="column == 'operNumber'">order by di.oper_number</when>
+            <when test="column == 'unitPrice'">order by di.unit_price</when>
+            <when test="column == 'allPrice'">order by di.all_price</when>
+            <when test="column == 'taxMoney'">order by COALESCE(di.tax_money,0)</when>
+            <otherwise>order by dh.oper_time</otherwise>
+        </choose>
+        <choose>
+            <when test="order == 'asc'">asc</when>
+            <otherwise>desc</otherwise>
+        </choose>
+        , dh.number desc, di.id desc
         <if test="offset != null and rows != null">
             LIMIT #{rows} OFFSET #{offset}
         </if>
@@ -385,6 +388,7 @@
             and (dh.remark like #{bindRemark} or di.remark like #{bindRemark})
         </if>
         and dh.sub_type!='调拨'
+        and di.id is not null
         and COALESCE(dh.delete_flag,'0') !='1'
     </select>
 
@@ -453,6 +457,7 @@
             and (dh.remark like #{bindRemark} or di.remark like #{bindRemark})
         </if>
         and dh.sub_type!='调拨'
+        and di.id is not null
         and COALESCE(dh.delete_flag,'0') !='1'
     </select>
 

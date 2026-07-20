@@ -23,8 +23,8 @@
                   />
                 </a-form-item>
               </a-col>
-              <a-col :md="6" :sm="24" >
-                <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
+              <a-col :md="8" :sm="24" >
+                <span style="float: left;overflow: hidden;white-space: nowrap;" class="table-page-search-submitButtons">
                   <a-button type="primary" @click="searchQuery">查询</a-button>
                   <a-button style="margin-left: 8px" v-print="'#reportPrint'" icon="printer">打印</a-button>
                   <a-button style="margin-left: 8px" @click="exportExcel" icon="download">导出</a-button>
@@ -34,9 +34,9 @@
                   </a>
                 </span>
               </a-col>
-              <a-col :md="6" :sm="24">
+              <a-col :md="4" :sm="24">
                 <a-form-item>
-                  <span>总数量：{{operNumberTotalStr}}，总金额：{{allPriceTotalStr}}</span>
+                  <span style="white-space: nowrap;">总数量：{{operNumberTotalStr}}，总金额：{{allPriceTotalStr}}</span>
                 </a-form-item>
               </a-col>
             </a-row>
@@ -116,7 +116,7 @@
             size="middle"
             rowKey="id"
             :columns="columns"
-            :dataSource="dataSource"
+            :dataSource="displayDataSource"
             :components="handleDrag(columns)"
             :pagination="false"
             :scroll="scroll"
@@ -162,9 +162,9 @@
                 :page-size="ipagination.pageSize"
                 :page-size-options="ipagination.pageSizeOptions"
                 :total="ipagination.total"
-                :show-total="(total, range) => `共 ${total-Math.ceil(total/ipagination.pageSize)} 条`">
+                :show-total="total => `共 ${total} 条`">
                 <template slot="buildOptionText" slot-scope="props">
-                  <span>{{ props.value-1 }}条/页</span>
+                  <span>{{ props.value }}条/页</span>
                 </template>
               </a-pagination>
             </a-col>
@@ -221,8 +221,8 @@
           remark: '',
         },
         ipagination:{
-          pageSize: 11,
-          pageSizeOptions: ['11', '21', '31', '101', '201', '301', '1001', '2001', '3001']
+          pageSize: 10,
+          pageSizeOptions: ['10', '20', '30', '100', '200', '300', '1000', '2000', '3000']
         },
         organList: [],
         depotList: [],
@@ -281,13 +281,33 @@
       this.loadCategoryTreeData()
       this.initColumnsSetting()
     },
+    computed: {
+      displayDataSource() {
+        const rows = (this.dataSource || []).slice()
+        if (!rows.length) {
+          return rows
+        }
+        const totalRow = {
+          id: `in-detail-total-${this.ipagination.current}`,
+          rowIndex: '合计'
+        }
+        const numericFields = ['operNumber', 'allPrice', 'taxMoney']
+        numericFields.forEach(field => {
+          totalRow[field] = rows.reduce((sum, row) => {
+            const value = Number.parseFloat(row[field])
+            return sum + (Number.isFinite(value) ? value : 0)
+          }, 0).toFixed(2)
+        })
+        return rows.concat(totalRow)
+      }
+    },
     methods: {
       moment,
       getQueryParams() {
         let param = Object.assign({}, this.queryParam, this.isorter);
         param.field = this.getQueryField();
         param.currentPage = this.ipagination.current;
-        param.pageSize = this.ipagination.pageSize-1;
+        param.pageSize = this.ipagination.pageSize;
         return param;
       },
       onDateChange: function (value, dateString) {
@@ -309,11 +329,10 @@
             this.ipagination.total = res.data.total;
             this.operNumberTotalStr = res.data.operNumberTotal.toFixed(2)
             this.allPriceTotalStr = res.data.allPriceTotal.toFixed(2)
-            this.tableAddTotalRow(this.columns, this.dataSource)
           } else if(res.code===510){
             this.$message.warning(res.data)
           } else {
-            this.$message.warning(res.data.message)
+            this.$message.warning(typeof res.data === 'string' ? res.data : res.data.message)
           }
           this.loading = false;
         })
@@ -394,11 +413,31 @@
         }
       },
       exportExcel() {
+        if ((this.ipagination.total || 0) > 10000) {
+          this.$message.warning('单次导出不能超过10000条，请缩小查询范围')
+          return
+        }
+        let params = this.getQueryParams()
+        params.currentPage = 1
+        params.pageSize = Math.max(this.ipagination.total || 0, 1)
+        this.loading = true
+        getAction(this.url.list, params).then((res) => {
+          if (res.code === 200) {
+            this.exportExcelRows(res.data.rows || [])
+          } else {
+            const message = typeof res.data === 'string' ? res.data : res.data && res.data.message
+            this.$message.warning(message || '导出数据获取失败')
+          }
+        }).finally(() => {
+          this.loading = false
+        })
+      },
+      exportExcelRows(dataSource) {
         let list = []
         let head = '单据编号,条码,名称,规格,型号,颜色,品牌,制造商,单位,多属性,数量,单价,金额,税率(%),税额,往来单位,仓库,入库日期,备注'
-        for (let i = 0; i < this.dataSource.length; i++) {
+        for (let i = 0; i < dataSource.length; i++) {
           let item = []
-          let ds = this.dataSource[i]
+          let ds = dataSource[i]
           item.push(ds.number, ds.barCode, ds.mname, ds.standard, ds.model, ds.color, ds.brand, ds.mfrs, ds.mUnit, ds.sku, ds.operNumber, ds.unitPrice,
             ds.allPrice, ds.taxRate, ds.taxMoney, ds.sname, ds.dname, ds.operTime, ds.newRemark)
           list.push(item)

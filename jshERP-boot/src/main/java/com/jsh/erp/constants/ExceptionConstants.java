@@ -733,6 +733,11 @@ public class ExceptionConstants {
     public static final int DEPOT_HEAD_DISASSEMBLE_SAME_MATERIAL_CODE = 8500119;
     public static final String DEPOT_HEAD_DISASSEMBLE_SAME_MATERIAL_MSG = "抱歉，组合件不能同时作为拆卸产出的普通子件:%s";
 
+    public static final int DEPOT_HEAD_IN_DETAIL_REPORT_PERMISSION_CODE = 8500120;
+    public static final String DEPOT_HEAD_IN_DETAIL_REPORT_PERMISSION_MSG = "抱歉，当前用户没有入库明细的查看权限";
+    public static final int DEPOT_HEAD_OUT_DETAIL_REPORT_PERMISSION_CODE = 8500121;
+    public static final String DEPOT_HEAD_OUT_DETAIL_REPORT_PERMISSION_MSG = "抱歉，当前用户没有出库明细的查看权限";
+
 
     /**
      *  单据明细信息

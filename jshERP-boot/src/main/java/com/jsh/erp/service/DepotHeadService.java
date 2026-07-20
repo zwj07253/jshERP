@@ -959,6 +959,20 @@ public class DepotHeadService {
         return list;
     }
 
+    public void checkInOutDetailReportPermission(String type) throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        String reportUrl = "出库".equals(type) ? "/report/out_detail" : "/report/in_detail";
+        if(!userService.hasFunctionPermission(userId, reportUrl)) {
+            if("出库".equals(type)) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_OUT_DETAIL_REPORT_PERMISSION_CODE,
+                        ExceptionConstants.DEPOT_HEAD_OUT_DETAIL_REPORT_PERMISSION_MSG);
+            }
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_IN_DETAIL_REPORT_PERMISSION_CODE,
+                    ExceptionConstants.DEPOT_HEAD_IN_DETAIL_REPORT_PERMISSION_MSG);
+        }
+    }
+
     public int findInOutDetailCount(String beginTime, String endTime, String type, String[] creatorArray,
                                     String[] organArray, List<Long> categoryList, Boolean forceFlag, Boolean inOutManageFlag, String materialParam, List<Long> depotList, Integer oId, String number,
                                     Long creator, String remark) throws Exception{

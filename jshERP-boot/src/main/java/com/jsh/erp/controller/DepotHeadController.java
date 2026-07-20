@@ -15,9 +15,11 @@ import com.jsh.erp.datasource.vo.DepotHeadVo4InDetail;
 import com.jsh.erp.datasource.vo.DepotHeadVo4InOutMCount;
 import com.jsh.erp.datasource.vo.DepotHeadVo4List;
 import com.jsh.erp.datasource.vo.DepotHeadVo4StatementAccount;
+import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.service.DepotService;
 import com.jsh.erp.service.DepotHeadService;
 import com.jsh.erp.service.MaterialService;
+import com.jsh.erp.service.RoleService;
 import com.jsh.erp.service.SystemConfigService;
 import com.jsh.erp.service.UserService;
 import com.jsh.erp.utils.*;
@@ -60,6 +62,9 @@ public class DepotHeadController extends BaseController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private RoleService roleService;
 
     @GetMapping(value = "/info")
     @Operation(summary = "根据id获取信息")
@@ -214,6 +219,7 @@ public class DepotHeadController extends BaseController {
         BaseResponseInfo res = new BaseResponseInfo();
         Map<String, Object> map = new HashMap<String, Object>();
         try {
+            depotHeadService.checkInOutDetailReportPermission(type);
             List<Long> depotList = depotService.parseDepotList(depotId);
             List<DepotHeadVo4InDetail> resList = new ArrayList<DepotHeadVo4InDetail>();
             String [] creatorArray = depotHeadService.getCreatorArray();
@@ -231,23 +237,40 @@ public class DepotHeadController extends BaseController {
             endTime = Tools.parseDayToTime(endTime,BusinessConstants.DAY_LAST_TIME);
             Boolean forceFlag = systemConfigService.getForceApprovalFlag();
             Boolean inOutManageFlag = systemConfigService.getInOutManageFlag();
+            Long userId = userService.getUserId(request);
+            String priceLimit = userService.getRoleTypeByUserId(userId).getPriceLimit();
+            int safeCurrentPage = Math.max(currentPage, 1);
+            int safePageSize = Math.min(Math.max(pageSize, 1), 10000);
             List<DepotHeadVo4InDetail> list = depotHeadService.findInOutDetail(beginTime, endTime, type, creatorArray, organArray, categoryList, forceFlag, inOutManageFlag,
                     StringUtil.toNull(materialParam), depotList, oId, StringUtil.toNull(number), creator, remark,
-                    StringUtil.safeSqlParse(column), StringUtil.safeSqlParse(order), (currentPage-1)*pageSize, pageSize);
+                    column, order, (safeCurrentPage-1)*safePageSize, safePageSize);
             int total = depotHeadService.findInOutDetailCount(beginTime, endTime, type, creatorArray, organArray, categoryList, forceFlag, inOutManageFlag,
                     StringUtil.toNull(materialParam), depotList, oId, StringUtil.toNull(number), creator, remark);
             map.put("total", total);
             //存放数据json数组
             if (null != list) {
+                for (DepotHeadVo4InDetail item : list) {
+                    String billCategory = depotHeadService.getBillCategory(item.getSubType());
+                    item.setUnitPrice(roleService.parseBillPriceByLimit(item.getUnitPrice(), billCategory, priceLimit, request));
+                    item.setAllPrice(roleService.parseBillPriceByLimit(item.getAllPrice(), billCategory, priceLimit, request));
+                    item.setTaxRate(roleService.parseBillPriceByLimit(item.getTaxRate(), billCategory, priceLimit, request));
+                    item.setTaxMoney(roleService.parseBillPriceByLimit(item.getTaxMoney(), billCategory, priceLimit, request));
+                    item.setTaxLastMoney(roleService.parseBillPriceByLimit(item.getTaxLastMoney(), billCategory, priceLimit, request));
+                }
                 resList.addAll(list);
             }
             map.put("rows", resList);
             DepotHeadVo4InDetail statistic = depotHeadService.findInOutDetailStatistic(beginTime, endTime, type, creatorArray, organArray, categoryList, forceFlag, inOutManageFlag,
                     StringUtil.toNull(materialParam), depotList, oId, StringUtil.toNull(number), creator, remark);
             map.put("operNumberTotal", statistic.getOperNumber());
-            map.put("allPriceTotal", statistic.getAllPrice());
+            boolean hideMixedPriceTotal = StringUtil.isNotEmpty(priceLimit)
+                    && (priceLimit.contains("4") || priceLimit.contains("5") || priceLimit.contains("6"));
+            map.put("allPriceTotal", hideMixedPriceTotal ? BigDecimal.ZERO : statistic.getAllPrice());
             res.code = 200;
             res.data = map;
+        } catch (BusinessRunTimeException e) {
+            res.code = e.getCode();
+            res.data = e.getData().get("message");
         } catch(Exception e){
             logger.error(e.getMessage(), e);
             res.code = 500;
