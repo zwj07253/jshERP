@@ -166,7 +166,7 @@
   import JUpload from '@/components/jeecg/JUpload'
   import JDate from '@/components/jeecg/JDate'
   export default {
-    name: "MoneyInModal",
+    name: "MoneyOutModal",
     mixins: [JEditableTableMixin, FinancialModalMixin],
     components: {
       DebtBillList,
@@ -211,7 +211,10 @@
             { title: '应付欠款',key: 'needDebt', width: '10%', type: FormTypes.inputNumber, statistics: true, readonly: true },
             { title: '已付欠款', key: 'finishDebt', width: '10%', type: FormTypes.inputNumber, statistics: true, readonly: true },
             { title: '本次付款',key: 'eachAmount', width: '10%', type: FormTypes.inputNumber, statistics: true, placeholder: '请输入${title}',
-              validateRules: [{ required: true, message: '${title}不能为空' }]
+              validateRules: [
+                { required: true, message: '${title}不能为空' },
+                { pattern: /^(?=.*[1-9])\d+(?:\.\d+)?$/, message: '${title}必须大于0' }
+              ]
             },
             { title: '备注',key: 'remark', width: '20%', type: FormTypes.input, placeholder: '请输入${title}'}
           ]
@@ -231,10 +234,13 @@
             rules: [{ required: true, message: '请选择付款账户!' }]
           },
           discountMoney:{
-            rules: [{ required: true, message: '请输入优惠金额!' }]
+            rules: [
+              { required: true, message: '请输入优惠金额!' },
+              { pattern: /^(?:0|[1-9]\d*)(?:\.\d+)?$/, message: '优惠金额不能为负数!' }
+            ]
           },
           changeAmount:{
-            rules: [{ required: true, message: '请输入收款金额!' }]
+            rules: [{ required: true, message: '请输入付款金额!' }]
           }
         },
         url: {
@@ -314,6 +320,12 @@
       },
       handleClear() {
         this.accountTable.dataSource = []
+        this.$nextTick(() => {
+          this.form.setFieldsValue({'totalPrice': 0, 'discountMoney': 0, 'changeAmount': 0})
+        })
+      },
+      onChangeOrgan() {
+        this.handleClear()
       }
     }
   }

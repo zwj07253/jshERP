@@ -130,7 +130,14 @@ public class AccountItemService {
                 }
                 if (tempInsertedJson.get("billNumber") != null && !tempInsertedJson.get("billNumber").equals("")) {
                     String billNo = tempInsertedJson.getString("billNumber");
-                    accountItem.setBillId(depotHeadService.getDepotHead(billNo).getId());
+                    if(!"QiChu".equals(billNo)) {
+                        DepotHead depotHead = depotHeadService.getDepotHead(billNo);
+                        if(depotHead == null) {
+                            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ROW_FAILED_CODE,
+                                    ExceptionConstants.ACCOUNT_HEAD_ROW_FAILED_MSG);
+                        }
+                        accountItem.setBillId(depotHead.getId());
+                    }
                 }
                 if (tempInsertedJson.get("needDebt") != null && !tempInsertedJson.get("needDebt").equals("")) {
                     accountItem.setNeedDebt(tempInsertedJson.getBigDecimal("needDebt"));

@@ -878,7 +878,7 @@
             (select
             COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
             from jsh_depot_head dh
-            where dh.organ_id=s.id
+            where dh.organ_id=s.id and dh.status='1'
             and dh."type"=#{type} and dh.sub_type=#{subType}
             and dh.oper_time &lt;= #{beginTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') preDebtMoney,
@@ -886,27 +886,27 @@
             (select
             COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
             from jsh_depot_head dh
-            where dh.organ_id=s.id
+            where dh.organ_id=s.id and dh.status='1'
             and dh."type"=#{typeBack} and dh.sub_type=#{subTypeBack}
             and dh.oper_time &lt;= #{beginTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') preReturnDebtMoney,
             -- 上期收款
             (select COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='收款'
+            where ah.organ_id=s.id and ah."type"='收款' and ah.status='1'
             and ah.bill_time &lt;= #{beginTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') preBackInMoney,
             -- 上期付款
             (select 0-COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='付款'
+            where ah.organ_id=s.id and ah."type"='付款' and ah.status='1'
             and ah.bill_time &lt;= #{beginTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') preBackOutMoney,
             -- 本期欠款
             (select
             COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
             from jsh_depot_head dh
-            where dh.organ_id=s.id
+            where dh.organ_id=s.id and dh.status='1'
             and dh."type"=#{type} and dh.sub_type=#{subType}
             and dh.oper_time>#{beginTime}::timestamp and dh.oper_time &lt;= #{endTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') debtMoney,
@@ -914,20 +914,20 @@
             (select
             COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
             from jsh_depot_head dh
-            where dh.organ_id=s.id
+            where dh.organ_id=s.id and dh.status='1'
             and dh."type"=#{typeBack} and dh.sub_type=#{subTypeBack}
             and dh.oper_time>#{beginTime}::timestamp and dh.oper_time &lt;= #{endTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') returnDebtMoney,
             -- 本期收款
             (select COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='收款'
+            where ah.organ_id=s.id and ah."type"='收款' and ah.status='1'
             and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') backInMoney,
             -- 本期付款
             (select 0-COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='付款'
+            where ah.organ_id=s.id and ah."type"='付款' and ah.status='1'
             and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') backOutMoney
         from jsh_supplier s
@@ -965,7 +965,7 @@
             (select
             COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
             from jsh_depot_head dh
-            where dh.organ_id=s.id
+            where dh.organ_id=s.id and dh.status='1'
             and dh."type"=#{type} and dh.sub_type=#{subType}
             and dh.oper_time &lt;= #{beginTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') preDebtMoney,
@@ -973,27 +973,27 @@
             (select
             COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
             from jsh_depot_head dh
-            where dh.organ_id=s.id
+            where dh.organ_id=s.id and dh.status='1'
             and dh."type"=#{typeBack} and dh.sub_type=#{subTypeBack}
             and dh.oper_time &lt;= #{beginTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') preReturnDebtMoney,
             -- 上期收款
             (select COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='收款'
+            where ah.organ_id=s.id and ah."type"='收款' and ah.status='1'
             and ah.bill_time &lt;= #{beginTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') preBackInMoney,
             -- 上期付款
             (select 0-COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='付款'
+            where ah.organ_id=s.id and ah."type"='付款' and ah.status='1'
             and ah.bill_time &lt;= #{beginTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') preBackOutMoney,
             -- 本期欠款
             (select
             COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
             from jsh_depot_head dh
-            where dh.organ_id=s.id
+            where dh.organ_id=s.id and dh.status='1'
             and dh."type"=#{type} and dh.sub_type=#{subType}
             and dh.oper_time>#{beginTime}::timestamp and dh.oper_time &lt;= #{endTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') debtMoney,
@@ -1001,20 +1001,20 @@
             (select
             COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
             from jsh_depot_head dh
-            where dh.organ_id=s.id
+            where dh.organ_id=s.id and dh.status='1'
             and dh."type"=#{typeBack} and dh.sub_type=#{subTypeBack}
             and dh.oper_time>#{beginTime}::timestamp and dh.oper_time &lt;= #{endTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') returnDebtMoney,
             -- 本期收款
             (select COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='收款'
+            where ah.organ_id=s.id and ah."type"='收款' and ah.status='1'
             and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') backInMoney,
             -- 本期付款
             (select 0-COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='付款'
+            where ah.organ_id=s.id and ah."type"='付款' and ah.status='1'
             and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') backOutMoney
         from jsh_supplier s
@@ -1047,49 +1047,49 @@
             (select
             COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
             from jsh_depot_head dh
-            where dh.organ_id=s.id
+            where dh.organ_id=s.id and dh.status='1'
             and dh."type"=#{type} and dh.sub_type=#{subType}
             and dh.oper_time &lt;= #{beginTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') preDebtMoney,
             (select
             COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
             from jsh_depot_head dh
-            where dh.organ_id=s.id
+            where dh.organ_id=s.id and dh.status='1'
             and dh."type"=#{typeBack} and dh.sub_type=#{subTypeBack}
             and dh.oper_time &lt;= #{beginTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') preReturnDebtMoney,
             (select COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='收款'
+            where ah.organ_id=s.id and ah."type"='收款' and ah.status='1'
             and ah.bill_time &lt;= #{beginTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') preBackInMoney,
             (select 0-COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='付款'
+            where ah.organ_id=s.id and ah."type"='付款' and ah.status='1'
             and ah.bill_time &lt;= #{beginTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') preBackOutMoney,
             (select
             COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
             from jsh_depot_head dh
-            where dh.organ_id=s.id
+            where dh.organ_id=s.id and dh.status='1'
             and dh."type"=#{type} and dh.sub_type=#{subType}
             and dh.oper_time>#{beginTime}::timestamp and dh.oper_time &lt;= #{endTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') debtMoney,
             (select
             COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
             from jsh_depot_head dh
-            where dh.organ_id=s.id
+            where dh.organ_id=s.id and dh.status='1'
             and dh."type"=#{typeBack} and dh.sub_type=#{subTypeBack}
             and dh.oper_time>#{beginTime}::timestamp and dh.oper_time &lt;= #{endTime}::timestamp
             and COALESCE(dh.delete_flag,'0') !='1') returnDebtMoney,
             (select COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='收款'
+            where ah.organ_id=s.id and ah."type"='收款' and ah.status='1'
             and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') backInMoney,
             (select 0-COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
             left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='付款'
+            where ah.organ_id=s.id and ah."type"='付款' and ah.status='1'
             and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
             and COALESCE(ai.delete_flag,'0') !='1') backOutMoney
         from jsh_supplier s
