@@ -688,12 +688,15 @@ public class DepotItemController {
                                       @RequestParam(value = "organizationId", required = false) Long organizationId,
                                       @RequestParam("materialParam") String materialParam,
                                       @RequestParam(value = "mpList", required = false) String mpList,
+                                      @RequestParam(value = "column", required = false) String column,
+                                      @RequestParam(value = "order", required = false) String order,
                                       HttpServletRequest request)throws Exception {
         BaseResponseInfo res = new BaseResponseInfo();
         Map<String, Object> map = new HashMap<String, Object>();
         beginTime = Tools.parseDayToTime(beginTime, BusinessConstants.DAY_FIRST_TIME);
         endTime = Tools.parseDayToTime(endTime,BusinessConstants.DAY_LAST_TIME);
         try {
+            depotItemService.checkRetailReportPermission();
             String [] creatorArray = depotHeadService.getCreatorArray();
             if(creatorArray == null && organizationId != null) {
                 creatorArray = depotHeadService.getCreatorArrayByOrg(organizationId);
@@ -705,9 +708,13 @@ public class DepotItemController {
             }
             List<Long> depotList = depotService.parseDepotList(depotId);
             Boolean forceFlag = systemConfigService.getForceApprovalFlag();
+            Long userId = userService.getUserId(request);
+            String priceLimit = userService.getRoleTypeByUserId(userId).getPriceLimit();
+            int safeCurrentPage = Math.max(currentPage, 1);
+            int safePageSize = Math.min(Math.max(pageSize, 1), 10000);
             List<DepotItemVo4WithInfoEx> dataList = depotItemService.getRetailOutSummary(StringUtil.toNull(materialParam),
                     beginTime, endTime, creatorArray, organId, organArray, categoryList, depotList, forceFlag,
-                    (currentPage-1)*pageSize, pageSize);
+                    column, order, (safeCurrentPage-1)*safePageSize, safePageSize);
             int total = depotItemService.getListWithBuyOrSaleCount(StringUtil.toNull(materialParam),
                     "retail", beginTime, endTime, creatorArray, organId, organArray, categoryList, depotList, forceFlag);
             map.put("total", total);
@@ -716,6 +723,9 @@ public class DepotItemController {
             if (null != dataList) {
                 for (DepotItemVo4WithInfoEx diEx : dataList) {
                     JSONObject item = new JSONObject();
+                    BigDecimal outSumPrice = roleService.parseBillPriceByLimit(diEx.getOutSumPrice(), "retail", priceLimit, request);
+                    BigDecimal inSumPrice = roleService.parseBillPriceByLimit(diEx.getInSumPrice(), "retail", priceLimit, request);
+                    BigDecimal outInSumPrice = roleService.parseBillPriceByLimit(diEx.getOutInSumPrice(), "retail", priceLimit, request);
                     item.put("id", diEx.getMaterialExtendId());
                     item.put("barCode", diEx.getBarCode());
                     item.put("materialName", diEx.getMName());
@@ -732,9 +742,9 @@ public class DepotItemController {
                     item.put("unitName", diEx.getUnitName());
                     item.put("outSum", diEx.getOutSum());
                     item.put("inSum", diEx.getInSum());
-                    item.put("outSumPrice", diEx.getOutSumPrice());
-                    item.put("inSumPrice", diEx.getInSumPrice());
-                    item.put("outInSumPrice",diEx.getOutInSumPrice());//实际销售金额
+                    item.put("outSumPrice", outSumPrice);
+                    item.put("inSumPrice", inSumPrice);
+                    item.put("outInSumPrice",outInSumPrice);//实际销售金额
                     dataArray.add(item);
                 }
             }
@@ -743,10 +753,14 @@ public class DepotItemController {
             BigDecimal inSumPriceTotal = depotItemService.buyOrSalePriceTotal("入库", "零售退货", StringUtil.toNull(materialParam),
                     beginTime, endTime, creatorArray, organId, organArray, categoryList, depotList, forceFlag);
             BigDecimal realityPriceTotal = outSumPriceTotal.subtract(inSumPriceTotal);
+            realityPriceTotal = roleService.parseBillPriceByLimit(realityPriceTotal, "retail", priceLimit, request);
             map.put("rows", dataArray);
             map.put("realityPriceTotal", realityPriceTotal);
             res.code = 200;
             res.data = map;
+        } catch (BusinessRunTimeException e) {
+            res.code = e.getCode();
+            res.data = e.getData().get("message");
         } catch(Exception e){
             logger.error(e.getMessage(), e);
             res.code = 500;

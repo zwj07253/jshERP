@@ -762,6 +762,9 @@ public class ExceptionConstants {
     //原关联单据已被修改，请重新关联
     public static final int DEPOT_ITEM_PRE_BILL_IS_CHANGE_CODE = 9000007;
     public static final String DEPOT_ITEM_PRE_BILL_IS_CHANGE_MSG = "抱歉，原关联单据已被修改，请重新关联";
+    //零售统计-无查看权限
+    public static final int RETAIL_REPORT_PERMISSION_CODE = 9000008;
+    public static final String RETAIL_REPORT_PERMISSION_MSG = "抱歉，当前用户没有零售统计的查看权限";
 
     /**
      *  财务信息

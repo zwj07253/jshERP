@@ -66,6 +66,15 @@ public class DepotItemService {
     @Resource
     private LogService logService;
 
+    public void checkRetailReportPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if(!userService.hasFunctionPermission(userId, "/report/retail_out_report")) {
+            throw new BusinessRunTimeException(ExceptionConstants.RETAIL_REPORT_PERMISSION_CODE,
+                    ExceptionConstants.RETAIL_REPORT_PERMISSION_MSG);
+        }
+    }
+
     public DepotItem getDepotItem(long id)throws Exception {
         DepotItem result=null;
         try{
@@ -329,25 +338,15 @@ public class DepotItemService {
     public List<DepotItemVo4WithInfoEx> getRetailOutSummary(String materialParam, String beginTime, String endTime,
                                                             String[] creatorArray, Long organId, String[] organArray,
                                                             List<Long> categoryList, List<Long> depotList, Boolean forceFlag,
-                                                            Integer offset, Integer rows) throws Exception {
-        try {
-            return depotItemMapperEx.getRetailOutSummary(materialParam, beginTime, endTime, creatorArray, organId,
-                    organArray, categoryList, depotList, forceFlag, offset, rows);
-        } catch (Exception e) {
-            JshException.readFail(logger, e);
-            return new ArrayList<>();
-        }
+                                                            String column, String order, Integer offset, Integer rows) throws Exception {
+        return depotItemMapperEx.getRetailOutSummary(materialParam, beginTime, endTime, creatorArray, organId,
+                organArray, categoryList, depotList, forceFlag, column, order, offset, rows);
     }
 
     public int getListWithBuyOrSaleCount(String materialParam, String billType,
                                          String beginTime, String endTime, String[] creatorArray, Long organId, String[] organArray, List<Long> categoryList, List<Long> depotList, Boolean forceFlag)throws Exception {
-        int result=0;
-        try{
-            result = depotItemMapperEx.getListWithBuyOrSaleCount(materialParam, billType, beginTime, endTime, creatorArray, organId, organArray, categoryList, depotList, forceFlag);
-        }catch(Exception e){
-            JshException.readFail(logger, e);
-        }
-        return result;
+        return depotItemMapperEx.getListWithBuyOrSaleCount(materialParam, billType, beginTime, endTime,
+                creatorArray, organId, organArray, categoryList, depotList, forceFlag);
     }
 
     public BigDecimal buyOrSale(String type, String subType, Long meId, String beginTime, String endTime,
@@ -367,13 +366,8 @@ public class DepotItemService {
 
     public BigDecimal buyOrSalePriceTotal(String type, String subType, String materialParam, String beginTime, String endTime,
                                 String[] creatorArray, Long organId, String [] organArray, List<Long> categoryList, List<Long> depotList, Boolean forceFlag) throws Exception{
-        BigDecimal result= BigDecimal.ZERO;
-        try{
-            result= depotItemMapperEx.buyOrSalePriceTotal(type, subType, materialParam, beginTime, endTime, creatorArray, organId, organArray, categoryList, depotList, forceFlag);
-        }catch(Exception e){
-            JshException.readFail(logger, e);
-        }
-        return result;
+        return depotItemMapperEx.buyOrSalePriceTotal(type, subType, materialParam, beginTime, endTime,
+                creatorArray, organId, organArray, categoryList, depotList, forceFlag);
 
     }
 

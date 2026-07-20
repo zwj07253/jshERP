@@ -1,7 +1,13 @@
 package com.jsh.erp;
 
 import io.restassured.response.Response;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
+
+import java.math.BigDecimal;
 import org.junit.jupiter.api.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * P1: 报表对账测试 (ID 30-40)
@@ -96,7 +102,7 @@ public class P1ReportTest extends ApiTestBase {
     void retailStatistics() {
         Response resp = authReqGet()
                 .param("currentPage", 1)
-                .param("pageSize", 10)
+                .param("pageSize", 10000)
                 .param("beginTime", BEGIN_TIME)
                 .param("endTime", END_TIME)
                 .param("organId", "")
@@ -107,6 +113,20 @@ public class P1ReportTest extends ApiTestBase {
                 .param("mpList", "")
                 .get(CONTEXT + "/depotItem/retailOut");
         assertPaged(resp);
+        JSONObject data = JSONObject.parseObject(resp.body().asString()).getJSONObject("data");
+        JSONArray rows = data.getJSONArray("rows");
+        BigDecimal rowNet = BigDecimal.ZERO;
+        for (int i = 0; i < rows.size(); i++) {
+            JSONObject row = rows.getJSONObject(i);
+            BigDecimal out = row.getBigDecimal("outSumPrice");
+            BigDecimal in = row.getBigDecimal("inSumPrice");
+            BigDecimal net = row.getBigDecimal("outInSumPrice");
+            assertEquals(0, out.subtract(in).compareTo(net), "零售行净额必须等于零售金额减退货金额");
+            rowNet = rowNet.add(net);
+        }
+        assertEquals(0, rowNet.compareTo(data.getBigDecimal("realityPriceTotal")),
+                "零售列表合计必须与顶部实际零售金额一致");
+        assertEquals(rows.size(), data.getIntValue("total"), "分页总数必须与完整结果行数一致");
     }
 
     // ===== 34. 账户统计 =====

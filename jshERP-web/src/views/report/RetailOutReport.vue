@@ -7,7 +7,7 @@
         <div class="table-page-search-wrapper">
           <a-form layout="inline" @keyup.enter.native="searchQuery">
             <a-row :gutter="24">
-              <a-col :md="6" :sm="24">
+              <a-col :md="5" :sm="24">
                 <a-form-item label="商品信息" :labelCol="labelCol" :wrapperCol="wrapperCol">
                   <a-input placeholder="请输入条码、名称、助记码、规格、型号等信息" v-model="queryParam.materialParam"></a-input>
                 </a-form-item>
@@ -23,7 +23,7 @@
                   />
                 </a-form-item>
               </a-col>
-              <a-col :md="6" :sm="24">
+              <a-col :md="8" :sm="24">
                 <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
                   <a-button type="primary" @click="searchQuery">查询</a-button>
                   <a-button style="margin-left: 8px" v-print="'#reportPrint'" icon="printer">打印</a-button>
@@ -34,7 +34,7 @@
                   </a>
                 </span>
               </a-col>
-              <a-col :md="6" :sm="24">
+              <a-col :md="5" :sm="24">
                 <a-form-item>
                   <span>实际零售金额：{{realityPriceTotal}}</span>
                 </a-form-item>
@@ -97,7 +97,7 @@
             size="middle"
             rowKey="id"
             :columns="columns"
-            :dataSource="dataSource"
+            :dataSource="displayDataSource"
             :components="handleDrag(columns)"
             :pagination="false"
             :scroll="scroll"
@@ -142,7 +142,7 @@
                 :total="ipagination.total"
                 :show-total="total => `共 ${total} 条`">
                 <template slot="buildOptionText" slot-scope="props">
-                  <span>{{ props.value-1 }}条/页</span>
+                  <span>{{ props.value }}条/页</span>
                 </template>
               </a-pagination>
             </a-col>
@@ -192,8 +192,8 @@
           mpList: getMpListShort(Vue.ls.get('materialPropertyList')),
         },
         ipagination:{
-          pageSize: 11,
-          pageSizeOptions: ['11', '21', '31', '101', '201']
+          pageSize: 10,
+          pageSizeOptions: ['10', '20', '30', '100', '200']
         },
         defaultTimeStr: '',
         retailList: [],
@@ -245,6 +245,26 @@
       this.initColumnsSetting()
       this.handleChangeOtherField(0)
     },
+    computed: {
+      displayDataSource() {
+        const rows = (this.dataSource || []).slice()
+        if (!rows.length) {
+          return rows
+        }
+        const totalRow = {
+          id: `retail-total-${this.ipagination.current}`,
+          rowIndex: '合计'
+        }
+        const numericFields = ['outSum', 'outSumPrice', 'inSum', 'inSumPrice', 'outInSumPrice']
+        numericFields.forEach(field => {
+          totalRow[field] = rows.reduce((sum, row) => {
+            const value = Number.parseFloat(row[field])
+            return sum + (Number.isFinite(value) ? value : 0)
+          }, 0).toFixed(2)
+        })
+        return rows.concat(totalRow)
+      }
+    },
     methods: {
       moment,
       getQueryParams() {
@@ -252,7 +272,7 @@
         param.monthTime = this.queryParam.monthTime;
         param.field = this.getQueryField();
         param.currentPage = this.ipagination.current;
-        param.pageSize = this.ipagination.pageSize-1;
+        param.pageSize = this.ipagination.pageSize;
         return param;
       },
       onDateChange: function (value, dateString) {
@@ -273,7 +293,6 @@
           if (res.code===200) {
             this.dataSource = res.data.rows;
             this.ipagination.total = res.data.total;
-            this.tableAddTotalRow(this.columns, this.dataSource)
             this.realityPriceTotal = res.data.realityPriceTotal
           } else if(res.code===510){
             this.$message.warning(res.data)
@@ -344,6 +363,10 @@
         }
       },
       exportExcel() {
+        if ((this.ipagination.total || 0) > 10000) {
+          this.$message.warning('单次导出不能超过10000条，请缩小查询范围')
+          return
+        }
         let params = this.getQueryParams()
         params.currentPage = 1
         params.pageSize = Math.max(this.ipagination.total || 0, 1)
