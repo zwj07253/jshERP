@@ -714,7 +714,24 @@
         </if>
         group by m.id, di.material_extend_id, me.bar_code, m."name", m.mfrs, m.model, m.standard,
         m.other_field1, m.other_field2, m.other_field3, COALESCE(NULLIF(m.unit, ''), u.basic_unit), m.color, m.brand, u."name"
-        order by m.id desc
+        <choose>
+            <when test="column == 'barCode'">order by me.bar_code</when>
+            <when test="column == 'materialName'">order by m."name"</when>
+            <when test="column == 'materialStandard'">order by m.standard</when>
+            <when test="column == 'materialModel'">order by m.model</when>
+            <when test="column == 'materialUnit'">order by COALESCE(NULLIF(m.unit, ''), u.basic_unit)</when>
+            <when test="column == 'outSum'">order by "outSum"</when>
+            <when test="column == 'outSumPrice'">order by "outSumPrice"</when>
+            <when test="column == 'inSum'">order by "inSum"</when>
+            <when test="column == 'inSumPrice'">order by "inSumPrice"</when>
+            <when test="column == 'outInSumPrice'">order by "outInSumPrice"</when>
+            <otherwise>order by m.id</otherwise>
+        </choose>
+        <choose>
+            <when test="order == 'asc'">asc</when>
+            <otherwise>desc</otherwise>
+        </choose>
+        , di.material_extend_id desc
         <if test="offset != null and rows != null">
             LIMIT #{rows} OFFSET #{offset}
         </if>

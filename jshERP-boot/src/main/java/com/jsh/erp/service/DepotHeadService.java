@@ -298,6 +298,9 @@ public class DepotHeadService {
     public String[] getOrganArray(String subType, String purchaseStatus) throws Exception {
         String [] organArray = null;
         String type = "UserCustomer";
+        if (isCurrentUserAdmin()) {
+            return null;
+        }
         Long userId = userService.getCurrentUser().getId();
         //获取权限信息
         String ubValue = userBusinessService.getUBValueByTypeAndKeyId(type, userId.toString());

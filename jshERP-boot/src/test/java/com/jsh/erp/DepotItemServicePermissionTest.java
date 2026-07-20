@@ -70,4 +70,27 @@ class DepotItemServicePermissionTest {
 
         assertDoesNotThrow(() -> depotItemService.checkBuyReportPermission());
     }
+
+    @Test
+    void rejectsUserWithoutSaleReportPermission() throws Exception {
+        User user = new User();
+        user.setId(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasFunctionPermission(101L, "/report/sale_out_report")).thenReturn(false);
+
+        BusinessRunTimeException exception = assertThrows(BusinessRunTimeException.class,
+                () -> depotItemService.checkSaleReportPermission());
+
+        assertEquals(ExceptionConstants.SALE_REPORT_PERMISSION_CODE, exception.getCode());
+    }
+
+    @Test
+    void allowsUserWithSaleReportPermission() throws Exception {
+        User user = new User();
+        user.setId(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasFunctionPermission(101L, "/report/sale_out_report")).thenReturn(true);
+
+        assertDoesNotThrow(() -> depotItemService.checkSaleReportPermission());
+    }
 }

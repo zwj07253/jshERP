@@ -84,6 +84,15 @@ public class DepotItemService {
         }
     }
 
+    public void checkSaleReportPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if(!userService.hasFunctionPermission(userId, "/report/sale_out_report")) {
+            throw new BusinessRunTimeException(ExceptionConstants.SALE_REPORT_PERMISSION_CODE,
+                    ExceptionConstants.SALE_REPORT_PERMISSION_MSG);
+        }
+    }
+
     public DepotItem getDepotItem(long id)throws Exception {
         DepotItem result=null;
         try{
@@ -2011,12 +2020,12 @@ public class DepotItemService {
     }
 
     public List<DepotItemVo4WithInfoEx> getSaleOutSummary(String materialParam, String beginTime, String endTime,
-                                                          String[] creatorArray, Long organId, String[] organArray,
-                                                          List<Long> categoryList, List<Long> depotList, Boolean forceFlag,
-                                                          Integer offset, Integer rows) throws Exception {
+                                                           String[] creatorArray, Long organId, String[] organArray,
+                                                           List<Long> categoryList, List<Long> depotList, Boolean forceFlag,
+                                                           String column, String order, Integer offset, Integer rows) throws Exception {
         try {
             return depotItemMapperEx.getSaleOutSummary(materialParam, beginTime, endTime, creatorArray, organId,
-                    organArray, categoryList, depotList, forceFlag, offset, rows);
+                    organArray, categoryList, depotList, forceFlag, column, order, offset, rows);
         } catch (Exception e) {
             JshException.readFail(logger, e);
             return new ArrayList<>();

@@ -131,6 +131,8 @@ public interface DepotItemMapperEx {
             @Param("categoryList") List<Long> categoryList,
             @Param("depotList") List<Long> depotList,
             @Param("forceFlag") Boolean forceFlag,
+            @Param("column") String column,
+            @Param("order") String order,
             @Param("offset") Integer offset,
             @Param("rows") Integer rows);
 
