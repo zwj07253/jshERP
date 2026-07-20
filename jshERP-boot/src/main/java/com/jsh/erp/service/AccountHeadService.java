@@ -352,8 +352,84 @@ public class AccountHeadService {
             return validateMoneyInBill(accountHead, rows, excludeHeadId);
         } else if(BusinessConstants.TYPE_MONEY_OUT.equals(accountHead.getType())) {
             return validateMoneyOutBill(accountHead, rows, excludeHeadId);
+        } else if(BusinessConstants.TYPE_GIRO.equals(accountHead.getType())) {
+            return validateGiroBill(accountHead, rows);
         }
         return rows;
+    }
+
+    private String validateGiroBill(AccountHead accountHead, String rows) throws Exception {
+        if(StringUtil.isEmpty(accountHead.getBillNo()) || accountHead.getBillTime() == null
+                || accountHead.getOrganId() != null) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_GIRO_DETAIL_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_HEAD_GIRO_DETAIL_FAILED_MSG);
+        }
+        Account sourceAccount = accountHead.getAccountId() == null
+                ? null : accountMapper.selectByPrimaryKey(accountHead.getAccountId());
+        if(sourceAccount == null || !Boolean.TRUE.equals(sourceAccount.getEnabled())
+                || BusinessConstants.DELETE_FLAG_DELETED.equals(sourceAccount.getDeleteFlag())) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_GIRO_ACCOUNT_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_HEAD_GIRO_ACCOUNT_FAILED_MSG);
+        }
+        JSONArray rowArray;
+        try {
+            rowArray = JSONArray.parseArray(rows);
+        } catch (Exception e) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_GIRO_DETAIL_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_HEAD_GIRO_DETAIL_FAILED_MSG);
+        }
+        if(rowArray == null || rowArray.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ROW_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_HEAD_ROW_FAILED_MSG);
+        }
+        BigDecimal detailTotal = BigDecimal.ZERO;
+        Set<Long> targetAccountIds = new HashSet<>();
+        for(Object rowValue : rowArray) {
+            JSONObject row;
+            Long targetAccountId;
+            BigDecimal eachAmount;
+            try {
+                row = JSONObject.parseObject(rowValue.toString());
+                targetAccountId = row.getLong("accountId");
+                eachAmount = row.getBigDecimal("eachAmount");
+            } catch (Exception e) {
+                throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_GIRO_DETAIL_FAILED_CODE,
+                        ExceptionConstants.ACCOUNT_HEAD_GIRO_DETAIL_FAILED_MSG);
+            }
+            Account targetAccount = targetAccountId == null
+                    ? null : accountMapper.selectByPrimaryKey(targetAccountId);
+            if(targetAccount == null || !Boolean.TRUE.equals(targetAccount.getEnabled())
+                    || BusinessConstants.DELETE_FLAG_DELETED.equals(targetAccount.getDeleteFlag())
+                    || !targetAccountIds.add(targetAccountId)
+                    || hasValue(row, "inOutItemId") || hasValue(row, "billId")
+                    || hasValue(row, "billNumber") || hasValue(row, "needDebt")
+                    || hasValue(row, "finishDebt")) {
+                throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_GIRO_DETAIL_FAILED_CODE,
+                        ExceptionConstants.ACCOUNT_HEAD_GIRO_DETAIL_FAILED_MSG);
+            }
+            if(sourceAccount.getId().equals(targetAccountId)) {
+                throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ACCOUNT_REPEAT_CODE,
+                        String.format(ExceptionConstants.ACCOUNT_HEAD_ACCOUNT_REPEAT_MSG, sourceAccount.getName()));
+            }
+            if(eachAmount == null || eachAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_GIRO_AMOUNT_FAILED_CODE,
+                        ExceptionConstants.ACCOUNT_HEAD_GIRO_AMOUNT_FAILED_MSG);
+            }
+            detailTotal = detailTotal.add(eachAmount);
+        }
+        BigDecimal totalPrice = accountHead.getTotalPrice();
+        BigDecimal changeAmount = accountHead.getChangeAmount();
+        BigDecimal discountMoney = accountHead.getDiscountMoney();
+        boolean invalidAmount = totalPrice == null || changeAmount == null
+                || totalPrice.compareTo(BigDecimal.ZERO) >= 0 || changeAmount.compareTo(BigDecimal.ZERO) >= 0
+                || (discountMoney != null && discountMoney.compareTo(BigDecimal.ZERO) != 0)
+                || !sameMoney(totalPrice.abs(), detailTotal)
+                || !sameMoney(changeAmount.abs(), detailTotal);
+        if(invalidAmount) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_GIRO_AMOUNT_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_HEAD_GIRO_AMOUNT_FAILED_MSG);
+        }
+        return rowArray.toJSONString();
     }
 
     private String validateMoneyInBill(AccountHead accountHead, String rows, Long excludeHeadId) throws Exception {
@@ -579,7 +655,8 @@ public class AccountHeadService {
         if(!BusinessConstants.TYPE_INCOME.equals(accountHead.getType())
                 && !BusinessConstants.TYPE_EXPENSE.equals(accountHead.getType())
                 && !BusinessConstants.TYPE_MONEY_IN.equals(accountHead.getType())
-                && !BusinessConstants.TYPE_MONEY_OUT.equals(accountHead.getType())) {
+                && !BusinessConstants.TYPE_MONEY_OUT.equals(accountHead.getType())
+                && !BusinessConstants.TYPE_GIRO.equals(accountHead.getType())) {
             return;
         }
         List<AccountItemVo4List> detailList = accountItemService.getDetailList(accountHead.getId());
@@ -821,23 +898,6 @@ public class AccountHeadService {
         if(checkIsBillNoExist(0L, accountHead.getBillNo())>0) {
             throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_BILL_NO_EXIST_CODE,
                     String.format(ExceptionConstants.ACCOUNT_HEAD_BILL_NO_EXIST_MSG));
-        }
-        //校验付款账户和明细中的账户重复（转账单据）
-        if(BusinessConstants.TYPE_GIRO.equals(accountHead.getType())) {
-            JSONArray rowArr = JSONArray.parseArray(rows);
-            if (null != rowArr && rowArr.size()>0) {
-                for (int i = 0; i < rowArr.size(); i++) {
-                    JSONObject object = JSONObject.parseObject(rowArr.getString(i));
-                    if (object.get("accountId") != null && !object.get("accountId").equals("")) {
-                        Long accoutId = object.getLong("accountId");
-                        String accountName = accountMapper.selectByPrimaryKey(accoutId).getName();
-                        if(accoutId.equals(accountHead.getAccountId())) {
-                            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ACCOUNT_REPEAT_CODE,
-                                    String.format(ExceptionConstants.ACCOUNT_HEAD_ACCOUNT_REPEAT_MSG, accountName));
-                        }
-                    }
-                }
-            }
         }
         User userInfo=userService.getCurrentUser();
         accountHead.setCreator(userInfo==null?null:userInfo.getId());

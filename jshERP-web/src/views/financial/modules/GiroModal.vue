@@ -71,8 +71,8 @@
         </a-row>
         <a-row class="form-row" :gutter="24">
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="付款账户">
-              <a-select placeholder="请选择付款账户" v-decorator="[ 'accountId', validatorRules.accountId ]"
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="转出账户">
+              <a-select placeholder="请选择转出账户" v-decorator="[ 'accountId', validatorRules.accountId ]"
                 :dropdownMatchSelectWidth="false" showSearch optionFilterProp="children">
                 <div slot="dropdownRender" slot-scope="menu">
                   <v-nodes :vnodes="menu" />
@@ -87,8 +87,8 @@
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="实付金额">
-              <a-input placeholder="请输入实付金额" v-decorator.trim="[ 'changeAmount', validatorRules.changeAmount ]" :readOnly="true"/>
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="转出金额">
+              <a-input placeholder="请输入转出金额" v-decorator.trim="[ 'changeAmount', validatorRules.changeAmount ]" :readOnly="true"/>
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
@@ -162,8 +162,11 @@
             { title: '账户名称',key: 'accountId',width: '20%', type: FormTypes.select, placeholder: '请选择${title}', options: [],
               allowSearch:true, validateRules: [{ required: true, message: '${title}不能为空' }]
             },
-            { title: '金额',key: 'eachAmount', width: '10%', type: FormTypes.inputNumber, statistics: true, placeholder: '请选择${title}',
-              validateRules: [{ required: true, message: '${title}不能为空' }]
+            { title: '转入金额',key: 'eachAmount', width: '10%', type: FormTypes.inputNumber, statistics: true, placeholder: '请输入${title}',
+              validateRules: [
+                { required: true, message: '${title}不能为空' },
+                { pattern: /^(?=.*[1-9])\d+(?:\.\d+)?$/, message: '${title}必须大于0' }
+              ]
             },
             { title: '备注',key: 'remark', width: '30%', type: FormTypes.input, placeholder: '请选择${title}'}
           ]
@@ -182,12 +185,12 @@
           },
           accountId:{
             rules: [
-              { required: true, message: '请选择付款账户!' }
+              { required: true, message: '请选择转出账户!' }
             ]
           },
           changeAmount:{
             rules: [
-              { required: true, message: '请输入实付金额!' }
+              { required: true, message: '请输入转出金额!' }
             ]
           }
         },

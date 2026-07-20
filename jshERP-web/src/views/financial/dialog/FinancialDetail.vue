@@ -124,12 +124,12 @@
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="付款账户">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="转出账户">
                 {{model.accountName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="实付金额">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="转出金额">
                 {{model.changeAmount}}
               </a-form-item>
             </a-col>

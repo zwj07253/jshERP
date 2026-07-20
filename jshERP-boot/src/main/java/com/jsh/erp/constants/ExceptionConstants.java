@@ -779,7 +779,7 @@ public class ExceptionConstants {
     public static final String ACCOUNT_HEAD_BILL_NO_EXIST_MSG = "抱歉，单据编号已经存在";
     //财务信息录入-付款账户和明细中的账户重复
     public static final int ACCOUNT_HEAD_ACCOUNT_REPEAT_CODE = 9500006;
-    public static final String ACCOUNT_HEAD_ACCOUNT_REPEAT_MSG = "抱歉，付款账户:%s和明细中的账户重复";
+    public static final String ACCOUNT_HEAD_ACCOUNT_REPEAT_MSG = "抱歉，转出账户:%s不能同时作为转入账户";
     //财务信息审核-只有未审核的单据才能审核
     public static final int ACCOUNT_HEAD_UN_AUDIT_TO_AUDIT_FAILED_CODE = 9500007;
     public static final String ACCOUNT_HEAD_UN_AUDIT_TO_AUDIT_FAILED_MSG = "抱歉，只有未审核的单据才能审核";
@@ -840,6 +840,15 @@ public class ExceptionConstants {
 
     public static final int ACCOUNT_HEAD_MONEY_OUT_ORGAN_FAILED_CODE = 9500026;
     public static final String ACCOUNT_HEAD_MONEY_OUT_ORGAN_FAILED_MSG = "抱歉，付款供应商不存在、已停用或类型不正确";
+
+    public static final int ACCOUNT_HEAD_GIRO_AMOUNT_FAILED_CODE = 9500027;
+    public static final String ACCOUNT_HEAD_GIRO_AMOUNT_FAILED_MSG = "抱歉，转账金额必须大于零，且转出金额必须等于转入明细合计";
+
+    public static final int ACCOUNT_HEAD_GIRO_DETAIL_FAILED_CODE = 9500028;
+    public static final String ACCOUNT_HEAD_GIRO_DETAIL_FAILED_MSG = "抱歉，转账明细中的转入账户或关联字段不合法";
+
+    public static final int ACCOUNT_HEAD_GIRO_ACCOUNT_FAILED_CODE = 9500029;
+    public static final String ACCOUNT_HEAD_GIRO_ACCOUNT_FAILED_MSG = "抱歉，转出账户不存在或已停用";
     /**
      *  财务明细信息
      * type = 100

@@ -133,6 +133,13 @@ SET btn_str = (COALESCE(NULLIF(btn_str, ''), '[]')::jsonb
 WHERE id = 107 AND type = 'RoleFunctions' AND key_id = '101' AND tenant_id = 100
   AND NOT (COALESCE(NULLIF(btn_str, ''), '[]')::jsonb @> '[{"funId":202}]'::jsonb);
 
+-- jsh 系统管理员需要转账单的新增、审核、删除和反审核按钮权限。
+UPDATE jsh_user_business
+SET btn_str = (COALESCE(NULLIF(btn_str, ''), '[]')::jsonb
+    || '[{"funId":206,"btnStr":"1,2,3,7"}]'::jsonb)::text
+WHERE id = 107 AND type = 'RoleFunctions' AND key_id = '101' AND tenant_id = 100
+  AND NOT (COALESCE(NULLIF(btn_str, ''), '[]')::jsonb @> '[{"funId":206}]'::jsonb);
+
 -- ============================================
 -- 7. Persons
 -- ============================================
@@ -750,7 +757,7 @@ WHERE id = 405 AND tenant_id = 100 AND header_id = 403;
 -- ============================================
 INSERT INTO jsh_account_head (id, type, organ_id, hands_person_id, creator, change_amount, discount_money, total_price, account_id, bill_no, bill_time, remark, status, source, tenant_id, delete_flag) VALUES
 (201, '收预付款', 109, 105, 105, 20000.000000, 0, 20000.000000, 103, 'YF-20260708-001', '2026-07-08 10:00:00', '会员VIP0001充值', '1', '0', 100, '0'),
-(202, '转账', NULL, 105, 105, 20000.000000, 0, 20000.000000, 101, 'ZZ-20260708-001', '2026-07-08 10:30:00', '工商银行转支付宝备货款', '1', '0', 100, '0'),
+(202, '转账', NULL, 105, 105, -20000.000000, 0, -20000.000000, 101, 'ZZ-20260708-001', '2026-07-08 10:30:00', '工商银行转支付宝备货款', '1', '0', 100, '0'),
 (203, '收入', NULL, 105, 105, 1200.000000, 0, 1200.000000, 104, 'SR-20260708-002', '2026-07-08 14:30:00', '门店换电池服务收入', '1', '0', 100, '0'),
 (204, '支出', NULL, 105, 105, -5800.000000, 0, -5800.000000, 101, 'ZC-20260708-002', '2026-07-08 15:30:00', '7月员工绩效预支', '1', '0', 100, '0'),
 (205, '收款', 106, 103, 105, 36980.000000, 0, 36980.000000, 101, 'SK-20260708-002', '2026-07-08 14:00:00', '收上海时光销售出库货款', '1', '0', 100, '0')

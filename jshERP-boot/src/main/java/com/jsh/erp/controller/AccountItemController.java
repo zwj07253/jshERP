@@ -66,7 +66,8 @@ public class AccountItemController {
                     item.put("inOutItemName", ai.getInOutItemName());
                     if(StringUtil.isNotEmpty(ai.getBillNumber())) {
                         item.put("billNumber", ai.getBillNumber());
-                    } else {
+                    } else if(BusinessConstants.TYPE_MONEY_IN.equals(type)
+                            || BusinessConstants.TYPE_MONEY_OUT.equals(type)) {
                         item.put("billNumber", "QiChu");
                     }
                     item.put("needDebt", ai.getNeedDebt());
