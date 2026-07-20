@@ -1494,6 +1494,7 @@
         and dh.pay_type = '预付款'
         and ((dh."type" = '出库' and dh.sub_type = '零售')
           or (dh."type" = '入库' and dh.sub_type = '零售退货'))
+        and dh.status = '1'
         and COALESCE(dh.delete_flag,'0') !='1'
     </select>
 </mapper>

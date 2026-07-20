@@ -162,7 +162,10 @@
               allowSearch:true, validateRules: [{ required: true, message: '${title}不能为空' }]
             },
             { title: '金额',key: 'eachAmount', width: '10%', type: FormTypes.inputNumber, statistics: true, placeholder: '请选择${title}',
-              validateRules: [{ required: true, message: '${title}不能为空' }]
+              validateRules: [
+                { required: true, message: '${title}不能为空' },
+                { handler: (type, value, row, column, callback) => callback(Number(value) > 0), message: '${title}必须大于0' }
+              ]
             },
             { title: '备注',key: 'remark', width: '30%', type: FormTypes.input, placeholder: '请选择${title}'}
           ]
@@ -231,9 +234,7 @@
           totalPrice += item.eachAmount-0
         }
         billMain.totalPrice = totalPrice
-        if(this.fileList && this.fileList.length > 0) {
-          billMain.fileName = this.fileList
-        }
+        billMain.fileName = this.fileList && this.fileList.length > 0 ? this.fileList : ''
         if(this.model.id){
           billMain.id = this.model.id
         }

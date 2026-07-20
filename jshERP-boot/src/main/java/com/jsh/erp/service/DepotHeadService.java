@@ -453,6 +453,13 @@ public class DepotHeadService {
                         String.format(ExceptionConstants.DEPOT_HEAD_UN_AUDIT_DELETE_FAILED_MSG));
             }
         }
+        Set<Long> prepaidMemberIds = new TreeSet<>();
+        for(DepotHead depotHead : dhList) {
+            if(isPrepaidRetailBill(depotHead) && depotHead.getOrganId() != null) {
+                prepaidMemberIds.add(depotHead.getOrganId());
+            }
+        }
+        lockPrepaidMembers(prepaidMemberIds);
         for(DepotHead depotHead: dhList){
             sb.append("[").append(depotHead.getNumber()).append("]");
             User userInfo = userService.getCurrentUser();
@@ -767,10 +774,18 @@ public class DepotHeadService {
         List<DepotHead> stockCheckHeadList = new ArrayList<>();
         List<DepotHead> assembleStockCheckHeadList = new ArrayList<>();
         List<DepotHead> disassembleStockCheckHeadList = new ArrayList<>();
+        Set<Long> prepaidMemberIds = new TreeSet<>();
+        List<DepotHead> prepaidAuditBills = new ArrayList<>();
         List<Long> ids = StringUtil.strToLongList(depotHeadIDs);
         for(Long id: ids) {
             DepotHead depotHead = getDepotHead(id);
             checkPurchaseBillDataPermission(depotHead);
+            if(isPrepaidRetailBill(depotHead) && depotHead.getOrganId() != null) {
+                prepaidMemberIds.add(depotHead.getOrganId());
+                if(BusinessConstants.BILLS_STATUS_AUDIT.equals(status)) {
+                    prepaidAuditBills.add(depotHead);
+                }
+            }
             if (isSalesOutbound(depotHead) && StringUtil.isNotEmpty(depotHead.getLinkNumber())) {
                 salesOrderNumbers.add(depotHead.getLinkNumber());
             }
@@ -852,6 +867,10 @@ public class DepotHeadService {
                 }
             }
         }
+        lockPrepaidMembers(prepaidMemberIds);
+        if(BusinessConstants.BILLS_STATUS_AUDIT.equals(status)) {
+            validatePrepaidBillsBeforeAudit(prepaidAuditBills);
+        }
         if (!stockCheckHeadList.isEmpty()) {
             depotItemService.checkMaterialStock(stockCheckHeadList);
         }
@@ -880,6 +899,7 @@ public class DepotHeadService {
             for (String salesOrderNumber : salesOrderNumbers) {
                 recalculateSalesOrderStatus(salesOrderNumber);
             }
+            refreshPrepaidMembers(prepaidMemberIds);
             //记录日志
             if(!noList.isEmpty() && ("0".equals(status) || "1".equals(status))) {
                 String statusStr = status.equals("1")?"[审核]":"[反审核]";
@@ -1543,6 +1563,14 @@ public class DepotHeadService {
                         String.format(ExceptionConstants.DEPOT_HEAD_FILE_NUM_LIMIT_MSG, 4));
             }
         }
+        Set<Long> prepaidMemberIds = new TreeSet<>();
+        if(isPrepaidRetailBill(previousDepotHead) && previousDepotHead.getOrganId() != null) {
+            prepaidMemberIds.add(previousDepotHead.getOrganId());
+        }
+        if(isPrepaidRetailBill(depotHead) && depotHead.getOrganId() != null) {
+            prepaidMemberIds.add(depotHead.getOrganId());
+        }
+        lockPrepaidMembers(prepaidMemberIds);
         validatePrepaidBalance(depotHead, previousDepotHead);
         // 以下字段由服务端维护，编辑接口不得通过请求体覆盖。
         depotHead.setCreator(previousDepotHead.getCreator());
@@ -4213,7 +4241,9 @@ public class DepotHeadService {
             return;
         }
         Supplier supplier = supplierService.lockSupplier(depotHead.getOrganId());
-        if (supplier == null) {
+        if (supplier == null || !"会员".equals(supplier.getType())
+                || !Boolean.TRUE.equals(supplier.getEnabled())
+                || BusinessConstants.DELETE_FLAG_DELETED.equals(supplier.getDeleteFlag())) {
             throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_RETAIL_MEMBER_REQUIRED_CODE,
                     ExceptionConstants.DEPOT_HEAD_RETAIL_MEMBER_REQUIRED_MSG);
         }
@@ -4223,6 +4253,7 @@ public class DepotHeadService {
         BigDecimal availableAdvance = supplierService.calculateAdvanceIn(depotHead.getOrganId());
         if (previousDepotHead != null
                 && isPrepaidRetailOut(previousDepotHead)
+                && BusinessConstants.BILLS_STATUS_AUDIT.equals(previousDepotHead.getStatus())
                 && Objects.equals(previousDepotHead.getOrganId(), depotHead.getOrganId())) {
             availableAdvance = availableAdvance.add(previousDepotHead.getTotalPrice() == null
                     ? BigDecimal.ZERO : previousDepotHead.getTotalPrice());
@@ -4233,8 +4264,43 @@ public class DepotHeadService {
         }
     }
 
+    private void lockPrepaidMembers(Set<Long> memberIds) {
+        for(Long memberId : memberIds) {
+            supplierService.lockSupplier(memberId);
+        }
+    }
+
+    private void validatePrepaidBillsBeforeAudit(List<DepotHead> prepaidBills) {
+        Map<Long, BigDecimal> amountByMember = new HashMap<>();
+        for(DepotHead depotHead : prepaidBills) {
+            Supplier member = supplierService.lockSupplier(depotHead.getOrganId());
+            if(member == null || !"会员".equals(member.getType())
+                    || !Boolean.TRUE.equals(member.getEnabled())
+                    || BusinessConstants.DELETE_FLAG_DELETED.equals(member.getDeleteFlag())) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_RETAIL_MEMBER_REQUIRED_CODE,
+                        ExceptionConstants.DEPOT_HEAD_RETAIL_MEMBER_REQUIRED_MSG);
+            }
+            BigDecimal totalPrice = depotHead.getTotalPrice() == null
+                    ? BigDecimal.ZERO : depotHead.getTotalPrice();
+            amountByMember.merge(depotHead.getOrganId(), totalPrice, BigDecimal::add);
+        }
+        for(Map.Entry<Long, BigDecimal> entry : amountByMember.entrySet()) {
+            if(entry.getValue().compareTo(BigDecimal.ZERO) > 0
+                    && supplierService.calculateAdvanceIn(entry.getKey()).compareTo(entry.getValue()) < 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_MEMBER_PAY_LACK_CODE,
+                        ExceptionConstants.DEPOT_HEAD_MEMBER_PAY_LACK_MSG);
+            }
+        }
+    }
+
+    private void refreshPrepaidMembers(Set<Long> memberIds) throws Exception {
+        for(Long memberId : memberIds) {
+            supplierService.updateAdvanceIn(memberId);
+        }
+    }
+
     private void refreshPrepaidBalanceAfterUpdate(DepotHead previousDepotHead, DepotHead depotHead) {
-        Set<Long> memberIds = new HashSet<>();
+        Set<Long> memberIds = new TreeSet<>();
         if (isPrepaidRetailBill(previousDepotHead) && previousDepotHead.getOrganId() != null) {
             memberIds.add(previousDepotHead.getOrganId());
         }

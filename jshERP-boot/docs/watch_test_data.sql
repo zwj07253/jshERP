@@ -140,6 +140,13 @@ SET btn_str = (COALESCE(NULLIF(btn_str, ''), '[]')::jsonb
 WHERE id = 107 AND type = 'RoleFunctions' AND key_id = '101' AND tenant_id = 100
   AND NOT (COALESCE(NULLIF(btn_str, ''), '[]')::jsonb @> '[{"funId":206}]'::jsonb);
 
+-- jsh 系统管理员需要收预付款的新增、审核、删除和反审核按钮权限。
+UPDATE jsh_user_business
+SET btn_str = (COALESCE(NULLIF(btn_str, ''), '[]')::jsonb
+    || '[{"funId":212,"btnStr":"1,2,3,7"}]'::jsonb)::text
+WHERE id = 107 AND type = 'RoleFunctions' AND key_id = '101' AND tenant_id = 100
+  AND NOT (COALESCE(NULLIF(btn_str, ''), '[]')::jsonb @> '[{"funId":212}]'::jsonb);
+
 -- ============================================
 -- 7. Persons
 -- ============================================
@@ -908,15 +915,17 @@ SET advance_in =
         FROM jsh_account_head ah
         WHERE ah.organ_id = s.id
           AND ah.type = '收预付款'
+          AND ah.status = '1'
           AND COALESCE(ah.delete_flag, '0') != '1'
     ), 0)
     - COALESCE((
         SELECT SUM(dh.total_price)
         FROM jsh_depot_head dh
         WHERE dh.organ_id = s.id
-          AND dh.type = '出库'
-          AND dh.sub_type = '零售'
+          AND ((dh.type = '出库' AND dh.sub_type = '零售')
+               OR (dh.type = '入库' AND dh.sub_type = '零售退货'))
           AND dh.pay_type = '预付款'
+          AND dh.status = '1'
           AND COALESCE(dh.delete_flag, '0') != '1'
     ), 0)
 WHERE s.tenant_id = 100

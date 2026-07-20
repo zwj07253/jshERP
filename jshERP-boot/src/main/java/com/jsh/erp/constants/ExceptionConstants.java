@@ -849,6 +849,18 @@ public class ExceptionConstants {
 
     public static final int ACCOUNT_HEAD_GIRO_ACCOUNT_FAILED_CODE = 9500029;
     public static final String ACCOUNT_HEAD_GIRO_ACCOUNT_FAILED_MSG = "抱歉，转出账户不存在或已停用";
+
+    public static final int ACCOUNT_HEAD_ADVANCE_IN_AMOUNT_FAILED_CODE = 9500030;
+    public static final String ACCOUNT_HEAD_ADVANCE_IN_AMOUNT_FAILED_MSG = "抱歉，收预付款金额必须大于零，且主表金额必须等于明细合计";
+
+    public static final int ACCOUNT_HEAD_ADVANCE_IN_DETAIL_FAILED_CODE = 9500031;
+    public static final String ACCOUNT_HEAD_ADVANCE_IN_DETAIL_FAILED_MSG = "抱歉，收预付款明细中的账户或关联字段不合法";
+
+    public static final int ACCOUNT_HEAD_ADVANCE_IN_ORGAN_FAILED_CODE = 9500032;
+    public static final String ACCOUNT_HEAD_ADVANCE_IN_ORGAN_FAILED_MSG = "抱歉，付款会员不存在、已停用或类型不正确";
+
+    public static final int ACCOUNT_HEAD_ADVANCE_IN_ACCOUNT_FAILED_CODE = 9500033;
+    public static final String ACCOUNT_HEAD_ADVANCE_IN_ACCOUNT_FAILED_MSG = "抱歉，收预付款账户不存在或已停用";
     /**
      *  财务明细信息
      * type = 100

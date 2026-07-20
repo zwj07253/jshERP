@@ -287,14 +287,17 @@ public class SupplierService {
      * @param supplierId
      */
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
-    public void updateAdvanceIn(Long supplierId) {
-        try{
-            Supplier supplier = new Supplier();
-            supplier.setId(supplierId);
-            supplier.setAdvanceIn(calculateAdvanceIn(supplierId));
-            supplierMapper.updateByPrimaryKeySelective(supplier);
-        } catch (Exception e){
-            JshException.writeFail(logger, e);
+    public void updateAdvanceIn(Long supplierId) throws Exception {
+        if(lockSupplier(supplierId) == null) {
+            throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_EDIT_FAILED_CODE,
+                    ExceptionConstants.SUPPLIER_EDIT_FAILED_MSG);
+        }
+        Supplier supplier = new Supplier();
+        supplier.setId(supplierId);
+        supplier.setAdvanceIn(calculateAdvanceIn(supplierId));
+        if(supplierMapper.updateByPrimaryKeySelective(supplier) != 1) {
+            throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_EDIT_FAILED_CODE,
+                    ExceptionConstants.SUPPLIER_EDIT_FAILED_MSG);
         }
     }
 
@@ -715,8 +718,17 @@ public class SupplierService {
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetAdvanceIn(String ids) throws Exception {
         int res = 0;
-        List<Long> idList = StringUtil.strToLongList(ids);
-        for(Long sId: idList) {
+        Set<Long> idSet = new TreeSet<>(StringUtil.strToLongList(ids));
+        for(Long sId: idSet) {
+            Supplier supplier = lockSupplier(sId);
+            if(supplier == null || !"会员".equals(supplier.getType())
+                    || !Boolean.TRUE.equals(supplier.getEnabled())
+                    || BusinessConstants.DELETE_FLAG_DELETED.equals(supplier.getDeleteFlag())) {
+                throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ADVANCE_IN_ORGAN_FAILED_CODE,
+                        ExceptionConstants.ACCOUNT_HEAD_ADVANCE_IN_ORGAN_FAILED_MSG);
+            }
+        }
+        for(Long sId: idSet) {
             updateAdvanceIn(sId);
             res = 1;
         }

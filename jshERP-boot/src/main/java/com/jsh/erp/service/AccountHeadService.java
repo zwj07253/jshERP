@@ -34,6 +34,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import static com.jsh.erp.utils.Tools.getCenternTime;
 
@@ -348,7 +349,9 @@ public class AccountHeadService {
 
     private String validateFinancialBill(AccountHead accountHead, String rows, Long excludeHeadId) throws Exception {
         validateIncomeExpenseBill(accountHead, rows);
-        if(BusinessConstants.TYPE_MONEY_IN.equals(accountHead.getType())) {
+        if(BusinessConstants.TYPE_ADVANCE_IN.equals(accountHead.getType())) {
+            return validateAdvanceInBill(accountHead, rows);
+        } else if(BusinessConstants.TYPE_MONEY_IN.equals(accountHead.getType())) {
             return validateMoneyInBill(accountHead, rows, excludeHeadId);
         } else if(BusinessConstants.TYPE_MONEY_OUT.equals(accountHead.getType())) {
             return validateMoneyOutBill(accountHead, rows, excludeHeadId);
@@ -356,6 +359,72 @@ public class AccountHeadService {
             return validateGiroBill(accountHead, rows);
         }
         return rows;
+    }
+
+    private String validateAdvanceInBill(AccountHead accountHead, String rows) throws Exception {
+        if(StringUtil.isEmpty(accountHead.getBillNo()) || accountHead.getBillTime() == null) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ADVANCE_IN_DETAIL_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_HEAD_ADVANCE_IN_DETAIL_FAILED_MSG);
+        }
+        Supplier member = accountHead.getOrganId() == null
+                ? null : supplierService.getSupplier(accountHead.getOrganId());
+        if(member == null || !"会员".equals(member.getType())
+                || !Boolean.TRUE.equals(member.getEnabled())
+                || BusinessConstants.DELETE_FLAG_DELETED.equals(member.getDeleteFlag())) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ADVANCE_IN_ORGAN_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_HEAD_ADVANCE_IN_ORGAN_FAILED_MSG);
+        }
+        if(accountHead.getAccountId() != null) {
+            Account headAccount = accountMapper.selectByPrimaryKey(accountHead.getAccountId());
+            if(headAccount == null || !Boolean.TRUE.equals(headAccount.getEnabled())
+                    || BusinessConstants.DELETE_FLAG_DELETED.equals(headAccount.getDeleteFlag())) {
+                throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ADVANCE_IN_ACCOUNT_FAILED_CODE,
+                        ExceptionConstants.ACCOUNT_HEAD_ADVANCE_IN_ACCOUNT_FAILED_MSG);
+            }
+        }
+        JSONArray rowArray;
+        try {
+            rowArray = JSONArray.parseArray(rows);
+        } catch (Exception e) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ADVANCE_IN_DETAIL_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_HEAD_ADVANCE_IN_DETAIL_FAILED_MSG);
+        }
+        if(rowArray == null || rowArray.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ROW_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_HEAD_ROW_FAILED_MSG);
+        }
+        BigDecimal detailTotal = BigDecimal.ZERO;
+        for(Object rowValue : rowArray) {
+            JSONObject row = JSONObject.parseObject(rowValue.toString());
+            Long accountId = row.getLong("accountId");
+            Account account = accountId == null ? null : accountMapper.selectByPrimaryKey(accountId);
+            BigDecimal eachAmount = row.getBigDecimal("eachAmount");
+            if(account == null || !Boolean.TRUE.equals(account.getEnabled())
+                    || BusinessConstants.DELETE_FLAG_DELETED.equals(account.getDeleteFlag())) {
+                throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ADVANCE_IN_ACCOUNT_FAILED_CODE,
+                        ExceptionConstants.ACCOUNT_HEAD_ADVANCE_IN_ACCOUNT_FAILED_MSG);
+            }
+            if(eachAmount == null || eachAmount.compareTo(BigDecimal.ZERO) <= 0
+                    || hasValue(row, "inOutItemId") || hasValue(row, "billId")
+                    || hasValue(row, "billNumber") || hasValue(row, "needDebt")
+                    || hasValue(row, "finishDebt")) {
+                throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ADVANCE_IN_DETAIL_FAILED_CODE,
+                        ExceptionConstants.ACCOUNT_HEAD_ADVANCE_IN_DETAIL_FAILED_MSG);
+            }
+            detailTotal = detailTotal.add(eachAmount);
+        }
+        BigDecimal totalPrice = accountHead.getTotalPrice();
+        BigDecimal changeAmount = accountHead.getChangeAmount();
+        BigDecimal discountMoney = accountHead.getDiscountMoney();
+        if(totalPrice == null || changeAmount == null
+                || totalPrice.compareTo(BigDecimal.ZERO) <= 0
+                || changeAmount.compareTo(BigDecimal.ZERO) <= 0
+                || (discountMoney != null && discountMoney.compareTo(BigDecimal.ZERO) != 0)
+                || !sameMoney(totalPrice, detailTotal) || !sameMoney(changeAmount, detailTotal)) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ADVANCE_IN_AMOUNT_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_HEAD_ADVANCE_IN_AMOUNT_FAILED_MSG);
+        }
+        return rowArray.toJSONString();
     }
 
     private String validateGiroBill(AccountHead accountHead, String rows) throws Exception {
@@ -654,6 +723,7 @@ public class AccountHeadService {
     private void validatePersistedFinancialBill(AccountHead accountHead) throws Exception {
         if(!BusinessConstants.TYPE_INCOME.equals(accountHead.getType())
                 && !BusinessConstants.TYPE_EXPENSE.equals(accountHead.getType())
+                && !BusinessConstants.TYPE_ADVANCE_IN.equals(accountHead.getType())
                 && !BusinessConstants.TYPE_MONEY_IN.equals(accountHead.getType())
                 && !BusinessConstants.TYPE_MONEY_OUT.equals(accountHead.getType())
                 && !BusinessConstants.TYPE_GIRO.equals(accountHead.getType())) {
@@ -691,6 +761,26 @@ public class AccountHeadService {
             }
         }
         validateFinancialBill(accountHead, rows.toJSONString(), accountHead.getId());
+    }
+
+    private Set<Long> lockAdvanceInMembers(List<AccountHead> accountHeads) {
+        Set<Long> memberIds = new TreeSet<>();
+        for(AccountHead accountHead : accountHeads) {
+            if(accountHead != null && BusinessConstants.TYPE_ADVANCE_IN.equals(accountHead.getType())
+                    && accountHead.getOrganId() != null) {
+                memberIds.add(accountHead.getOrganId());
+            }
+        }
+        for(Long memberId : memberIds) {
+            supplierService.lockSupplier(memberId);
+        }
+        return memberIds;
+    }
+
+    private void refreshAdvanceInMembers(Set<Long> memberIds) throws Exception {
+        for(Long memberId : memberIds) {
+            supplierService.updateAdvanceIn(memberId);
+        }
     }
 
     private boolean hasValue(JSONObject row, String key) {
@@ -754,6 +844,7 @@ public class AccountHeadService {
             throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_DATA_PERMISSION_CODE,
                     ExceptionConstants.ACCOUNT_HEAD_DATA_PERMISSION_MSG);
         }
+        Set<Long> advanceInMemberIds = lockAdvanceInMembers(list);
         for(AccountHead accountHead: list){
             checkAccountHeadReadPermission(accountHead);
             checkAccountHeadButtonPermission(accountHead.getType(), "1", "删除");
@@ -779,13 +870,8 @@ public class AccountHeadService {
             if(StringUtil.isNotEmpty(accountHead.getFileName())) {
                 pathList.add(accountHead.getFileName());
             }
-            if("收预付款".equals(accountHead.getType())){
-                if (accountHead.getOrganId() != null) {
-                    //更新会员预付款
-                    supplierService.updateAdvanceIn(accountHead.getOrganId());
-                }
-            }
         }
+        refreshAdvanceInMembers(advanceInMemberIds);
         //逻辑删除文件
         systemConfigService.deleteFileByPathList(pathList);
         accountItemService.refreshLastDebtByBillIds(affectedBillIds);
@@ -824,8 +910,12 @@ public class AccountHeadService {
         List<Long> ahIds = new ArrayList<>();
         List<String> noList = new ArrayList<>();
         List<Long> ids = StringUtil.strToLongList(accountHeadIds);
-        for(Long id: ids) {
-            AccountHead accountHead = getAccountHead(id);
+        List<AccountHead> accountHeads = new ArrayList<>();
+        for(Long id : ids) {
+            accountHeads.add(getAccountHead(id));
+        }
+        Set<Long> advanceInMemberIds = lockAdvanceInMembers(accountHeads);
+        for(AccountHead accountHead: accountHeads) {
             if(accountHead == null || BusinessConstants.DELETE_FLAG_DELETED.equals(accountHead.getDeleteFlag())) {
                 throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_DATA_PERMISSION_CODE,
                         ExceptionConstants.ACCOUNT_HEAD_DATA_PERMISSION_MSG);
@@ -835,7 +925,7 @@ public class AccountHeadService {
                 checkAccountHeadButtonPermission(accountHead.getType(), "7", "反审核");
                 //进行反审核操作
                 if("1".equals(accountHead.getStatus())) {
-                    ahIds.add(id);
+                    ahIds.add(accountHead.getId());
                     noList.add(accountHead.getBillNo());
                 } else {
                     throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_AUDIT_TO_UN_AUDIT_FAILED_CODE,
@@ -846,7 +936,7 @@ public class AccountHeadService {
                 //进行审核操作
                 if("0".equals(accountHead.getStatus())) {
                     validatePersistedFinancialBill(accountHead);
-                    ahIds.add(id);
+                    ahIds.add(accountHead.getId());
                     noList.add(accountHead.getBillNo());
                 } else {
                     throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_UN_AUDIT_TO_AUDIT_FAILED_CODE,
@@ -869,6 +959,7 @@ public class AccountHeadService {
                 throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_STATUS_FAILED_CODE,
                         ExceptionConstants.ACCOUNT_HEAD_STATUS_FAILED_MSG);
             }
+            refreshAdvanceInMembers(advanceInMemberIds);
             accountItemService.refreshLastDebtByBillIds(affectedBillIds);
             //记录日志
             if(!noList.isEmpty() && ("0".equals(status) || "1".equals(status))) {
@@ -893,6 +984,7 @@ public class AccountHeadService {
         if(BusinessConstants.BILLS_STATUS_AUDIT.equals(accountHead.getStatus())) {
             checkAccountHeadButtonPermission(accountHead.getType(), "2", "审核");
         }
+        Set<Long> advanceInMemberIds = lockAdvanceInMembers(Arrays.asList(accountHead));
         rows = validateFinancialBill(accountHead, rows, null);
         //校验单号是否重复
         if(checkIsBillNoExist(0L, accountHead.getBillNo())>0) {
@@ -917,10 +1009,7 @@ public class AccountHeadService {
             /**处理单据子表信息*/
             accountItemService.saveDetials(rows, headId, type, request);
         }
-        if("收预付款".equals(accountHead.getType())){
-            //更新会员预付款
-            supplierService.updateAdvanceIn(accountHead.getOrganId());
-        }
+        refreshAdvanceInMembers(advanceInMemberIds);
         String statusStr = accountHead.getStatus().equals("1")?"[审核]":"";
         logService.insertLog("财务单据",
                 new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_ADD).append(accountHead.getBillNo()).append(statusStr).toString(), request);
@@ -956,6 +1045,7 @@ public class AccountHeadService {
             checkAccountHeadButtonPermission(previousAccountHead.getType(), "2", "审核");
         }
         accountHead.setCreator(previousAccountHead.getCreator());
+        Set<Long> advanceInMemberIds = lockAdvanceInMembers(Arrays.asList(previousAccountHead, accountHead));
         rows = validateFinancialBill(accountHead, rows, previousAccountHead.getId());
         //校验单号是否重复
         if(checkIsBillNoExist(accountHead.getId(), accountHead.getBillNo())>0) {
@@ -979,10 +1069,7 @@ public class AccountHeadService {
         }
         /**处理单据子表信息*/
         accountItemService.saveDetials(rows, previousAccountHead.getId(), previousAccountHead.getType(), request);
-        if("收预付款".equals(accountHead.getType())){
-            //更新会员预付款
-            supplierService.updateAdvanceIn(accountHead.getOrganId());
-        }
+        refreshAdvanceInMembers(advanceInMemberIds);
         String statusStr = accountHead.getStatus().equals("1")?"[审核]":"";
         logService.insertLog("财务单据",
                 new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_EDIT).append(accountHead.getBillNo()).append(statusStr).toString(), request);
