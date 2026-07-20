@@ -595,12 +595,15 @@ public class DepotItemController {
                                   @RequestParam(value = "organizationId", required = false) Long organizationId,
                                   @RequestParam("materialParam") String materialParam,
                                   @RequestParam(value = "mpList",required = false) String mpList,
+                                  @RequestParam(value = "column", required = false) String column,
+                                  @RequestParam(value = "order", required = false) String order,
                                   HttpServletRequest request)throws Exception {
         BaseResponseInfo res = new BaseResponseInfo();
         Map<String, Object> map = new HashMap<String, Object>();
         beginTime = Tools.parseDayToTime(beginTime, BusinessConstants.DAY_FIRST_TIME);
         endTime = Tools.parseDayToTime(endTime,BusinessConstants.DAY_LAST_TIME);
         try {
+            depotItemService.checkBuyReportPermission();
             String [] creatorArray = depotHeadService.getCreatorArray();
             if(creatorArray == null && organizationId != null) {
                 creatorArray = depotHeadService.getCreatorArrayByOrg(organizationId);
@@ -612,8 +615,13 @@ public class DepotItemController {
             }
             List<Long> depotList = depotService.parseDepotList(depotId);
             Boolean forceFlag = systemConfigService.getForceApprovalFlag();
-            List<DepotItemVo4WithInfoEx> dataList = depotItemService.getListWithBuyOrSale(StringUtil.toNull(materialParam),
-                    "buy", beginTime, endTime, creatorArray, organId, organArray, categoryList, depotList, forceFlag, (currentPage-1)*pageSize, pageSize);
+            Long userId = userService.getUserId(request);
+            String priceLimit = userService.getRoleTypeByUserId(userId).getPriceLimit();
+            int safeCurrentPage = Math.max(currentPage, 1);
+            int safePageSize = Math.min(Math.max(pageSize, 1), 10000);
+            List<DepotItemVo4WithInfoEx> dataList = depotItemService.getBuyInSummary(StringUtil.toNull(materialParam),
+                    beginTime, endTime, creatorArray, organId, organArray, categoryList, depotList, forceFlag,
+                    column, order, (safeCurrentPage-1)*safePageSize, safePageSize);
             int total = depotItemService.getListWithBuyOrSaleCount(StringUtil.toNull(materialParam),
                     "buy", beginTime, endTime, creatorArray, organId, organArray, categoryList, depotList, forceFlag);
             map.put("total", total);
@@ -622,11 +630,10 @@ public class DepotItemController {
             if (null != dataList) {
                 for (DepotItemVo4WithInfoEx diEx : dataList) {
                     JSONObject item = new JSONObject();
-                    BigDecimal InSum = depotItemService.buyOrSale("入库", "采购", diEx.getMaterialExtendId(), beginTime, endTime, creatorArray, organId, organArray, depotList, forceFlag, "number");
-                    BigDecimal OutSum = depotItemService.buyOrSale("出库", "采购退货", diEx.getMaterialExtendId(), beginTime, endTime, creatorArray, organId, organArray, depotList, forceFlag, "number");
-                    BigDecimal InSumPrice = depotItemService.buyOrSale("入库", "采购", diEx.getMaterialExtendId(), beginTime, endTime, creatorArray, organId, organArray, depotList, forceFlag, "price");
-                    BigDecimal OutSumPrice = depotItemService.buyOrSale("出库", "采购退货", diEx.getMaterialExtendId(), beginTime, endTime, creatorArray, organId, organArray, depotList, forceFlag, "price");
-                    BigDecimal InOutSumPrice = InSumPrice.subtract(OutSumPrice);
+                    BigDecimal inSumPrice = roleService.parseBillPriceByLimit(diEx.getInSumPrice(), "buy", priceLimit, request);
+                    BigDecimal outSumPrice = roleService.parseBillPriceByLimit(diEx.getOutSumPrice(), "buy", priceLimit, request);
+                    BigDecimal inOutSumPrice = roleService.parseBillPriceByLimit(diEx.getOutInSumPrice(), "buy", priceLimit, request);
+                    item.put("id", diEx.getMaterialExtendId());
                     item.put("barCode", diEx.getBarCode());
                     item.put("materialName", diEx.getMName());
                     item.put("materialModel", diEx.getMModel());
@@ -640,11 +647,11 @@ public class DepotItemController {
                     item.put("materialMfrs", diEx.getMMfrs());
                     item.put("materialUnit", diEx.getMaterialUnit());
                     item.put("unitName", diEx.getUnitName());
-                    item.put("inSum", InSum);
-                    item.put("outSum", OutSum);
-                    item.put("inSumPrice", InSumPrice);
-                    item.put("outSumPrice", OutSumPrice);
-                    item.put("inOutSumPrice",InOutSumPrice);//实际采购金额
+                    item.put("inSum", diEx.getInSum());
+                    item.put("outSum", diEx.getOutSum());
+                    item.put("inSumPrice", inSumPrice);
+                    item.put("outSumPrice", outSumPrice);
+                    item.put("inOutSumPrice",inOutSumPrice);//实际采购金额
                     dataArray.add(item);
                 }
             }
@@ -653,10 +660,14 @@ public class DepotItemController {
             BigDecimal outSumPriceTotal = depotItemService.buyOrSalePriceTotal("出库", "采购退货", StringUtil.toNull(materialParam),
                     beginTime, endTime, creatorArray, organId, organArray, categoryList, depotList, forceFlag);
             BigDecimal realityPriceTotal = inSumPriceTotal.subtract(outSumPriceTotal);
+            realityPriceTotal = roleService.parseBillPriceByLimit(realityPriceTotal, "buy", priceLimit, request);
             map.put("rows", dataArray);
             map.put("realityPriceTotal", realityPriceTotal);
             res.code = 200;
             res.data = map;
+        } catch (BusinessRunTimeException e) {
+            res.code = e.getCode();
+            res.data = e.getData().get("message");
         } catch(Exception e){
             logger.error(e.getMessage(), e);
             res.code = 500;

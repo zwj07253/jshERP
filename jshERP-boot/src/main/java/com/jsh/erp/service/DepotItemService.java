@@ -75,6 +75,15 @@ public class DepotItemService {
         }
     }
 
+    public void checkBuyReportPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if(!userService.hasFunctionPermission(userId, "/report/buy_in_report")) {
+            throw new BusinessRunTimeException(ExceptionConstants.BUY_REPORT_PERMISSION_CODE,
+                    ExceptionConstants.BUY_REPORT_PERMISSION_MSG);
+        }
+    }
+
     public DepotItem getDepotItem(long id)throws Exception {
         DepotItem result=null;
         try{
@@ -369,6 +378,14 @@ public class DepotItemService {
         return depotItemMapperEx.buyOrSalePriceTotal(type, subType, materialParam, beginTime, endTime,
                 creatorArray, organId, organArray, categoryList, depotList, forceFlag);
 
+    }
+
+    public List<DepotItemVo4WithInfoEx> getBuyInSummary(String materialParam, String beginTime, String endTime,
+                                                        String[] creatorArray, Long organId, String[] organArray,
+                                                        List<Long> categoryList, List<Long> depotList, Boolean forceFlag,
+                                                        String column, String order, Integer offset, Integer rows) throws Exception {
+        return depotItemMapperEx.getBuyInSummary(materialParam, beginTime, endTime, creatorArray, organId,
+                organArray, categoryList, depotList, forceFlag, column, order, offset, rows);
     }
 
     /**

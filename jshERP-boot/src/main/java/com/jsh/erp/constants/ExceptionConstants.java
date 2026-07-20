@@ -765,6 +765,9 @@ public class ExceptionConstants {
     //零售统计-无查看权限
     public static final int RETAIL_REPORT_PERMISSION_CODE = 9000008;
     public static final String RETAIL_REPORT_PERMISSION_MSG = "抱歉，当前用户没有零售统计的查看权限";
+    //采购统计-无查看权限
+    public static final int BUY_REPORT_PERMISSION_CODE = 9000009;
+    public static final String BUY_REPORT_PERMISSION_MSG = "抱歉，当前用户没有采购统计的查看权限";
 
     /**
      *  财务信息

@@ -106,6 +106,21 @@ public interface DepotItemMapperEx {
             @Param("offset") Integer offset,
             @Param("rows") Integer rows);
 
+    List<DepotItemVo4WithInfoEx> getBuyInSummary(
+            @Param("materialParam") String materialParam,
+            @Param("beginTime") String beginTime,
+            @Param("endTime") String endTime,
+            @Param("creatorArray") String[] creatorArray,
+            @Param("organId") Long organId,
+            @Param("organArray") String[] organArray,
+            @Param("categoryList") List<Long> categoryList,
+            @Param("depotList") List<Long> depotList,
+            @Param("forceFlag") Boolean forceFlag,
+            @Param("column") String column,
+            @Param("order") String order,
+            @Param("offset") Integer offset,
+            @Param("rows") Integer rows);
+
     List<DepotItemVo4WithInfoEx> getSaleOutSummary(
             @Param("materialParam") String materialParam,
             @Param("beginTime") String beginTime,
