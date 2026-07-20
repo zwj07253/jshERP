@@ -871,6 +871,11 @@ public class DepotHeadService {
         if(BusinessConstants.BILLS_STATUS_AUDIT.equals(status)) {
             validatePrepaidBillsBeforeAudit(prepaidAuditBills);
         }
+        List<DepotHead> allStockChangeHeads = new ArrayList<>();
+        allStockChangeHeads.addAll(stockCheckHeadList);
+        allStockChangeHeads.addAll(assembleStockCheckHeadList);
+        allStockChangeHeads.addAll(disassembleStockCheckHeadList);
+        depotItemService.lockMaterialsForStockChange(allStockChangeHeads);
         if (!stockCheckHeadList.isEmpty()) {
             depotItemService.checkMaterialStock(stockCheckHeadList);
         }
@@ -4299,7 +4304,7 @@ public class DepotHeadService {
         }
     }
 
-    private void refreshPrepaidBalanceAfterUpdate(DepotHead previousDepotHead, DepotHead depotHead) {
+    private void refreshPrepaidBalanceAfterUpdate(DepotHead previousDepotHead, DepotHead depotHead) throws Exception {
         Set<Long> memberIds = new TreeSet<>();
         if (isPrepaidRetailBill(previousDepotHead) && previousDepotHead.getOrganId() != null) {
             memberIds.add(previousDepotHead.getOrganId());

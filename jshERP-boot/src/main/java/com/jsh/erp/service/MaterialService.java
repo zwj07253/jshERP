@@ -164,6 +164,7 @@ public class MaterialService {
         //构造多属性数组字符串
         m.setAttribute(parseAttributeBySku(obj));
         try{
+            validateInitialStock(obj, m);
             materialMapperEx.insertSelectiveEx(m);
             Long mId = m.getId();
             materialExtendService.saveDetials(obj, obj.getString("sortList"), mId, "insert");
@@ -208,6 +209,7 @@ public class MaterialService {
         //构造多属性数组字符串
         material.setAttribute(parseAttributeBySku(obj));
         try{
+            validateInitialStock(obj, material);
             materialMapper.updateByPrimaryKeySelective(material);
             if(material.getUnitId() == null) {
                 materialMapperEx.setUnitIdToNull(material.getId());
@@ -247,10 +249,61 @@ public class MaterialService {
             logService.insertLog("商品",
                     new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_EDIT).append(material.getName()).toString(), request);
             return 1;
+        }catch(BusinessRunTimeException e) {
+            throw e;
         }catch(Exception e){
             JshException.writeFail(logger, e);
             return 0;
         }
+    }
+
+    private void validateInitialStock(JSONObject obj, Material material) throws Exception {
+        JSONArray stockArr = obj.getJSONArray("stock");
+        if (stockArr == null) {
+            return;
+        }
+        Material existing = material.getId() == null ? null : materialMapper.selectByPrimaryKey(material.getId());
+        String serialFlag = material.getEnableSerialNumber() != null ? material.getEnableSerialNumber()
+                : existing == null ? null : existing.getEnableSerialNumber();
+        String batchFlag = material.getEnableBatchNumber() != null ? material.getEnableBatchNumber()
+                : existing == null ? null : existing.getEnableBatchNumber();
+        List<String> depotIds = new ArrayList<>();
+        Set<Long> uniqueDepotIds = new HashSet<>();
+        JSONArray manySku = obj.getJSONArray("manySku");
+        boolean hasSku = manySku != null && !manySku.isEmpty();
+        if (!hasSku && manySku == null && existing != null && StringUtil.isNotEmpty(existing.getAttribute())) {
+            JSONArray existingSku = JSONObject.parseObject(existing.getAttribute()).getJSONArray("manySku");
+            hasSku = existingSku != null && !existingSku.isEmpty();
+        }
+        boolean managedStock = hasSku || "1".equals(serialFlag) || "1".equals(batchFlag);
+        for (int i = 0; i < stockArr.size(); i++) {
+            JSONObject stock = stockArr.getJSONObject(i);
+            Long depotId = stock.getLong("id");
+            if (depotId == null || !uniqueDepotIds.add(depotId)) {
+                throw invalidInitialStock("仓库不能为空且不能重复");
+            }
+            depotIds.add(String.valueOf(depotId));
+            BigDecimal initial = stock.getBigDecimal("initStock");
+            BigDecimal low = stock.getBigDecimal("lowSafeStock");
+            BigDecimal high = stock.getBigDecimal("highSafeStock");
+            if ((initial != null && initial.compareTo(BigDecimal.ZERO) < 0)
+                    || (low != null && low.compareTo(BigDecimal.ZERO) < 0)
+                    || (high != null && high.compareTo(BigDecimal.ZERO) < 0)) {
+                throw invalidInitialStock("库存数量不能为负数");
+            }
+            if (low != null && high != null && low.compareTo(high) > 0) {
+                throw invalidInitialStock("最低安全库存不能大于最高安全库存");
+            }
+            if (managedStock && initial != null && initial.compareTo(BigDecimal.ZERO) != 0) {
+                throw invalidInitialStock("多属性、序列号或批次商品不能直接录入期初库存");
+            }
+        }
+        depotService.parseDepotListByArr(depotIds.toArray(new String[0]));
+    }
+
+    private BusinessRunTimeException invalidInitialStock(String reason) {
+        return new BusinessRunTimeException(ExceptionConstants.MATERIAL_INITIAL_STOCK_INVALID_CODE,
+                String.format(ExceptionConstants.MATERIAL_INITIAL_STOCK_INVALID_MSG, reason));
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
@@ -1444,7 +1497,8 @@ public class MaterialService {
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetMaterialCurrentStock(String ids, List<Depot> depotList) throws Exception {
         int res = 0;
-        List<Long> idList = StringUtil.strToLongList(ids);
+        SortedSet<Long> idList = new TreeSet<>(StringUtil.strToLongList(ids));
+        depotList.sort(Comparator.comparing(Depot::getId));
         for(Long mId: idList) {
             BigDecimal currentUnitPrice = materialCurrentStockMapperEx.getCurrentUnitPriceByMId(mId);
             for(Depot depot: depotList) {
@@ -1458,7 +1512,7 @@ public class MaterialService {
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetMaterialCurrentUnitPrice(String ids) throws Exception {
         int res = 0;
-        List<Long> idList = StringUtil.strToLongList(ids);
+        SortedSet<Long> idList = new TreeSet<>(StringUtil.strToLongList(ids));
         for(Long mId: idList) {
             DepotItem depotItem = new DepotItem();
             depotItem.setMaterialId(mId);

@@ -353,6 +353,8 @@ public class ExceptionConstants {
     public static final String MATERIAL_MODEL_OVER_MSG = "第%s行型号长度超出100个字符";
     //多属性商品不能输入库存，建议进行盘点录入
     public static final int MATERIAL_SKU_BEGIN_STOCK_FAILED_CODE = 8000025;
+    public static final int MATERIAL_INITIAL_STOCK_INVALID_CODE = 8000030;
+    public static final String MATERIAL_INITIAL_STOCK_INVALID_MSG = "商品期初库存设置不合法：%s";
     public static final String MATERIAL_SKU_BEGIN_STOCK_FAILED_MSG = "多属性商品%s不能输入库存，建议进行盘点录入";
     //商品条码不存在，请重新选择
     public static final int MATERIAL_BARCODE_IS_NOT_EXIST_CODE = 8000026;

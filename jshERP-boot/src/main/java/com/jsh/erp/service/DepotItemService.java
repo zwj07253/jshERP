@@ -295,20 +295,20 @@ public class DepotItemService {
         return list;
     }
 
-    public List<DepotItemVo4WithInfoEx> getInOutStock(String materialParam, List<Long> categoryIdList, String endTime, Integer offset, Integer rows)throws Exception {
+    public List<DepotItemVo4WithInfoEx> getInOutStock(String materialParam, List<Long> categoryIdList, List<Long> depotList, String endTime, Integer offset, Integer rows)throws Exception {
         List<DepotItemVo4WithInfoEx> list =null;
         try{
-            list = depotItemMapperEx.getInOutStock(materialParam, categoryIdList, endTime, offset, rows);
+            list = depotItemMapperEx.getInOutStock(materialParam, categoryIdList, depotList, endTime, offset, rows);
         }catch(Exception e){
             JshException.readFail(logger, e);
         }
         return list;
     }
 
-    public int getInOutStockCount(String materialParam, List<Long> categoryIdList, String endTime)throws Exception {
+    public int getInOutStockCount(String materialParam, List<Long> categoryIdList, List<Long> depotList, String endTime)throws Exception {
         int result=0;
         try{
-            result = depotItemMapperEx.getInOutStockCount(materialParam, categoryIdList, endTime);
+            result = depotItemMapperEx.getInOutStockCount(materialParam, categoryIdList, depotList, endTime);
         }catch(Exception e){
             JshException.readFail(logger, e);
         }
@@ -439,6 +439,7 @@ public class DepotItemService {
             List<DepotItem> depotItemList = new ArrayList<>();
             Map<String, BigDecimal> outboundQuantityMap = new HashMap<>();
             Set<String> lockedStockKeys = new HashSet<>();
+            lockMaterialsByRows(rowArr, lockedStockKeys);
             for (int i = 0; i < rowArr.size(); i++) {
                 DepotItem depotItem = new DepotItem();
                 JSONObject rowObj = JSONObject.parseObject(rowArr.getString(i));
@@ -1246,6 +1247,7 @@ public class DepotItemService {
      */
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public void updateCurrentUnitPrice(DepotItem depotItem) throws Exception {
+        materialMapperEx.lockById(depotItem.getMaterialId());
         Boolean forceFlag = systemConfigService.getForceApprovalFlag();
         //此处给出入库管理的传值默认为false，不然会导致查询不到销售相关的单据
         Boolean inOutManageFlag = false;
@@ -1347,6 +1349,8 @@ public class DepotItemService {
      */
     public void updateCurrentStockFun(Long mId, Long dId, BigDecimal currentUnitPrice) throws Exception {
         if(mId!=null && dId!=null) {
+            // Serialize the stock snapshot rebuild and the select/insert pair.
+            materialMapperEx.lockById(mId);
             MaterialCurrentStockExample example = new MaterialCurrentStockExample();
             example.createCriteria().andMaterialIdEqualTo(mId).andDepotIdEqualTo(dId)
                     .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
@@ -1509,14 +1513,16 @@ public class DepotItemService {
         List<DepotItemVoBatchNumberList> list =  depotItemMapperEx.getBatchNumberList(null, null,
                 depotId, barCode, batchNumber, forceFlag, inOutManageFlag);
         if(list!=null && list.size()>0) {
-            DepotItemVoBatchNumberList bn = list.get(0);
-            totalNum = bn.getTotalNum();
-            if(bn.getTotalNum()!=null && bn.getTotalNum().compareTo(BigDecimal.ZERO)>0) {
+            for (DepotItemVoBatchNumberList bn : list) {
+                BigDecimal rowTotal = bn.getTotalNum() == null ? BigDecimal.ZERO : bn.getTotalNum();
+                if(rowTotal.compareTo(BigDecimal.ZERO)>0) {
                 if(bn.getUnitId()!=null) {
                     Unit unit = unitService.getUnit(bn.getUnitId());
                     String commodityUnit = bn.getCommodityUnit();
-                    totalNum = unitService.parseStockByUnit(bn.getTotalNum(), unit, commodityUnit);
+                        rowTotal = unitService.parseStockByUnit(rowTotal, unit, commodityUnit);
+                    }
                 }
+                totalNum = totalNum.add(rowTotal);
             }
         }
         return totalNum;
@@ -1960,6 +1966,36 @@ public class DepotItemService {
         for (DepotHead depotHead : depotHeadList) {
             List<DepotItem> depotItemList = getListByHeaderId(depotHead.getId());
             checkMaterialStock(depotHead.getNumber(), depotItemList, outboundQuantityMap, lockedStockKeys);
+        }
+    }
+
+    /** Lock every material in deterministic order before a multi-bill stock change. */
+    public void lockMaterialsForStockChange(Collection<DepotHead> depotHeads) throws Exception {
+        SortedSet<Long> materialIds = new TreeSet<>();
+        for (DepotHead depotHead : depotHeads) {
+            for (DepotItem depotItem : getListByHeaderId(depotHead.getId())) {
+                if (depotItem.getMaterialId() != null) {
+                    materialIds.add(depotItem.getMaterialId());
+                }
+            }
+        }
+        for (Long materialId : materialIds) {
+            materialMapperEx.lockById(materialId);
+        }
+    }
+
+    private void lockMaterialsByRows(JSONArray rowArr, Set<String> lockedStockKeys) throws Exception {
+        SortedSet<Long> materialIds = new TreeSet<>();
+        for (int i = 0; i < rowArr.size(); i++) {
+            JSONObject row = JSONObject.parseObject(rowArr.getString(i));
+            MaterialExtend extend = materialExtendService.getInfoByBarCode(row.getString("barCode"));
+            if (extend != null && extend.getMaterialId() != null) {
+                materialIds.add(extend.getMaterialId());
+            }
+        }
+        for (Long materialId : materialIds) {
+            materialMapperEx.lockById(materialId);
+            lockedStockKeys.add(String.valueOf(materialId));
         }
     }
 

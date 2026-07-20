@@ -66,6 +66,7 @@ public interface DepotItemMapperEx {
     List<DepotItemVo4WithInfoEx> getInOutStock(
             @Param("materialParam") String materialParam,
             @Param("categoryIdList") List<Long> categoryIdList,
+            @Param("depotList") List<Long> depotList,
             @Param("endTime") String endTime,
             @Param("offset") Integer offset,
             @Param("rows") Integer rows);
@@ -73,6 +74,7 @@ public interface DepotItemMapperEx {
     int getInOutStockCount(
             @Param("materialParam") String materialParam,
             @Param("categoryIdList") List<Long> categoryIdList,
+            @Param("depotList") List<Long> depotList,
             @Param("endTime") String endTime);
 
     List<DepotItemVo4WithInfoEx> getListWithBuyOrSale(

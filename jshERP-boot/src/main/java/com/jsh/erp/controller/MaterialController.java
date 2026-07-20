@@ -22,6 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -753,19 +754,22 @@ public class MaterialController extends BaseController {
         Map<String, Object> map = new HashMap<>();
         try {
             List<Long> idList = new ArrayList<>();
-            List<Long> depotList = new ArrayList<>();
+            List<Long> depotList;
             if(categoryId != null){
                 idList = materialService.getListByParentId(categoryId);
             }
-            if(StringUtil.isNotEmpty(depotIds)) {
-                depotList = StringUtil.strToLongList(depotIds);
-            } else {
-                //未选择仓库时默认为当前用户有权限的仓库
-                JSONArray depotArr = depotService.findDepotByCurrentUser();
-                for(Object obj: depotArr) {
-                    JSONObject object = JSONObject.parseObject(obj.toString());
-                    depotList.add(object.getLong("id"));
-                }
+            String[] depotIdArr = StringUtil.isNotEmpty(depotIds) ? depotIds.split(",") : null;
+            depotList = depotService.parseDepotListByArr(depotIdArr);
+            if (depotList.contains(-1L)) {
+                map.put("total", 0);
+                map.put("currentStock", BigDecimal.ZERO);
+                map.put("currentStockPrice", BigDecimal.ZERO);
+                map.put("currentWeight", BigDecimal.ZERO);
+                map.put("showStockPrice", false);
+                map.put("rows", Collections.emptyList());
+                res.code = 200;
+                res.data = map;
+                return res;
             }
             Long userId = userService.getUserId(request);
             String priceLimit = userService.getRoleTypeByUserId(userId).getPriceLimit();
@@ -813,7 +817,15 @@ public class MaterialController extends BaseController {
                                  HttpServletRequest request)throws Exception {
         String ids = jsonObject.getString("ids");
         Map<String, Object> objectMap = new HashMap<>();
-        List<Depot> depotList = depotService.getAllList();
+        List<Depot> depotList = new ArrayList<>();
+        for (Long depotId : depotService.parseDepotList(null)) {
+            if (depotId >= 0) {
+                Depot depot = depotService.getDepot(depotId);
+                if (depot != null) {
+                    depotList.add(depot);
+                }
+            }
+        }
         if(depotList.isEmpty()) {
             return returnJson(objectMap, "请先创建仓库后再操作", ErpInfo.WARING_MSG.code);
         }

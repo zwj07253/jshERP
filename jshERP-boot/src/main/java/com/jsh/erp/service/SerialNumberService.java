@@ -190,9 +190,24 @@ public class SerialNumberService {
      */
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public void sellSerialNumber(Long materialId, String outBillNo, String snList, User user) throws Exception{
+        if (materialId == null || StringUtil.isEmpty(snList)) {
+            throw new BusinessRunTimeException(ExceptionConstants.SERIAL_NUMBERE_NOT_EXISTS_CODE,
+                    String.format(ExceptionConstants.SERIAL_NUMBERE_NOT_EXISTS_MSG, ""));
+        }
+        // Serialize availability checks and allocation for the same material.
+        materialMapperEx.lockById(materialId);
         //将中文的逗号批量替换为英文逗号
         snList = snList.replaceAll("，",",");
-        String [] snArray=snList.split(",");
+        String[] submitted = snList.split(",");
+        LinkedHashSet<String> serialNumberSet = new LinkedHashSet<>();
+        for (String value : submitted) {
+            String serialNumber = value.trim();
+            if (StringUtil.isEmpty(serialNumber) || !serialNumberSet.add(serialNumber)) {
+                throw new BusinessRunTimeException(ExceptionConstants.SERIAL_NUMBERE_NOT_EXISTS_CODE,
+                        String.format(ExceptionConstants.SERIAL_NUMBERE_NOT_EXISTS_MSG, serialNumber));
+            }
+        }
+        String[] snArray = serialNumberSet.toArray(new String[0]);
         for (String sn : snArray) {
             int isNotSellCount = serialNumberMapperEx.getIsNotSellCountByParam(materialId, sn);
             if (isNotSellCount == 0) {
@@ -206,7 +221,15 @@ public class SerialNumberService {
         for (SerialNumber serialNumber : minList) {
             idList.add(serialNumber.getId());
         }
-        serialNumberMapperEx.sellSerialNumber(idList, outBillNo, new Date(), user == null ? null : user.getId());
+        if (idList.size() != snArray.length) {
+            throw new BusinessRunTimeException(ExceptionConstants.SERIAL_NUMBERE_NOT_EXISTS_CODE,
+                    String.format(ExceptionConstants.SERIAL_NUMBERE_NOT_EXISTS_MSG, ""));
+        }
+        int updated = serialNumberMapperEx.sellSerialNumber(idList, outBillNo, new Date(), user == null ? null : user.getId());
+        if (updated != idList.size()) {
+            throw new BusinessRunTimeException(ExceptionConstants.SERIAL_NUMBERE_NOT_EXISTS_CODE,
+                    String.format(ExceptionConstants.SERIAL_NUMBERE_NOT_EXISTS_MSG, ""));
+        }
     }
 
     /**

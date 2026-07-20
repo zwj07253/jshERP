@@ -20,6 +20,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -287,7 +288,7 @@ public class DepotService {
         } else {
             depotList.addAll(allowedDepotIds);
         }
-        return depotList;
+        return depotList.isEmpty() ? Collections.singletonList(-1L) : depotList;
     }
 
     /**
@@ -310,7 +311,9 @@ public class DepotService {
         } else {
             depotList.addAll(allowedDepotIds);
         }
-        return depotList;
+        // Empty collections are omitted by mapper XML and would otherwise
+        // become unrestricted queries. Keep the permission boundary closed.
+        return depotList.isEmpty() ? Collections.singletonList(-1L) : depotList;
     }
 
     private Set<Long> getAllowedDepotIds() throws Exception {

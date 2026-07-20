@@ -615,6 +615,9 @@ CREATE TABLE jsh_material_current_stock (
 CREATE INDEX idx_material_current_stock_material_id ON jsh_material_current_stock(material_id);
 CREATE INDEX idx_material_current_stock_depot_id ON jsh_material_current_stock(depot_id);
 CREATE INDEX idx_material_current_stock_tenant_id ON jsh_material_current_stock(tenant_id);
+CREATE UNIQUE INDEX uk_material_current_stock_active
+ON jsh_material_current_stock(COALESCE(tenant_id, 0), material_id, depot_id)
+WHERE COALESCE(delete_flag, '0') != '1';
 COMMENT ON TABLE jsh_material_current_stock IS '产品当前库存';
 COMMENT ON COLUMN jsh_material_current_stock.id IS '主键';
 COMMENT ON COLUMN jsh_material_current_stock.material_id IS '产品id';
@@ -688,6 +691,9 @@ CREATE TABLE jsh_material_initial_stock (
 CREATE INDEX idx_material_initial_stock_material_id ON jsh_material_initial_stock(material_id);
 CREATE INDEX idx_material_initial_stock_depot_id ON jsh_material_initial_stock(depot_id);
 CREATE INDEX idx_material_initial_stock_tenant_id ON jsh_material_initial_stock(tenant_id);
+CREATE UNIQUE INDEX uk_material_initial_stock_active
+ON jsh_material_initial_stock(COALESCE(tenant_id, 0), material_id, depot_id)
+WHERE COALESCE(delete_flag, '0') != '1';
 COMMENT ON TABLE jsh_material_initial_stock IS '产品初始库存';
 COMMENT ON COLUMN jsh_material_initial_stock.id IS '主键';
 COMMENT ON COLUMN jsh_material_initial_stock.material_id IS '产品id';

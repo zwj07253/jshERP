@@ -157,6 +157,7 @@ public class DepotItemController {
         BaseResponseInfo res = new BaseResponseInfo();
         Map<String, Object> map = new HashMap<String, Object>();
         try {
+            depotService.parseDepotList(depotId);
             BigDecimal stock = BigDecimal.ZERO;
             List<MaterialVo4Unit> list = materialService.getMaterialByBarCode(barCode);
             if(list!=null && list.size()>0) {
@@ -361,8 +362,8 @@ public class DepotItemController {
             endTime = Tools.parseDayToTime(endTime,BusinessConstants.DAY_LAST_TIME);
             List<Long> depotList = parseListByDepotIds(depotIds);
             List<DepotItemVo4WithInfoEx> dataList = depotItemService.getInOutStock(StringUtil.toNull(materialParam),
-                    categoryIdList, endTime,(currentPage-1)*pageSize, pageSize);
-            int total = depotItemService.getInOutStockCount(StringUtil.toNull(materialParam), categoryIdList, endTime);
+                    categoryIdList, depotList, endTime,(currentPage-1)*pageSize, pageSize);
+            int total = depotItemService.getInOutStockCount(StringUtil.toNull(materialParam), categoryIdList, depotList, endTime);
             map.put("total", total);
             //存放数据json数组
             JSONArray dataArray = new JSONArray();
@@ -455,7 +456,7 @@ public class DepotItemController {
             endTime = Tools.parseDayToTime(endTime,BusinessConstants.DAY_LAST_TIME);
             List<Long> depotList = parseListByDepotIds(depotIds);
             List<DepotItemVo4WithInfoEx> dataList = depotItemService.getInOutStock(StringUtil.toNull(materialParam),
-                    categoryIdList, endTime, null, null);
+                    categoryIdList, depotList, endTime, null, null);
             BigDecimal thisAllStock = BigDecimal.ZERO;
             BigDecimal thisAllPrice = BigDecimal.ZERO;
             if (null != dataList) {
@@ -559,16 +560,9 @@ public class DepotItemController {
     }
 
     private List<Long> parseListByDepotIds(@RequestParam("depotIds") String depotIds) throws Exception {
-        List<Long> depotList = new ArrayList<>();
-        if(StringUtil.isNotEmpty(depotIds)) {
-            depotList = StringUtil.strToLongList(depotIds);
-        } else {
-            //未选择仓库时默认为当前用户有权限的仓库
-            JSONArray depotArr = depotService.findDepotByCurrentUser();
-            for(Object obj: depotArr) {
-                JSONObject object = JSONObject.parseObject(obj.toString());
-                depotList.add(object.getLong("id"));
-            }
+        String[] depotIdArr = StringUtil.isNotEmpty(depotIds) ? depotIds.split(",") : null;
+        List<Long> depotList = depotService.parseDepotListByArr(depotIdArr);
+        if(!depotList.contains(-1L)) {
             //如果有权限的仓库数量太多则提示要选择仓库
             if(depotList.size()>20) {
                 throw new BusinessRunTimeException(ExceptionConstants.REPORT_TWO_MANY_DEPOT_FAILED_CODE,
@@ -891,17 +885,7 @@ public class DepotItemController {
         BaseResponseInfo res = new BaseResponseInfo();
         Map<String, Object> map = new HashMap<String, Object>();
         try {
-            List<Long> depotList = new ArrayList<>();
-            if(depotId != null) {
-                depotList.add(depotId);
-            } else {
-                //未选择仓库时默认为当前用户有权限的仓库
-                JSONArray depotArr = depotService.findDepotByCurrentUser();
-                for(Object obj: depotArr) {
-                    JSONObject object = JSONObject.parseObject(obj.toString());
-                    depotList.add(object.getLong("id"));
-                }
-            }
+            List<Long> depotList = depotService.parseDepotList(depotId);
             List<Long> categoryList = new ArrayList<>();
             if(categoryId != null){
                 categoryList = materialService.getListByParentId(categoryId);
@@ -1055,10 +1039,17 @@ public class DepotItemController {
         BaseResponseInfo res = new BaseResponseInfo();
         Map<String, Object> map = new HashMap<>();
         try {
+            depotService.parseDepotList(depotId);
             String number = "";
             if(depotItemId != null) {
                 DepotItem depotItem = depotItemService.getDepotItem(depotItemId);
-                number = depotHeadService.getDepotHead(depotItem.getHeaderId()).getNumber();
+                if (depotItem == null) {
+                    throw new BusinessRunTimeException(ExceptionConstants.DATA_READ_FAIL_CODE,
+                            ExceptionConstants.DATA_READ_FAIL_MSG);
+                }
+                DepotHead depotHead = depotHeadService.getDepotHead(depotItem.getHeaderId());
+                depotHeadService.checkPurchaseBillDataPermission(depotHead);
+                number = depotHead.getNumber();
             }
             Boolean forceFlag = systemConfigService.getForceApprovalFlag();
             Boolean inOutManageFlag = systemConfigService.getInOutManageFlag();

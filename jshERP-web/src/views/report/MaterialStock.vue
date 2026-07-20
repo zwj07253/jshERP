@@ -141,9 +141,9 @@
                 :page-size="ipagination.pageSize"
                 :page-size-options="ipagination.pageSizeOptions"
                 :total="ipagination.total"
-                :show-total="(total, range) => `共 ${total-Math.ceil(total/ipagination.pageSize)} 条`">
+                :show-total="total => `共 ${total} 条`">
                 <template slot="buildOptionText" slot-scope="props">
-                  <span>{{ props.value-1 }}条/页</span>
+                  <span>{{ props.value }}条/页</span>
                 </template>
               </a-pagination>
             </a-col>
@@ -192,8 +192,8 @@
           mpList: getMpListShort(Vue.ls.get('materialPropertyList'))  //扩展属性
         },
         ipagination:{
-          pageSize: 11,
-          pageSizeOptions: ['11', '21', '31', '101', '201', '301', '1001', '2001', '3001']
+          pageSize: 10,
+          pageSizeOptions: ['10', '20', '30', '100', '200', '300', '1000', '2000', '3000']
         },
         depotSelected:[],
         depotList: [],
@@ -255,7 +255,7 @@
         }
         param.field = this.getQueryField();
         param.currentPage = this.ipagination.current;
-        param.pageSize = this.ipagination.pageSize-1;
+        param.pageSize = this.ipagination.pageSize;
         return param;
       },
       getDepotData() {
@@ -335,24 +335,32 @@
         this.$refs.materialDepotStockList.disableSubmit = false;
       },
       exportExcel() {
-        let list = []
         let headArray = this.defColumns
           .filter(col => col.dataIndex !== 'rowIndex' && col.dataIndex !== 'action' && col.dataIndex !== 'pic')
           .map(col => col.title)
         let head = headArray.join(',')
-
-        for (let i = 0; i < this.dataSource.length; i++) {
-          let item = []
-          let ds = this.dataSource[i]
-          this.defColumns.forEach(col => {
-            if (col.dataIndex !== 'rowIndex' && col.dataIndex !== 'action' && col.dataIndex !== 'pic') {
-              item.push(ds[col.dataIndex])
-            }
+        let params = this.getQueryParams()
+        params.currentPage = 1
+        params.pageSize = Math.max(this.ipagination.total || 1, 1)
+        this.loading = true
+        getAction(this.url.list, params).then(res => {
+          if (res.code !== 200) {
+            this.$message.warning((res.data && res.data.message) || res.data || '导出数据获取失败')
+            return
+          }
+          let list = (res.data.rows || []).map(ds => {
+            let item = []
+            this.defColumns.forEach(col => {
+              if (col.dataIndex !== 'rowIndex' && col.dataIndex !== 'action' && col.dataIndex !== 'pic') {
+                item.push(ds[col.dataIndex])
+              }
+            })
+            return item
           })
-          list.push(item)
-        }
-        let tip = '商品库存查询'
-        this.handleExportXlsPost('商品库存', '商品库存', head, tip, list)
+          this.handleExportXlsPost('商品库存', '商品库存', head, '商品库存查询', list)
+        }).finally(() => {
+          this.loading = false
+        })
       }
     }
   }
