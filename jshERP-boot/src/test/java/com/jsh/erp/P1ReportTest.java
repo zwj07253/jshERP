@@ -204,6 +204,30 @@ public class P1ReportTest extends ApiTestBase {
         assertPaged(resp);
     }
 
+    @Test
+    @Order(9)
+    @DisplayName("37: 进销存统计 - 出库明细")
+    void outDetail() {
+        Response resp = authReqGet()
+                .param("currentPage", 1)
+                .param("pageSize", 10)
+                .param("organId", "")
+                .param("number", "")
+                .param("materialParam", "")
+                .param("depotId", "")
+                .param("beginTime", BEGIN_TIME)
+                .param("endTime", END_TIME)
+                .param("type", "出库")
+                .param("creator", "")
+                .param("categoryId", "")
+                .param("organizationId", "")
+                .param("remark", "")
+                .param("column", "createTime")
+                .param("order", "desc")
+                .get(CONTEXT + "/depotHead/findInOutDetail");
+        assertPaged(resp);
+    }
+
     // ===== 38. 库存预警 =====
 
     @Test
