@@ -285,8 +285,8 @@ public class P1ReportTest extends ApiTestBase {
                 .param("endTime", END_TIME)
                 .param("subType", "调拨")
                 .param("remark", "")
-                .param("column", "")
-                .param("order", "")
+                .param("column", "createTime")
+                .param("order", "desc")
                 .get(CONTEXT + "/depotHead/findAllocationDetail");
         assertPaged(resp);
     }

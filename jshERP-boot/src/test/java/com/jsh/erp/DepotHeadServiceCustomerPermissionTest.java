@@ -80,4 +80,27 @@ class DepotHeadServiceCustomerPermissionTest {
 
         assertDoesNotThrow(() -> depotHeadService.checkInOutDetailReportPermission("出库"));
     }
+
+    @Test
+    void rejectsUserWithoutAllocationDetailReportPermission() throws Exception {
+        User user = new User();
+        user.setId(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasFunctionPermission(101L, "/report/allocation_detail")).thenReturn(false);
+
+        BusinessRunTimeException exception = assertThrows(BusinessRunTimeException.class,
+                () -> depotHeadService.checkAllocationDetailReportPermission());
+
+        assertEquals(ExceptionConstants.DEPOT_HEAD_ALLOCATION_DETAIL_REPORT_PERMISSION_CODE, exception.getCode());
+    }
+
+    @Test
+    void allowsUserWithAllocationDetailReportPermission() throws Exception {
+        User user = new User();
+        user.setId(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasFunctionPermission(101L, "/report/allocation_detail")).thenReturn(true);
+
+        assertDoesNotThrow(() -> depotHeadService.checkAllocationDetailReportPermission());
+    }
 }

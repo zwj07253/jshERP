@@ -973,6 +973,16 @@ public class DepotHeadService {
         }
     }
 
+    public void checkAllocationDetailReportPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if (!userService.hasFunctionPermission(userId, "/report/allocation_detail")) {
+            throw new BusinessRunTimeException(
+                    ExceptionConstants.DEPOT_HEAD_ALLOCATION_DETAIL_REPORT_PERMISSION_CODE,
+                    ExceptionConstants.DEPOT_HEAD_ALLOCATION_DETAIL_REPORT_PERMISSION_MSG);
+        }
+    }
+
     public int findInOutDetailCount(String beginTime, String endTime, String type, String[] creatorArray,
                                     String[] organArray, List<Long> categoryList, Boolean forceFlag, Boolean inOutManageFlag, String materialParam, List<Long> depotList, Integer oId, String number,
                                     Long creator, String remark) throws Exception{

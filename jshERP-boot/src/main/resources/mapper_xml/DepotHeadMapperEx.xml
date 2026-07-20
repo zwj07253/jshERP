@@ -687,7 +687,7 @@
     </select>
 
     <select id="findAllocationDetail" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultWithInfoExMap">
-        select dh.number,me.bar_code barCode, m."name" mname,m.model,m.standard,m.color,m.brand,m.mfrs,di.unit_price unitPrice,di.material_unit as mUnit,
+        select di.id,dh.number,me.bar_code barCode, m."name" mname,m.model,m.standard,m.color,m.brand,m.mfrs,di.unit_price unitPrice,di.material_unit as mUnit,
                di.oper_number operNumber,di.all_price allPrice,sname, d.dName dname,TO_CHAR(dh.oper_time, 'YYYY-MM-DD') operTime,
                concat(dh.sub_type,dh."type") as newType, concat_ws('  ',dh.remark,di.remark) as newRemark
         from jsh_depot_head dh
@@ -744,17 +744,19 @@
             and (dh.remark like #{bindRemark} or di.remark like #{bindRemark})
         </if>
         and COALESCE(dh.delete_flag,'0') !='1'
-        <if test="column == 'createTime'">
-            order by oper_time desc,number desc
-        </if>
-        <if test="column != 'createTime'">
-            <if test="column == 'barCode' or column == 'operNumber' or column == 'unitPrice' or column == 'allPrice'">
-                order by ${column}
-                <if test="order == 'asc' or order == 'desc'">
-                    ${order}
-                </if>
-            </if>
-        </if>
+        and di.id is not null
+        <choose>
+            <when test="column == 'barCode'">order by me.bar_code</when>
+            <when test="column == 'operNumber'">order by di.oper_number</when>
+            <when test="column == 'unitPrice'">order by di.unit_price</when>
+            <when test="column == 'allPrice'">order by di.all_price</when>
+            <otherwise>order by dh.oper_time</otherwise>
+        </choose>
+        <choose>
+            <when test="order == 'asc'">asc</when>
+            <otherwise>desc</otherwise>
+        </choose>
+        , dh.number desc, di.id desc
         <if test="offset != null and rows != null">
             LIMIT #{rows} OFFSET #{offset}
         </if>
@@ -814,6 +816,7 @@
             and (dh.remark like #{bindRemark} or di.remark like #{bindRemark})
         </if>
         and COALESCE(dh.delete_flag,'0') !='1'
+        and di.id is not null
     </select>
 
     <select id="findAllocationStatistic" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultWithInfoExMap">
@@ -872,6 +875,7 @@
             and (dh.remark like #{bindRemark} or di.remark like #{bindRemark})
         </if>
         and COALESCE(dh.delete_flag,'0') !='1'
+        and di.id is not null
     </select>
 
     <select id="getStatementAccount" resultType="com.jsh.erp.datasource.vo.DepotHeadVo4StatementAccount">

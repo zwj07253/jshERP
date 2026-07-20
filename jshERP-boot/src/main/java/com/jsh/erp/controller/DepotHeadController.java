@@ -384,6 +384,7 @@ public class DepotHeadController extends BaseController {
         BaseResponseInfo res = new BaseResponseInfo();
         Map<String, Object> map = new HashMap<String, Object>();
         try {
+            depotHeadService.checkAllocationDetailReportPermission();
             //显式传入仓库时也必须校验当前用户权限，未传时默认使用全部有权限仓库。
             List<Long> depotList = depotService.parseDepotList(depotId);
             List<Long> depotFList = depotService.parseDepotList(depotIdF);
@@ -400,19 +401,34 @@ public class DepotHeadController extends BaseController {
             beginTime = Tools.parseDayToTime(beginTime, BusinessConstants.DAY_FIRST_TIME);
             endTime = Tools.parseDayToTime(endTime,BusinessConstants.DAY_LAST_TIME);
             Boolean forceFlag = systemConfigService.getForceApprovalFlag();
+            int safeCurrentPage = Math.max(currentPage, 1);
+            int safePageSize = Math.min(Math.max(pageSize, 1), 10000);
+            Long userId = userService.getUserId(request);
+            String priceLimit = userService.getRoleTypeByUserId(userId).getPriceLimit();
             List<DepotHeadVo4InDetail> list = depotHeadService.findAllocationDetail(beginTime, endTime, subType, StringUtil.toNull(number),
                     creatorArray, categoryList, forceFlag, StringUtil.toNull(materialParam), depotList, depotFList, remark,
-                    StringUtil.safeSqlParse(column), StringUtil.safeSqlParse(order), (currentPage-1)*pageSize, pageSize);
+                    StringUtil.safeSqlParse(column), StringUtil.safeSqlParse(order), (safeCurrentPage-1)*safePageSize, safePageSize);
             int total = depotHeadService.findAllocationDetailCount(beginTime, endTime, subType, StringUtil.toNull(number),
                     creatorArray, categoryList, forceFlag, StringUtil.toNull(materialParam), depotList, depotFList, remark);
+            if (list != null) {
+                String billCategory = depotHeadService.getBillCategory(subType);
+                for (DepotHeadVo4InDetail item : list) {
+                    item.setUnitPrice(roleService.parseBillPriceByLimit(item.getUnitPrice(), billCategory, priceLimit, request));
+                    item.setAllPrice(roleService.parseBillPriceByLimit(item.getAllPrice(), billCategory, priceLimit, request));
+                }
+            }
             map.put("rows", list);
             map.put("total", total);
             DepotHeadVo4InDetail statistic = depotHeadService.findAllocationStatistic(beginTime, endTime, subType, StringUtil.toNull(number),
                     creatorArray, categoryList, forceFlag, StringUtil.toNull(materialParam), depotList, depotFList, remark);
             map.put("operNumberTotal", statistic.getOperNumber());
-            map.put("allPriceTotal", statistic.getAllPrice());
+            boolean hidePriceTotal = StringUtil.isNotEmpty(priceLimit) && priceLimit.contains("4");
+            map.put("allPriceTotal", hidePriceTotal ? BigDecimal.ZERO : statistic.getAllPrice());
             res.code = 200;
             res.data = map;
+        } catch (BusinessRunTimeException e) {
+            res.code = e.getCode();
+            res.data = e.getData().get("message");
         } catch(Exception e){
             logger.error(e.getMessage(), e);
             res.code = 500;

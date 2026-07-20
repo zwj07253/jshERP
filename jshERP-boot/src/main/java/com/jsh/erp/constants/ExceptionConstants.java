@@ -737,6 +737,8 @@ public class ExceptionConstants {
     public static final String DEPOT_HEAD_IN_DETAIL_REPORT_PERMISSION_MSG = "抱歉，当前用户没有入库明细的查看权限";
     public static final int DEPOT_HEAD_OUT_DETAIL_REPORT_PERMISSION_CODE = 8500121;
     public static final String DEPOT_HEAD_OUT_DETAIL_REPORT_PERMISSION_MSG = "抱歉，当前用户没有出库明细的查看权限";
+    public static final int DEPOT_HEAD_ALLOCATION_DETAIL_REPORT_PERMISSION_CODE = 8500122;
+    public static final String DEPOT_HEAD_ALLOCATION_DETAIL_REPORT_PERMISSION_MSG = "抱歉，当前用户没有调拨明细的查看权限";
 
 
     /**
