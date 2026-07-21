@@ -33,7 +33,7 @@
                   />
                 </a-form-item>
               </a-col>
-              <a-col :md="6" :sm="24">
+              <a-col :md="12" :sm="24">
                 <span class="table-page-search-submitButtons">
                   <a-button type="primary" @click="searchQuery">查询</a-button>
                   <a-button style="margin-left: 8px" v-print="'#reportPrint'" icon="printer">打印</a-button>
@@ -44,10 +44,10 @@
                   </a>
                 </span>
               </a-col>
-              <a-col :md="6" :sm="24">
-                <a-form-item>
-                  {{firstTotal}} {{lastTotal}}
-                </a-form-item>
+            </a-row>
+            <a-row :gutter="24">
+              <a-col :span="24">
+                <div class="customer-account-summary">{{firstTotal}} {{lastTotal}}</div>
               </a-col>
             </a-row>
             <template v-if="toggleSearchStatus">
@@ -72,7 +72,7 @@
             size="middle"
             rowKey="id"
             :columns="columns"
-            :dataSource="dataSource"
+            :dataSource="displayDataSource"
             :components="handleDrag(columns)"
             :pagination="false"
             :scroll="scroll"
@@ -106,7 +106,7 @@
               </a-popover>
             </span>
             <span slot="action" slot-scope="text, record">
-              <a @click="showDebtAccountList(record)">{{record.id?'详情':''}}</a>
+              <a v-if="record.rowIndex !== '合计'" @click="showDebtAccountList(record)">详情</a>
             </span>
             <span slot="allNeedTitle">
               期末应收
@@ -125,9 +125,9 @@
                 :page-size="ipagination.pageSize"
                 :page-size-options="ipagination.pageSizeOptions"
                 :total="ipagination.total"
-                :show-total="(total, range) => `共 ${total-Math.ceil(total/ipagination.pageSize)} 条`">
+                :show-total="total => `共 ${total} 条`">
                 <template slot="buildOptionText" slot-scope="props">
-                  <span>{{ props.value-1 }}条/页</span>
+                  <span>{{ props.value }}条/页</span>
                 </template>
               </a-pagination>
             </a-col>
@@ -178,8 +178,8 @@
           createTimeRange: [moment(getPrevMonthFormatDate(3)), moment(getFormatDate())],
         },
         ipagination:{
-          pageSize: 11,
-          pageSizeOptions: ['11', '21', '31', '101', '201']
+          pageSize: 10,
+          pageSizeOptions: ['10', '20', '30', '100', '200']
         },
         cusList: [],
         firstTotal: '',
@@ -205,10 +205,10 @@
           {title: '手机号码', dataIndex: 'telephone', width: 100},
           {title: '联系电话', dataIndex: 'phoneNum', width: 100},
           {title: '电子邮箱', dataIndex: 'email', width: 100},
-          {title: '期初应收', dataIndex: 'preNeed', sorter: (a, b) => a.preNeed - b.preNeed, width: 80},
-          {title: '本期欠款', dataIndex: 'debtMoney', sorter: (a, b) => a.debtMoney - b.debtMoney, width: 80},
-          {title: '本期收款', dataIndex: 'backMoney', sorter: (a, b) => a.backMoney - b.backMoney, width: 80},
-          {dataIndex: 'allNeed', sorter: (a, b) => a.allNeed - b.allNeed, width: 80,
+          {title: '期初应收', dataIndex: 'preNeed', sorter: true, width: 80},
+          {title: '本期欠款', dataIndex: 'debtMoney', sorter: true, width: 80},
+          {title: '本期收款', dataIndex: 'backMoney', sorter: true, width: 80},
+          {dataIndex: 'allNeed', sorter: true, width: 80,
             scopedSlots: { title: 'allNeedTitle' }
           }
         ],
@@ -221,12 +221,32 @@
       this.initCustomer()
       this.initColumnsSetting()
     },
+    computed: {
+      displayDataSource() {
+        const rows = (this.dataSource || []).slice()
+        if (!rows.length) {
+          return rows
+        }
+        const totalRow = {
+          id: `customer-account-total-${this.ipagination.current}`,
+          rowIndex: '合计'
+        }
+        const numericFields = ['preNeed', 'debtMoney', 'backMoney', 'allNeed']
+        numericFields.forEach(field => {
+          totalRow[field] = rows.reduce((sum, row) => {
+            const value = Number.parseFloat(row[field])
+            return sum + (Number.isFinite(value) ? value : 0)
+          }, 0).toFixed(2)
+        })
+        return rows.concat(totalRow)
+      }
+    },
     methods: {
       getQueryParams() {
         let param = Object.assign({}, this.queryParam, this.isorter);
         param.field = this.getQueryField();
         param.currentPage = this.ipagination.current;
-        param.pageSize = this.ipagination.pageSize-1;
+        param.pageSize = this.ipagination.pageSize;
         return param;
       },
       initCustomer() {
@@ -268,13 +288,12 @@
           if (res.code===200) {
             this.dataSource = res.data.rows;
             this.ipagination.total = res.data.total;
-            this.tableAddTotalRow(this.columns, this.dataSource)
-            this.firstTotal = '期初应收：' + res.data.firstMoney + "，"
-            this.lastTotal = '期末应收：' + res.data.lastMoney
+            this.firstTotal = '期初应收：' + this.formatNumber(res.data.firstMoney) + "，"
+            this.lastTotal = '期末应收：' + this.formatNumber(res.data.lastMoney)
           } else if(res.code===510){
             this.$message.warning(res.data)
           } else {
-            this.$message.warning(res.data.message)
+            this.$message.warning(typeof res.data === 'string' ? res.data : res.data.message)
           }
           this.loading = false;
         })
@@ -287,11 +306,31 @@
         }
       },
       exportExcel() {
+        if ((this.ipagination.total || 0) > 10000) {
+          this.$message.warning('单次导出不能超过10000条，请缩小查询范围')
+          return
+        }
+        let params = this.getQueryParams()
+        params.currentPage = 1
+        params.pageSize = Math.max(this.ipagination.total || 0, 1)
+        this.loading = true
+        getAction(this.url.list, params).then((res) => {
+          if (res.code === 200) {
+            this.exportExcelRows(res.data.rows || [])
+          } else {
+            const message = typeof res.data === 'string' ? res.data : res.data && res.data.message
+            this.$message.warning(message || '导出数据获取失败')
+          }
+        }).finally(() => {
+          this.loading = false
+        })
+      },
+      exportExcelRows(dataSource) {
         let list = []
         let head = '客户,联系人,手机号码,联系电话,电子邮箱,期初应收,本期欠款,本期收款,期末应收'
-        for (let i = 0; i < this.dataSource.length; i++) {
+        for (let i = 0; i < dataSource.length; i++) {
           let item = []
-          let ds = this.dataSource[i]
+          let ds = dataSource[i]
           item.push(ds.supplier, ds.contacts, ds.telephone, ds.phoneNum, ds.email, ds.preNeed, ds.debtMoney, ds.backMoney, ds.allNeed)
           list.push(item)
         }
@@ -307,5 +346,14 @@
   }
 </script>
 <style scoped>
-  @import '~@assets/less/common.less'
+  @import '~@assets/less/common.less';
+
+  .customer-account-summary {
+    display: flex;
+    min-height: 32px;
+    align-items: center;
+    justify-content: flex-end;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
 </style>

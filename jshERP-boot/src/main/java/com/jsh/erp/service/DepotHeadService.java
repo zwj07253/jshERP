@@ -1005,6 +1005,63 @@ public class DepotHeadService {
         }
     }
 
+    public void checkStatementAccountPermission(String supplierType) throws Exception {
+        String reportUrl;
+        String financialUrl;
+        int permissionCode;
+        String permissionMessage;
+        if ("客户".equals(supplierType)) {
+            reportUrl = "/report/customer_account";
+            financialUrl = "/financial/money_in";
+            permissionCode = ExceptionConstants.DEPOT_HEAD_CUSTOMER_ACCOUNT_PERMISSION_CODE;
+            permissionMessage = ExceptionConstants.DEPOT_HEAD_CUSTOMER_ACCOUNT_PERMISSION_MSG;
+        } else if ("供应商".equals(supplierType)) {
+            reportUrl = "/report/vendor_account";
+            financialUrl = "/financial/money_out";
+            permissionCode = ExceptionConstants.DEPOT_HEAD_VENDOR_ACCOUNT_PERMISSION_CODE;
+            permissionMessage = ExceptionConstants.DEPOT_HEAD_VENDOR_ACCOUNT_PERMISSION_MSG;
+        } else {
+            throw new BusinessRunTimeException(
+                    ExceptionConstants.DEPOT_HEAD_STATEMENT_ACCOUNT_TYPE_INVALID_CODE,
+                    ExceptionConstants.DEPOT_HEAD_STATEMENT_ACCOUNT_TYPE_INVALID_MSG);
+        }
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if (!userService.hasFunctionPermission(userId, reportUrl)
+                && !userService.hasFunctionPermission(userId, financialUrl)) {
+            throw new BusinessRunTimeException(permissionCode, permissionMessage);
+        }
+    }
+
+    public void checkDebtListPermission(String type, String subType, Long organId) throws Exception {
+        if (organId == null) {
+            throw new BusinessRunTimeException(
+                    ExceptionConstants.DEPOT_HEAD_DEBT_ORGAN_REQUIRED_CODE,
+                    ExceptionConstants.DEPOT_HEAD_DEBT_ORGAN_REQUIRED_MSG);
+        }
+        String supplierType;
+        if (BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(type)
+                && BusinessConstants.SUB_TYPE_SALES.equals(subType)) {
+            supplierType = "客户";
+        } else if (BusinessConstants.DEPOTHEAD_TYPE_IN.equals(type)
+                && BusinessConstants.SUB_TYPE_PURCHASE.equals(subType)) {
+            supplierType = "供应商";
+        } else {
+            throw new BusinessRunTimeException(
+                    ExceptionConstants.DEPOT_HEAD_DEBT_LIST_TYPE_INVALID_CODE,
+                    ExceptionConstants.DEPOT_HEAD_DEBT_LIST_TYPE_INVALID_MSG);
+        }
+        checkStatementAccountPermission(supplierType);
+        if ("客户".equals(supplierType)) {
+            String[] organArray = getOrganArray(BusinessConstants.SUB_TYPE_SALES, "");
+            if (organArray != null && !Arrays.asList(organArray).contains(organId.toString())) {
+                throw new BusinessRunTimeException(
+                        ExceptionConstants.DEPOT_HEAD_CUSTOMER_DATA_PERMISSION_CODE,
+                        ExceptionConstants.DEPOT_HEAD_CUSTOMER_DATA_PERMISSION_MSG);
+            }
+        }
+    }
+
     public int findInOutDetailCount(String beginTime, String endTime, String type, String[] creatorArray,
                                     String[] organArray, List<Long> categoryList, Boolean forceFlag, Boolean inOutManageFlag, String materialParam, List<Long> depotList, Integer oId, String number,
                                     Long creator, String remark) throws Exception{
@@ -1143,10 +1200,12 @@ public class DepotHeadService {
 
     public List<DepotHeadVo4StatementAccount> getStatementAccount(String beginTime, String endTime, Integer organId, String [] organArray,
                                                                   Integer hasDebt, String supplierType, String type, String subType, String typeBack,
-                                                                  String subTypeBack, String billType, Integer offset, Integer rows) {
+                                                                  String subTypeBack, String billType, String column, String order,
+                                                                  Integer offset, Integer rows) {
         List<DepotHeadVo4StatementAccount> list = null;
         try{
-            list = depotHeadMapperEx.getStatementAccount(beginTime, endTime, organId, organArray, hasDebt, supplierType, type, subType,typeBack, subTypeBack, billType, offset, rows);
+            list = depotHeadMapperEx.getStatementAccount(beginTime, endTime, organId, organArray, hasDebt, supplierType, type, subType,typeBack, subTypeBack, billType,
+                    column, order, offset, rows);
         } catch(Exception e){
             JshException.readFail(logger, e);
         }
@@ -4605,10 +4664,14 @@ public class DepotHeadService {
                 BigDecimal discountLastMoney = dh.getDiscountLastMoney() == null ? BigDecimal.ZERO : dh.getDiscountLastMoney();
                 BigDecimal otherMoney = dh.getOtherMoney() == null ? BigDecimal.ZERO : dh.getOtherMoney();
                 BigDecimal deposit = dh.getDeposit() == null ? BigDecimal.ZERO : dh.getDeposit();
-                objs[6] = parseDecimalToStr(discountLastMoney.add(otherMoney).subtract(deposit), 2);
-                objs[7] = parseDecimalToStr(dh.getNeedDebt(), 2);
-                objs[8] = parseDecimalToStr(dh.getFinishDebt(), 2);
-                objs[9] = parseDecimalToStr(dh.getDebt(), 2);
+                objs[6] = parseDecimalToStr(roleService.parseBillPriceByLimit(
+                        discountLastMoney.add(otherMoney).subtract(deposit), billCategory, priceLimit, request), 2);
+                objs[7] = parseDecimalToStr(roleService.parseBillPriceByLimit(
+                        dh.getNeedDebt(), billCategory, priceLimit, request), 2);
+                objs[8] = parseDecimalToStr(roleService.parseBillPriceByLimit(
+                        dh.getFinishDebt(), billCategory, priceLimit, request), 2);
+                objs[9] = parseDecimalToStr(roleService.parseBillPriceByLimit(
+                        dh.getDebt(), billCategory, priceLimit, request), 2);
                 objs[10] = dh.getRemark();
                 billList.add(objs);
             }

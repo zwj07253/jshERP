@@ -3,6 +3,7 @@ package com.jsh.erp;
 import io.restassured.response.Response;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.jsh.erp.constants.ExceptionConstants;
 
 import java.math.BigDecimal;
 import org.junit.jupiter.api.*;
@@ -150,14 +151,48 @@ public class P1ReportTest extends ApiTestBase {
     void customerReconciliation() {
         Response resp = authReqGet()
                 .param("currentPage", 1)
-                .param("pageSize", 10)
+                .param("pageSize", 10000)
                 .param("beginTime", BEGIN_TIME)
                 .param("endTime", END_TIME)
                 .param("organId", "")
                 .param("hasDebt", "")
                 .param("supplierType", "客户")
+                .param("column", "allNeed")
+                .param("order", "desc")
                 .get(CONTEXT + "/depotHead/getStatementAccount");
         assertPaged(resp);
+        JSONObject data = JSONObject.parseObject(resp.body().asString()).getJSONObject("data");
+        JSONArray rows = data.getJSONArray("rows");
+        BigDecimal firstMoney = BigDecimal.ZERO;
+        BigDecimal lastMoney = BigDecimal.ZERO;
+        for (int i = 0; i < rows.size(); i++) {
+            JSONObject row = rows.getJSONObject(i);
+            BigDecimal preNeed = row.getBigDecimal("preNeed");
+            BigDecimal debtMoney = row.getBigDecimal("debtMoney");
+            BigDecimal backMoney = row.getBigDecimal("backMoney");
+            BigDecimal allNeed = row.getBigDecimal("allNeed");
+            assertEquals(0, preNeed.add(debtMoney).subtract(backMoney).compareTo(allNeed),
+                    "客户期末应收必须等于期初应收加本期欠款减本期收款");
+            firstMoney = firstMoney.add(preNeed);
+            lastMoney = lastMoney.add(allNeed);
+        }
+        assertEquals(0, firstMoney.compareTo(data.getBigDecimal("firstMoney")), "客户期初应收合计必须与列表一致");
+        assertEquals(0, lastMoney.compareTo(data.getBigDecimal("lastMoney")), "客户期末应收合计必须与列表一致");
+    }
+
+    @Test
+    @Order(7)
+    @DisplayName("35b: 客户对账拒绝非法往来单位类型")
+    void customerReconciliationRejectsInvalidType() {
+        Response resp = authReqGet()
+                .param("currentPage", 1)
+                .param("pageSize", 10)
+                .param("beginTime", BEGIN_TIME)
+                .param("endTime", END_TIME)
+                .param("supplierType", "会员")
+                .get(CONTEXT + "/depotHead/getStatementAccount");
+        assertEquals(ExceptionConstants.DEPOT_HEAD_STATEMENT_ACCOUNT_TYPE_INVALID_CODE,
+                JSONObject.parseObject(resp.body().asString()).getIntValue("code"));
     }
 
     // ===== 36. 供应商对账 =====

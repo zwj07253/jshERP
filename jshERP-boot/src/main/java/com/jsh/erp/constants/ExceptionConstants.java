@@ -746,6 +746,19 @@ public class ExceptionConstants {
     public static final int DEPOT_HEAD_MATERIAL_COUNT_TYPE_INVALID_CODE = 8500125;
     public static final String DEPOT_HEAD_MATERIAL_COUNT_TYPE_INVALID_MSG = "抱歉，出入库汇总类型不合法";
 
+    public static final int DEPOT_HEAD_STATEMENT_ACCOUNT_TYPE_INVALID_CODE = 8500126;
+    public static final String DEPOT_HEAD_STATEMENT_ACCOUNT_TYPE_INVALID_MSG = "抱歉，对账类型不合法";
+    public static final int DEPOT_HEAD_CUSTOMER_ACCOUNT_PERMISSION_CODE = 8500127;
+    public static final String DEPOT_HEAD_CUSTOMER_ACCOUNT_PERMISSION_MSG = "抱歉，当前用户没有客户对账或收款管理的查看权限";
+    public static final int DEPOT_HEAD_VENDOR_ACCOUNT_PERMISSION_CODE = 8500128;
+    public static final String DEPOT_HEAD_VENDOR_ACCOUNT_PERMISSION_MSG = "抱歉，当前用户没有供应商对账或付款管理的查看权限";
+    public static final int DEPOT_HEAD_DEBT_LIST_TYPE_INVALID_CODE = 8500129;
+    public static final String DEPOT_HEAD_DEBT_LIST_TYPE_INVALID_MSG = "抱歉，欠款单据类型不合法";
+    public static final int DEPOT_HEAD_CUSTOMER_DATA_PERMISSION_CODE = 8500130;
+    public static final String DEPOT_HEAD_CUSTOMER_DATA_PERMISSION_MSG = "抱歉，当前用户没有该客户的数据权限";
+    public static final int DEPOT_HEAD_DEBT_ORGAN_REQUIRED_CODE = 8500131;
+    public static final String DEPOT_HEAD_DEBT_ORGAN_REQUIRED_MSG = "抱歉，请选择有效的往来单位";
+
 
     /**
      *  单据明细信息

@@ -198,6 +198,8 @@ public interface DepotHeadMapperEx {
             @Param("typeBack") String typeBack,
             @Param("subTypeBack") String subTypeBack,
             @Param("billType") String billType,
+            @Param("column") String column,
+            @Param("order") String order,
             @Param("offset") Integer offset,
             @Param("rows") Integer rows);
 

@@ -463,10 +463,13 @@ public class DepotHeadController extends BaseController {
                                                  @RequestParam(value = "organId", required = false) Integer organId,
                                                  @RequestParam(value = "hasDebt", required = false) Integer hasDebt,
                                                  @RequestParam("supplierType") String supplierType,
+                                                 @RequestParam(value = "column", required = false) String column,
+                                                 @RequestParam(value = "order", required = false) String order,
                                                  HttpServletRequest request) throws Exception{
         BaseResponseInfo res = new BaseResponseInfo();
         Map<String, Object> map = new HashMap<String, Object>();
         try {
+            depotHeadService.checkStatementAccountPermission(supplierType);
             String type = "";
             String subType = "";
             String typeBack = "";
@@ -488,8 +491,19 @@ public class DepotHeadController extends BaseController {
             String [] organArray = depotHeadService.getOrganArray(subType, "");
             beginTime = Tools.parseDayToTime(beginTime,BusinessConstants.DAY_FIRST_TIME);
             endTime = Tools.parseDayToTime(endTime,BusinessConstants.DAY_LAST_TIME);
+            int safeCurrentPage = Math.max(currentPage, 1);
+            int safePageSize = Math.min(Math.max(pageSize, 1), 10000);
+            Long userId = userService.getUserId(request);
+            String priceLimit = userService.getRoleTypeByUserId(userId).getPriceLimit();
+            boolean hidePrice = StringUtil.isNotEmpty(priceLimit)
+                    && (("客户".equals(supplierType) && priceLimit.contains("6"))
+                    || ("供应商".equals(supplierType) && priceLimit.contains("4")));
+            String safeColumn = StringUtil.isNotEmpty(column) ? StringUtil.safeSqlParse(column) : null;
+            String safeOrder = StringUtil.isNotEmpty(order) ? StringUtil.safeSqlParse(order) : null;
             List<DepotHeadVo4StatementAccount> list = depotHeadService.getStatementAccount(beginTime, endTime, organId, organArray,
-                    hasDebt, supplierType, type, subType,typeBack, subTypeBack, billType, (currentPage-1)*pageSize, pageSize);
+                    hasDebt, supplierType, type, subType,typeBack, subTypeBack, billType,
+                    safeColumn, safeOrder,
+                    (safeCurrentPage-1)*safePageSize, safePageSize);
             int total = depotHeadService.getStatementAccountCount(beginTime, endTime, organId, organArray,
                     hasDebt, supplierType, type, subType,typeBack, subTypeBack, billType);
             for(DepotHeadVo4StatementAccount item: list) {
@@ -502,6 +516,9 @@ public class DepotHeadController extends BaseController {
                 //期末 = 期初+实际欠款-本期收款
                 BigDecimal allNeedGet = preNeed.add(realDebtMoney).subtract(item.getBackMoney());
                 item.setAllNeed(allNeedGet);
+                if (hidePrice) {
+                    maskStatementAccountAmounts(item);
+                }
             }
             map.put("rows", list);
             map.put("total", total);
@@ -517,11 +534,14 @@ public class DepotHeadController extends BaseController {
                     //期末 = 期初+本期欠款-本期退货的欠款金额-本期收款
                     lastMoney = firstMoney.add(totalPayItem.getDebtMoney()).subtract(totalPayItem.getReturnDebtMoney()).subtract(totalPayItem.getBackMoney());
                 }
-                map.put("firstMoney", firstMoney); //期初
-                map.put("lastMoney", lastMoney);  //期末
+                map.put("firstMoney", hidePrice ? BigDecimal.ZERO : firstMoney); //期初
+                map.put("lastMoney", hidePrice ? BigDecimal.ZERO : lastMoney);  //期末
             }
             res.code = 200;
             res.data = map;
+        } catch (BusinessRunTimeException e) {
+            res.code = e.getCode();
+            res.data = e.getData().get("message");
         } catch(Exception e){
             logger.error(e.getMessage(), e);
             res.code = 500;
@@ -712,7 +732,7 @@ public class DepotHeadController extends BaseController {
                            HttpServletRequest request)throws Exception {
         Map<String, Object> objectMap = new HashMap<>();
         String organIdStr = StringUtil.getInfo(search, "organId");
-        Long organId = Long.parseLong(organIdStr);
+        Long organId = StringUtil.parseStrLong(organIdStr);
         String type = StringUtil.getInfo(search, "type");
         String subType = StringUtil.getInfo(search, "subType");
         String materialParam = StringUtil.getInfo(search, "materialParam");
@@ -720,9 +740,22 @@ public class DepotHeadController extends BaseController {
         String beginTime = StringUtil.getInfo(search, "beginTime");
         String endTime = StringUtil.getInfo(search, "endTime");
         String status = StringUtil.getInfo(search, "status");
+        depotHeadService.checkDebtListPermission(type, subType, organId);
+        int safeCurrentPage = Math.max(currentPage, 1);
+        int safePageSize = Math.min(Math.max(pageSize, 1), 10000);
         List<DepotHeadVo4List> list = depotHeadService.debtList(organId, type, subType, materialParam, number, beginTime, endTime,
-                status, (currentPage-1)*pageSize, pageSize);
+                status, (safeCurrentPage-1)*safePageSize, safePageSize);
         int total = depotHeadService.debtListCount(organId, type, subType, materialParam, number, beginTime, endTime, status);
+        Long userId = userService.getUserId(request);
+        String priceLimit = userService.getRoleTypeByUserId(userId).getPriceLimit();
+        boolean hidePrice = StringUtil.isNotEmpty(priceLimit)
+                && ((BusinessConstants.SUB_TYPE_SALES.equals(subType) && priceLimit.contains("6"))
+                || (BusinessConstants.SUB_TYPE_PURCHASE.equals(subType) && priceLimit.contains("4")));
+        if (hidePrice && list != null) {
+            for (DepotHeadVo4List item : list) {
+                maskDebtBillAmounts(item);
+            }
+        }
         if (list != null) {
             objectMap.put("rows", list);
             objectMap.put("total", total);
@@ -761,12 +794,38 @@ public class DepotHeadController extends BaseController {
                            @RequestParam(value = "status", required = false) String status,
                            @RequestParam(value = "mpList", required = false) String mpList,
                            HttpServletRequest request, HttpServletResponse response)throws Exception {
+        depotHeadService.checkDebtListPermission(type, subType, organId);
         try {
             depotHeadService.debtExport(organId, materialParam, number, type, subType, beginTime, endTime,
                     status, mpList, request, response);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
+    }
+
+    private void maskStatementAccountAmounts(DepotHeadVo4StatementAccount item) {
+        item.setBeginNeed(BigDecimal.ZERO);
+        item.setPreDebtMoney(BigDecimal.ZERO);
+        item.setPreReturnDebtMoney(BigDecimal.ZERO);
+        item.setPreBackMoney(BigDecimal.ZERO);
+        item.setPreNeed(BigDecimal.ZERO);
+        item.setDebtMoney(BigDecimal.ZERO);
+        item.setReturnDebtMoney(BigDecimal.ZERO);
+        item.setBackMoney(BigDecimal.ZERO);
+        item.setAllNeed(BigDecimal.ZERO);
+    }
+
+    private void maskDebtBillAmounts(DepotHeadVo4List item) {
+        item.setChangeAmount(BigDecimal.ZERO);
+        item.setBackAmount(BigDecimal.ZERO);
+        item.setTotalPrice(BigDecimal.ZERO);
+        item.setDiscountLastMoney(BigDecimal.ZERO);
+        item.setOtherMoney(BigDecimal.ZERO);
+        item.setDeposit(BigDecimal.ZERO);
+        item.setNeedDebt(BigDecimal.ZERO);
+        item.setFinishDebt(BigDecimal.ZERO);
+        item.setFinishDeposit(BigDecimal.ZERO);
+        item.setDebt(BigDecimal.ZERO);
     }
 
     /**

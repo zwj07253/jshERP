@@ -2,14 +2,20 @@ package com.jsh.erp;
 
 import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.User;
+import com.jsh.erp.datasource.vo.SupplierSimple;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.service.DepotHeadService;
+import com.jsh.erp.service.SupplierService;
+import com.jsh.erp.service.SystemConfigService;
+import com.jsh.erp.service.UserBusinessService;
 import com.jsh.erp.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,6 +28,15 @@ class DepotHeadServiceCustomerPermissionTest {
 
     @Mock
     private UserService userService;
+
+    @Mock
+    private UserBusinessService userBusinessService;
+
+    @Mock
+    private SupplierService supplierService;
+
+    @Mock
+    private SystemConfigService systemConfigService;
 
     @InjectMocks
     private DepotHeadService depotHeadService;
@@ -156,5 +171,77 @@ class DepotHeadServiceCustomerPermissionTest {
         when(userService.hasFunctionPermission(101L, "/report/out_material_count")).thenReturn(true);
 
         assertDoesNotThrow(() -> depotHeadService.checkInOutMaterialCountReportPermission("出库"));
+    }
+
+    @Test
+    void rejectsInvalidStatementAccountType() {
+        BusinessRunTimeException exception = assertThrows(BusinessRunTimeException.class,
+                () -> depotHeadService.checkStatementAccountPermission("会员"));
+
+        assertEquals(ExceptionConstants.DEPOT_HEAD_STATEMENT_ACCOUNT_TYPE_INVALID_CODE, exception.getCode());
+    }
+
+    @Test
+    void allowsCustomerAccountReportPermission() throws Exception {
+        User user = user(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasFunctionPermission(101L, "/report/customer_account")).thenReturn(true);
+
+        assertDoesNotThrow(() -> depotHeadService.checkStatementAccountPermission("客户"));
+    }
+
+    @Test
+    void allowsMoneyInPermissionForSharedCustomerAccountEndpoint() throws Exception {
+        User user = user(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasFunctionPermission(101L, "/report/customer_account")).thenReturn(false);
+        when(userService.hasFunctionPermission(101L, "/financial/money_in")).thenReturn(true);
+
+        assertDoesNotThrow(() -> depotHeadService.checkStatementAccountPermission("客户"));
+    }
+
+    @Test
+    void rejectsCustomerAccountWithoutReportOrMoneyInPermission() throws Exception {
+        User user = user(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasFunctionPermission(101L, "/report/customer_account")).thenReturn(false);
+        when(userService.hasFunctionPermission(101L, "/financial/money_in")).thenReturn(false);
+
+        BusinessRunTimeException exception = assertThrows(BusinessRunTimeException.class,
+                () -> depotHeadService.checkStatementAccountPermission("客户"));
+
+        assertEquals(ExceptionConstants.DEPOT_HEAD_CUSTOMER_ACCOUNT_PERMISSION_CODE, exception.getCode());
+    }
+
+    @Test
+    void rejectsInvalidDebtListType() {
+        BusinessRunTimeException exception = assertThrows(BusinessRunTimeException.class,
+                () -> depotHeadService.checkDebtListPermission("出库", "零售", 107L));
+
+        assertEquals(ExceptionConstants.DEPOT_HEAD_DEBT_LIST_TYPE_INVALID_CODE, exception.getCode());
+    }
+
+    @Test
+    void rejectsDebtListForUnauthorizedCustomer() throws Exception {
+        User user = user(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasFunctionPermission(101L, "/report/customer_account")).thenReturn(true);
+        when(userBusinessService.getUBValueByTypeAndKeyId("UserCustomer", "101")).thenReturn("[107]");
+        SupplierSimple customer = new SupplierSimple();
+        customer.setId(107L);
+        when(supplierService.getAllCustomer()).thenReturn(Collections.singletonList(customer));
+        when(systemConfigService.getCustomerFlag()).thenReturn(true);
+
+        BusinessRunTimeException exception = assertThrows(BusinessRunTimeException.class,
+                () -> depotHeadService.checkDebtListPermission("出库", "销售", 108L));
+
+        assertEquals(ExceptionConstants.DEPOT_HEAD_CUSTOMER_DATA_PERMISSION_CODE, exception.getCode());
+    }
+
+    private User user(Long id) {
+        User user = new User();
+        user.setId(id);
+        user.setLoginName("user" + id);
+        return user;
     }
 }
