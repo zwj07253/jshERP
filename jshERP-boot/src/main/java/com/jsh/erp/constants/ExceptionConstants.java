@@ -797,6 +797,9 @@ public class ExceptionConstants {
     //销售统计-无查看权限
     public static final int SALE_REPORT_PERMISSION_CODE = 9000010;
     public static final String SALE_REPORT_PERMISSION_MSG = "抱歉，当前用户没有销售统计的查看权限";
+    //进销存统计-无查看权限
+    public static final int IN_OUT_STOCK_REPORT_PERMISSION_CODE = 9000011;
+    public static final String IN_OUT_STOCK_REPORT_PERMISSION_MSG = "抱歉，当前用户没有进销存统计的查看权限";
 
     /**
      *  财务信息

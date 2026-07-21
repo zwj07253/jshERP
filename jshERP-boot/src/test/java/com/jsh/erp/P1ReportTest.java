@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import org.junit.jupiter.api.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * P1: 报表对账测试 (ID 30-40)
@@ -29,15 +30,46 @@ public class P1ReportTest extends ApiTestBase {
     void inventoryReport() {
         Response resp = authReqGet()
                 .param("currentPage", 1)
-                .param("pageSize", 10)
+                .param("pageSize", 10000)
                 .param("depotIds", "")
                 .param("categoryId", "")
                 .param("beginTime", BEGIN_TIME)
                 .param("endTime", END_TIME)
                 .param("materialParam", "")
                 .param("mpList", "")
+                .param("column", "thisSum")
+                .param("order", "desc")
                 .get(CONTEXT + "/depotItem/getInOutStock");
         assertPaged(resp);
+        JSONObject data = JSONObject.parseObject(resp.body().asString()).getJSONObject("data");
+        JSONArray rows = data.getJSONArray("rows");
+        BigDecimal rowTotal = BigDecimal.ZERO;
+        BigDecimal previous = null;
+        for (int i = 0; i < rows.size(); i++) {
+            JSONObject row = rows.getJSONObject(i);
+            BigDecimal prevSum = row.getBigDecimal("prevSum");
+            BigDecimal inSum = row.getBigDecimal("inSum");
+            BigDecimal outSum = row.getBigDecimal("outSum");
+            BigDecimal thisSum = row.getBigDecimal("thisSum");
+            assertEquals(0, prevSum.add(inSum).subtract(outSum).compareTo(thisSum),
+                    "期末库存必须等于期初库存加本期入库减本期出库");
+            if (previous != null) {
+                assertTrue(previous.compareTo(thisSum) >= 0, "期末库存必须按全量结果降序排列");
+            }
+            previous = thisSum;
+            rowTotal = rowTotal.add(thisSum);
+        }
+
+        Response totalResp = authReqGet()
+                .param("depotIds", "")
+                .param("categoryId", "")
+                .param("endTime", END_TIME)
+                .param("materialParam", "")
+                .get(CONTEXT + "/depotItem/getInOutStockCountMoney");
+        assertSuccess(totalResp);
+        BigDecimal totalStock = JSONObject.parseObject(totalResp.body().asString())
+                .getJSONObject("data").getBigDecimal("totalStock");
+        assertEquals(0, rowTotal.compareTo(totalStock), "列表期末库存合计必须与顶部总结存一致");
     }
 
     @Test

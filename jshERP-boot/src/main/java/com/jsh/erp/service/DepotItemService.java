@@ -7,6 +7,7 @@ import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.*;
 import com.jsh.erp.datasource.mappers.*;
 import com.jsh.erp.datasource.vo.DepotItemStockWarningCount;
+import com.jsh.erp.datasource.vo.DepotItemVo4InOutStock;
 import com.jsh.erp.datasource.vo.DepotItemVo4Stock;
 import com.jsh.erp.datasource.vo.DepotItemVoBatchNumberList;
 import com.jsh.erp.datasource.vo.InOutPriceVo;
@@ -90,6 +91,15 @@ public class DepotItemService {
         if(!userService.hasFunctionPermission(userId, "/report/sale_out_report")) {
             throw new BusinessRunTimeException(ExceptionConstants.SALE_REPORT_PERMISSION_CODE,
                     ExceptionConstants.SALE_REPORT_PERMISSION_MSG);
+        }
+    }
+
+    public void checkInOutStockReportPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if(!userService.hasFunctionPermission(userId, "/report/in_out_stock_report")) {
+            throw new BusinessRunTimeException(ExceptionConstants.IN_OUT_STOCK_REPORT_PERMISSION_CODE,
+                    ExceptionConstants.IN_OUT_STOCK_REPORT_PERMISSION_MSG);
         }
     }
 
@@ -322,24 +332,33 @@ public class DepotItemService {
         return list;
     }
 
-    public List<DepotItemVo4WithInfoEx> getInOutStock(String materialParam, List<Long> categoryIdList, List<Long> depotList, String endTime, Integer offset, Integer rows)throws Exception {
-        List<DepotItemVo4WithInfoEx> list =null;
-        try{
-            list = depotItemMapperEx.getInOutStock(materialParam, categoryIdList, depotList, endTime, offset, rows);
-        }catch(Exception e){
-            JshException.readFail(logger, e);
-        }
-        return list;
+    public List<DepotItemVo4InOutStock> getInOutStock(String materialParam, List<Long> categoryIdList,
+                                                       List<Long> depotList, String beginTime, String endTime,
+                                                       Boolean forceFlag, Boolean inOutManageFlag,
+                                                       Boolean moveAvgPriceFlag, String column, String order,
+                                                       Integer offset, Integer rows)throws Exception {
+        return depotItemMapperEx.getInOutStock(materialParam, categoryIdList, depotList, beginTime, endTime,
+                forceFlag, inOutManageFlag, moveAvgPriceFlag, column, order, offset, rows);
     }
 
-    public int getInOutStockCount(String materialParam, List<Long> categoryIdList, List<Long> depotList, String endTime)throws Exception {
-        int result=0;
-        try{
-            result = depotItemMapperEx.getInOutStockCount(materialParam, categoryIdList, depotList, endTime);
-        }catch(Exception e){
-            JshException.readFail(logger, e);
-        }
-        return result;
+    public int getInOutStockCount(String materialParam, List<Long> categoryIdList, List<Long> depotList,
+                                  String beginTime, String endTime, Boolean forceFlag,
+                                  Boolean inOutManageFlag, Boolean moveAvgPriceFlag)throws Exception {
+        return depotItemMapperEx.getInOutStockCount(materialParam, categoryIdList, depotList, beginTime, endTime,
+                forceFlag, inOutManageFlag, moveAvgPriceFlag);
+    }
+
+    public DepotItemVo4InOutStock getInOutStockStatistic(String materialParam, List<Long> categoryIdList,
+                                                          List<Long> depotList, String beginTime, String endTime,
+                                                          Boolean forceFlag, Boolean inOutManageFlag,
+                                                          Boolean moveAvgPriceFlag)throws Exception {
+        return depotItemMapperEx.getInOutStockStatistic(materialParam, categoryIdList, depotList, beginTime, endTime,
+                forceFlag, inOutManageFlag, moveAvgPriceFlag);
+    }
+
+    public BigDecimal getInOutStockUnitPrice(Long mId, List<Long> depotList,
+                                             Boolean moveAvgPriceFlag)throws Exception {
+        return zeroIfNull(depotItemMapperEx.getInOutStockUnitPrice(mId, depotList, moveAvgPriceFlag));
     }
 
     public List<DepotItemVo4WithInfoEx> getListWithBuyOrSale(String materialParam, String billType,

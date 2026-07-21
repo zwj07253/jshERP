@@ -2,6 +2,7 @@ package com.jsh.erp.datasource.mappers;
 
 import com.jsh.erp.datasource.entities.*;
 import com.jsh.erp.datasource.vo.DepotItemStockWarningCount;
+import com.jsh.erp.datasource.vo.DepotItemVo4InOutStock;
 import com.jsh.erp.datasource.vo.DepotItemVo4Stock;
 import com.jsh.erp.datasource.vo.DepotItemVoBatchNumberList;
 import com.jsh.erp.datasource.vo.InOutPriceVo;
@@ -63,11 +64,17 @@ public interface DepotItemMapperEx {
     List<DepotItemVo4WithInfoEx> getBillDetailListByIds(
             @Param("idList") List<Long> idList);
 
-    List<DepotItemVo4WithInfoEx> getInOutStock(
+    List<DepotItemVo4InOutStock> getInOutStock(
             @Param("materialParam") String materialParam,
             @Param("categoryIdList") List<Long> categoryIdList,
             @Param("depotList") List<Long> depotList,
+            @Param("beginTime") String beginTime,
             @Param("endTime") String endTime,
+            @Param("forceFlag") Boolean forceFlag,
+            @Param("inOutManageFlag") Boolean inOutManageFlag,
+            @Param("moveAvgPriceFlag") Boolean moveAvgPriceFlag,
+            @Param("column") String column,
+            @Param("order") String order,
             @Param("offset") Integer offset,
             @Param("rows") Integer rows);
 
@@ -75,7 +82,26 @@ public interface DepotItemMapperEx {
             @Param("materialParam") String materialParam,
             @Param("categoryIdList") List<Long> categoryIdList,
             @Param("depotList") List<Long> depotList,
-            @Param("endTime") String endTime);
+            @Param("beginTime") String beginTime,
+            @Param("endTime") String endTime,
+            @Param("forceFlag") Boolean forceFlag,
+            @Param("inOutManageFlag") Boolean inOutManageFlag,
+            @Param("moveAvgPriceFlag") Boolean moveAvgPriceFlag);
+
+    DepotItemVo4InOutStock getInOutStockStatistic(
+            @Param("materialParam") String materialParam,
+            @Param("categoryIdList") List<Long> categoryIdList,
+            @Param("depotList") List<Long> depotList,
+            @Param("beginTime") String beginTime,
+            @Param("endTime") String endTime,
+            @Param("forceFlag") Boolean forceFlag,
+            @Param("inOutManageFlag") Boolean inOutManageFlag,
+            @Param("moveAvgPriceFlag") Boolean moveAvgPriceFlag);
+
+    BigDecimal getInOutStockUnitPrice(
+            @Param("mId") Long mId,
+            @Param("depotList") List<Long> depotList,
+            @Param("moveAvgPriceFlag") Boolean moveAvgPriceFlag);
 
     List<DepotItemVo4WithInfoEx> getListWithBuyOrSale(
             @Param("materialParam") String materialParam,

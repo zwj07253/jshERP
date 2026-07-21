@@ -373,76 +373,155 @@
         order by di.header_id desc, di.id asc
     </select>
 
-    <select id="getInOutStock" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultByMaterial">
-        select m.id MId, me.bar_code, m."name" MName, m.mfrs MMfrs, m.model MModel, m.standard MStandard, m.brand,
-        m.other_field1 MOtherField1,m.other_field2 MOtherField2,m.other_field3 MOtherField3, m.img_name,
-        (m.unit || u.basic_unit) MaterialUnit, m.color MColor, m.unit_id, u."name" unit_name,
-        COALESCE(me.purchase_decimal,0) purchase_decimal, COALESCE(max(mcs.current_unit_price),0) currentUnitPrice
-        from jsh_material m
-        left join jsh_material_extend me on me.material_id=m.id and COALESCE(me.delete_Flag,'0') !='1'
-        left join jsh_material_current_stock mcs on m.id = mcs.material_id and COALESCE(mcs.delete_flag,'0') !='1'
-          and mcs.depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
-        left join jsh_material_initial_stock mist on mist.material_id=m.id and COALESCE(mist.delete_flag,'0') !='1'
-          and mist.depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
-        left join jsh_depot_item di on di.material_id=m.id and COALESCE(di.delete_Flag,'0') !='1'
-          and (di.depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
-          or di.another_depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>)
-        left join jsh_depot_head dh on di.header_id=dh.id and COALESCE(dh.delete_flag,'0') !='1'
-        left join jsh_unit u on m.unit_id=u.id and COALESCE(u.delete_Flag,'0') !='1'
-        where 1=1 and me.default_flag='1' and m.enabled=true and (di.id is not null or mist.id is not null)
-        <if test="materialParam != null and materialParam !=''">
-            <bind name="bindKey" value="'%'+materialParam+'%'"/>
-            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
-            or m.color like #{bindKey} or m.mfrs like #{bindKey} or m.brand like #{bindKey} or m.other_field1 like #{bindKey}
-            or m.other_field2 like #{bindKey} or m.other_field3 like #{bindKey})
-        </if>
-        <if test="categoryIdList.size()>0">
-            and m.category_id in
-            <foreach collection="categoryIdList" item="item" index="index" separator="," open="(" close=")">
-                #{item}
-            </foreach>
-        </if>
-        <if test="endTime != null">
-            and (dh.oper_time &lt;= #{endTime}::timestamp or mist.id is not null)
-        </if>
-        and COALESCE(m.delete_flag,'0') !='1'
-        group by m.id, me.bar_code, m."name", m.mfrs, m.model, m.standard, m.brand,
-        m.other_field1,m.other_field2,m.other_field3, m.img_name ,(m.unit || u.basic_unit), m.color, m.unit_id, u."name",
-        me.purchase_decimal
-        order by m.id desc
+    <sql id="inOutStockDelta">
+        (case when dh.sub_type='盘点复盘'
+                   and di.depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
+              then COALESCE(di.basic_number,0) else 0 end
+        + case when dh.sub_type='调拨'
+                   and di.another_depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
+              then COALESCE(di.basic_number,0) else 0 end
+        - case when dh.sub_type='调拨'
+                   and di.depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
+              then COALESCE(di.basic_number,0) else 0 end
+        + case when dh.sub_type='组装单' and di.material_type='组合件'
+                   and di.depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
+              then COALESCE(di.basic_number,0) else 0 end
+        - case when dh.sub_type='组装单' and di.material_type='普通子件'
+                   and di.depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
+              then COALESCE(di.basic_number,0) else 0 end
+        + case when dh.sub_type='拆卸单' and di.material_type='普通子件'
+                   and di.depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
+              then COALESCE(di.basic_number,0) else 0 end
+        - case when dh.sub_type='拆卸单' and di.material_type='组合件'
+                   and di.depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
+              then COALESCE(di.basic_number,0) else 0 end
+        + case when dh."type"='入库' and dh.sub_type not in ('调拨','组装单','拆卸单','盘点复盘')
+              <if test="inOutManageFlag">
+                  and dh.sub_type not in ('采购','采购退货','销售','销售退货')
+              </if>
+              and di.depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
+              then COALESCE(di.basic_number,0) else 0 end
+        - case when dh."type"='出库' and dh.sub_type not in ('调拨','组装单','拆卸单','盘点复盘')
+              <if test="inOutManageFlag">
+                  and dh.sub_type not in ('采购','采购退货','销售','销售退货')
+              </if>
+              and di.depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
+              then COALESCE(di.basic_number,0) else 0 end)
+    </sql>
+
+    <sql id="inOutStockCte">
+        with initial_stock as (
+            select tenant_id, material_id, COALESCE(sum(number),0) init_sum
+            from jsh_material_initial_stock
+            where depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
+            and COALESCE(delete_flag,'0') !='1'
+            group by tenant_id, material_id
+        ), movement_raw as (
+            select dh.tenant_id, di.material_id, dh.oper_time, <include refid="inOutStockDelta"/> delta
+            from jsh_depot_head dh
+            join jsh_depot_item di on dh.id=di.header_id and COALESCE(di.delete_flag,'0') !='1'
+            where COALESCE(dh.delete_flag,'0') !='1'
+            and dh.oper_time &lt;= #{endTime}::timestamp
+            <if test="forceFlag">
+                and dh.status='1'
+            </if>
+            and (di.depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
+              or di.another_depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>)
+        ), movement as (
+            select tenant_id, material_id, oper_time, delta from movement_raw where delta != 0
+        ), movement_summary as (
+            select tenant_id, material_id,
+                   COALESCE(sum(case when oper_time &lt; #{beginTime}::timestamp then delta else 0 end),0) prev_flow,
+                   COALESCE(sum(case when oper_time &gt;= #{beginTime}::timestamp and delta &gt; 0 then delta else 0 end),0) in_sum,
+                   COALESCE(sum(case when oper_time &gt;= #{beginTime}::timestamp and delta &lt; 0 then 0-delta else 0 end),0) out_sum
+            from movement
+            group by tenant_id, material_id
+        ), stock_price as (
+            select tenant_id, material_id, COALESCE(max(current_unit_price),0) current_unit_price
+            from jsh_material_current_stock
+            where depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
+            and COALESCE(delete_flag,'0') !='1'
+            group by tenant_id, material_id
+        ), stock_data as (
+            select m.tenant_id, m.id, me.bar_code, m."name" material_name, m.model material_model,
+                   m.standard material_standard, m.color material_color, m.mfrs material_mfrs,
+                   m.brand material_brand, m.other_field1, m.other_field2, m.other_field3,
+                   m.img_name, (m.unit || u.basic_unit) material_unit, m.unit_id, u."name" unit_name,
+                   u.ratio unit_ratio, u.other_unit,
+                   case when #{moveAvgPriceFlag} then COALESCE(sp.current_unit_price,0)
+                        else COALESCE(me.purchase_decimal,0) end unit_price,
+                   COALESCE(i.init_sum,0)+COALESCE(ms.prev_flow,0) prev_sum,
+                   COALESCE(ms.in_sum,0) in_sum, COALESCE(ms.out_sum,0) out_sum,
+                   COALESCE(i.init_sum,0)+COALESCE(ms.prev_flow,0)+COALESCE(ms.in_sum,0)-COALESCE(ms.out_sum,0) this_sum
+            from jsh_material m
+            join jsh_material_extend me on me.material_id=m.id and me.tenant_id=m.tenant_id and me.default_flag='1'
+                and COALESCE(me.delete_flag,'0') !='1'
+            left join jsh_unit u on m.unit_id=u.id and u.tenant_id=m.tenant_id and COALESCE(u.delete_flag,'0') !='1'
+            left join initial_stock i on i.material_id=m.id and i.tenant_id=m.tenant_id
+            left join movement_summary ms on ms.material_id=m.id and ms.tenant_id=m.tenant_id
+            left join stock_price sp on sp.material_id=m.id and sp.tenant_id=m.tenant_id
+            where m.enabled=true and COALESCE(m.delete_flag,'0') !='1'
+            and (i.material_id is not null or ms.material_id is not null)
+            <if test="materialParam != null and materialParam !=''">
+                <bind name="bindKey" value="'%'+materialParam+'%'"/>
+                and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey}
+                  or m.standard like #{bindKey} or m.model like #{bindKey} or m.color like #{bindKey}
+                  or m.mfrs like #{bindKey} or m.brand like #{bindKey} or m.other_field1 like #{bindKey}
+                  or m.other_field2 like #{bindKey} or m.other_field3 like #{bindKey})
+            </if>
+            <if test="categoryIdList.size()>0">
+                and m.category_id in
+                <foreach collection="categoryIdList" item="item" separator="," open="(" close=")">#{item}</foreach>
+            </if>
+        )
+    </sql>
+
+    <select id="getInOutStock" resultType="com.jsh.erp.datasource.vo.DepotItemVo4InOutStock">
+        <include refid="inOutStockCte"/>
+        select *, this_sum*unit_price this_all_price from stock_data
+        <choose>
+            <when test="column == 'barCode'">order by bar_code</when>
+            <when test="column == 'unitPrice'">order by unit_price</when>
+            <when test="column == 'prevSum'">order by prev_sum</when>
+            <when test="column == 'inSum'">order by in_sum</when>
+            <when test="column == 'outSum'">order by out_sum</when>
+            <when test="column == 'thisSum'">order by this_sum</when>
+            <when test="column == 'thisAllPrice'">order by this_sum*unit_price</when>
+            <otherwise>order by id</otherwise>
+        </choose>
+        <choose>
+            <when test="order == 'asc'">asc</when>
+            <otherwise>desc</otherwise>
+        </choose>
+        , id desc
         <if test="offset != null and rows != null">
             LIMIT #{rows} OFFSET #{offset}
         </if>
     </select>
 
     <select id="getInOutStockCount" resultType="java.lang.Integer">
-        select count(1) from (select m.id
+        <include refid="inOutStockCte"/>
+        select count(1) from stock_data
+    </select>
+
+    <select id="getInOutStockStatistic" resultType="com.jsh.erp.datasource.vo.DepotItemVo4InOutStock">
+        <include refid="inOutStockCte"/>
+        select COALESCE(sum(this_sum),0) total_stock,
+               COALESCE(sum(this_sum*unit_price),0) total_count_money
+        from stock_data
+    </select>
+
+    <select id="getInOutStockUnitPrice" resultType="java.math.BigDecimal">
+        select case when #{moveAvgPriceFlag} then COALESCE(max(mcs.current_unit_price),0)
+                    else COALESCE(max(me.purchase_decimal),0) end
         from jsh_material m
-        left join jsh_material_extend me on me.material_id=m.id and COALESCE(me.delete_Flag,'0') !='1'
-        left join jsh_material_initial_stock mist on mist.material_id=m.id and COALESCE(mist.delete_flag,'0') !='1'
-          and mist.depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
-        left join jsh_depot_item di on di.material_id=m.id and COALESCE(di.delete_Flag,'0') !='1'
-          and (di.depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
-          or di.another_depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>)
-        left join jsh_depot_head dh on di.header_id=dh.id and COALESCE(dh.delete_flag,'0') !='1'
-        where 1=1 and me.default_flag='1' and m.enabled=true and (di.id is not null or mist.id is not null)
-        <if test="materialParam != null and materialParam !=''">
-            <bind name="bindKey" value="'%'+materialParam+'%'"/>
-            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
-            or m.color like #{bindKey} or m.mfrs like #{bindKey} or m.brand like #{bindKey} or m.other_field1 like #{bindKey}
-            or m.other_field2 like #{bindKey} or m.other_field3 like #{bindKey})
-        </if>
-        <if test="categoryIdList.size()>0">
-            and m.category_id in
-            <foreach collection="categoryIdList" item="item" index="index" separator="," open="(" close=")">
-                #{item}
-            </foreach>
-        </if>
-        <if test="endTime != null">
-            and (dh.oper_time &lt;= #{endTime}::timestamp or mist.id is not null)
-        </if>
-        and COALESCE(m.delete_flag,'0') !='1'
-        group by m.id) cc
+        join jsh_material_extend me on me.material_id=m.id and me.tenant_id=m.tenant_id and me.default_flag='1'
+            and COALESCE(me.delete_flag,'0') !='1'
+        left join jsh_material_current_stock mcs on mcs.material_id=m.id
+            and mcs.tenant_id=m.tenant_id
+            and mcs.depot_id in <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
+            and COALESCE(mcs.delete_flag,'0') !='1'
+        where m.id=#{mId} and COALESCE(m.delete_flag,'0') !='1'
     </select>
 
     <select id="getListWithBuyOrSale" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultByMaterial">
