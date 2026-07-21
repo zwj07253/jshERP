@@ -489,7 +489,7 @@
             <foreach collection="organArray" item="organId" separator=",">
                 #{organId}::bigint
             </foreach>
-            ) or dh.sub_type='采购退货' or dh.sub_type='零售' or dh.sub_type='其它')
+            ) or dh.sub_type not in ('销售','销售退货'))
         </if>
         <if test="depotList.size()>0">
             <if test="type == '入库'">
@@ -531,19 +531,20 @@
             and (dh.sub_type!='采购' and dh.sub_type!='采购退货' and dh.sub_type!='销售' and dh.sub_type!='销售退货')
         </if>
         and COALESCE(dh.delete_flag,'0') !='1'
+        and di.id is not null
         group by di.material_id, me.bar_code, m."name",m.model,m.standard,m.color,m.brand,m.mfrs,
         mc."name", (m.unit || u.basic_unit)
-        <if test="column == 'createTime'">
-            order by materialId desc
-        </if>
-        <if test="column != 'createTime'">
-            <if test="column == 'barCode' or column == 'numSum' or column == 'priceSum'">
-                order by ${column}
-                <if test="order == 'asc' or order == 'desc'">
-                    ${order}
-                </if>
-            </if>
-        </if>
+        <choose>
+            <when test="column == 'barCode'">order by me.bar_code</when>
+            <when test="column == 'numSum'">order by sum(di.basic_number)</when>
+            <when test="column == 'priceSum'">order by sum(di.all_price)</when>
+            <otherwise>order by di.material_id</otherwise>
+        </choose>
+        <choose>
+            <when test="order == 'asc'">asc</when>
+            <otherwise>desc</otherwise>
+        </choose>
+        , di.material_id desc
         <if test="offset != null and rows != null">
             LIMIT #{rows} OFFSET #{offset}
         </if>
@@ -572,7 +573,7 @@
             <foreach collection="organArray" item="organId" separator=",">
                 #{organId}::bigint
             </foreach>
-            ) or dh.sub_type='采购退货' or dh.sub_type='零售' or dh.sub_type='其它')
+            ) or dh.sub_type not in ('销售','销售退货'))
         </if>
         <if test="depotList.size()>0">
             <if test="type == '入库'">
@@ -614,6 +615,7 @@
             and (dh.sub_type!='采购' and dh.sub_type!='采购退货' and dh.sub_type!='销售' and dh.sub_type!='销售退货')
         </if>
         and COALESCE(dh.delete_flag,'0') !='1'
+        and di.id is not null
         group by di.material_id) a
     </select>
 
@@ -642,7 +644,7 @@
             <foreach collection="organArray" item="organId" separator=",">
                 #{organId}::bigint
             </foreach>
-            ) or dh.sub_type='采购退货' or dh.sub_type='零售' or dh.sub_type='其它')
+            ) or dh.sub_type not in ('销售','销售退货'))
         </if>
         <if test="depotList.size()>0">
             <if test="type == '入库'">
@@ -684,6 +686,7 @@
             and (dh.sub_type!='采购' and dh.sub_type!='采购退货' and dh.sub_type!='销售' and dh.sub_type!='销售退货')
         </if>
         and COALESCE(dh.delete_flag,'0') !='1'
+        and di.id is not null
     </select>
 
     <select id="findAllocationDetail" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultWithInfoExMap">

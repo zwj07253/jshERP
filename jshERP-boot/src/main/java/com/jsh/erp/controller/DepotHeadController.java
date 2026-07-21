@@ -310,17 +310,8 @@ public class DepotHeadController extends BaseController {
         BaseResponseInfo res = new BaseResponseInfo();
         Map<String, Object> map = new HashMap<String, Object>();
         try {
-            List<Long> depotList = new ArrayList<>();
-            if(depotId != null) {
-                depotList.add(depotId);
-            } else {
-                //未选择仓库时默认为当前用户有权限的仓库
-                JSONArray depotArr = depotService.findDepotByCurrentUser();
-                for(Object obj: depotArr) {
-                    JSONObject object = JSONObject.parseObject(obj.toString());
-                    depotList.add(object.getLong("id"));
-                }
-            }
+            depotHeadService.checkInOutMaterialCountReportPermission(type);
+            List<Long> depotList = depotService.parseDepotList(depotId);
             List<Long> categoryList = new ArrayList<>();
             if(categoryId != null){
                 categoryList = materialService.getListByParentId(categoryId);
@@ -329,19 +320,33 @@ public class DepotHeadController extends BaseController {
             endTime = Tools.parseDayToTime(endTime,BusinessConstants.DAY_LAST_TIME);
             Boolean forceFlag = systemConfigService.getForceApprovalFlag();
             Boolean inOutManageFlag = systemConfigService.getInOutManageFlag();
+            int safeCurrentPage = Math.max(currentPage, 1);
+            int safePageSize = Math.min(Math.max(pageSize, 1), 10000);
+            Long userId = userService.getUserId(request);
+            String priceLimit = userService.getRoleTypeByUserId(userId).getPriceLimit();
+            boolean hideMixedPrice = StringUtil.isNotEmpty(priceLimit)
+                    && (priceLimit.contains("4") || priceLimit.contains("5") || priceLimit.contains("6"));
             List<DepotHeadVo4InOutMCount> list = depotHeadService.findInOutMaterialCount(beginTime, endTime, type, categoryList, forceFlag, inOutManageFlag,
                     StringUtil.toNull(materialParam), depotList, organizationId, oId, StringUtil.safeSqlParse(column), StringUtil.safeSqlParse(order),
-                    (currentPage-1)*pageSize, pageSize);
+                    (safeCurrentPage-1)*safePageSize, safePageSize);
             int total = depotHeadService.findInOutMaterialCountTotal(beginTime, endTime, type, categoryList, forceFlag, inOutManageFlag,
                     StringUtil.toNull(materialParam), depotList, organizationId, oId);
+            if (hideMixedPrice && list != null) {
+                for (DepotHeadVo4InOutMCount item : list) {
+                    item.setPriceSum(BigDecimal.ZERO);
+                }
+            }
             map.put("total", total);
             map.put("rows", list);
             DepotHeadVo4InOutMCount statistic = depotHeadService.findInOutMaterialCountStatistic(beginTime, endTime, type, categoryList, forceFlag, inOutManageFlag,
                     StringUtil.toNull(materialParam), depotList, organizationId, oId);
             map.put("numSumTotal", statistic.getNumSum());
-            map.put("priceSumTotal", statistic.getPriceSum());
+            map.put("priceSumTotal", hideMixedPrice ? BigDecimal.ZERO : statistic.getPriceSum());
             res.code = 200;
             res.data = map;
+        } catch (BusinessRunTimeException e) {
+            res.code = e.getCode();
+            res.data = e.getData().get("message");
         } catch(Exception e){
             logger.error(e.getMessage(), e);
             res.code = 500;

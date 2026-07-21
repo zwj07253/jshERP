@@ -739,6 +739,12 @@ public class ExceptionConstants {
     public static final String DEPOT_HEAD_OUT_DETAIL_REPORT_PERMISSION_MSG = "抱歉，当前用户没有出库明细的查看权限";
     public static final int DEPOT_HEAD_ALLOCATION_DETAIL_REPORT_PERMISSION_CODE = 8500122;
     public static final String DEPOT_HEAD_ALLOCATION_DETAIL_REPORT_PERMISSION_MSG = "抱歉，当前用户没有调拨明细的查看权限";
+    public static final int DEPOT_HEAD_IN_MATERIAL_COUNT_REPORT_PERMISSION_CODE = 8500123;
+    public static final String DEPOT_HEAD_IN_MATERIAL_COUNT_REPORT_PERMISSION_MSG = "抱歉，当前用户没有入库汇总的查看权限";
+    public static final int DEPOT_HEAD_OUT_MATERIAL_COUNT_REPORT_PERMISSION_CODE = 8500124;
+    public static final String DEPOT_HEAD_OUT_MATERIAL_COUNT_REPORT_PERMISSION_MSG = "抱歉，当前用户没有出库汇总的查看权限";
+    public static final int DEPOT_HEAD_MATERIAL_COUNT_TYPE_INVALID_CODE = 8500125;
+    public static final String DEPOT_HEAD_MATERIAL_COUNT_TYPE_INVALID_MSG = "抱歉，出入库汇总类型不合法";
 
 
     /**

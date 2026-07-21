@@ -983,6 +983,28 @@ public class DepotHeadService {
         }
     }
 
+    public void checkInOutMaterialCountReportPermission(String type) throws Exception {
+        if (!BusinessConstants.DEPOTHEAD_TYPE_IN.equals(type)
+                && !BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(type)) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_MATERIAL_COUNT_TYPE_INVALID_CODE,
+                    ExceptionConstants.DEPOT_HEAD_MATERIAL_COUNT_TYPE_INVALID_MSG);
+        }
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        String reportUrl = BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(type)
+                ? "/report/out_material_count" : "/report/in_material_count";
+        if (!userService.hasFunctionPermission(userId, reportUrl)) {
+            if (BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(type)) {
+                throw new BusinessRunTimeException(
+                        ExceptionConstants.DEPOT_HEAD_OUT_MATERIAL_COUNT_REPORT_PERMISSION_CODE,
+                        ExceptionConstants.DEPOT_HEAD_OUT_MATERIAL_COUNT_REPORT_PERMISSION_MSG);
+            }
+            throw new BusinessRunTimeException(
+                    ExceptionConstants.DEPOT_HEAD_IN_MATERIAL_COUNT_REPORT_PERMISSION_CODE,
+                    ExceptionConstants.DEPOT_HEAD_IN_MATERIAL_COUNT_REPORT_PERMISSION_MSG);
+        }
+    }
+
     public int findInOutDetailCount(String beginTime, String endTime, String type, String[] creatorArray,
                                     String[] organArray, List<Long> categoryList, Boolean forceFlag, Boolean inOutManageFlag, String materialParam, List<Long> depotList, Integer oId, String number,
                                     Long creator, String remark) throws Exception{
@@ -1024,7 +1046,7 @@ public class DepotHeadService {
             if(creatorArray == null && organizationId != null) {
                 creatorArray = getCreatorArrayByOrg(organizationId);
             }
-            String subType = "出库".equals(type)? "销售" : "";
+            String subType = "出库".equals(type) ? "销售" : ("入库".equals(type) ? "销售退货" : "");
             String [] organArray = getOrganArray(subType, "");
             list =depotHeadMapperEx.findInOutMaterialCount(beginTime, endTime, type, categoryList, forceFlag, inOutManageFlag, materialParam, depotList, oId,
                     creatorArray, organArray, column, order, offset, rows);
@@ -1043,7 +1065,7 @@ public class DepotHeadService {
             if(creatorArray == null && organizationId != null) {
                 creatorArray = getCreatorArrayByOrg(organizationId);
             }
-            String subType = "出库".equals(type)? "销售" : "";
+            String subType = "出库".equals(type) ? "销售" : ("入库".equals(type) ? "销售退货" : "");
             String [] organArray = getOrganArray(subType, "");
             result =depotHeadMapperEx.findInOutMaterialCountTotal(beginTime, endTime, type, categoryList, forceFlag, inOutManageFlag, materialParam, depotList, oId,
                     creatorArray, organArray);
@@ -1062,7 +1084,7 @@ public class DepotHeadService {
             if(creatorArray == null && organizationId != null) {
                 creatorArray = getCreatorArrayByOrg(organizationId);
             }
-            String subType = "出库".equals(type)? "销售" : "";
+            String subType = "出库".equals(type) ? "销售" : ("入库".equals(type) ? "销售退货" : "");
             String [] organArray = getOrganArray(subType, "");
             List<DepotHeadVo4InOutMCount> list = depotHeadMapperEx.findInOutMaterialCountStatistic(beginTime, endTime, type, categoryList,
                     forceFlag, inOutManageFlag, materialParam, depotList, oId, creatorArray, organArray);

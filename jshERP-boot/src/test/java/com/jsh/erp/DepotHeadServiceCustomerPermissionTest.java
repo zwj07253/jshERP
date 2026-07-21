@@ -103,4 +103,58 @@ class DepotHeadServiceCustomerPermissionTest {
 
         assertDoesNotThrow(() -> depotHeadService.checkAllocationDetailReportPermission());
     }
+
+    @Test
+    void rejectsInvalidMaterialCountType() {
+        BusinessRunTimeException exception = assertThrows(BusinessRunTimeException.class,
+                () -> depotHeadService.checkInOutMaterialCountReportPermission("其它"));
+
+        assertEquals(ExceptionConstants.DEPOT_HEAD_MATERIAL_COUNT_TYPE_INVALID_CODE, exception.getCode());
+    }
+
+    @Test
+    void rejectsUserWithoutInMaterialCountReportPermission() throws Exception {
+        User user = new User();
+        user.setId(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasFunctionPermission(101L, "/report/in_material_count")).thenReturn(false);
+
+        BusinessRunTimeException exception = assertThrows(BusinessRunTimeException.class,
+                () -> depotHeadService.checkInOutMaterialCountReportPermission("入库"));
+
+        assertEquals(ExceptionConstants.DEPOT_HEAD_IN_MATERIAL_COUNT_REPORT_PERMISSION_CODE, exception.getCode());
+    }
+
+    @Test
+    void allowsUserWithInMaterialCountReportPermission() throws Exception {
+        User user = new User();
+        user.setId(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasFunctionPermission(101L, "/report/in_material_count")).thenReturn(true);
+
+        assertDoesNotThrow(() -> depotHeadService.checkInOutMaterialCountReportPermission("入库"));
+    }
+
+    @Test
+    void rejectsUserWithoutOutMaterialCountReportPermission() throws Exception {
+        User user = new User();
+        user.setId(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasFunctionPermission(101L, "/report/out_material_count")).thenReturn(false);
+
+        BusinessRunTimeException exception = assertThrows(BusinessRunTimeException.class,
+                () -> depotHeadService.checkInOutMaterialCountReportPermission("出库"));
+
+        assertEquals(ExceptionConstants.DEPOT_HEAD_OUT_MATERIAL_COUNT_REPORT_PERMISSION_CODE, exception.getCode());
+    }
+
+    @Test
+    void allowsUserWithOutMaterialCountReportPermission() throws Exception {
+        User user = new User();
+        user.setId(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasFunctionPermission(101L, "/report/out_material_count")).thenReturn(true);
+
+        assertDoesNotThrow(() -> depotHeadService.checkInOutMaterialCountReportPermission("出库"));
+    }
 }

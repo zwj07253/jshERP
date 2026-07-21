@@ -249,7 +249,7 @@ public class P1ReportTest extends ApiTestBase {
 
     @Test
     @Order(11)
-    @DisplayName("39a: 入库/出库明细 - 按商品汇总")
+    @DisplayName("39a: 入库汇总 - 按商品汇总")
     void materialCount() {
         Response resp = authReqGet()
                 .param("currentPage", 1)
@@ -261,9 +261,9 @@ public class P1ReportTest extends ApiTestBase {
                 .param("organizationId", "")
                 .param("beginTime", BEGIN_TIME)
                 .param("endTime", END_TIME)
-                .param("type", "")
-                .param("column", "")
-                .param("order", "")
+                .param("type", "入库")
+                .param("column", "createTime")
+                .param("order", "desc")
                 .get(CONTEXT + "/depotHead/findInOutMaterialCount");
         assertPaged(resp);
     }
