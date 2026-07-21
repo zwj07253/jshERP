@@ -273,7 +273,9 @@ public interface DepotItemMapperEx {
             @Param("rows") Integer rows,
             @Param("materialParam") String materialParam,
             @Param("depotList") List<Long> depotList,
-            @Param("categoryList") List<Long> categoryList);
+            @Param("categoryList") List<Long> categoryList,
+            @Param("column") String column,
+            @Param("order") String order);
 
     int findStockWarningCountTotal(
             @Param("materialParam") String materialParam,

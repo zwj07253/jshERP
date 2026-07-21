@@ -48,7 +48,7 @@
             bordered
             ref="table"
             size="middle"
-            rowKey="id"
+            rowKey="warningKey"
             :columns="columns"
             :dataSource="dataSource"
             :components="handleDrag(columns)"
@@ -93,9 +93,9 @@
                 :page-size="ipagination.pageSize"
                 :page-size-options="ipagination.pageSizeOptions"
                 :total="ipagination.total"
-                :show-total="(total, range) => `共 ${total-Math.ceil(total/ipagination.pageSize)} 条`">
+                :show-total="total => `共 ${total} 条`">
                 <template slot="buildOptionText" slot-scope="props">
-                  <span>{{ props.value-1 }}条/页</span>
+                  <span>{{ props.value }}条/页</span>
                 </template>
               </a-pagination>
             </a-col>
@@ -135,8 +135,8 @@
           mpList: getMpListShort(Vue.ls.get('materialPropertyList'))  //扩展属性
         },
         ipagination:{
-          pageSize: 11,
-          pageSizeOptions: ['11', '21', '31', '101', '201']
+          pageSize: 10,
+          pageSizeOptions: ['10', '20', '30', '100', '200']
         },
         depotList: [],
         categoryTree:[],
@@ -154,7 +154,7 @@
             }
           },
           {title: '仓库', dataIndex: 'depotName', width: 100, ellipsis:true},
-          {title: '条码', dataIndex: 'barCode', sorter: (a, b) => a.barCode - b.barCode, width: 100},
+          {title: '条码', dataIndex: 'barCode', sorter: true, width: 100},
           {title: '名称', dataIndex: 'mname', width: 100, ellipsis:true},
           {title: '规格', dataIndex: 'mstandard', width: 80, ellipsis:true},
           {title: '型号', dataIndex: 'mmodel', width: 80, ellipsis:true},
@@ -165,11 +165,11 @@
           {title: '扩展2', dataIndex: 'motherField2', width: 80, ellipsis:true},
           {title: '扩展3', dataIndex: 'motherField3', width: 80, ellipsis:true},
           {title: '单位', dataIndex: 'materialUnit', width: 60, ellipsis:true},
-          {title: '库存', dataIndex: 'currentNumber', sorter: (a, b) => a.currentNumber - b.currentNumber, width: 80},
-          {title: '最低安全库存', dataIndex: 'lowSafeStock', sorter: (a, b) => a.lowSafeStock - b.lowSafeStock, width: 100},
-          {title: '最高安全库存', dataIndex: 'highSafeStock', sorter: (a, b) => a.highSafeStock - b.highSafeStock, width: 100},
-          {title: '建议入库量', dataIndex: 'lowCritical', sorter: (a, b) => a.lowCritical - b.lowCritical, width: 80},
-          {title: '建议出库量', dataIndex: 'highCritical', sorter: (a, b) => a.highCritical - b.highCritical, width: 80}
+          {title: '库存', dataIndex: 'currentNumber', sorter: true, width: 80},
+          {title: '最低安全库存', dataIndex: 'lowSafeStock', sorter: true, width: 100},
+          {title: '最高安全库存', dataIndex: 'highSafeStock', sorter: true, width: 100},
+          {title: '建议入库量', dataIndex: 'lowCritical', sorter: true, width: 80},
+          {title: '建议出库量', dataIndex: 'highCritical', sorter: true, width: 80}
         ],
         url: {
           list: "/depotItem/findStockWarningCount"
@@ -187,7 +187,7 @@
         let param = Object.assign({}, this.queryParam, this.isorter);
         param.field = this.getQueryField();
         param.currentPage = this.ipagination.current;
-        param.pageSize = this.ipagination.pageSize-1;
+        param.pageSize = this.ipagination.pageSize;
         return param;
       },
       getDepotData() {
@@ -239,12 +239,32 @@
         }
       },
       exportExcel() {
+        if ((this.ipagination.total || 0) > 10000) {
+          this.$message.warning('单次导出不能超过10000条，请缩小查询范围')
+          return
+        }
+        let params = this.getQueryParams()
+        params.currentPage = 1
+        params.pageSize = Math.max(this.ipagination.total || 0, 1)
+        this.loading = true
+        getAction(this.url.list, params).then((res) => {
+          if (res.code === 200) {
+            this.exportExcelRows(res.data.rows || [])
+          } else {
+            const message = typeof res.data === 'string' ? res.data : res.data && res.data.message
+            this.$message.warning(message || '导出数据获取失败')
+          }
+        }).finally(() => {
+          this.loading = false
+        })
+      },
+      exportExcelRows(dataSource) {
         let list = []
         let mpStr = getMpListShort(Vue.ls.get('materialPropertyList'))
         let head = '仓库,条码,名称,规格,型号,颜色,品牌,制造商,' + mpStr + ',单位,库存,最低安全库存,最高安全库存,建议入库量,建议出库量'
-        for (let i = 0; i < this.dataSource.length; i++) {
+        for (let i = 0; i < dataSource.length; i++) {
           let item = []
-          let ds = this.dataSource[i]
+          let ds = dataSource[i]
           item.push(ds.depotName, ds.barCode, ds.mname, ds.mstandard, ds.mmodel, ds.mcolor, ds.brand, ds.mmfrs,
             ds.motherField1, ds.motherField2, ds.motherField3, ds.materialUnit, ds.currentNumber, ds.lowSafeStock, ds.highSafeStock, ds.lowCritical, ds.highCritical)
           list.push(item)

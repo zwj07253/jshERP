@@ -5,7 +5,17 @@ import java.math.BigDecimal;
 
 public class DepotItemStockWarningCount {
 
+    private String warningKey;
+
     private Long MId;
+
+    public String getWarningKey() {
+        return warningKey;
+    }
+
+    public void setWarningKey(String warningKey) {
+        this.warningKey = warningKey;
+    }
 
     private String barCode;
 

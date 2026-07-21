@@ -329,13 +329,56 @@ public class P1ReportTest extends ApiTestBase {
     void stockWarning() {
         Response resp = authReqGet()
                 .param("currentPage", 1)
-                .param("pageSize", 10)
+                .param("pageSize", 10000)
                 .param("materialParam", "")
                 .param("depotId", "")
                 .param("categoryId", "")
-                .param("mpList", "")
+                .param("column", "currentNumber")
+                .param("order", "desc")
                 .get(CONTEXT + "/depotItem/findStockWarningCount");
         assertPaged(resp);
+        JSONObject data = JSONObject.parseObject(resp.body().asString()).getJSONObject("data");
+        JSONArray rows = data.getJSONArray("rows");
+        BigDecimal previousStock = null;
+        java.util.Set<String> warningKeys = new java.util.HashSet<>();
+        for (int i = 0; i < rows.size(); i++) {
+            JSONObject row = rows.getJSONObject(i);
+            String warningKey = row.getString("warningKey");
+            assertTrue(warningKey != null && warningKeys.add(warningKey), "库存预警行键必须存在且不重复");
+            BigDecimal current = row.getBigDecimal("currentNumber");
+            BigDecimal low = row.getBigDecimal("lowSafeStock");
+            BigDecimal high = row.getBigDecimal("highSafeStock");
+            BigDecimal lowCritical = row.getBigDecimal("lowCritical");
+            BigDecimal highCritical = row.getBigDecimal("highCritical");
+            assertTrue(lowCritical != null || highCritical != null, "每条记录必须命中一种库存预警");
+            if (lowCritical != null) {
+                assertTrue(current.compareTo(low) < 0, "建议入库记录必须低于最低安全库存");
+                assertEquals(0, low.subtract(current).compareTo(lowCritical), "建议入库量计算错误");
+            }
+            if (highCritical != null) {
+                assertTrue(current.compareTo(high) > 0, "建议出库记录必须高于最高安全库存");
+                assertEquals(0, current.subtract(high).compareTo(highCritical), "建议出库量计算错误");
+            }
+            if (previousStock != null) {
+                assertTrue(previousStock.compareTo(current) >= 0, "库存预警必须按后端库存降序排列");
+            }
+            previousStock = current;
+        }
+        assertEquals(rows.size(), data.getIntValue("total"), "库存预警全量行数必须与总数一致");
+    }
+
+    @Test
+    @Order(10)
+    @DisplayName("38b: 库存预警规范化非法分页参数")
+    void stockWarningNormalizesInvalidPagination() {
+        Response resp = authReqGet()
+                .param("currentPage", 0)
+                .param("pageSize", 0)
+                .param("materialParam", "")
+                .get(CONTEXT + "/depotItem/findStockWarningCount");
+        assertPaged(resp);
+        JSONArray rows = JSONObject.parseObject(resp.body().asString()).getJSONObject("data").getJSONArray("rows");
+        assertTrue(rows.size() <= 1, "非法 pageSize 必须归一化为 1");
     }
 
     // ===== 39. 入库/出库/调拨明细 =====

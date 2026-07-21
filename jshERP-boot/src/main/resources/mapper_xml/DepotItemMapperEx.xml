@@ -64,6 +64,7 @@
     </resultMap>
 
     <resultMap id="ResultStockWarningCount" type="com.jsh.erp.datasource.vo.DepotItemStockWarningCount">
+        <result column="warning_key" jdbcType="VARCHAR" property="warningKey" />
         <result column="MId" jdbcType="VARCHAR" property="MId" />
         <result column="bar_code" jdbcType="VARCHAR" property="barCode" />
         <result column="MName" jdbcType="VARCHAR" property="MName" />
@@ -80,6 +81,9 @@
         <result column="current_number" jdbcType="DECIMAL" property="currentNumber" />
         <result column="low_safe_stock" jdbcType="DECIMAL" property="lowSafeStock" />
         <result column="high_safe_stock" jdbcType="DECIMAL" property="highSafeStock" />
+        <result column="depot_name" jdbcType="VARCHAR" property="depotName" />
+        <result column="low_critical" jdbcType="DECIMAL" property="lowCritical" />
+        <result column="high_critical" jdbcType="DECIMAL" property="highCritical" />
     </resultMap>
 
     <resultMap id="stockMap" type="com.jsh.erp.datasource.vo.DepotItemVo4Stock">
@@ -1224,83 +1228,76 @@
         and COALESCE(delete_flag,'0') !='1'
     </select>
 
-    <select id="findStockWarningCount" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultStockWarningCount">
-        select m.id MId, m."name" MName, me.bar_code, m.mfrs MMfrs, m.model MModel, m.standard MStandard,m.color MColor, m.brand,
-        m.other_field1 MOtherField1,m.other_field2 MOtherField2,m.other_field3 MOtherField3,d."name" depotName,
-        m.unit MaterialUnit, u.basic_unit unit_name,mcs.current_number,
-        mis.low_safe_stock, mis.high_safe_stock
-        from jsh_material m
-        left join jsh_material_extend me on me.material_id=m.id and COALESCE(me.delete_Flag,'0') !='1'
-        left join jsh_material_initial_stock mis on mis.material_id=m.id and COALESCE(mis.delete_Flag,'0') !='1'
-        left join jsh_material_current_stock mcs on mcs.material_id=m.id and COALESCE(mcs.delete_Flag,'0') !='1'
-        left join jsh_unit u on m.unit_id=u.id and COALESCE(u.delete_Flag,'0') !='1'
-        left join jsh_depot d on d.id=mis.depot_id and COALESCE(d.delete_flag,'0') !='1'
-        where 1=1
-        and me.default_flag='1'
-        and m.enabled=true
-        and COALESCE(m.delete_flag,'0') !='1'
-        and mis.depot_id=mcs.depot_id
-        and ((COALESCE(mis.low_safe_stock,0)!=0 and mcs.current_number &lt; COALESCE(mis.low_safe_stock,0))
-            or (COALESCE(mis.high_safe_stock,0)!=0 and mcs.current_number > COALESCE(mis.high_safe_stock,0)))
-        <if test="materialParam != null and materialParam !=''">
-            <bind name="bindKey" value="'%'+materialParam+'%'"/>
-            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
-            or m.color like #{bindKey} or m.mfrs like #{bindKey} or m.brand like #{bindKey} or m.other_field1 like #{bindKey}
-            or m.other_field2 like #{bindKey} or m.other_field3 like #{bindKey})
-        </if>
-        <if test="depotList.size()>0">
-            and mis.depot_id in
-            <foreach collection="depotList" item="item" index="index" separator="," open="(" close=")">
-                #{item}
-            </foreach>
-        </if>
-        <if test="categoryList.size()>0">
-            and m.category_id in
-            <foreach collection="categoryList" item="item" index="index" separator="," open="(" close=")">
-                #{item}
-            </foreach>
-        </if>
-        order by depotName asc
-        <if test="offset != null and rows != null">
-            LIMIT #{rows} OFFSET #{offset}
-        </if>
+    <sql id="stockWarningCte">
+        with warning_data as (
+            select concat(m.id, '-', mis.depot_id) warning_key, m.tenant_id, m.id MId,
+                   m."name" MName, me.bar_code, m.mfrs MMfrs, m.model MModel,
+                   m.standard MStandard, m.color MColor, m.brand,
+                   m.other_field1 MOtherField1, m.other_field2 MOtherField2,
+                   m.other_field3 MOtherField3, d."name" depot_name,
+                   m.unit MaterialUnit, u.basic_unit unit_name, mcs.current_number,
+                   mis.low_safe_stock, mis.high_safe_stock,
+                   case when COALESCE(mis.low_safe_stock,0)!=0 and mcs.current_number &lt; mis.low_safe_stock
+                        then mis.low_safe_stock-mcs.current_number end low_critical,
+                   case when COALESCE(mis.high_safe_stock,0)!=0 and mcs.current_number &gt; mis.high_safe_stock
+                        then mcs.current_number-mis.high_safe_stock end high_critical
+            from jsh_material m
+            join jsh_material_extend me on me.material_id=m.id and me.tenant_id is not distinct from m.tenant_id
+                and me.default_flag='1' and COALESCE(me.delete_flag,'0') !='1'
+            join jsh_material_initial_stock mis on mis.material_id=m.id and mis.tenant_id is not distinct from m.tenant_id
+                and COALESCE(mis.delete_flag,'0') !='1'
+            join jsh_material_current_stock mcs on mcs.material_id=m.id and mcs.depot_id=mis.depot_id
+                and mcs.tenant_id is not distinct from m.tenant_id and COALESCE(mcs.delete_flag,'0') !='1'
+            left join jsh_unit u on m.unit_id=u.id and u.tenant_id is not distinct from m.tenant_id
+                and COALESCE(u.delete_flag,'0') !='1'
+            join jsh_depot d on d.id=mis.depot_id and d.tenant_id is not distinct from m.tenant_id
+                and COALESCE(d.delete_flag,'0') !='1'
+            where m.enabled=true and COALESCE(m.delete_flag,'0') !='1'
+              and ((COALESCE(mis.low_safe_stock,0)!=0 and mcs.current_number &lt; mis.low_safe_stock)
+                or (COALESCE(mis.high_safe_stock,0)!=0 and mcs.current_number &gt; mis.high_safe_stock))
+            <if test="materialParam != null and materialParam !=''">
+                <bind name="bindKey" value="'%'+materialParam+'%'"/>
+                and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey}
+                  or m.standard like #{bindKey} or m.model like #{bindKey} or m.color like #{bindKey}
+                  or m.mfrs like #{bindKey} or m.brand like #{bindKey} or m.other_field1 like #{bindKey}
+                  or m.other_field2 like #{bindKey} or m.other_field3 like #{bindKey})
+            </if>
+            <if test="depotList.size()>0">
+                and mis.depot_id in
+                <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
+            </if>
+            <if test="categoryList.size()>0">
+                and m.category_id in
+                <foreach collection="categoryList" item="item" separator="," open="(" close=")">#{item}</foreach>
+            </if>
+        )
+    </sql>
+
+    <select id="findStockWarningCount" resultMap="ResultStockWarningCount">
+        <include refid="stockWarningCte"/>
+        select * from warning_data
+        <choose>
+            <when test="column == 'depotName'">order by depot_name</when>
+            <when test="column == 'barCode'">order by bar_code</when>
+            <when test="column == 'mname'">order by MName</when>
+            <when test="column == 'currentNumber'">order by current_number</when>
+            <when test="column == 'lowSafeStock'">order by low_safe_stock</when>
+            <when test="column == 'highSafeStock'">order by high_safe_stock</when>
+            <when test="column == 'lowCritical'">order by low_critical</when>
+            <when test="column == 'highCritical'">order by high_critical</when>
+            <otherwise>order by depot_name</otherwise>
+        </choose>
+        <choose>
+            <when test="order == 'desc'">desc</when>
+            <otherwise>asc</otherwise>
+        </choose>
+        , MId asc
+        <if test="offset != null and rows != null">LIMIT #{rows} OFFSET #{offset}</if>
     </select>
 
     <select id="findStockWarningCountTotal" resultType="java.lang.Integer">
-        select count(1) from
-        (select m.id
-        from jsh_material m
-        left join jsh_material_extend me on me.material_id=m.id and COALESCE(me.delete_Flag,'0') !='1'
-        left join jsh_material_initial_stock mis on mis.material_id=m.id and COALESCE(mis.delete_Flag,'0') !='1'
-        left join jsh_material_current_stock mcs on mcs.material_id=m.id and COALESCE(mcs.delete_Flag,'0') !='1'
-        left join jsh_unit u on m.unit_id=u.id and COALESCE(u.delete_Flag,'0') !='1'
-        left join jsh_depot d on d.id=mis.depot_id and COALESCE(d.delete_flag,'0') !='1'
-        where 1=1
-        and me.default_flag='1'
-        and m.enabled=true
-        and COALESCE(m.delete_flag,'0') !='1'
-        and mis.depot_id=mcs.depot_id
-        and ((COALESCE(mis.low_safe_stock,0)!=0 and mcs.current_number &lt; COALESCE(mis.low_safe_stock,0))
-            or (COALESCE(mis.high_safe_stock,0)!=0 and mcs.current_number > COALESCE(mis.high_safe_stock,0)))
-        <if test="materialParam != null and materialParam !=''">
-            <bind name="bindKey" value="'%'+materialParam+'%'"/>
-            and (me.bar_code like #{bindKey} or m."name" like #{bindKey} or m.mnemonic like #{bindKey} or m.standard like #{bindKey} or m.model like #{bindKey}
-            or m.color like #{bindKey} or m.mfrs like #{bindKey} or m.brand like #{bindKey} or m.other_field1 like #{bindKey}
-            or m.other_field2 like #{bindKey} or m.other_field3 like #{bindKey})
-        </if>
-        <if test="depotList.size()>0">
-            and mis.depot_id in
-            <foreach collection="depotList" item="item" index="index" separator="," open="(" close=")">
-                #{item}
-            </foreach>
-        </if>
-        <if test="categoryList.size()>0">
-            and m.category_id in
-            <foreach collection="categoryList" item="item" index="index" separator="," open="(" close=")">
-                #{item}
-            </foreach>
-        </if>
-        ) tb
+        <include refid="stockWarningCte"/>
+        select count(1) from warning_data
     </select>
 
     <select id="getFinishNumber" resultType="java.math.BigDecimal">

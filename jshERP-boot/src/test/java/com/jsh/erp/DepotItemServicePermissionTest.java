@@ -116,4 +116,27 @@ class DepotItemServicePermissionTest {
 
         assertDoesNotThrow(() -> depotItemService.checkInOutStockReportPermission());
     }
+
+    @Test
+    void rejectsUserWithoutStockWarningReportPermission() throws Exception {
+        User user = new User();
+        user.setId(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasFunctionPermission(101L, "/report/stock_warning_report")).thenReturn(false);
+
+        BusinessRunTimeException exception = assertThrows(BusinessRunTimeException.class,
+                () -> depotItemService.checkStockWarningReportPermission());
+
+        assertEquals(ExceptionConstants.STOCK_WARNING_REPORT_PERMISSION_CODE, exception.getCode());
+    }
+
+    @Test
+    void allowsUserWithStockWarningReportPermission() throws Exception {
+        User user = new User();
+        user.setId(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasFunctionPermission(101L, "/report/stock_warning_report")).thenReturn(true);
+
+        assertDoesNotThrow(() -> depotItemService.checkStockWarningReportPermission());
+    }
 }

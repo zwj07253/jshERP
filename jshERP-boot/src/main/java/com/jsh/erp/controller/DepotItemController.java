@@ -903,27 +903,29 @@ public class DepotItemController {
     @Operation(summary = "库存预警报表")
     public BaseResponseInfo findStockWarningCount(@RequestParam("currentPage") Integer currentPage,
                                                   @RequestParam("pageSize") Integer pageSize,
-                                                  @RequestParam("materialParam") String materialParam,
-                                                  @RequestParam(value = "depotId", required = false) Long depotId,
-                                                  @RequestParam(value = "categoryId", required = false) Long categoryId,
-                                                  @RequestParam(value = "mpList", required = false) String mpList)throws Exception {
+                                                   @RequestParam("materialParam") String materialParam,
+                                                   @RequestParam(value = "depotId", required = false) Long depotId,
+                                                   @RequestParam(value = "categoryId", required = false) Long categoryId,
+                                                   @RequestParam(value = "mpList", required = false) String mpList,
+                                                   @RequestParam(value = "column", required = false) String column,
+                                                   @RequestParam(value = "order", required = false) String order)throws Exception {
         BaseResponseInfo res = new BaseResponseInfo();
         Map<String, Object> map = new HashMap<String, Object>();
         try {
+            depotItemService.checkStockWarningReportPermission();
             List<Long> depotList = depotService.parseDepotList(depotId);
             List<Long> categoryList = new ArrayList<>();
             if(categoryId != null){
                 categoryList = materialService.getListByParentId(categoryId);
             }
-            String[] mpArr = mpList.split(",");
-            List<DepotItemStockWarningCount> list = depotItemService.findStockWarningCount((currentPage-1)*pageSize, pageSize, materialParam, depotList, categoryList);
+            int safeCurrentPage = Math.max(currentPage, 1);
+            int safePageSize = Math.min(Math.max(pageSize, 1), 10000);
+            List<DepotItemStockWarningCount> list = depotItemService.findStockWarningCount(
+                    (safeCurrentPage-1)*safePageSize, safePageSize, StringUtil.toNull(materialParam), depotList,
+                    categoryList, column, order);
             //存放数据json数组
             if (null != list) {
                 for (DepotItemStockWarningCount disw : list) {
-                    DepotItemVo4WithInfoEx diEx = new DepotItemVo4WithInfoEx();
-                    diEx.setMOtherField1(disw.getMOtherField1());
-                    diEx.setMOtherField2(disw.getMOtherField2());
-                    diEx.setMOtherField3(disw.getMOtherField3());
                     disw.setMaterialUnit(getUName(disw.getMaterialUnit(), disw.getUnitName()));
                     if(null!=disw.getLowSafeStock() && disw.getCurrentNumber().compareTo(disw.getLowSafeStock())<0) {
                         disw.setLowCritical(disw.getLowSafeStock().subtract(disw.getCurrentNumber()));
@@ -938,6 +940,9 @@ public class DepotItemController {
             map.put("rows", list);
             res.code = 200;
             res.data = map;
+        } catch (BusinessRunTimeException e) {
+            res.code = e.getCode();
+            res.data = e.getData().get("message");
         } catch(Exception e){
             logger.error(e.getMessage(), e);
             res.code = 500;

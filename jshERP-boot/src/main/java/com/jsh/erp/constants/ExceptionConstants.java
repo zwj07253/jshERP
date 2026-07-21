@@ -800,6 +800,9 @@ public class ExceptionConstants {
     //进销存统计-无查看权限
     public static final int IN_OUT_STOCK_REPORT_PERMISSION_CODE = 9000011;
     public static final String IN_OUT_STOCK_REPORT_PERMISSION_MSG = "抱歉，当前用户没有进销存统计的查看权限";
+    //库存预警-无查看权限
+    public static final int STOCK_WARNING_REPORT_PERMISSION_CODE = 9000012;
+    public static final String STOCK_WARNING_REPORT_PERMISSION_MSG = "抱歉，当前用户没有库存预警的查看权限";
 
     /**
      *  财务信息

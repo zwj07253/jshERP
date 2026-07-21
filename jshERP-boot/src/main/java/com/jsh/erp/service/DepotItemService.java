@@ -103,6 +103,15 @@ public class DepotItemService {
         }
     }
 
+    public void checkStockWarningReportPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if(!userService.hasFunctionPermission(userId, "/report/stock_warning_report")) {
+            throw new BusinessRunTimeException(ExceptionConstants.STOCK_WARNING_REPORT_PERMISSION_CODE,
+                    ExceptionConstants.STOCK_WARNING_REPORT_PERMISSION_MSG);
+        }
+    }
+
     public DepotItem getDepotItem(long id)throws Exception {
         DepotItem result=null;
         try{
@@ -1126,10 +1135,12 @@ public class DepotItemService {
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
-    public List<DepotItemStockWarningCount> findStockWarningCount(Integer offset, Integer rows, String materialParam, List<Long> depotList, List<Long> categoryList) {
+    public List<DepotItemStockWarningCount> findStockWarningCount(Integer offset, Integer rows, String materialParam,
+                                                                  List<Long> depotList, List<Long> categoryList,
+                                                                  String column, String order) {
         List<DepotItemStockWarningCount> list = null;
         try{
-            list =depotItemMapperEx.findStockWarningCount(offset, rows, materialParam, depotList, categoryList);
+            list =depotItemMapperEx.findStockWarningCount(offset, rows, materialParam, depotList, categoryList, column, order);
         }catch(Exception e){
             JshException.readFail(logger, e);
         }
