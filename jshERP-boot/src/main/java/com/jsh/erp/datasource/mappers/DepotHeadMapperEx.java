@@ -186,49 +186,6 @@ public interface DepotHeadMapperEx {
             @Param("depotFList") List<Long> depotFList,
             @Param("remark") String remark);
 
-    List<DepotHeadVo4StatementAccount> getStatementAccount(
-            @Param("beginTime") String beginTime,
-            @Param("endTime") String endTime,
-            @Param("organId") Integer organId,
-            @Param("organArray") String[] organArray,
-            @Param("hasDebt") Integer hasDebt,
-            @Param("supplierType") String supplierType,
-            @Param("type") String type,
-            @Param("subType") String subType,
-            @Param("typeBack") String typeBack,
-            @Param("subTypeBack") String subTypeBack,
-            @Param("billType") String billType,
-            @Param("column") String column,
-            @Param("order") String order,
-            @Param("offset") Integer offset,
-            @Param("rows") Integer rows);
-
-    int getStatementAccountCount(
-            @Param("beginTime") String beginTime,
-            @Param("endTime") String endTime,
-            @Param("organId") Integer organId,
-            @Param("organArray") String[] organArray,
-            @Param("hasDebt") Integer hasDebt,
-            @Param("supplierType") String supplierType,
-            @Param("type") String type,
-            @Param("subType") String subType,
-            @Param("typeBack") String typeBack,
-            @Param("subTypeBack") String subTypeBack,
-            @Param("billType") String billType);
-
-    List<DepotHeadVo4StatementAccount> getStatementAccountTotalPay(
-            @Param("beginTime") String beginTime,
-            @Param("endTime") String endTime,
-            @Param("organId") Integer organId,
-            @Param("organArray") String[] organArray,
-            @Param("hasDebt") Integer hasDebt,
-            @Param("supplierType") String supplierType,
-            @Param("type") String type,
-            @Param("subType") String subType,
-            @Param("typeBack") String typeBack,
-            @Param("subTypeBack") String subTypeBack,
-            @Param("billType") String billType);
-
     List<DepotHeadVo4List> getDetailByNumber(
             @Param("number") String number);
 

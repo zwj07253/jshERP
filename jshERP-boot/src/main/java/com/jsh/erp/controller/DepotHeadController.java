@@ -498,6 +498,8 @@ public class DepotHeadController extends BaseController {
             boolean hidePrice = StringUtil.isNotEmpty(priceLimit)
                     && (("客户".equals(supplierType) && priceLimit.contains("6"))
                     || ("供应商".equals(supplierType) && priceLimit.contains("4")));
+            String financialUrl = "供应商".equals(supplierType) ? "/financial/money_out" : "/financial/money_in";
+            map.put("canViewFinancialHistory", userService.hasFunctionPermission(userId, financialUrl));
             String safeColumn = StringUtil.isNotEmpty(column) ? StringUtil.safeSqlParse(column) : null;
             String safeOrder = StringUtil.isNotEmpty(order) ? StringUtil.safeSqlParse(order) : null;
             List<DepotHeadVo4StatementAccount> list = depotHeadService.getStatementAccount(beginTime, endTime, organId, organArray,

@@ -235,14 +235,40 @@ public class P1ReportTest extends ApiTestBase {
     void supplierReconciliation() {
         Response resp = authReqGet()
                 .param("currentPage", 1)
-                .param("pageSize", 10)
+                .param("pageSize", 10000)
                 .param("beginTime", BEGIN_TIME)
                 .param("endTime", END_TIME)
                 .param("organId", "")
                 .param("hasDebt", "")
                 .param("supplierType", "供应商")
+                .param("column", "allNeed")
+                .param("order", "asc")
                 .get(CONTEXT + "/depotHead/getStatementAccount");
         assertPaged(resp);
+        JSONObject data = JSONObject.parseObject(resp.body().asString()).getJSONObject("data");
+        JSONArray rows = data.getJSONArray("rows");
+        BigDecimal firstMoney = BigDecimal.ZERO;
+        BigDecimal lastMoney = BigDecimal.ZERO;
+        BigDecimal previousAllNeed = null;
+        for (int i = 0; i < rows.size(); i++) {
+            JSONObject row = rows.getJSONObject(i);
+            BigDecimal preNeed = row.getBigDecimal("preNeed");
+            BigDecimal debtMoney = row.getBigDecimal("debtMoney");
+            BigDecimal backMoney = row.getBigDecimal("backMoney");
+            BigDecimal allNeed = row.getBigDecimal("allNeed");
+            assertEquals(0, preNeed.add(debtMoney).subtract(backMoney).compareTo(allNeed),
+                    "供应商期末应付必须等于期初应付加本期欠款减本期付款");
+            if (previousAllNeed != null) {
+                assertTrue(previousAllNeed.compareTo(allNeed) <= 0, "供应商期末应付必须按后端全量升序排列");
+            }
+            previousAllNeed = allNeed;
+            firstMoney = firstMoney.add(preNeed);
+            lastMoney = lastMoney.add(allNeed);
+        }
+        assertEquals(rows.size(), data.getIntValue("total"), "供应商对账全量查询行数必须与总数一致");
+        assertEquals(0, firstMoney.compareTo(data.getBigDecimal("firstMoney")), "供应商期初应付合计必须与列表一致");
+        assertEquals(0, lastMoney.compareTo(data.getBigDecimal("lastMoney")), "供应商期末应付合计必须与列表一致");
+        assertTrue(data.containsKey("canViewFinancialHistory"), "接口必须返回历史付款权限标志");
     }
 
     // ===== 37. 进销存统计 =====

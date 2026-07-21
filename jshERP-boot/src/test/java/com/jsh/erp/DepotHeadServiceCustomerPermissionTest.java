@@ -214,6 +214,38 @@ class DepotHeadServiceCustomerPermissionTest {
     }
 
     @Test
+    void allowsVendorAccountReportPermission() throws Exception {
+        User user = user(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasFunctionPermission(101L, "/report/vendor_account")).thenReturn(true);
+
+        assertDoesNotThrow(() -> depotHeadService.checkStatementAccountPermission("供应商"));
+    }
+
+    @Test
+    void allowsMoneyOutPermissionForSharedVendorAccountEndpoint() throws Exception {
+        User user = user(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasFunctionPermission(101L, "/report/vendor_account")).thenReturn(false);
+        when(userService.hasFunctionPermission(101L, "/financial/money_out")).thenReturn(true);
+
+        assertDoesNotThrow(() -> depotHeadService.checkStatementAccountPermission("供应商"));
+    }
+
+    @Test
+    void rejectsVendorAccountWithoutReportOrMoneyOutPermission() throws Exception {
+        User user = user(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasFunctionPermission(101L, "/report/vendor_account")).thenReturn(false);
+        when(userService.hasFunctionPermission(101L, "/financial/money_out")).thenReturn(false);
+
+        BusinessRunTimeException exception = assertThrows(BusinessRunTimeException.class,
+                () -> depotHeadService.checkStatementAccountPermission("供应商"));
+
+        assertEquals(ExceptionConstants.DEPOT_HEAD_VENDOR_ACCOUNT_PERMISSION_CODE, exception.getCode());
+    }
+
+    @Test
     void rejectsInvalidDebtListType() {
         BusinessRunTimeException exception = assertThrows(BusinessRunTimeException.class,
                 () -> depotHeadService.checkDebtListPermission("出库", "零售", 107L));

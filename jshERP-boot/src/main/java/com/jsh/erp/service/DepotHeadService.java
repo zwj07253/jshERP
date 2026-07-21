@@ -8,6 +8,7 @@ import com.jsh.erp.datasource.entities.*;
 import com.jsh.erp.datasource.mappers.DepotHeadMapper;
 import com.jsh.erp.datasource.mappers.DepotHeadMapperEx;
 import com.jsh.erp.datasource.mappers.DepotItemMapperEx;
+import com.jsh.erp.datasource.mappers.StatementAccountMapper;
 import com.jsh.erp.datasource.vo.*;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.exception.JshException;
@@ -59,6 +60,8 @@ public class DepotHeadService {
     private DepotHeadMapper depotHeadMapper;
     @Resource
     private DepotHeadMapperEx depotHeadMapperEx;
+    @Resource
+    private StatementAccountMapper statementAccountMapper;
     @Resource
     private UserService userService;
     @Resource
@@ -1204,7 +1207,7 @@ public class DepotHeadService {
                                                                   Integer offset, Integer rows) {
         List<DepotHeadVo4StatementAccount> list = null;
         try{
-            list = depotHeadMapperEx.getStatementAccount(beginTime, endTime, organId, organArray, hasDebt, supplierType, type, subType,typeBack, subTypeBack, billType,
+            list = statementAccountMapper.selectStatementAccount(beginTime, endTime, organId, organArray, hasDebt, supplierType, type, subType,typeBack, subTypeBack, billType,
                     column, order, offset, rows);
         } catch(Exception e){
             JshException.readFail(logger, e);
@@ -1216,7 +1219,7 @@ public class DepotHeadService {
                                         Integer hasDebt, String supplierType, String type, String subType, String typeBack, String subTypeBack, String billType) {
         int result = 0;
         try{
-            result = depotHeadMapperEx.getStatementAccountCount(beginTime, endTime, organId, organArray, hasDebt, supplierType, type, subType,typeBack, subTypeBack, billType);
+            result = statementAccountMapper.countStatementAccount(beginTime, endTime, organId, organArray, hasDebt, supplierType, type, subType,typeBack, subTypeBack, billType);
         } catch(Exception e){
             JshException.readFail(logger, e);
         }
@@ -1228,7 +1231,9 @@ public class DepotHeadService {
                                                                           String typeBack, String subTypeBack, String billType) {
         List<DepotHeadVo4StatementAccount> list = null;
         try{
-            list = depotHeadMapperEx.getStatementAccountTotalPay(beginTime, endTime, organId, organArray, hasDebt, supplierType, type, subType,typeBack, subTypeBack, billType);
+            DepotHeadVo4StatementAccount total = statementAccountMapper.sumStatementAccount(beginTime, endTime, organId, organArray,
+                    hasDebt, supplierType, type, subType, typeBack, subTypeBack, billType);
+            list = total == null ? new ArrayList<>() : Collections.singletonList(total);
         } catch(Exception e){
             JshException.readFail(logger, e);
         }

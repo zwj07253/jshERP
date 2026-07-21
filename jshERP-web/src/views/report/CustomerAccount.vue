@@ -184,6 +184,7 @@
         cusList: [],
         firstTotal: '',
         lastTotal: '',
+        canViewFinancialHistory: false,
         setTimeFlag: null,
         tabKey: "1",
         pageName: 'customerAccount',
@@ -290,6 +291,7 @@
             this.ipagination.total = res.data.total;
             this.firstTotal = '期初应收：' + this.formatNumber(res.data.firstMoney) + "，"
             this.lastTotal = '期末应收：' + this.formatNumber(res.data.lastMoney)
+            this.canViewFinancialHistory = res.data.canViewFinancialHistory === true
           } else if(res.code===510){
             this.$message.warning(res.data)
           } else {
@@ -338,7 +340,8 @@
         this.handleExportXlsPost('客户对账', '客户对账', head, tip, list)
       },
       showDebtAccountList(record) {
-        this.$refs.debtAccountList.show(record.id, '出库', '销售', '客户', "", this.queryParam.beginTime, this.queryParam.endTime)
+        this.$refs.debtAccountList.show(record.id, '出库', '销售', '客户', "", this.queryParam.beginTime,
+          this.queryParam.endTime, this.canViewFinancialHistory)
         this.$refs.debtAccountList.title = "欠款详情"
         this.$refs.debtAccountList.disableSubmit = false
       }

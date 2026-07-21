@@ -35,7 +35,7 @@
                 <a-button type="primary" @click="searchQuery">查询</a-button>
                 <a-button style="margin-left: 8px" v-print="'#debtAccountPrint'" icon="printer">打印</a-button>
                 <a-button style="margin-left: 8px" @click="handleExportXls('欠款详情')" icon="download">导出</a-button>
-                <a-button style="margin-left: 8px" @click="handleHistoryFinancial" icon="history">{{historyText}}</a-button>
+                <a-button v-if="canViewFinancialHistory" style="margin-left: 8px" @click="handleHistoryFinancial" icon="history">{{historyText}}</a-button>
               </a-col>
             </span>
           </a-row>
@@ -50,7 +50,7 @@
           rowKey="id"
           :columns="columns"
           :dataSource="dataSource"
-          :pagination="false"
+          :pagination="ipagination"
           :loading="loading"
           @change="handleTableChange">
           <span slot="numberCustomRender" slot-scope="text, record">
@@ -97,9 +97,7 @@
         },
         historyText: '',
         financialType: '',
-        ipagination:{
-          pageSize: 10001
-        },
+        canViewFinancialHistory: false,
         labelCol: {
           xs: { span: 24 },
           sm: { span: 8 },
@@ -148,13 +146,14 @@
     created() {
     },
     methods: {
-      show(organId, type, subType, organType, status, beginTime, endTime) {
+      show(organId, type, subType, organType, status, beginTime, endTime, canViewFinancialHistory) {
         this.queryParam.organId = organId
         this.queryParam.type = type
         this.queryParam.subType = subType
         this.queryParam.status = status
         this.queryParam.beginTime = beginTime
         this.queryParam.endTime = endTime
+        this.canViewFinancialHistory = canViewFinancialHistory === true
         this.columns[2].title = organType
         if(type === '入库') {
           this.columns[7].title = '已付欠款'
