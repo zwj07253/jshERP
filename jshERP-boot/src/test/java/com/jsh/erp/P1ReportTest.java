@@ -250,7 +250,7 @@ public class P1ReportTest extends ApiTestBase {
     @Test
     @Order(11)
     @DisplayName("39a: 入库汇总 - 按商品汇总")
-    void materialCount() {
+    void inMaterialCount() {
         Response resp = authReqGet()
                 .param("currentPage", 1)
                 .param("pageSize", 10)
@@ -270,6 +270,27 @@ public class P1ReportTest extends ApiTestBase {
 
     @Test
     @Order(12)
+    @DisplayName("39b: 出库汇总 - 按商品汇总")
+    void outMaterialCount() {
+        Response resp = authReqGet()
+                .param("currentPage", 1)
+                .param("pageSize", 10)
+                .param("organId", "")
+                .param("materialParam", "")
+                .param("depotId", "")
+                .param("categoryId", "")
+                .param("organizationId", "")
+                .param("beginTime", BEGIN_TIME)
+                .param("endTime", END_TIME)
+                .param("type", "出库")
+                .param("column", "createTime")
+                .param("order", "desc")
+                .get(CONTEXT + "/depotHead/findInOutMaterialCount");
+        assertPaged(resp);
+    }
+
+    @Test
+    @Order(13)
     @DisplayName("39b: 调拨明细")
     void allocationDetail() {
         Response resp = authReqGet()
@@ -294,7 +315,7 @@ public class P1ReportTest extends ApiTestBase {
     // ===== 40. 入库/出库汇总 =====
 
     @Test
-    @Order(13)
+    @Order(14)
     @DisplayName("40: 购销统计汇总")
     void buyAndSaleSummary() {
         Response resp = authReqGet().get(CONTEXT + "/depotHead/getBuyAndSaleStatistics");
@@ -302,7 +323,7 @@ public class P1ReportTest extends ApiTestBase {
     }
 
     @Test
-    @Order(14)
+    @Order(15)
     @DisplayName("40b: 月度购销趋势")
     void monthlyTrend() {
         Response resp = authReqGet().get(CONTEXT + "/depotItem/buyOrSalePrice");

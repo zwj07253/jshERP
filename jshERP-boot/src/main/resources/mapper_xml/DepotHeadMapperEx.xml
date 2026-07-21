@@ -463,7 +463,7 @@
 
     <select id="findInOutMaterialCount" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultInOutMaterialCount">
         select di.material_id materialId, me.bar_code barCode, m."name" mName,m.model,m.standard,m.color,m.brand,m.mfrs,
-               mc."name" categoryName,(m.unit || u.basic_unit) materialUnit,
+               mc."name" categoryName,COALESCE(NULLIF(u.basic_unit, ''), m.unit) materialUnit,
         sum(di.basic_number) numSum,
         sum(di.all_price) priceSum
         from jsh_depot_head dh
@@ -533,7 +533,7 @@
         and COALESCE(dh.delete_flag,'0') !='1'
         and di.id is not null
         group by di.material_id, me.bar_code, m."name",m.model,m.standard,m.color,m.brand,m.mfrs,
-        mc."name", (m.unit || u.basic_unit)
+        mc."name", COALESCE(NULLIF(u.basic_unit, ''), m.unit)
         <choose>
             <when test="column == 'barCode'">order by me.bar_code</when>
             <when test="column == 'numSum'">order by sum(di.basic_number)</when>
