@@ -82,7 +82,7 @@
         </a-form>
         <div class="anty-form-btn">
           <a-button @click="emptyCurrForm" type="default" htmlType="button" icon="sync">重置</a-button>
-          <a-button @click="submitCurrForm" type="primary" htmlType="button" icon="form">保存</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="submitCurrForm" type="primary" htmlType="button" icon="form">保存</a-button>
         </div>
       </a-card>
       <a-card v-else >

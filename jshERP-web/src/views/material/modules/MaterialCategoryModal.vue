@@ -131,19 +131,16 @@
           if (!err) {
             that.confirmLoading = true;
             let formData = Object.assign(this.model, values);
-            //时间格式化
-            console.log(formData)
             httpAction(this.url.add,formData,"post").then((res)=>{
               if(res.code == 200){
                 that.$message.success(res.data.message);
-                that.loadTreeData();
                 that.$emit('ok');
+                that.close();
               }else{
                 that.$message.warning(res.data.message);
               }
             }).finally(() => {
               that.confirmLoading = false;
-              that.close();
             })
           }
         })

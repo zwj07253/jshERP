@@ -281,6 +281,20 @@ public class ExceptionConstants {
     //该类别存在下级不允许删除
     public static final int MATERIAL_CATEGORY_CHILD_NOT_SUPPORT_DELETE_CODE = 7500006;
     public static final String MATERIAL_CATEGORY_CHILD_NOT_SUPPORT_DELETE_MSG = "该类别存在下级不允许删除";
+    public static final int MATERIAL_CATEGORY_PERMISSION_CODE = 7500007;
+    public static final String MATERIAL_CATEGORY_PERMISSION_MSG = "抱歉，当前用户没有商品类别的编辑权限";
+    public static final int MATERIAL_CATEGORY_NAME_ALREADY_EXISTS_CODE = 7500008;
+    public static final String MATERIAL_CATEGORY_NAME_ALREADY_EXISTS_MSG = "同一上级目录下商品类别名称已存在";
+    public static final int MATERIAL_CATEGORY_PARENT_INVALID_CODE = 7500009;
+    public static final String MATERIAL_CATEGORY_PARENT_INVALID_MSG = "商品类别上级目录无效";
+    public static final int MATERIAL_CATEGORY_CYCLE_CODE = 7500010;
+    public static final String MATERIAL_CATEGORY_CYCLE_MSG = "商品类别上级目录不能是自身或自身的下级";
+    public static final int MATERIAL_CATEGORY_NOT_EXISTS_CODE = 7500011;
+    public static final String MATERIAL_CATEGORY_NOT_EXISTS_MSG = "商品类别不存在";
+    public static final int MATERIAL_CATEGORY_NAME_AMBIGUOUS_CODE = 7500012;
+    public static final String MATERIAL_CATEGORY_NAME_AMBIGUOUS_MSG = "商品类别名称存在重复，请使用唯一的类别名称后再导入";
+    public static final int MATERIAL_CATEGORY_REQUIRED_CODE = 7500013;
+    public static final String MATERIAL_CATEGORY_REQUIRED_MSG = "商品类别名称和编号不能为空";
     /**
      * 商品信息
      * type = 80

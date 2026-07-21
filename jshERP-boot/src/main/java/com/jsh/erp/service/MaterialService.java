@@ -42,8 +42,6 @@ public class MaterialService {
     @Resource
     private MaterialMapperEx materialMapperEx;
     @Resource
-    private MaterialCategoryMapperEx materialCategoryMapperEx;
-    @Resource
     private MaterialExtendMapperEx materialExtendMapperEx;
     @Resource
     private LogService logService;
@@ -433,24 +431,12 @@ public class MaterialService {
     }
 
     public List<Long> getListByParentId(Long parentId) {
-        List<Long> idList = new ArrayList<Long>();
-        List<MaterialCategory> list = materialCategoryMapperEx.getListByParentId(parentId);
-        idList.add(parentId);
-        if(list!=null && list.size()>0) {
-            getIdListByParentId(idList, parentId);
+        try {
+            return materialCategoryService.getCategoryIdListByParentId(parentId);
+        } catch (Exception e) {
+            JshException.readFail(logger, e);
+            return new ArrayList<>();
         }
-        return idList;
-    }
-
-    public List<Long> getIdListByParentId(List<Long> idList, Long parentId){
-        List<MaterialCategory> list = materialCategoryMapperEx.getListByParentId(parentId);
-        if(list!=null && list.size()>0) {
-            for(MaterialCategory mc : list){
-                idList.add(mc.getId());
-                getIdListByParentId(idList, mc.getId());
-            }
-        }
-        return idList;
     }
 
     public JSONArray getMaterialByParam(String materialParam) {

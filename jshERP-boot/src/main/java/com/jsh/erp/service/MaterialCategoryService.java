@@ -5,7 +5,6 @@ import com.jsh.erp.constants.BusinessConstants;
 import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.Material;
 import com.jsh.erp.datasource.entities.MaterialCategory;
-import com.jsh.erp.datasource.entities.MaterialCategoryExample;
 import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.mappers.MaterialCategoryMapper;
 import com.jsh.erp.datasource.mappers.MaterialCategoryMapperEx;
@@ -24,12 +23,25 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 @Service
 public class MaterialCategoryService {
+    private static final Long ROOT_CATEGORY_ID = 1L;
+    private static final String MATERIAL_CATEGORY_URL = "/material/material_category";
+    private static final String EDIT_BUTTON_CODE = "1";
+
     private Logger logger = LoggerFactory.getLogger(MaterialCategoryService.class);
 
     @Resource
@@ -44,66 +56,27 @@ public class MaterialCategoryService {
     private MaterialMapperEx materialMapperEx;
 
     public MaterialCategory getMaterialCategory(long id)throws Exception {
-        MaterialCategory result=null;
-        try{
-            result=materialCategoryMapper.selectByPrimaryKey(id);
-        }catch(Exception e){
-            JshException.readFail(logger, e);
-        }
-        return result;
-    }
-
-    public List<MaterialCategory> getMaterialCategoryListByIds(String ids)throws Exception {
-        List<Long> idList = StringUtil.strToLongList(ids);
-        List<MaterialCategory> list = new ArrayList<>();
-        try{
-            MaterialCategoryExample example = new MaterialCategoryExample();
-            example.createCriteria().andIdIn(idList);
-            list = materialCategoryMapper.selectByExample(example);
-        }catch(Exception e){
-            JshException.readFail(logger, e);
-        }
-        return list;
+        return getActiveMaterialCategory(id);
     }
 
     public List<MaterialCategory> getMaterialCategory()throws Exception {
-        MaterialCategoryExample example = new MaterialCategoryExample();
-        List<MaterialCategory> list=null;
-        try{
-            list=materialCategoryMapper.selectByExample(example);
-        }catch(Exception e){
-            JshException.readFail(logger, e);
-        }
-        return list;
+        return getActiveMaterialCategories();
     }
 
     public List<MaterialCategory> getAllList(Long parentId)throws Exception {
-        List<MaterialCategory> list=null;
-        try{
-            list = getMCList(parentId);
-        }catch(Exception e){
-            JshException.readFail(logger, e);
-        }
-        return list;
+        return getMCList(normalizeParentId(parentId));
     }
 
     public List<MaterialCategory> getMCList(Long parentId)throws Exception {
-        List<MaterialCategory> res= new ArrayList<MaterialCategory>();
-        List<MaterialCategory> list=null;
-        MaterialCategoryExample example = new MaterialCategoryExample();
-        example.createCriteria().andParentIdEqualTo(parentId).andIdNotEqualTo(1L);
-        example.setOrderByClause("id");
-        list=materialCategoryMapper.selectByExample(example);
-        if(list!=null && list.size()>0) {
-            res.addAll(list);
-            for(MaterialCategory mc : list) {
-                List<MaterialCategory> mcList = getMCList(mc.getId());
-                if(mcList!=null && mcList.size()>0) {
-                    res.addAll(mcList);
-                }
+        List<MaterialCategory> categories = getActiveMaterialCategories();
+        Set<Long> descendantIds = collectDescendantIds(categories, parentId, false);
+        List<MaterialCategory> result = new ArrayList<>();
+        for (MaterialCategory category : categories) {
+            if (descendantIds.contains(category.getId()) && !ROOT_CATEGORY_ID.equals(category.getId())) {
+                result.add(category);
             }
         }
-        return res;
+        return result;
     }
 
     public List<MaterialCategory> select(String name, Integer parentId) throws Exception{
@@ -118,10 +91,13 @@ public class MaterialCategoryService {
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
-    public int insertMaterialCategory(JSONObject obj, HttpServletRequest request)throws Exception {
-        MaterialCategory materialCategory = JSONObject.parseObject(obj.toJSONString(), MaterialCategory.class);
+    public synchronized int insertMaterialCategory(JSONObject obj, HttpServletRequest request)throws Exception {
+        checkMaterialCategoryEditPermission();
+        lockMaterialCategoryWrite();
+        MaterialCategory materialCategory = buildMaterialCategory(obj, null);
         materialCategory.setCreateTime(new Date());
         materialCategory.setUpdateTime(new Date());
+        validateMaterialCategory(materialCategory);
         int result=0;
         try{
             result=materialCategoryMapper.insertSelective(materialCategory);
@@ -134,9 +110,26 @@ public class MaterialCategoryService {
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
-    public int updateMaterialCategory(JSONObject obj, HttpServletRequest request) throws Exception{
-        MaterialCategory materialCategory = JSONObject.parseObject(obj.toJSONString(), MaterialCategory.class);
+    public synchronized int updateMaterialCategory(JSONObject obj, HttpServletRequest request) throws Exception{
+        checkMaterialCategoryEditPermission();
+        lockMaterialCategoryWrite();
+        Long id = obj.getLong("id");
+        if (id == null) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_CATEGORY_NOT_EXISTS_CODE,
+                    ExceptionConstants.MATERIAL_CATEGORY_NOT_EXISTS_MSG);
+        }
+        if (ROOT_CATEGORY_ID.equals(id)) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_CATEGORY_ROOT_NOT_SUPPORT_EDIT_CODE,
+                    ExceptionConstants.MATERIAL_CATEGORY_ROOT_NOT_SUPPORT_EDIT_MSG);
+        }
+        MaterialCategory existing = getActiveMaterialCategory(id);
+        if (existing == null) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_CATEGORY_NOT_EXISTS_CODE,
+                    ExceptionConstants.MATERIAL_CATEGORY_NOT_EXISTS_MSG);
+        }
+        MaterialCategory materialCategory = buildMaterialCategory(obj, existing);
         materialCategory.setUpdateTime(new Date());
+        validateMaterialCategory(materialCategory);
         int result=0;
         try{
             result=materialCategoryMapperEx.editMaterialCategory(materialCategory);
@@ -159,13 +152,35 @@ public class MaterialCategoryService {
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
-    public int batchDeleteMaterialCategoryByIds(String ids) throws Exception {
+    public synchronized int batchDeleteMaterialCategoryByIds(String ids) throws Exception {
+        checkMaterialCategoryEditPermission();
+        lockMaterialCategoryWrite();
         int result=0;
-        String [] idArray=ids.split(",");
+        List<Long> categoryIds = new ArrayList<>(new LinkedHashSet<>(StringUtil.strToLongList(ids)));
+        if (categoryIds.isEmpty()) {
+            return 0;
+        }
+        if (categoryIds.contains(ROOT_CATEGORY_ID)) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_CATEGORY_ROOT_NOT_SUPPORT_DELETE_CODE,
+                    ExceptionConstants.MATERIAL_CATEGORY_ROOT_NOT_SUPPORT_DELETE_MSG);
+        }
+        List<MaterialCategory> selectedCategories = new ArrayList<>();
+        Map<Long, MaterialCategory> activeCategoryMap = new HashMap<>();
+        for (MaterialCategory category : getActiveMaterialCategories()) {
+            activeCategoryMap.put(category.getId(), category);
+        }
+        for (Long categoryId : categoryIds) {
+            MaterialCategory category = activeCategoryMap.get(categoryId);
+            if (category == null) {
+                throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_CATEGORY_NOT_EXISTS_CODE,
+                        ExceptionConstants.MATERIAL_CATEGORY_NOT_EXISTS_MSG);
+            }
+            selectedCategories.add(category);
+        }
         //校验产品表	jsh_material
         List<Material> materialList=null;
         try{
-            materialList= materialMapperEx.getMaterialListByCategoryIds(idArray);
+            materialList= materialMapperEx.getMaterialListByCategoryIds(categoryIds);
         }catch(Exception e){
             JshException.readFail(logger, e);
         }
@@ -177,8 +192,7 @@ public class MaterialCategoryService {
         }
         StringBuffer sb = new StringBuffer();
         sb.append(BusinessConstants.LOG_OPERATION_TYPE_DELETE);
-        List<MaterialCategory> list = getMaterialCategoryListByIds(ids);
-        for(MaterialCategory materialCategory: list){
+        for(MaterialCategory materialCategory: selectedCategories){
             sb.append("[").append(materialCategory.getName()).append("]");
         }
         logService.insertLog("商品类型", sb.toString(),
@@ -188,63 +202,67 @@ public class MaterialCategoryService {
         //更新人
         User userInfo=userService.getCurrentUser();
         Long updater=userInfo==null?null:userInfo.getId();
-        String strArray[]=ids.split(",");
-        if(strArray.length<1){
-            return 0;
-        }
-        List<MaterialCategory> mcList = materialCategoryMapperEx.getMaterialCategoryListByCategoryIds(idArray);
+        List<MaterialCategory> mcList = materialCategoryMapperEx.getMaterialCategoryListByCategoryIds(categoryIds);
         if(mcList!=null && mcList.size()>0) {
             logger.error("异常码[{}],异常提示[{}]",
                     ExceptionConstants.MATERIAL_CATEGORY_CHILD_NOT_SUPPORT_DELETE_CODE,ExceptionConstants.MATERIAL_CATEGORY_CHILD_NOT_SUPPORT_DELETE_MSG);
             throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_CATEGORY_CHILD_NOT_SUPPORT_DELETE_CODE,
                     ExceptionConstants.MATERIAL_CATEGORY_CHILD_NOT_SUPPORT_DELETE_MSG);
         } else {
-            result=materialCategoryMapperEx.batchDeleteMaterialCategoryByIds(updateDate,updater,strArray);
+            result=materialCategoryMapperEx.batchDeleteMaterialCategoryByIds(updateDate,updater,categoryIds);
         }
         return result;
     }
 
     public int checkIsNameExist(Long id, String name, Long parentId)throws Exception {
-        MaterialCategoryExample example = new MaterialCategoryExample();
-        if(parentId!=null) {
-            example.createCriteria().andIdNotEqualTo(id).andNameEqualTo(name).andParentIdEqualTo(parentId).andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
-        } else {
-            example.createCriteria().andIdNotEqualTo(id).andNameEqualTo(name).andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        int count = 0;
+        Long normalizedParentId = normalizeParentId(parentId);
+        for (MaterialCategory category : getActiveMaterialCategories()) {
+            if (!Objects.equals(category.getId(), id)
+                    && Objects.equals(normalizeParentId(category.getParentId()), normalizedParentId)
+                    && Objects.equals(category.getName(), name)) {
+                count++;
+            }
         }
-        List<MaterialCategory> list=null;
-        try{
-            list= materialCategoryMapper.selectByExample(example);
-        }catch(Exception e){
-            JshException.readFail(logger, e);
-        }
-        return list==null?0:list.size();
+        return count;
     }
 
     public List<MaterialCategory> findById(Long id)throws Exception {
-        List<MaterialCategory> list=null;
-        if(id!=null) {
-            MaterialCategoryExample example = new MaterialCategoryExample();
-            example.createCriteria().andIdEqualTo(id);
-            try{
-                list=materialCategoryMapper.selectByExample(example);
-            }catch(Exception e){
-                JshException.readFail(logger, e);
-            }
-        }
-        return list;
+        MaterialCategory category = id == null ? null : getActiveMaterialCategory(id);
+        return category == null ? new ArrayList<>() : Collections.singletonList(category);
     }
     /**
      * description:
      * 获取商品类别树数据
      */
     public List<TreeNode> getMaterialCategoryTree(Long id) throws Exception{
-        List<TreeNode> list=null;
-        try{
-            list=materialCategoryMapperEx.getNodeTree(id);
-        }catch(Exception e){
-            JshException.readFail(logger, e);
+        List<MaterialCategory> categories = getActiveMaterialCategories();
+        Long excludedRootId = normalizeParentId(id);
+        Set<Long> excludedIds = excludedRootId == null ? Collections.emptySet()
+                : collectDescendantIds(categories, excludedRootId, true);
+        Map<Long, TreeNode> nodes = new LinkedHashMap<>();
+        for (MaterialCategory category : categories) {
+            if (!excludedIds.contains(category.getId())) {
+                nodes.put(category.getId(), toTreeNode(category));
+            }
         }
-       return list;
+        List<TreeNode> roots = new ArrayList<>();
+        for (MaterialCategory category : categories) {
+            TreeNode node = nodes.get(category.getId());
+            if (node == null) {
+                continue;
+            }
+            Long parentId = normalizeParentId(category.getParentId());
+            TreeNode parent = parentId == null ? null : nodes.get(parentId);
+            if (parent == null) {
+                if (parentId == null) {
+                    roots.add(node);
+                }
+            } else {
+                parent.getChildren().add(node);
+            }
+        }
+        return roots;
     }
     /**
      * 根据商品类别编号判断商品类别是否已存在
@@ -263,25 +281,7 @@ public class MaterialCategoryService {
         }catch(Exception e){
             JshException.readFail(logger, e);
         }
-        if(mList==null||mList.size()<1){
-            //未查询到对应数据，编号可用
-            return;
-        }
-        if(mList.size()>1){
-            //查询到的数据条数大于1，编号已存在
-            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_CATEGORY_SERIAL_ALREADY_EXISTS_CODE,
-                    ExceptionConstants.MATERIAL_CATEGORY_SERIAL_ALREADY_EXISTS_MSG);
-        }
-        if(mc.getId()==null){
-            //新增时，编号已存在
-            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_CATEGORY_SERIAL_ALREADY_EXISTS_CODE,
-                    ExceptionConstants.MATERIAL_CATEGORY_SERIAL_ALREADY_EXISTS_MSG);
-        }
-        /**
-         * 包装类型用equals来比较
-         * */
-        if(mc.getId().equals(mList.get(0).getId())){
-            //修改时，相同编号，id不同
+        if(mList!=null && !mList.isEmpty()){
             throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_CATEGORY_SERIAL_ALREADY_EXISTS_CODE,
                     ExceptionConstants.MATERIAL_CATEGORY_SERIAL_ALREADY_EXISTS_MSG);
         }
@@ -291,14 +291,186 @@ public class MaterialCategoryService {
      * 根据名称获取类型
      * @param name
      */
-    public Long getCategoryIdByName(String name){
-        Long categoryId = null;
-        MaterialCategoryExample example = new MaterialCategoryExample();
-        example.createCriteria().andNameEqualTo(name).andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
-        List<MaterialCategory> list = materialCategoryMapper.selectByExample(example);
-        if(list!=null && list.size()>0) {
-            categoryId = list.get(0).getId();
+    public Long getCategoryIdByName(String name) throws Exception {
+        if (StringUtil.isEmpty(name)) {
+            return null;
         }
-        return categoryId;
+        List<MaterialCategory> list = new ArrayList<>();
+        for (MaterialCategory category : getActiveMaterialCategories()) {
+            if (name.equals(category.getName())) {
+                list.add(category);
+            }
+        }
+        if(list.size() > 1) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_CATEGORY_NAME_AMBIGUOUS_CODE,
+                    ExceptionConstants.MATERIAL_CATEGORY_NAME_AMBIGUOUS_MSG);
+        }
+        return list.isEmpty() ? null : list.get(0).getId();
+    }
+
+    public void checkMaterialCategoryEditPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if (!userService.hasButtonPermission(userId, MATERIAL_CATEGORY_URL, EDIT_BUTTON_CODE)) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_CATEGORY_PERMISSION_CODE,
+                    ExceptionConstants.MATERIAL_CATEGORY_PERMISSION_MSG);
+        }
+    }
+
+    private void lockMaterialCategoryWrite() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long tenantId = currentUser == null || currentUser.getTenantId() == null
+                ? 0L : currentUser.getTenantId();
+        materialCategoryMapperEx.lockMaterialCategoryWrite(tenantId);
+    }
+
+    public List<Long> getCategoryIdListByParentId(Long parentId) throws Exception {
+        parentId = normalizeParentId(parentId);
+        if (parentId == null) {
+            return new ArrayList<>();
+        }
+        List<MaterialCategory> categories = getActiveMaterialCategories();
+        Set<Long> ids = collectDescendantIds(categories, parentId, true);
+        return new ArrayList<>(ids);
+    }
+
+    private MaterialCategory buildMaterialCategory(JSONObject obj, MaterialCategory existing) {
+        MaterialCategory category = new MaterialCategory();
+        if (existing != null) {
+            category.setId(existing.getId());
+            category.setName(existing.getName());
+            category.setCategoryLevel(existing.getCategoryLevel());
+            category.setParentId(existing.getParentId());
+            category.setSort(existing.getSort());
+            category.setSerialNo(existing.getSerialNo());
+            category.setRemark(existing.getRemark());
+        }
+        if (obj.containsKey("name")) {
+            category.setName(obj.getString("name"));
+        }
+        if (obj.containsKey("categoryLevel")) {
+            category.setCategoryLevel(obj.getShort("categoryLevel"));
+        }
+        if (obj.containsKey("parentId")) {
+            category.setParentId(normalizeParentId(obj.getLong("parentId")));
+        }
+        if (obj.containsKey("sort")) {
+            category.setSort(obj.getString("sort"));
+        }
+        if (obj.containsKey("serialNo")) {
+            category.setSerialNo(obj.getString("serialNo"));
+        }
+        if (obj.containsKey("remark")) {
+            category.setRemark(obj.getString("remark"));
+        }
+        return category;
+    }
+
+    private void validateMaterialCategory(MaterialCategory category) throws Exception {
+        if (StringUtil.isEmpty(category.getName()) || StringUtil.isEmpty(category.getSerialNo())) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_CATEGORY_REQUIRED_CODE,
+                    ExceptionConstants.MATERIAL_CATEGORY_REQUIRED_MSG);
+        }
+        List<MaterialCategory> categories = getActiveMaterialCategories();
+        Map<Long, MaterialCategory> categoryMap = new HashMap<>();
+        for (MaterialCategory item : categories) {
+            categoryMap.put(item.getId(), item);
+        }
+        validateParent(category, categoryMap);
+        for (MaterialCategory item : categories) {
+            if (!Objects.equals(item.getId(), category.getId())
+                    && Objects.equals(normalizeParentId(item.getParentId()), normalizeParentId(category.getParentId()))
+                    && category.getName().equals(item.getName())) {
+                throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_CATEGORY_NAME_ALREADY_EXISTS_CODE,
+                        ExceptionConstants.MATERIAL_CATEGORY_NAME_ALREADY_EXISTS_MSG);
+            }
+        }
+        checkMaterialCategorySerialNo(category);
+    }
+
+    private void validateParent(MaterialCategory category, Map<Long, MaterialCategory> categoryMap) {
+        Long parentId = normalizeParentId(category.getParentId());
+        category.setParentId(parentId);
+        if (parentId == null) {
+            return;
+        }
+        if (!categoryMap.containsKey(parentId)) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_CATEGORY_PARENT_INVALID_CODE,
+                    ExceptionConstants.MATERIAL_CATEGORY_PARENT_INVALID_MSG);
+        }
+        Set<Long> visited = new HashSet<>();
+        Long currentId = parentId;
+        while (currentId != null) {
+            if (Objects.equals(currentId, category.getId()) || !visited.add(currentId)) {
+                throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_CATEGORY_CYCLE_CODE,
+                        ExceptionConstants.MATERIAL_CATEGORY_CYCLE_MSG);
+            }
+            MaterialCategory parent = categoryMap.get(currentId);
+            if (parent == null) {
+                throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_CATEGORY_PARENT_INVALID_CODE,
+                        ExceptionConstants.MATERIAL_CATEGORY_PARENT_INVALID_MSG);
+            }
+            currentId = normalizeParentId(parent.getParentId());
+        }
+    }
+
+    private MaterialCategory getActiveMaterialCategory(Long id) throws Exception {
+        for (MaterialCategory category : getActiveMaterialCategories()) {
+            if (Objects.equals(category.getId(), id)) {
+                return category;
+            }
+        }
+        return null;
+    }
+
+    private List<MaterialCategory> getActiveMaterialCategories() throws Exception {
+        try {
+            return materialCategoryMapperEx.getActiveMaterialCategoryList();
+        } catch (Exception e) {
+            JshException.readFail(logger, e);
+            return new ArrayList<>();
+        }
+    }
+
+    private Set<Long> collectDescendantIds(List<MaterialCategory> categories, Long parentId, boolean includeParent) {
+        Map<Long, List<Long>> childrenByParent = new HashMap<>();
+        for (MaterialCategory category : categories) {
+            Long normalizedParentId = normalizeParentId(category.getParentId());
+            childrenByParent.computeIfAbsent(normalizedParentId, key -> new ArrayList<>()).add(category.getId());
+        }
+        Set<Long> result = new LinkedHashSet<>();
+        ArrayDeque<Long> queue = new ArrayDeque<>();
+        if (includeParent && parentId != null) {
+            result.add(parentId);
+        }
+        List<Long> directChildren = childrenByParent.get(normalizeParentId(parentId));
+        if (directChildren != null) {
+            queue.addAll(directChildren);
+        }
+        while (!queue.isEmpty()) {
+            Long categoryId = queue.removeFirst();
+            if (!result.add(categoryId)) {
+                continue;
+            }
+            List<Long> children = childrenByParent.get(categoryId);
+            if (children != null) {
+                queue.addAll(children);
+            }
+        }
+        return result;
+    }
+
+    private TreeNode toTreeNode(MaterialCategory category) {
+        TreeNode node = new TreeNode();
+        node.setId(category.getId());
+        node.setKey(category.getId());
+        node.setValue(category.getId());
+        node.setTitle(category.getName());
+        node.setChildren(new ArrayList<>());
+        return node;
+    }
+
+    private Long normalizeParentId(Long parentId) {
+        return parentId != null && parentId == 0L ? null : parentId;
     }
 }

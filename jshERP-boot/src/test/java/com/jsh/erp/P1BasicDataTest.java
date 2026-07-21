@@ -30,6 +30,7 @@ public class P1BasicDataTest extends ApiTestBase {
     void createCategory() {
         JSONObject body = new JSONObject();
         body.put("name", "测试类别_" + System.currentTimeMillis());
+        body.put("serialNo", "P1CAT-" + System.currentTimeMillis());
         body.put("parentId", 0);
         body.put("sort", 1);
         Response resp = authReq().body(body.toJSONString()).post(CONTEXT + "/materialCategory/add");
