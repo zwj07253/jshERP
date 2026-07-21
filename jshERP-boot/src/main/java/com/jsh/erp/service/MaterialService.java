@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,6 +34,9 @@ import java.util.*;
 
 @Service
 public class MaterialService {
+    private static final String MATERIAL_URL = "/material/material";
+    private static final String EDIT_BUTTON_CODE = "1";
+
     private Logger logger = LoggerFactory.getLogger(MaterialService.class);
 
     @Resource
@@ -83,7 +87,11 @@ public class MaterialService {
     public Material getMaterial(long id)throws Exception {
         Material result=null;
         try{
-            result=materialMapper.selectByPrimaryKey(id);
+            MaterialExample example = new MaterialExample();
+            example.createCriteria().andIdEqualTo(id)
+                    .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+            List<Material> list = materialMapper.selectByExample(example);
+            result = list.isEmpty() ? null : list.get(0);
         }catch(Exception e){
             JshException.readFail(logger, e);
         }
@@ -95,7 +103,8 @@ public class MaterialService {
         List<Material> list = new ArrayList<>();
         try{
             MaterialExample example = new MaterialExample();
-            example.createCriteria().andIdIn(idList);
+            example.createCriteria().andIdIn(idList)
+                    .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
             list = materialMapper.selectByExample(example);
         }catch(Exception e){
             JshException.readFail(logger, e);
@@ -157,7 +166,11 @@ public class MaterialService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertMaterial(JSONObject obj, HttpServletRequest request)throws Exception {
+        checkMaterialEditPermission();
         Material m = JSONObject.parseObject(obj.toJSONString(), Material.class);
+        m.setId(null);
+        m.setTenantId(null);
+        m.setDeleteFlag(null);
         m.setEnabled(true);
         //构造多属性数组字符串
         m.setAttribute(parseAttributeBySku(obj));
@@ -203,7 +216,15 @@ public class MaterialService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateMaterial(JSONObject obj, HttpServletRequest request) throws Exception{
+        checkMaterialEditPermission();
         Material material = JSONObject.parseObject(obj.toJSONString(), Material.class);
+        material.setTenantId(null);
+        material.setDeleteFlag(null);
+        material.setEnabled(null);
+        if (material.getId() == null || getMaterial(material.getId()) == null) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_NOT_EXISTS_CODE,
+                    ExceptionConstants.MATERIAL_NOT_EXISTS_MSG);
+        }
         //构造多属性数组字符串
         material.setAttribute(parseAttributeBySku(obj));
         try{
@@ -316,11 +337,15 @@ public class MaterialService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteMaterialByIds(String ids) throws Exception{
-        String [] idArray=ids.split(",");
+        checkMaterialEditPermission();
+        List<Long> idList = new ArrayList<>(new LinkedHashSet<>(StringUtil.strToLongList(ids)));
+        if (idList.isEmpty()) {
+            return 0;
+        }
         //校验单据子表	jsh_depot_item
         List<DepotItem> depotItemList =null;
         try{
-            depotItemList=  depotItemMapperEx.getDepotItemListListByMaterialIds(idArray);
+            depotItemList=  depotItemMapperEx.getDepotItemListListByMaterialIds(idList);
         }catch(Exception e){
             JshException.readFail(logger, e);
         }
@@ -348,9 +373,9 @@ public class MaterialService {
         //校验通过执行删除操作
         try{
             //逻辑删除商品
-            materialMapperEx.batchDeleteMaterialByIds(new Date(),userInfo==null?null:userInfo.getId(),idArray);
+            materialMapperEx.batchDeleteMaterialByIds(new Date(),userInfo==null?null:userInfo.getId(),idList);
             //逻辑删除商品价格扩展
-            materialExtendMapperEx.batchDeleteMaterialExtendByMIds(idArray);
+            materialExtendMapperEx.batchDeleteMaterialExtendByMIds(idList);
             //逻辑删除文件
             systemConfigService.deleteFileByPathList(pathList);
             return 1;
@@ -380,6 +405,7 @@ public class MaterialService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetStatus(Boolean status, String ids)throws Exception {
+        checkMaterialEditPermission();
         logService.insertLog("商品",
                 new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_EDIT).append(ids).toString(),
                 ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
@@ -387,7 +413,8 @@ public class MaterialService {
         Material material = new Material();
         material.setEnabled(status);
         MaterialExample example = new MaterialExample();
-        example.createCriteria().andIdIn(materialIds);
+        example.createCriteria().andIdIn(materialIds)
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
         int result =0;
         try{
             result=  materialMapper.updateByExampleSelective(material, example);
@@ -608,6 +635,7 @@ public class MaterialService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public BaseResponseInfo importExcel(MultipartFile file, HttpServletRequest request) throws Exception {
+        checkMaterialEditPermission();
         BaseResponseInfo info = new BaseResponseInfo();
         try {
             Long beginTime = System.currentTimeMillis();
@@ -894,9 +922,11 @@ public class MaterialService {
             info.code = 200;
             info.data = "导入成功";
         } catch (BusinessRunTimeException e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             info.code = e.getCode();
             info.data = e.getData().get("message");
         } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             logger.error(e.getMessage(), e);
             info.code = 500;
             info.data = "导入失败";
@@ -984,7 +1014,7 @@ public class MaterialService {
             JSONObject materialExObj = material.getMaterialExObj();
             if(materialExObj!=null && materialExObj.get("basic")!=null) {
                 JSONObject basicObj = materialExObj.getJSONObject("basic");
-                if(basicObj!=null && materialExObj.get("sku")!=null) {
+                if(basicObj!=null && basicObj.get("sku")!=null) {
                     materialSku = basicObj.getString("sku");
                 }
             }
@@ -1482,6 +1512,7 @@ public class MaterialService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetMaterialCurrentStock(String ids, List<Depot> depotList) throws Exception {
+        checkMaterialEditPermission();
         int res = 0;
         SortedSet<Long> idList = new TreeSet<>(StringUtil.strToLongList(ids));
         depotList.sort(Comparator.comparing(Depot::getId));
@@ -1497,6 +1528,7 @@ public class MaterialService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetMaterialCurrentUnitPrice(String ids) throws Exception {
+        checkMaterialEditPermission();
         int res = 0;
         SortedSet<Long> idList = new TreeSet<>(StringUtil.strToLongList(ids));
         for(Long mId: idList) {
@@ -1508,14 +1540,39 @@ public class MaterialService {
         return res;
     }
 
-    public int batchUpdate(JSONObject jsonObject) {
+    public int batchUpdate(JSONObject jsonObject) throws Exception {
+        checkMaterialEditPermission();
         String ids = jsonObject.getString("ids");
         String materialStr = jsonObject.getString("material");
         List<Long> idList = StringUtil.strToLongList(ids);
-        Material material = JSONObject.parseObject(materialStr, Material.class);
+        Material material = buildBatchUpdateMaterial(JSONObject.parseObject(materialStr));
         MaterialExample example = new MaterialExample();
         example.createCriteria().andIdIn(idList).andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
         return materialMapper.updateByExampleSelective(material, example);
+    }
+
+    public void checkMaterialEditPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if (!userService.hasButtonPermission(userId, MATERIAL_URL, EDIT_BUTTON_CODE)) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_PERMISSION_CODE,
+                    ExceptionConstants.MATERIAL_PERMISSION_MSG);
+        }
+    }
+
+    private Material buildBatchUpdateMaterial(JSONObject source) {
+        Material material = new Material();
+        if (source.containsKey("categoryId")) material.setCategoryId(source.getLong("categoryId"));
+        if (source.containsKey("mfrs")) material.setMfrs(source.getString("mfrs"));
+        if (source.containsKey("brand")) material.setBrand(source.getString("brand"));
+        if (source.containsKey("color")) material.setColor(source.getString("color"));
+        if (source.containsKey("remark")) material.setRemark(source.getString("remark"));
+        if (source.containsKey("expiryNum")) material.setExpiryNum(source.getInteger("expiryNum"));
+        if (source.containsKey("weight")) material.setWeight(source.getBigDecimal("weight"));
+        if (source.containsKey("enableSerialNumber")) material.setEnableSerialNumber(source.getString("enableSerialNumber"));
+        if (source.containsKey("enableBatchNumber")) material.setEnableBatchNumber(source.getString("enableBatchNumber"));
+        if (source.containsKey("position")) material.setPosition(source.getString("position"));
+        return material;
     }
 
     public MaterialExtend getMaterialExtendBySerialNumber(String serialNumber) {

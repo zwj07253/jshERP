@@ -6,6 +6,7 @@ import com.jsh.erp.datasource.vo.DepotItemVo4InOutStock;
 import com.jsh.erp.datasource.vo.DepotItemVo4Stock;
 import com.jsh.erp.datasource.vo.DepotItemVoBatchNumberList;
 import com.jsh.erp.datasource.vo.InOutPriceVo;
+import com.jsh.erp.datasource.vo.MaterialExtendStock;
 import org.apache.ibatis.annotations.Param;
 
 import java.math.BigDecimal;
@@ -266,7 +267,7 @@ public interface DepotItemMapperEx {
 
     List<DepotItem> getDepotItemListListByDepotIds(@Param("depotIds") String[] depotIds);
 
-    List<DepotItem> getDepotItemListListByMaterialIds(@Param("materialIds") String[] materialIds);
+    List<DepotItem> getDepotItemListListByMaterialIds(@Param("materialIds") List<Long> materialIds);
 
     List<DepotItemStockWarningCount> findStockWarningCount(
             @Param("offset") Integer offset,
@@ -378,6 +379,16 @@ public interface DepotItemMapperEx {
     BigDecimal getCurrentStockByParam(
             @Param("depotId") Long depotId,
             @Param("mId") Long mId);
+
+    List<MaterialCurrentStock> getCurrentStockByMaterialIds(
+            @Param("depotId") Long depotId,
+            @Param("materialIds") List<Long> materialIds);
+
+    List<MaterialExtendStock> getSkuStockByMaterialExtendIds(
+            @Param("depotList") List<Long> depotList,
+            @Param("materialExtendIds") List<Long> materialExtendIds,
+            @Param("forceFlag") Boolean forceFlag,
+            @Param("inOutManageFlag") Boolean inOutManageFlag);
 
     BigDecimal getLastUnitPriceByParam(
             @Param("organId") Long organId,

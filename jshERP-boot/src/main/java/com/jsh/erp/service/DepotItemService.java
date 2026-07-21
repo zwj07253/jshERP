@@ -11,6 +11,7 @@ import com.jsh.erp.datasource.vo.DepotItemVo4InOutStock;
 import com.jsh.erp.datasource.vo.DepotItemVo4Stock;
 import com.jsh.erp.datasource.vo.DepotItemVoBatchNumberList;
 import com.jsh.erp.datasource.vo.InOutPriceVo;
+import com.jsh.erp.datasource.vo.MaterialExtendStock;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.exception.JshException;
 import com.jsh.erp.utils.StringUtil;
@@ -1714,6 +1715,32 @@ public class DepotItemService {
     public BigDecimal getCurrentStockByParam(Long depotId, Long mId) {
         BigDecimal stock = depotItemMapperEx.getCurrentStockByParam(depotId, mId);
         return stock!=null? stock: BigDecimal.ZERO;
+    }
+
+    public Map<Long, BigDecimal> getCurrentStockByMaterialIds(Long depotId, List<Long> materialIds) {
+        Map<Long, BigDecimal> stockMap = new HashMap<>();
+        if (materialIds.isEmpty()) {
+            return stockMap;
+        }
+        for (MaterialCurrentStock stock : depotItemMapperEx.getCurrentStockByMaterialIds(depotId, materialIds)) {
+            stockMap.put(stock.getMaterialId(), stock.getCurrentNumber());
+        }
+        return stockMap;
+    }
+
+    public Map<Long, BigDecimal> getSkuStockByMaterialExtendIds(Long depotId, List<Long> materialExtendIds) throws Exception {
+        Map<Long, BigDecimal> stockMap = new HashMap<>();
+        if (materialExtendIds.isEmpty()) {
+            return stockMap;
+        }
+        List<Long> depotList = depotService.parseDepotList(depotId);
+        List<MaterialExtendStock> stocks = depotItemMapperEx.getSkuStockByMaterialExtendIds(
+                depotList, materialExtendIds, systemConfigService.getForceApprovalFlag(),
+                systemConfigService.getInOutManageFlag());
+        for (MaterialExtendStock stock : stocks) {
+            stockMap.put(stock.getMaterialExtendId(), stock.getStock());
+        }
+        return stockMap;
     }
 
     /**

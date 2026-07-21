@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface MaterialExtendMapperEx {
 
-    int batchDeleteMaterialExtendByIds(@Param("ids") String ids[]);
+    int batchDeleteMaterialExtendByIds(@Param("ids") List<Long> ids);
 
     List<MaterialExtendVo4List> getDetailList(
             @Param("materialId") Long materialId);
@@ -21,7 +21,7 @@ public interface MaterialExtendMapperEx {
 
     List<MaterialExtend> getListByMId(@Param("ids") Long ids[]);
 
-    int batchDeleteMaterialExtendByMIds(@Param("ids") String ids[]);
+    int batchDeleteMaterialExtendByMIds(@Param("ids") List<Long> ids);
 
     int specialUpdatePrice(MaterialExtend record);
 

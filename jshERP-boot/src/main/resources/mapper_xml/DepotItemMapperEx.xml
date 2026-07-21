@@ -97,6 +97,11 @@
         <result column="disAssemOutTotal" jdbcType="DECIMAL" property="disAssemOutTotal" />
     </resultMap>
 
+    <resultMap id="materialExtendStockMap" type="com.jsh.erp.datasource.vo.MaterialExtendStock">
+        <result column="material_extend_id" jdbcType="BIGINT" property="materialExtendId" />
+        <result column="stock" jdbcType="DECIMAL" property="stock" />
+    </resultMap>
+
     <resultMap id="batchNumberListMap" type="com.jsh.erp.datasource.vo.DepotItemVoBatchNumberList">
         <result column="id" jdbcType="VARCHAR" property="id" />
         <result column="bar_code" jdbcType="VARCHAR" property="barCode" />
@@ -1629,6 +1634,63 @@
             and material_id = #{mId}
         </if>
         and COALESCE(delete_flag,'0') !='1'
+    </select>
+
+    <select id="getCurrentStockByMaterialIds" resultType="com.jsh.erp.datasource.entities.MaterialCurrentStock">
+        select material_id, sum(COALESCE(current_number,0)) current_number
+        from jsh_material_current_stock
+        where material_id in
+        <foreach collection="materialIds" item="materialId" separator="," open="(" close=")">
+            #{materialId}
+        </foreach>
+        <if test="depotId != null">
+            and depot_id = #{depotId}::bigint
+        </if>
+        and COALESCE(delete_flag,'0') !='1'
+        group by material_id
+    </select>
+
+    <select id="getSkuStockByMaterialExtendIds" resultMap="materialExtendStockMap">
+        select material_extend_id, sum(stock) stock
+        from (
+            select di.material_extend_id, COALESCE(sum(di.basic_number),0) stock
+            from jsh_depot_head dh
+            left join jsh_depot_item di on dh.id=di.header_id
+            where di.material_extend_id in
+            <foreach collection="materialExtendIds" item="materialExtendId" separator="," open="(" close=")">
+                #{materialExtendId}
+            </foreach>
+            and dh.sub_type='盘点复盘'
+            <if test="depotList.size()>0">
+                and di.depot_id in
+                <foreach collection="depotList" item="item" separator="," open="(" close=")">#{item}</foreach>
+            </if>
+            <if test="forceFlag">and dh.status = '1'</if>
+            and COALESCE(dh.delete_flag,'0') !='1'
+            and COALESCE(di.delete_flag,'0') !='1'
+            group by di.material_extend_id
+            union all
+            select di.material_extend_id,
+                   COALESCE(sum(case when dh."type"='入库' <include refid="inOutManageParam" /> <include refid="depotParam" /> then di.basic_number else 0 end),0)
+                 - COALESCE(sum(case when dh."type"='出库' and dh.sub_type!='调拨' <include refid="inOutManageParam" /> <include refid="depotParam" /> then di.basic_number else 0 end),0)
+                 + COALESCE(sum(case when dh.sub_type='调拨' <include refid="anotherDepotParam" /> then di.basic_number else 0 end),0)
+                 - COALESCE(sum(case when dh.sub_type='调拨' <include refid="depotParam" /> then di.basic_number else 0 end),0)
+                 + COALESCE(sum(case when dh.sub_type='组装单' and di.material_type='组合件' <include refid="depotParam" /> then di.basic_number else 0 end),0)
+                 - COALESCE(sum(case when dh.sub_type='组装单' and di.material_type='普通子件' <include refid="depotParam" /> then di.basic_number else 0 end),0)
+                 + COALESCE(sum(case when dh.sub_type='拆卸单' and di.material_type='普通子件' <include refid="depotParam" /> then di.basic_number else 0 end),0)
+                 - COALESCE(sum(case when dh.sub_type='拆卸单' and di.material_type='组合件' <include refid="depotParam" /> then di.basic_number else 0 end),0) stock
+            from jsh_depot_head dh
+            left join jsh_depot_item di on dh.id=di.header_id and COALESCE(di.delete_flag,'0') !='1'
+            where di.material_extend_id in
+            <foreach collection="materialExtendIds" item="materialExtendId" separator="," open="(" close=")">
+                #{materialExtendId}
+            </foreach>
+            and COALESCE(di.sku,'') !=''
+            <if test="forceFlag">and dh.status = '1'</if>
+            and COALESCE(dh.delete_flag,'0') !='1'
+            group by di.material_extend_id
+        ) stock_detail
+        group by material_extend_id
     </select>
 
     <select id="getLastUnitPriceByParam" resultType="java.math.BigDecimal">

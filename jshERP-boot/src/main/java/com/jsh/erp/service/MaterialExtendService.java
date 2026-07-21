@@ -78,7 +78,18 @@ public class MaterialExtendService {
         JSONArray insertedJson = new JSONArray();
         JSONArray updatedJson = new JSONArray();
         JSONArray deletedJson = obj.getJSONArray("meDeleteIdList");
+        if (deletedJson == null) {
+            deletedJson = new JSONArray();
+        }
         JSONArray sortJson = JSONArray.parseArray(sortList);
+        Set<Long> existingDetailIds = new HashSet<>();
+        List<MaterialExtendVo4List> existingDetails = Collections.emptyList();
+        if ("update".equals(type)) {
+            existingDetails = materialExtendMapperEx.getDetailList(materialId);
+            for (MaterialExtendVo4List detail : existingDetails) {
+                existingDetailIds.add(detail.getId());
+            }
+        }
         if (null != meArr) {
             if("insert".equals(type)){
                 for (int i = 0; i < meArr.size(); i++) {
@@ -92,13 +103,14 @@ public class MaterialExtendService {
                     if(tempId.length()>19){
                         insertedJson.add(tempJson);
                     } else {
+                        requireDetailOwnership(tempJson.getLong("id"), existingDetailIds);
                         updatedJson.add(tempJson);
                     }
                 }
                 //针对多属性商品要考虑到有条码被删的情况，需要和原来的条码明细进行对比
                 if(StringUtil.isNotEmpty(obj.getString("manySku"))) {
                     //1.先查询原来的条码列表
-                    List<MaterialExtendVo4List> meList = materialExtendMapperEx.getDetailList(materialId);
+                    List<MaterialExtendVo4List> meList = existingDetails;
                     //2.构造新的条码列表map
                     Map<String, String> barCodeMap = new HashMap<>();
                     for (int i = 0; i < meArr.size(); i++) {
@@ -115,15 +127,14 @@ public class MaterialExtendService {
             }
         }
         if (null != deletedJson) {
-            StringBuffer bf=new StringBuffer();
+            List<Long> deletedIds = new ArrayList<>();
             for (int i = 0; i < deletedJson.size(); i++) {
-                bf.append(deletedJson.getString(i));
-                if(i<(deletedJson.size()-1)){
-                    bf.append(",");
-                }
+                Long detailId = deletedJson.getLong(i);
+                requireDetailOwnership(detailId, existingDetailIds);
+                deletedIds.add(detailId);
             }
-            if(StringUtil.isNotEmpty(bf.toString())) {
-                this.batchDeleteMaterialExtendByIds(bf.toString(), request);
+            if(!deletedIds.isEmpty()) {
+                this.batchDeleteMaterialExtendByIds(deletedIds);
             }
         }
         if (null != insertedJson) {
@@ -205,7 +216,11 @@ public class MaterialExtendService {
                 JSONObject tempSortJson = JSONObject.parseObject(sortJson.getString(i));
                 MaterialExtend materialExtend = new MaterialExtend();
                 if(StringUtil.isExist(tempSortJson.get("id"))) {
-                    materialExtend.setId(tempSortJson.getLong("id"));
+                    Long detailId = tempSortJson.getLong("id");
+                    if ("update".equals(type)) {
+                        requireDetailOwnership(detailId, existingDetailIds);
+                    }
+                    materialExtend.setId(detailId);
                 }
                 if(StringUtil.isExist(tempSortJson.get("defaultFlag"))) {
                     materialExtend.setDefaultFlag(tempSortJson.getString("defaultFlag"));
@@ -231,6 +246,13 @@ public class MaterialExtendService {
             }
         }
         return null;
+    }
+
+    private void requireDetailOwnership(Long detailId, Set<Long> existingDetailIds) {
+        if (detailId == null || !existingDetailIds.contains(detailId)) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_NOT_EXISTS_CODE,
+                    ExceptionConstants.MATERIAL_NOT_EXISTS_MSG);
+        }
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
@@ -284,6 +306,7 @@ public class MaterialExtendService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteMaterialExtend(Long id, HttpServletRequest request)throws Exception {
+        checkMaterialEditPermission();
         int result =0;
         MaterialExtend materialExtend = new MaterialExtend();
         materialExtend.setId(id);
@@ -302,10 +325,17 @@ public class MaterialExtendService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteMaterialExtendByIds(String ids, HttpServletRequest request) throws Exception{
-        String [] idArray=ids.split(",");
+        checkMaterialEditPermission();
+        return batchDeleteMaterialExtendByIds(StringUtil.strToLongList(ids));
+    }
+
+    private int batchDeleteMaterialExtendByIds(List<Long> idList) throws Exception {
+        if (idList == null || idList.isEmpty()) {
+            return 0;
+        }
         int result = 0;
         try{
-            result = materialExtendMapperEx.batchDeleteMaterialExtendByIds(idArray);
+            result = materialExtendMapperEx.batchDeleteMaterialExtendByIds(idList);
         }catch(Exception e){
             JshException.writeFail(logger, e);
         }
@@ -313,7 +343,11 @@ public class MaterialExtendService {
     }
 
     public int insertMaterialExtend(JSONObject obj, HttpServletRequest request) throws Exception{
+        checkMaterialEditPermission();
         MaterialExtend materialExtend = JSONObject.parseObject(obj.toJSONString(), MaterialExtend.class);
+        materialExtend.setId(null);
+        materialExtend.setTenantId(null);
+        materialExtend.setDeleteFlag(null);
         int result=0;
         try{
             result = materialExtendMapper.insertSelective(materialExtend);
@@ -324,7 +358,11 @@ public class MaterialExtendService {
     }
 
     public int updateMaterialExtend(JSONObject obj, HttpServletRequest request)throws Exception {
+        checkMaterialEditPermission();
         MaterialExtend materialExtend = JSONObject.parseObject(obj.toJSONString(), MaterialExtend.class);
+        materialExtend.setMaterialId(null);
+        materialExtend.setTenantId(null);
+        materialExtend.setDeleteFlag(null);
         int result=0;
         try{
             result = materialExtendMapper.updateByPrimaryKeySelective(materialExtend);
@@ -332,6 +370,15 @@ public class MaterialExtendService {
             JshException.writeFail(logger, e);
         }
         return result;
+    }
+
+    private void checkMaterialEditPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if (!userService.hasButtonPermission(userId, "/material/material", "1")) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_PERMISSION_CODE,
+                    ExceptionConstants.MATERIAL_PERMISSION_MSG);
+        }
     }
 
     public List<MaterialExtend> getMaterialExtendByTenantAndTime(Long tenantId, Long lastTime, Long syncNum)throws Exception {

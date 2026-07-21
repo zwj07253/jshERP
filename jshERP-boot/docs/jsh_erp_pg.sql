@@ -654,6 +654,9 @@ CREATE TABLE jsh_material_extend (
 CREATE INDEX idx_material_extend_material_id ON jsh_material_extend(material_id);
 CREATE INDEX idx_material_extend_bar_code ON jsh_material_extend(bar_code);
 CREATE INDEX idx_material_extend_tenant_id ON jsh_material_extend(tenant_id);
+CREATE UNIQUE INDEX uk_material_extend_tenant_bar_code_active
+    ON jsh_material_extend(COALESCE(tenant_id, 0), bar_code)
+    WHERE COALESCE(delete_flag, '0') != '1' AND bar_code IS NOT NULL AND bar_code != '';
 COMMENT ON TABLE jsh_material_extend IS '产品价格扩展';
 COMMENT ON COLUMN jsh_material_extend.id IS '主键';
 COMMENT ON COLUMN jsh_material_extend.material_id IS '商品id';

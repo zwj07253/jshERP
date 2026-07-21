@@ -25,8 +25,12 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class UnitService {
@@ -52,6 +56,20 @@ public class UnitService {
             JshException.readFail(logger, e);
         }
         return result;
+    }
+
+    public Map<Long, Unit> getUnitMap(Collection<Long> unitIds) throws Exception {
+        Map<Long, Unit> unitMap = new HashMap<>();
+        if (unitIds == null || unitIds.isEmpty()) {
+            return unitMap;
+        }
+        UnitExample example = new UnitExample();
+        example.createCriteria().andIdIn(new ArrayList<>(new LinkedHashSet<>(unitIds)))
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        for (Unit unit : unitMapper.selectByExample(example)) {
+            unitMap.put(unit.getId(), unit);
+        }
+        return unitMap;
     }
 
     public List<Unit> getUnitListByIds(String ids)throws Exception {
