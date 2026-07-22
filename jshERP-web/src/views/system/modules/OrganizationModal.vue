@@ -140,12 +140,12 @@
                 that.$message.success(res.data.message);
                 that.loadTreeData();
                 that.$emit('ok');
+                that.close();
               }else{
                 that.$message.warning(res.data.message);
               }
             }).finally(() => {
               that.confirmLoading = false;
-              that.close();
             })
           }
         })

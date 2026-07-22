@@ -2,6 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.jsh.erp.datasource.mappers.OrganizationMapperEx">
 
+    <select id="lockOrganizationWrite" resultType="java.lang.Object">
+        select pg_advisory_xact_lock(5300000000 + COALESCE(#{tenantId}, 0))
+    </select>
+
     <resultMap id="BaseTreeResultMap" type="com.jsh.erp.datasource.vo.TreeNode">
         <result column="id" property="id"/>
         <result column="id" property="key"/>

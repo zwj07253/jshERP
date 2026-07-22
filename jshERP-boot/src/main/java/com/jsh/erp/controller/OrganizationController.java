@@ -46,9 +46,10 @@ public class OrganizationController {
     @Operation(summary = "根据id获取信息")
     public String getList(@RequestParam("id") Long id,
                           HttpServletRequest request) throws Exception {
+        organizationService.checkReadPermission();
         Organization organization = organizationService.getOrganization(id);
         Map<String, Object> objectMap = new HashMap<>();
-        if(organization != null) {
+        if(organization != null && !BusinessConstants.DELETE_FLAG_DELETED.equals(organization.getDeleteFlag())) {
             objectMap.put("info", organization);
             return returnJson(objectMap, ErpInfo.OK.name, ErpInfo.OK.code);
         } else {
@@ -111,6 +112,7 @@ public class OrganizationController {
     @GetMapping(value = "/findById")
     @Operation(summary = "根据id来查询部门信息")
     public BaseResponseInfo findById(@RequestParam("id") Long id, HttpServletRequest request) throws Exception {
+        organizationService.checkReadPermission();
         BaseResponseInfo res = new BaseResponseInfo();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         try {
@@ -148,7 +150,8 @@ public class OrganizationController {
      */
     @GetMapping(value = "/getOrganizationTree")
     @Operation(summary = "获取部门树数据")
-    public JSONArray getOrganizationTree(@RequestParam("id") Long id) throws Exception{
+    public JSONArray getOrganizationTree(@RequestParam(value = "id", required = false) Long id) throws Exception{
+       organizationService.checkSelectionPermission();
        JSONArray arr=new JSONArray();
        List<TreeNode> organizationTree= organizationService.getOrganizationTree(id);
        if(organizationTree!=null&&organizationTree.size()>0){

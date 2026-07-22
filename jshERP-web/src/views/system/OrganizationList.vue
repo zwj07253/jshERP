@@ -63,27 +63,27 @@
       <a-card :bordered="false" v-if="selectedKeys.length>0">
         <a-form :form="form">
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="名称">
-            <a-input placeholder="请输入名称" v-decorator="['orgAbr', validatorRules.orgAbr ]"/>
+            <a-input :disabled="isReadOnly" placeholder="请输入名称" v-decorator="['orgAbr', validatorRules.orgAbr ]"/>
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="编号">
-            <a-input placeholder="请输入编号" v-decorator="['orgNo', validatorRules.orgNo ]"/>
+            <a-input :disabled="isReadOnly" placeholder="请输入编号" v-decorator="['orgNo', validatorRules.orgNo ]"/>
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="上级部门">
             <a-tree-select style="width:100%" :dropdownStyle="{maxHeight:'200px',overflow:'auto'}"
-                           allow-clear :treeDefaultExpandAll="true"
+                           :disabled="isReadOnly" allow-clear :treeDefaultExpandAll="true"
                            :treeData="treeData" v-decorator="[ 'parentId' ]" placeholder="请选择上级部门">
             </a-tree-select>
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="排序">
-            <a-input v-decorator="[ 'sort' ]"/>
+            <a-input :disabled="isReadOnly" v-decorator="[ 'sort' ]"/>
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="备注">
-            <a-textarea placeholder="请输入备注":rows="2" v-decorator.trim="[ 'remark' ]" />
+            <a-textarea :disabled="isReadOnly" placeholder="请输入备注" :rows="2" v-decorator.trim="[ 'remark' ]" />
           </a-form-item>
         </a-form>
         <div class="anty-form-btn">
-          <a-button @click="emptyCurrForm" type="default" htmlType="button" icon="sync">重置</a-button>
-          <a-button @click="submitCurrForm" type="primary" htmlType="button" icon="form">保存</a-button>
+          <a-button v-if="!isReadOnly" @click="emptyCurrForm" type="default" htmlType="button" icon="sync">重置</a-button>
+          <a-button v-if="!isReadOnly" @click="submitCurrForm" type="primary" htmlType="button" icon="form">保存</a-button>
         </div>
       </a-card>
       <a-card v-else >
@@ -163,6 +163,9 @@ export default {
     }
   },
   computed: {
+    isReadOnly() {
+      return this.btnEnableList.indexOf(1) === -1
+    },
     importExcelUrl: function () {
       return `${window._CONFIG['domianURL']}/${this.url.importExcelUrl}`;
     }
@@ -331,7 +334,6 @@ export default {
       this.currSelected = {}
       this.form.resetFields()
       this.selectedKeys = []
-      this.$refs.departAuth.departId = ''
     },
     handleNodeTypeChange(val) {
       this.currSelected.nodeType = val
@@ -343,6 +345,10 @@ export default {
       this.currSelected.receiptTriggerType = value
     },
     submitCurrForm() {
+      if (this.isReadOnly) {
+        this.$message.warning('当前用户没有部门编辑权限')
+        return
+      }
       this.form.validateFields((err, values) => {
         if (!err) {
           if (!this.currSelected.id) {
@@ -396,6 +402,10 @@ export default {
       });
     },
     handleAdd() {
+      if (this.isReadOnly) {
+        this.$message.warning('当前用户没有部门编辑权限')
+        return
+      }
       this.$refs.organizationModal.add()
       this.$refs.organizationModal.title = '新增'
     },

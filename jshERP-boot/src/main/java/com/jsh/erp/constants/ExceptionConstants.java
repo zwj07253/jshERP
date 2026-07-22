@@ -1039,6 +1039,18 @@ public class ExceptionConstants {
     //该部门存在下级不允许删除
     public static final int ORGANIZATION_CHILD_NOT_ALLOWED_DELETE_CODE = 11000006;
     public static final String ORGANIZATION_CHILD_NOT_ALLOWED_DELETE_MSG = "该部门存在下级不允许删除";
+
+    public static final int ORGANIZATION_PERMISSION_CODE = 11000007;
+    public static final String ORGANIZATION_PERMISSION_MSG = "抱歉，您没有部门管理的操作权限";
+
+    public static final int ORGANIZATION_INVALID_CODE = 11000008;
+    public static final String ORGANIZATION_INVALID_MSG = "部门信息不合法：%s";
+
+    public static final int ORGANIZATION_NAME_ALREADY_EXISTS_CODE = 11000009;
+    public static final String ORGANIZATION_NAME_ALREADY_EXISTS_MSG = "部门名称已存在";
+
+    public static final int ORGANIZATION_USER_NOT_ALLOWED_DELETE_CODE = 11000010;
+    public static final String ORGANIZATION_USER_NOT_ALLOWED_DELETE_MSG = "该部门存在用户，不允许删除";
     /**
      * 部门用户关联关系
      * type = 115

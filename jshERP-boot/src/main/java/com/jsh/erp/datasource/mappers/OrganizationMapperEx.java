@@ -17,6 +17,7 @@ import java.util.Map;
  */
 public interface OrganizationMapperEx {
 
+    Object lockOrganizationWrite(@Param("tenantId") Long tenantId);
 
     List<TreeNode> getNodeTree(@Param("currentId")Long currentId);
     List<TreeNode> getNextNodeTree(Map<String, Object> parameterMap);

@@ -293,9 +293,10 @@ public class P1BasicDataTest extends ApiTestBase {
     @DisplayName("29b: 新建部门")
     void createDepartment() {
         JSONObject body = new JSONObject();
-        body.put("name", "P1测试部门_" + System.currentTimeMillis());
-        body.put("parentId", 0);
-        body.put("sort", 1);
+        long suffix = System.currentTimeMillis();
+        body.put("orgAbr", "P1测试部门_" + suffix);
+        body.put("orgNo", "P1-" + suffix);
+        body.put("sort", "1");
         body.put("remark", "P1测试");
         Response resp = authReq().body(body.toJSONString()).post(CONTEXT + "/organization/add");
         assertSuccess(resp);
