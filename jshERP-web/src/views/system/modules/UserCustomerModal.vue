@@ -87,6 +87,7 @@
           } else {
             this.$message.warning(res.data.message)
           }
+        }).finally(() => {
           this.loading = false
         })
       },
@@ -112,24 +113,24 @@
             formData.type = 'UserCustomer'
             formData.keyId = this.roleId
             formData.value = this.selectedRowKeys
-            let obj;
             checkUserBusiness({'type': 'UserCustomer','keyId': this.roleId}).then((res)=>{
+              let obj;
               if(res.data && res.data.id) {
                 formData.id=res.data.id
                 obj=editUserBusiness(formData);
               } else {
                 obj=addUserBusiness(formData);
               }
-              obj.then((res)=>{
+              return obj.then((res)=>{
                 if(res.code === 200){
                   that.$emit('ok');
+                  that.close();
                 }else{
-                  that.$message.warning(res.data.message);
+                  that.$message.warning(res.data && res.data.message ? res.data.message : res.data);
                 }
-              }).finally(() => {
-                that.confirmLoading = false;
-                that.close();
               })
+            }).finally(() => {
+              that.confirmLoading = false;
             })
           }
         })

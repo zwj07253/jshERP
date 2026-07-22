@@ -7,6 +7,7 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.base.BaseController;
 import com.jsh.erp.base.TableDataInfo;
+import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.Supplier;
 import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.vo.SupplierSimple;
@@ -337,6 +338,7 @@ public class SupplierController extends BaseController {
     @Operation(summary = "获取全部客户信息")
     public TableDataInfo getAllCustomer(@RequestParam(value = Constants.SEARCH, required = false) String search,
                                         HttpServletRequest request)throws Exception {
+        checkCustomerAssignmentPermission(request);
         List<SupplierSimple> list = supplierService.getAllCustomer();
         return getDataTable(list);
     }
@@ -354,6 +356,11 @@ public class SupplierController extends BaseController {
                                            HttpServletRequest request) throws Exception{
         JSONObject obj = new JSONObject();
         try {
+            checkCustomerAssignmentPermission(request);
+            if (!"UserCustomer".equals(type)) {
+                throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_INVALID_CODE,
+                        String.format(ExceptionConstants.SUPPLIER_INVALID_MSG, "客户权限类型不合法"));
+            }
             //获取权限信息
             String ubValue = userBusinessService.getUBValueByTypeAndKeyId(type, keyId);
             if(StringUtil.isNotEmpty(ubValue)) {
@@ -368,12 +375,22 @@ public class SupplierController extends BaseController {
                 obj.put("data", null);
             }
             obj.put("code", 200);
+        } catch (BusinessRunTimeException e) {
+            throw e;
         } catch (Exception e) {
             obj.put("code", 500);
             obj.put("data", "服务内部错误");
             logger.error(e.getMessage(), e);
         }
         return obj;
+    }
+
+    private void checkCustomerAssignmentPermission(HttpServletRequest request) throws Exception {
+        Long userId = userService.getUserId(request);
+        if (!userService.hasButtonPermission(userId, "/system/user", "1")) {
+            throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
+                    ExceptionConstants.SUPPLIER_PERMISSION_MSG);
+        }
     }
 
     /**

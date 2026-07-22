@@ -469,6 +469,16 @@ public class UserController extends BaseController {
                                   HttpServletRequest request) throws Exception{
         JSONArray arr = new JSONArray();
         try {
+            if (!"UserCustomer".equals(type)) {
+                throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_INVALID_CODE,
+                        String.format(ExceptionConstants.SUPPLIER_INVALID_MSG, "客户权限类型不合法"));
+            }
+            Long currentUserId = userService.getUserId(request);
+            if (!userService.hasButtonPermission(currentUserId, "/system/user", "1")) {
+                throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
+                        ExceptionConstants.SUPPLIER_PERMISSION_MSG);
+            }
+            userBusinessService.validateCustomerId(oneValue);
             //获取权限信息
             List<Long> keyIdList = userBusinessService.getUBKeyIdByTypeAndOneValue(type, oneValue);
             Map<Long, Long> keyIdMap = keyIdList.stream().collect(Collectors.toMap(Function.identity(),Function.identity()));
@@ -498,8 +508,11 @@ public class UserController extends BaseController {
             }
             outer.put("children", dataArray);
             arr.add(outer);
+        } catch (BusinessRunTimeException e) {
+            throw e;
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
+            throw e;
         }
         return arr;
     }

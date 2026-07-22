@@ -3,11 +3,15 @@ package com.jsh.erp.service;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.constants.BusinessConstants;
+import com.jsh.erp.constants.ExceptionConstants;
+import com.jsh.erp.datasource.entities.Supplier;
 import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.entities.UserBusiness;
 import com.jsh.erp.datasource.entities.UserBusinessExample;
 import com.jsh.erp.datasource.mappers.UserBusinessMapper;
 import com.jsh.erp.datasource.mappers.UserBusinessMapperEx;
+import com.jsh.erp.datasource.mappers.SupplierMapperEx;
+import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.exception.JshException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +26,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 public class UserBusinessService {
@@ -35,6 +41,8 @@ public class UserBusinessService {
     private LogService logService;
     @Resource
     private UserService userService;
+    @Resource
+    private SupplierMapperEx supplierMapperEx;
 
     public UserBusiness getUserBusiness(long id)throws Exception {
         UserBusiness result=null;
@@ -60,7 +68,9 @@ public class UserBusinessService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertUserBusiness(JSONObject obj, HttpServletRequest request) throws Exception {
-        UserBusiness userBusiness = JSONObject.parseObject(obj.toJSONString(), UserBusiness.class);
+        UserBusiness requested = JSONObject.parseObject(obj.toJSONString(), UserBusiness.class);
+        UserBusiness userBusiness = writableRelation(requested);
+        validateCustomerRelation(userBusiness, null);
         int result=0;
         try{
             String value = userBusiness.getValue();
@@ -77,7 +87,15 @@ public class UserBusinessService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateUserBusiness(JSONObject obj, HttpServletRequest request) throws Exception {
-        UserBusiness userBusiness = JSONObject.parseObject(obj.toJSONString(), UserBusiness.class);
+        UserBusiness requested = JSONObject.parseObject(obj.toJSONString(), UserBusiness.class);
+        UserBusiness userBusiness = writableRelation(requested);
+        UserBusiness existing = userBusiness.getId() == null ? null
+                : userBusinessMapper.selectByPrimaryKey(userBusiness.getId());
+        if (existing == null || !existing.getType().equals(userBusiness.getType())
+                || !existing.getKeyId().equals(userBusiness.getKeyId())) {
+            throw invalidRelation("用户关系记录不存在或不匹配");
+        }
+        validateCustomerRelation(userBusiness, existing);
         int result=0;
         try{
             String value = userBusiness.getValue();
@@ -180,13 +198,23 @@ public class UserBusinessService {
         return userBusinessMapperEx.getUBKeyIdByTypeAndOneValue(type, oneValue);
     }
 
-    public int updateOneValueByKeyIdAndType(String type, JSONArray keyIdArr, String oneValue) {
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
+    public int updateOneValueByKeyIdAndType(String type, JSONArray keyIdArr, String oneValue) throws Exception {
+        if (!"UserCustomer".equals(type) || keyIdArr == null) {
+            throw invalidRelation("客户授权参数不合法");
+        }
+        validateCustomerId(oneValue);
+        Set<String> validatedUserIds = new HashSet<>();
+        for (Object keyIdObj : keyIdArr) {
+            String keyId = keyIdObj == null ? null : keyIdObj.toString();
+            validateUserId(keyId);
+            validatedUserIds.add(keyId);
+        }
         int res = 0;
         try {
             Map<String, String> keyIdMap = new HashMap<>();
             List<UserBusiness> oldUbList = userBusinessMapperEx.getOldListByType(type);
-            for(Object keyIdObj: keyIdArr) {
-                String keyId = keyIdObj.toString();
+            for(String keyId: validatedUserIds) {
                 keyIdMap.put(keyId, keyId);
                 List<UserBusiness> ubList = userBusinessMapperEx.getBasicDataByKeyIdAndType(keyId, type);
                 if(ubList.size()>0) {
@@ -236,9 +264,76 @@ public class UserBusinessService {
             }
             res = 1;
         } catch (Exception e) {
-            res = 0;
             logger.error(e.getMessage(), e);
+            throw e;
         }
         return res;
+    }
+
+    public void validateCustomerId(String customerId) throws Exception {
+        Long id = parsePositiveId(customerId, "客户ID不合法");
+        Supplier supplier = supplierMapperEx.getInfoById(id);
+        if (supplier == null || !"客户".equals(supplier.getType()) || !Boolean.TRUE.equals(supplier.getEnabled())) {
+            throw invalidRelation("客户不存在或已停用");
+        }
+    }
+
+    private void validateCustomerRelation(UserBusiness relation, UserBusiness existing) throws Exception {
+        if (!"UserCustomer".equals(relation.getType())) {
+            return;
+        }
+        if (existing != null && (!"UserCustomer".equals(existing.getType())
+                || !existing.getKeyId().equals(relation.getKeyId()))) {
+            throw invalidRelation("客户授权记录不匹配");
+        }
+        if (relation.getId() != null && existing == null) {
+            throw invalidRelation("客户授权记录不存在");
+        }
+        validateUserId(relation.getKeyId());
+        String value = relation.getValue();
+        if (value == null) {
+            throw invalidRelation("客户授权值不能为空");
+        }
+        String normalized = value.replace(",", "][").replace("[0]", "").replace("[]", "");
+        if (!normalized.isEmpty()) {
+            for (String customerId : normalized.replace("[", "").split("]")) {
+                if (!customerId.isEmpty()) {
+                    validateCustomerId(customerId);
+                }
+            }
+        }
+    }
+
+    private UserBusiness writableRelation(UserBusiness source) {
+        UserBusiness target = new UserBusiness();
+        target.setId(source.getId());
+        target.setType(source.getType());
+        target.setKeyId(source.getKeyId());
+        target.setValue(source.getValue());
+        return target;
+    }
+
+    private void validateUserId(String userId) throws Exception {
+        Long id = parsePositiveId(userId, "用户ID不合法");
+        if (userService.getUser(id) == null) {
+            throw invalidRelation("用户不存在");
+        }
+    }
+
+    private Long parsePositiveId(String value, String message) {
+        try {
+            Long id = Long.valueOf(value);
+            if (id <= 0) {
+                throw invalidRelation(message);
+            }
+            return id;
+        } catch (NumberFormatException e) {
+            throw invalidRelation(message);
+        }
+    }
+
+    private BusinessRunTimeException invalidRelation(String detail) {
+        return new BusinessRunTimeException(ExceptionConstants.SUPPLIER_INVALID_CODE,
+                String.format(ExceptionConstants.SUPPLIER_INVALID_MSG, detail));
     }
 }

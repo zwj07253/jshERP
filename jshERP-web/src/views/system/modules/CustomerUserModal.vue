@@ -15,7 +15,7 @@
       cancelText="取消"
       okText="保存"
       style="top:5%;height: 95%;">
-      <a-spin :spinning="confirmLoading">
+      <a-spin :spinning="confirmLoading || loading">
         <a-col :md="10" :sm="24">
           <template>
             <a-tree
@@ -64,6 +64,7 @@
           sm: { span: 16 },
         },
         confirmLoading: false,
+        loading: false,
         form: this.$form.createForm(this),
       }
     },
@@ -76,6 +77,7 @@
         this.visible = true
         this.customerId = record.id
         this.checkedKeys = []
+        this.iExpandedKeys = []
         this.loadTree(record.id)
       },
       close () {
@@ -90,18 +92,18 @@
             that.confirmLoading = true;
             let formData = Object.assign(this.model, values);
             formData.type = 'UserCustomer'
-            formData.keyIds = this.checkedKeys
+            formData.keyIds = this.checkedKeys.filter(key => Number(key) > 0)
             formData.oneValue = this.customerId
             updateOneValueByKeyIdAndType(formData).then((res)=>{
               if(res.code === 200){
                 that.$message.info('保存成功');
                 that.$emit('ok');
+                that.close();
               }else{
-                that.$message.warning(res.data.message);
+                that.$message.warning(res.data && res.data.message ? res.data.message : res.data);
               }
             }).finally(() => {
               that.confirmLoading = false;
-              that.close();
             })
           }
         })
@@ -115,6 +117,7 @@
         that.customerUserTree = []
         let params = {};
         params.id='';
+        this.loading = true
         getAction('/user/getUserWithChecked?UBType=UserCustomer&UBValue='+id).then((res) => {
           if (res) {
             //部门全选后，再添加部门，选中数量增多
@@ -126,9 +129,9 @@
               that.setThisExpandedKeys(temp)
               that.getAllKeys(temp);
             }
-            console.log(JSON.stringify(this.checkedKeys))
-            this.loading = false
           }
+        }).finally(() => {
+          this.loading = false
         })
       },
       onCheck(checkedKeys, info) {

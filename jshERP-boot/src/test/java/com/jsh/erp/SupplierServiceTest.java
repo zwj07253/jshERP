@@ -10,6 +10,7 @@ import com.jsh.erp.datasource.mappers.AccountItemMapperEx;
 import com.jsh.erp.datasource.mappers.DepotHeadMapperEx;
 import com.jsh.erp.datasource.mappers.SupplierMapper;
 import com.jsh.erp.datasource.mappers.SupplierMapperEx;
+import com.jsh.erp.datasource.vo.DepotHeadVo4StatementAccount;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.service.DepotHeadService;
 import com.jsh.erp.service.LogService;
@@ -22,13 +23,21 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Collections;
+import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -98,6 +107,40 @@ class SupplierServiceTest {
         assertNull(inserted.getDeleteFlag());
         assertEquals(Boolean.TRUE, inserted.getEnabled());
         assertEquals(101L, inserted.getCreator());
+    }
+
+    @Test
+    void loadsCustomerBalancesInOneBatch() throws Exception {
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(new MockHttpServletRequest()));
+        Supplier first = customer(10L, "Customer A");
+        Supplier second = customer(20L, "Customer B");
+        when(supplierMapperEx.selectByConditionSupplier(nullable(String.class), eq("客户"),
+                nullable(String.class), nullable(String.class), nullable(String.class), nullable(String[].class)))
+                .thenReturn(Arrays.asList(first, second));
+        DepotHeadVo4StatementAccount statement = new DepotHeadVo4StatementAccount();
+        statement.setId(10L);
+        statement.setDebtMoney(new java.math.BigDecimal("15.50"));
+        when(depotHeadService.getStatementAccount(anyString(), anyString(), isNull(), any(String[].class),
+                eq(1), eq("客户"), eq("出库"), eq("销售"), eq("入库"), eq("销售退货"),
+                eq("收款"), isNull(), isNull(), isNull(), isNull()))
+                .thenReturn(Collections.singletonList(statement));
+
+        supplierService.select(null, "客户", null, null, null);
+
+        assertEquals(new java.math.BigDecimal("15.50"), first.getAllNeedGet());
+        assertEquals(java.math.BigDecimal.ZERO, second.getAllNeedGet());
+        verify(depotHeadService).getStatementAccount(anyString(), anyString(), isNull(), any(String[].class),
+                eq(1), eq("客户"), eq("出库"), eq("销售"), eq("入库"), eq("销售退货"),
+                eq("收款"), isNull(), isNull(), isNull(), isNull());
+        RequestContextHolder.resetRequestAttributes();
+    }
+
+    private Supplier customer(Long id, String name) {
+        Supplier supplier = new Supplier();
+        supplier.setId(id);
+        supplier.setSupplier(name);
+        supplier.setType("客户");
+        return supplier;
     }
 
     private JSONObject validBody() {

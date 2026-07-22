@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -112,54 +113,50 @@ public class SupplierService {
             String [] creatorArray = depotHeadService.getCreatorArray();
             PageUtils.startPage();
             list = supplierMapperEx.selectByConditionSupplier(supplier, type, contacts, phonenum, telephone, creatorArray);
-            for(Supplier s : list) {
-                Integer supplierId = s.getId().intValue();
-                String beginTime = Tools.getYearBegin();
-                String endTime = Tools.getCenternTime(new Date());
-                BigDecimal sum = BigDecimal.ZERO;
-                String supplierType = StringUtil.isEmpty(type) ? s.getType() : type;
-                String inOutType = "";
-                String subType = "";
-                String typeBack = "";
-                String subTypeBack = "";
-                String billType = "";
-                if (("供应商").equals(supplierType)) {
-                    inOutType = "入库";
-                    subType = "采购";
-                    typeBack = "出库";
-                    subTypeBack = "采购退货";
-                    billType = "付款";
-                } else if (("客户").equals(supplierType)) {
-                    inOutType = "出库";
-                    subType = "销售";
-                    typeBack = "入库";
-                    subTypeBack = "销售退货";
-                    billType = "收款";
-                }
-                List<DepotHeadVo4StatementAccount> saList = depotHeadService.getStatementAccount(beginTime, endTime, supplierId, null,
-                        1, supplierType, inOutType, subType, typeBack, subTypeBack, billType, null, null, null, null);
-                if(saList != null && saList.size()>0) {
-                    DepotHeadVo4StatementAccount item = saList.get(0);
-                    //期初 = 起始期初金额+上期欠款金额-上期退货的欠款金额-上期收付款
-                    BigDecimal preNeed = nvl(item.getBeginNeed()).add(nvl(item.getPreDebtMoney())).subtract(nvl(item.getPreReturnDebtMoney())).subtract(nvl(item.getPreBackMoney()));
-                    item.setPreNeed(preNeed);
-                    //实际欠款 = 本期欠款-本期退货的欠款金额
-                    BigDecimal realDebtMoney = nvl(item.getDebtMoney()).subtract(nvl(item.getReturnDebtMoney()));
-                    item.setDebtMoney(realDebtMoney);
-                    //期末 = 期初+实际欠款-本期收款
-                    BigDecimal allNeedGet = preNeed.add(realDebtMoney).subtract(nvl(item.getBackMoney()));
-                    sum = sum.add(allNeedGet);
-                }
-                if(("客户").equals(s.getType())) {
-                    s.setAllNeedGet(sum);
-                } else if(("供应商").equals(s.getType())) {
-                    s.setAllNeedPay(sum);
-                }
-            }
+            populateStatementBalances(list);
         } catch(Exception e){
             JshException.readFail(logger, e);
         }
         return list;
+    }
+
+    private void populateStatementBalances(List<Supplier> suppliers) {
+        if (suppliers == null || suppliers.isEmpty()) {
+            return;
+        }
+        Map<String, List<Supplier>> suppliersByType = suppliers.stream()
+                .filter(item -> "客户".equals(item.getType()) || "供应商".equals(item.getType()))
+                .collect(Collectors.groupingBy(Supplier::getType));
+        String beginTime = Tools.getYearBegin();
+        String endTime = Tools.getCenternTime(new Date());
+        for (Map.Entry<String, List<Supplier>> entry : suppliersByType.entrySet()) {
+            String supplierType = entry.getKey();
+            String[] organArray = entry.getValue().stream().map(item -> item.getId().toString()).toArray(String[]::new);
+            boolean customer = "客户".equals(supplierType);
+            List<DepotHeadVo4StatementAccount> statementList = depotHeadService.getStatementAccount(
+                    beginTime, endTime, null, organArray, 1, supplierType,
+                    customer ? "出库" : "入库", customer ? "销售" : "采购",
+                    customer ? "入库" : "出库", customer ? "销售退货" : "采购退货",
+                    customer ? "收款" : "付款", null, null, null, null);
+            Map<Long, BigDecimal> balanceMap = statementList == null ? Collections.emptyMap()
+                    : statementList.stream().collect(Collectors.toMap(DepotHeadVo4StatementAccount::getId,
+                    this::calculateStatementBalance, (left, right) -> left));
+            for (Supplier item : entry.getValue()) {
+                BigDecimal balance = balanceMap.getOrDefault(item.getId(), BigDecimal.ZERO);
+                if (customer) {
+                    item.setAllNeedGet(balance);
+                } else {
+                    item.setAllNeedPay(balance);
+                }
+            }
+        }
+    }
+
+    private BigDecimal calculateStatementBalance(DepotHeadVo4StatementAccount item) {
+        BigDecimal preNeed = nvl(item.getBeginNeed()).add(nvl(item.getPreDebtMoney()))
+                .subtract(nvl(item.getPreReturnDebtMoney())).subtract(nvl(item.getPreBackMoney()));
+        BigDecimal realDebtMoney = nvl(item.getDebtMoney()).subtract(nvl(item.getReturnDebtMoney()));
+        return preNeed.add(realDebtMoney).subtract(nvl(item.getBackMoney()));
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
@@ -754,7 +751,6 @@ public class SupplierService {
                     //新增客户时给当前用户和租户自动授权
                     setUserCustomerPermission(request, supplier);
                 } else {
-                    Supplier existing = list.get(0);
                     supplier.setId(existing.getId());
                     supplier.setCreator(null);
                     supplier.setTenantId(null);
@@ -856,10 +852,13 @@ public class SupplierService {
         if("客户".equals(supplier.getType())) {
             User user = userService.getCurrentUser();
             Supplier sInfo = supplierMapperEx.getSupplierByNameAndType(supplier.getSupplier(), supplier.getType());
+            if (user == null || sInfo == null || sInfo.getId() == null) {
+                return;
+            }
             String ubKey = "[" + sInfo.getId() + "]";
             //授权当前用户
             setPermissionByParam(user.getId(), ubKey);
-            if(!user.getId().equals(user.getTenantId())) {
+            if(user.getTenantId() != null && !user.getId().equals(user.getTenantId())) {
                 //授权当前租户
                 setPermissionByParam(user.getTenantId(), ubKey);
             }
