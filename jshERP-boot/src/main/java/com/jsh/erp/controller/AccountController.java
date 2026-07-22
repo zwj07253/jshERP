@@ -51,9 +51,10 @@ public class AccountController extends BaseController {
     @Operation(summary = "根据id获取信息")
     public String getList(@RequestParam("id") Long id,
                           HttpServletRequest request) throws Exception {
+        accountService.checkReadPermission();
         Account account = accountService.getAccount(id);
         Map<String, Object> objectMap = new HashMap<>();
-        if(account != null) {
+        if(account != null && !BusinessConstants.DELETE_FLAG_DELETED.equals(account.getDeleteFlag())) {
             objectMap.put("info", account);
             return returnJson(objectMap, ErpInfo.OK.name, ErpInfo.OK.code);
         } else {
@@ -108,6 +109,7 @@ public class AccountController extends BaseController {
     @Operation(summary = "检查名称是否存在")
     public String checkIsNameExist(@RequestParam Long id, @RequestParam(value ="name", required = false) String name,
                                    HttpServletRequest request)throws Exception {
+        accountService.checkEditPermission();
         Map<String, Object> objectMap = new HashMap<>();
         int exist = accountService.checkIsNameExist(id, name);
         if(exist > 0) {
@@ -160,7 +162,15 @@ public class AccountController extends BaseController {
         Map<String, Object> map = new HashMap<String, Object>();
         try {
             List<Account> accountList = accountService.getAccount();
-            map.put("accountList", accountList);
+            JSONArray safeAccountList = new JSONArray();
+            for(Account account : accountList) {
+                JSONObject safeAccount = new JSONObject();
+                safeAccount.put("id", account.getId());
+                safeAccount.put("name", account.getName());
+                safeAccount.put("isDefault", account.getIsDefault());
+                safeAccountList.add(safeAccount);
+            }
+            map.put("accountList", safeAccountList);
             res.code = 200;
             res.data = map;
         } catch(Exception e){

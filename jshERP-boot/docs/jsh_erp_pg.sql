@@ -30,6 +30,12 @@ CREATE TABLE jsh_account (
     delete_flag VARCHAR(1) DEFAULT '0'
 );
 CREATE INDEX idx_account_tenant_id ON jsh_account(tenant_id);
+CREATE UNIQUE INDEX uk_account_tenant_name_active
+ON jsh_account(COALESCE(tenant_id, 0), name)
+WHERE COALESCE(delete_flag, '0') != '1';
+CREATE UNIQUE INDEX uk_account_tenant_default_active
+ON jsh_account(COALESCE(tenant_id, 0))
+WHERE COALESCE(delete_flag, '0') != '1' AND is_default IS TRUE;
 COMMENT ON TABLE jsh_account IS '账户信息';
 COMMENT ON COLUMN jsh_account.id IS '主键';
 COMMENT ON COLUMN jsh_account.name IS '名称';

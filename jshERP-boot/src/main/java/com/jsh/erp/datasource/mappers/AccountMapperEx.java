@@ -66,4 +66,6 @@ public interface AccountMapperEx {
 
     int batchDeleteAccountByIds(@Param("updateTime") Date updateTime, @Param("updater") Long updater, @Param("ids") String ids[]);
 
+    void lockAccountWrite(@Param("tenantId") Long tenantId);
+
 }

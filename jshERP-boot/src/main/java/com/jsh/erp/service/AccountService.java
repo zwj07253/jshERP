@@ -30,6 +30,8 @@ import java.util.*;
 @Service
 public class AccountService {
     private Logger logger = LoggerFactory.getLogger(AccountService.class);
+    private static final String ACCOUNT_URL = "/system/account";
+    private static final String EDIT_BUTTON_CODE = "1";
 
     @Resource
     private AccountMapper accountMapper;
@@ -85,7 +87,8 @@ public class AccountService {
         List<Account> list = new ArrayList<>();
         try{
             AccountExample example = new AccountExample();
-            example.createCriteria().andIdIn(idList);
+            example.createCriteria().andIdIn(idList)
+                    .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
             list = accountMapper.selectByExample(example);
         }catch(Exception e){
             JshException.readFail(logger, e);
@@ -117,6 +120,7 @@ public class AccountService {
     }
 
     public List<AccountVo4List> select(String name, String serialNo, String remark) throws Exception{
+        checkReadPermission();
         PageUtils.startPage();
         List<AccountVo4List> list = accountMapperEx.selectByConditionAccount(name, serialNo, remark);
         PageDomain pageDomain = TableSupport.buildPageRequest();
@@ -127,11 +131,15 @@ public class AccountService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertAccount(JSONObject obj, HttpServletRequest request)throws Exception {
-        Account account = JSONObject.parseObject(obj.toJSONString(), Account.class);
+        checkEditPermission();
+        lockAccountWrite();
+        Account account = buildAccount(obj, null);
+        validateAccount(account);
+        ensureAccountNameUnique(null, account.getName());
         if(account.getInitialAmount() == null) {
             account.setInitialAmount(BigDecimal.ZERO);
         }
-        List<Account> accountList = getAccountByParam(null, null);
+        List<Account> accountList = getAccount();
         if(accountList.size() == 0) {
             account.setIsDefault(true);
         } else {
@@ -151,7 +159,21 @@ public class AccountService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateAccount(JSONObject obj, HttpServletRequest request)throws Exception {
-        Account account = JSONObject.parseObject(obj.toJSONString(), Account.class);
+        checkEditPermission();
+        lockAccountWrite();
+        Long id = obj.getLong("id");
+        Account existing = id == null ? null : accountMapper.selectByPrimaryKey(id);
+        if(existing == null || BusinessConstants.DELETE_FLAG_DELETED.equals(existing.getDeleteFlag())) {
+            throw invalidAccount("结算账户不存在或已删除");
+        }
+        Account account = buildAccount(obj, existing);
+        validateAccount(account);
+        ensureAccountNameUnique(account.getId(), account.getName());
+        if(!sameAmount(existing.getInitialAmount(), account.getInitialAmount())
+                && isAccountInUse(new String[]{String.valueOf(id)})) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_IN_USE_CODE,
+                    ExceptionConstants.ACCOUNT_IN_USE_MSG);
+        }
         int result=0;
         try{
             result = accountMapper.updateByPrimaryKeySelective(account);
@@ -165,18 +187,35 @@ public class AccountService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteAccount(Long id, HttpServletRequest request) throws Exception{
+        checkEditPermission();
         return batchDeleteAccountByIds(id.toString());
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteAccount(String ids, HttpServletRequest request)throws Exception {
+        checkEditPermission();
         return batchDeleteAccountByIds(ids);
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
-    public int batchDeleteAccountByIds(String ids) throws Exception{
+    private int batchDeleteAccountByIds(String ids) throws Exception{
+        lockAccountWrite();
         int result=0;
-        String [] idArray=ids.split(",");
+        List<Long> accountIds = StringUtil.strToLongList(ids);
+        if(accountIds.isEmpty()) {
+            throw invalidAccount("请选择要删除的结算账户");
+        }
+        String [] idArray=accountIds.stream().map(String::valueOf).toArray(String[]::new);
+        List<Account> activeAccounts = getAccountListByIds(ids);
+        if(activeAccounts.size() != accountIds.size()) {
+            throw invalidAccount("结算账户不存在或已删除");
+        }
+        for(Account account : activeAccounts) {
+            if(Boolean.TRUE.equals(account.getIsDefault())) {
+                throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_DEFAULT_OPERATION_CODE,
+                        ExceptionConstants.ACCOUNT_DEFAULT_OPERATION_MSG);
+            }
+        }
         //校验财务主表	jsh_accounthead
         List<AccountHead> accountHeadList=null;
         try{
@@ -185,10 +224,7 @@ public class AccountService {
             JshException.readFail(logger, e);
         }
         if(accountHeadList!=null&&accountHeadList.size()>0){
-            logger.error("异常码[{}],异常提示[{}],参数,AccountIds[{}]",
-                    ExceptionConstants.DELETE_FORCE_CONFIRM_CODE,ExceptionConstants.DELETE_FORCE_CONFIRM_MSG,ids);
-            throw new BusinessRunTimeException(ExceptionConstants.DELETE_FORCE_CONFIRM_CODE,
-                    ExceptionConstants.DELETE_FORCE_CONFIRM_MSG);
+            throwAccountInUse();
         }
         //校验财务子表	jsh_accountitem
         List<AccountItem> accountItemList=null;
@@ -198,10 +234,7 @@ public class AccountService {
             JshException.readFail(logger, e);
         }
         if(accountItemList!=null&&accountItemList.size()>0){
-            logger.error("异常码[{}],异常提示[{}],参数,AccountIds[{}]",
-                    ExceptionConstants.DELETE_FORCE_CONFIRM_CODE,ExceptionConstants.DELETE_FORCE_CONFIRM_MSG,ids);
-            throw new BusinessRunTimeException(ExceptionConstants.DELETE_FORCE_CONFIRM_CODE,
-                    ExceptionConstants.DELETE_FORCE_CONFIRM_MSG);
+            throwAccountInUse();
         }
         //校验单据主表	jsh_depot_head
         List<DepotHead> depotHeadList =null;
@@ -211,10 +244,7 @@ public class AccountService {
             JshException.readFail(logger, e);
         }
         if(depotHeadList!=null&&depotHeadList.size()>0){
-            logger.error("异常码[{}],异常提示[{}],参数,AccountIds[{}]",
-                    ExceptionConstants.DELETE_FORCE_CONFIRM_CODE,ExceptionConstants.DELETE_FORCE_CONFIRM_MSG,ids);
-            throw new BusinessRunTimeException(ExceptionConstants.DELETE_FORCE_CONFIRM_CODE,
-                    ExceptionConstants.DELETE_FORCE_CONFIRM_MSG);
+            throwAccountInUse();
         }
         //记录日志
         StringBuffer sb = new StringBuffer();
@@ -371,23 +401,30 @@ public class AccountService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateIsDefault(Long accountId) throws Exception{
+        checkEditPermission();
+        lockAccountWrite();
+        Account target = accountId == null ? null : accountMapper.selectByPrimaryKey(accountId);
+        if(target == null || !Boolean.TRUE.equals(target.getEnabled())
+                || BusinessConstants.DELETE_FLAG_DELETED.equals(target.getDeleteFlag())) {
+            throw invalidAccount("只能将已启用的结算账户设为默认账户");
+        }
         int result=0;
         try{
             //全部取消默认
             Account allAccount = new Account();
             allAccount.setIsDefault(false);
             AccountExample allExample = new AccountExample();
-            allExample.createCriteria();
+            allExample.createCriteria().andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
             accountMapper.updateByExampleSelective(allAccount, allExample);
             //给指定账户设为默认
             Account account = new Account();
             account.setIsDefault(true);
             AccountExample example = new AccountExample();
-            example.createCriteria().andIdEqualTo(accountId);
-            accountMapper.updateByExampleSelective(account, example);
+            example.createCriteria().andIdEqualTo(accountId).andEnabledEqualTo(true)
+                    .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+            result = accountMapper.updateByExampleSelective(account, example);
             logService.insertLog("账户",BusinessConstants.LOG_OPERATION_TYPE_EDIT+accountId,
                     ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
-            result = 1;
         }catch(Exception e){
             JshException.writeFail(logger, e);
         }
@@ -506,14 +543,32 @@ public class AccountService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetStatus(Boolean status, String ids)throws Exception {
+        checkEditPermission();
+        lockAccountWrite();
+        if(status == null) {
+            throw invalidAccount("启用状态不能为空");
+        }
+        List<Long> accountIds = StringUtil.strToLongList(ids);
+        if(accountIds.isEmpty()) {
+            throw invalidAccount("请选择结算账户");
+        }
+        if(Boolean.FALSE.equals(status)) {
+            AccountExample defaultExample = new AccountExample();
+            defaultExample.createCriteria().andIdIn(accountIds).andIsDefaultEqualTo(true)
+                    .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+            if(!accountMapper.selectByExample(defaultExample).isEmpty()) {
+                throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_DEFAULT_OPERATION_CODE,
+                        ExceptionConstants.ACCOUNT_DEFAULT_OPERATION_MSG);
+            }
+        }
         logService.insertLog("账户",
                 new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_ENABLED).toString(),
                 ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
-        List<Long> accountIds = StringUtil.strToLongList(ids);
         Account account = new Account();
         account.setEnabled(status);
         AccountExample example = new AccountExample();
-        example.createCriteria().andIdIn(accountIds);
+        example.createCriteria().andIdIn(accountIds)
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
         int result=0;
         try{
             result = accountMapper.updateByExampleSelective(account, example);
@@ -521,5 +576,112 @@ public class AccountService {
             JshException.writeFail(logger, e);
         }
         return result;
+    }
+
+    public void checkReadPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if(!userService.hasFunctionPermission(userId, ACCOUNT_URL)) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_PERMISSION_CODE,
+                    ExceptionConstants.ACCOUNT_PERMISSION_MSG);
+        }
+    }
+
+    public void checkEditPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if(!userService.hasButtonPermission(userId, ACCOUNT_URL, EDIT_BUTTON_CODE)) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_PERMISSION_CODE,
+                    ExceptionConstants.ACCOUNT_PERMISSION_MSG);
+        }
+    }
+
+    private Account buildAccount(JSONObject obj, Account existing) {
+        Account account = new Account();
+        if(existing != null) {
+            account.setId(existing.getId());
+        }
+        account.setName(StringUtil.toNull(obj.getString("name")));
+        account.setSerialNo(StringUtil.toNull(obj.getString("serialNo")));
+        try {
+            account.setInitialAmount(obj.containsKey("initialAmount")
+                    ? obj.getBigDecimal("initialAmount")
+                    : existing == null ? null : existing.getInitialAmount());
+        } catch(Exception e) {
+            throw invalidAccount("期初金额格式不正确");
+        }
+        account.setSort(StringUtil.toNull(obj.getString("sort")));
+        account.setRemark(StringUtil.toNull(obj.getString("remark")));
+        return account;
+    }
+
+    private void validateAccount(Account account) {
+        validateText(account.getName(), 50, "名称", true);
+        validateText(account.getSerialNo(), 50, "编号", false);
+        validateText(account.getSort(), 10, "排序", false);
+        validateText(account.getRemark(), 100, "备注", false);
+        if(account.getSort() != null && !account.getSort().matches("\\d+")) {
+            throw invalidAccount("排序必须为非负整数");
+        }
+        BigDecimal initialAmount = account.getInitialAmount();
+        if(initialAmount != null) {
+            BigDecimal normalized = initialAmount.stripTrailingZeros();
+            int scale = Math.max(0, normalized.scale());
+            int integerDigits = Math.max(0, normalized.precision() - normalized.scale());
+            if(scale > 6 || integerDigits > 18) {
+                throw invalidAccount("期初金额最多18位整数、6位小数");
+            }
+        }
+    }
+
+    private void validateText(String value, int maxLength, String label, boolean required) {
+        if(required && StringUtil.isEmpty(value)) {
+            throw invalidAccount(label + "不能为空");
+        }
+        if(value != null && value.length() > maxLength) {
+            throw invalidAccount(label + "长度不能超过" + maxLength + "个字符");
+        }
+    }
+
+    private void ensureAccountNameUnique(Long id, String name) throws Exception {
+        if(checkIsNameExist(id == null ? 0L : id, name) > 0) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_ALREADY_EXISTS_CODE,
+                    ExceptionConstants.ACCOUNT_ALREADY_EXISTS_MSG);
+        }
+    }
+
+    private boolean isAccountInUse(String[] idArray) throws Exception {
+        List<AccountHead> accountHeads = accountHeadMapperEx.getAccountHeadListByAccountIds(idArray);
+        if(accountHeads != null && !accountHeads.isEmpty()) {
+            return true;
+        }
+        List<AccountItem> accountItems = accountItemMapperEx.getAccountItemListByAccountIds(idArray);
+        if(accountItems != null && !accountItems.isEmpty()) {
+            return true;
+        }
+        List<DepotHead> depotHeads = depotHeadMapperEx.getDepotHeadListByAccountIds(idArray);
+        return depotHeads != null && !depotHeads.isEmpty();
+    }
+
+    private boolean sameAmount(BigDecimal left, BigDecimal right) {
+        BigDecimal safeLeft = left == null ? BigDecimal.ZERO : left;
+        BigDecimal safeRight = right == null ? BigDecimal.ZERO : right;
+        return safeLeft.compareTo(safeRight) == 0;
+    }
+
+    private void throwAccountInUse() {
+        throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_IN_USE_CODE,
+                ExceptionConstants.ACCOUNT_IN_USE_MSG);
+    }
+
+    private BusinessRunTimeException invalidAccount(String reason) {
+        return new BusinessRunTimeException(ExceptionConstants.ACCOUNT_INVALID_CODE,
+                String.format(ExceptionConstants.ACCOUNT_INVALID_MSG, reason));
+    }
+
+    private void lockAccountWrite() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long tenantId = currentUser == null || currentUser.getTenantId() == null ? 0L : currentUser.getTenantId();
+        accountMapperEx.lockAccountWrite(tenantId);
     }
 }

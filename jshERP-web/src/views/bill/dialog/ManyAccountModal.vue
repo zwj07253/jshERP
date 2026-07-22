@@ -163,6 +163,16 @@
               that.confirmLoading = false;
               return;
             }
+            if(new Set(that.accountIdList).size !== that.accountIdList.length) {
+              this.$message.warning('抱歉，多账户结算不能重复选择同一账户！');
+              that.confirmLoading = false;
+              return;
+            }
+            if(that.accountIdList.length !== that.accountMoneyList.length) {
+              this.$message.warning('抱歉，结算账户和金额必须一一对应！');
+              that.confirmLoading = false;
+              return;
+            }
             if((formData.oneAccountId && !formData.oneAccountPrice)||
               (formData.twoAccountId && !formData.twoAccountPrice)||
               (formData.threeAccountId && !formData.threeAccountPrice)) {

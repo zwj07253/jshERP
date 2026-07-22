@@ -270,6 +270,16 @@ public class ExceptionConstants {
     //账户统计请求的账户不存在或已删除
     public static final int ACCOUNT_REPORT_ACCOUNT_FAILED_CODE = 6500004;
     public static final String ACCOUNT_REPORT_ACCOUNT_FAILED_MSG = "抱歉，结算账户不存在或已删除";
+    public static final int ACCOUNT_PERMISSION_CODE = 6500005;
+    public static final String ACCOUNT_PERMISSION_MSG = "抱歉，当前用户没有结算账户的操作权限";
+    public static final int ACCOUNT_INVALID_CODE = 6500006;
+    public static final String ACCOUNT_INVALID_MSG = "结算账户信息不合法：%s";
+    public static final int ACCOUNT_ALREADY_EXISTS_CODE = 6500007;
+    public static final String ACCOUNT_ALREADY_EXISTS_MSG = "结算账户名称已经存在";
+    public static final int ACCOUNT_IN_USE_CODE = 6500008;
+    public static final String ACCOUNT_IN_USE_MSG = "结算账户已被业务或财务单据使用，不能删除或修改期初金额";
+    public static final int ACCOUNT_DEFAULT_OPERATION_CODE = 6500009;
+    public static final String ACCOUNT_DEFAULT_OPERATION_MSG = "默认结算账户不能停用或删除，请先设置其它默认账户";
     /**
      *  供应商信息
      * type = 70
@@ -817,6 +827,8 @@ public class ExceptionConstants {
     public static final String DEPOT_HEAD_CUSTOMER_DATA_PERMISSION_MSG = "抱歉，当前用户没有该客户的数据权限";
     public static final int DEPOT_HEAD_DEBT_ORGAN_REQUIRED_CODE = 8500131;
     public static final String DEPOT_HEAD_DEBT_ORGAN_REQUIRED_MSG = "抱歉，请选择有效的往来单位";
+    public static final int DEPOT_HEAD_SETTLEMENT_ACCOUNT_INVALID_CODE = 8500132;
+    public static final String DEPOT_HEAD_SETTLEMENT_ACCOUNT_INVALID_MSG = "抱歉，结算账户不存在、已停用或多账户结算数据不合法";
 
 
     /**

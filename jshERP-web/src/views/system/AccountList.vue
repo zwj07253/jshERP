@@ -161,7 +161,7 @@
           if(res.code === 200){
             that.loadData();
           } else {
-            that.$message.warning(res.data.message);
+            that.$message.warning((res.data && res.data.message) || res.data || '设置默认账户失败');
           }
         });
       },

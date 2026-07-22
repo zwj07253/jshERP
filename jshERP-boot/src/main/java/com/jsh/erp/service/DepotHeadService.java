@@ -820,6 +820,7 @@ public class DepotHeadService {
                 checkBillButtonPermission(depotHead, "2", "审核");
                 //进行审核操作
                 if("0".equals(depotHead.getStatus())) {
+                    validateSettlementAccounts(depotHead, requiresSettlementAccountForAudit(depotHead));
                     validateSalesOutboundBeforeAudit(depotHead);
                     validateSalesReturnBeforeAudit(depotHead);
                     validateOtherInboundBeforeAudit(depotHead);
@@ -2192,7 +2193,9 @@ public class DepotHeadService {
             } else {
                 rows = clearPurchaseRowLinks(rows);
             }
-            return normalizePurchaseFinancialFields(depotHead, rows, true);
+            rows = normalizePurchaseFinancialFields(depotHead, rows, true);
+            validateSettlementAccounts(depotHead, hasSettlementAmount(depotHead));
+            return rows;
         }
         if (BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())
                 && BusinessConstants.SUB_TYPE_PURCHASE.equals(depotHead.getSubType())) {
@@ -2203,7 +2206,9 @@ public class DepotHeadService {
             } else {
                 rows = clearPurchaseRowLinks(rows);
             }
-            return normalizePurchaseFinancialFields(depotHead, rows, false);
+            rows = normalizePurchaseFinancialFields(depotHead, rows, false);
+            validateSettlementAccounts(depotHead, hasSettlementAmount(depotHead));
+            return rows;
         }
         if (isPurchaseReturn(depotHead)) {
             validatePurchaseReturnLinkImmutable(depotHead, previousDepotHead);
@@ -2211,15 +2216,21 @@ public class DepotHeadService {
             if (StringUtil.isEmpty(depotHead.getLinkNumber())) {
                 rows = clearPurchaseRowLinks(rows);
             }
-            return validateAndNormalizePurchaseReturn(depotHead, rows, previousDepotHead);
+            rows = validateAndNormalizePurchaseReturn(depotHead, rows, previousDepotHead);
+            validateSettlementAccounts(depotHead, hasSettlementAmount(depotHead));
+            return rows;
         }
         if (BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
                 && BusinessConstants.SUB_TYPE_RETAIL.equals(depotHead.getSubType())) {
-            return validateAndNormalizeRetailOut(depotHead, headJson, rows);
+            rows = validateAndNormalizeRetailOut(depotHead, headJson, rows);
+            validateSettlementAccounts(depotHead, !BusinessConstants.PAY_TYPE_PREPAID.equals(depotHead.getPayType()));
+            return rows;
         }
         if (BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())
                 && BusinessConstants.SUB_TYPE_RETAIL_RETURN.equals(depotHead.getSubType())) {
-            return validateAndNormalizeRetailReturn(depotHead, headJson, rows, previousDepotHead);
+            rows = validateAndNormalizeRetailReturn(depotHead, headJson, rows, previousDepotHead);
+            validateSettlementAccounts(depotHead, !BusinessConstants.PAY_TYPE_PREPAID.equals(depotHead.getPayType()));
+            return rows;
         }
         if (isSalesOrder(depotHead)) {
             validateSalesCustomer(depotHead);
@@ -3565,99 +3576,67 @@ public class DepotHeadService {
     }
 
     private void validateSalesSettlementAccounts(DepotHead depotHead, boolean accountRequired) throws Exception {
-        String accountIdList = normalizeListValue(depotHead.getAccountIdList());
-        String accountMoneyList = normalizeListValue(depotHead.getAccountMoneyList());
-        depotHead.setAccountIdList(StringUtil.isEmpty(accountIdList) ? null : accountIdList);
-        depotHead.setAccountMoneyList(StringUtil.isEmpty(accountMoneyList) ? null : accountMoneyList);
-
-        if (StringUtil.isNotEmpty(accountIdList)) {
-            if (StringUtil.isEmpty(accountMoneyList)) {
-                throwSalesAccountInvalid();
-            }
-            String[] idArray = accountIdList.split(",", -1);
-            String[] moneyArray = accountMoneyList.split(",", -1);
-            if (idArray.length != moneyArray.length) {
-                throwSalesAccountInvalid();
-            }
-            Set<Long> accountIds = new HashSet<>();
-            for (int index = 0; index < idArray.length; index++) {
-                try {
-                    Long accountId = Long.valueOf(idArray[index].trim());
-                    if (!accountIds.add(accountId)) {
-                        throwSalesAccountInvalid();
-                    }
-                    validateEnabledAccount(accountId);
-                    BigDecimal accountMoney = new BigDecimal(moneyArray[index].trim());
-                    if (accountMoney.compareTo(BigDecimal.ZERO) < 0) {
-                        throwSalesAccountInvalid();
-                    }
-                } catch (NumberFormatException exception) {
-                    throwSalesAccountInvalid();
-                }
-            }
-            // 多账户结算以列表为准，避免同一笔款项同时落入单账户和多账户。
-            depotHead.setAccountId(null);
-        } else {
-            if (StringUtil.isNotEmpty(accountMoneyList)) {
-                throwSalesAccountInvalid();
-            }
-            if (depotHead.getAccountId() != null) {
-                validateEnabledAccount(depotHead.getAccountId());
-            } else if (accountRequired) {
-                throwSalesAccountInvalid();
-            }
-        }
+        validateSettlementAccounts(depotHead, accountRequired);
     }
 
-    private void validateSalesReturnSettlementAccounts(DepotHead depotHead, boolean accountRequired) throws Exception {
+    private void validateSettlementAccounts(DepotHead depotHead, boolean accountRequired) throws Exception {
         String accountIdList = normalizeListValue(depotHead.getAccountIdList());
         String accountMoneyList = normalizeListValue(depotHead.getAccountMoneyList());
         depotHead.setAccountIdList(StringUtil.isEmpty(accountIdList) ? null : accountIdList);
         depotHead.setAccountMoneyList(StringUtil.isEmpty(accountMoneyList) ? null : accountMoneyList);
-        BigDecimal refund = depotHead.getChangeAmount() == null
-                ? BigDecimal.ZERO : depotHead.getChangeAmount().abs().setScale(2, BigDecimal.ROUND_HALF_UP);
 
         if (StringUtil.isNotEmpty(accountIdList)) {
             if (StringUtil.isEmpty(accountMoneyList)) {
-                throwSalesAccountInvalid();
+                throwSettlementAccountInvalid();
             }
             String[] idArray = accountIdList.split(",", -1);
             String[] moneyArray = accountMoneyList.split(",", -1);
-            if (idArray.length != moneyArray.length) {
-                throwSalesAccountInvalid();
+            if (idArray.length < 2 || idArray.length != moneyArray.length) {
+                throwSettlementAccountInvalid();
             }
             Set<Long> accountIds = new HashSet<>();
+            BigDecimal changeAmount = depotHead.getChangeAmount() == null
+                    ? BigDecimal.ZERO : depotHead.getChangeAmount();
+            if(changeAmount.compareTo(BigDecimal.ZERO) == 0) {
+                throwSettlementAccountInvalid();
+            }
             BigDecimal accountMoneyTotal = BigDecimal.ZERO;
             for (int index = 0; index < idArray.length; index++) {
                 try {
                     Long accountId = Long.valueOf(idArray[index].trim());
                     if (!accountIds.add(accountId)) {
-                        throwSalesAccountInvalid();
+                        throwSettlementAccountInvalid();
                     }
                     validateEnabledAccount(accountId);
                     BigDecimal accountMoney = new BigDecimal(moneyArray[index].trim());
-                    if (accountMoney.compareTo(BigDecimal.ZERO) > 0) {
-                        throwSalesAccountInvalid();
+                    if (accountMoney.compareTo(BigDecimal.ZERO) == 0
+                            || accountMoney.signum() != changeAmount.signum()) {
+                        throwSettlementAccountInvalid();
                     }
-                    accountMoneyTotal = accountMoneyTotal.add(accountMoney.abs());
+                    accountMoneyTotal = accountMoneyTotal.add(accountMoney);
                 } catch (NumberFormatException exception) {
-                    throwSalesAccountInvalid();
+                    throwSettlementAccountInvalid();
                 }
             }
-            if (accountMoneyTotal.setScale(2, BigDecimal.ROUND_HALF_UP).compareTo(refund) != 0) {
-                throwSalesAccountInvalid();
+            if(accountMoneyTotal.compareTo(changeAmount) != 0) {
+                throwSettlementAccountInvalid();
             }
+            // 多账户结算以列表为准，避免同一笔款项同时落入单账户和多账户。
             depotHead.setAccountId(null);
         } else {
             if (StringUtil.isNotEmpty(accountMoneyList)) {
-                throwSalesAccountInvalid();
+                throwSettlementAccountInvalid();
             }
             if (depotHead.getAccountId() != null) {
                 validateEnabledAccount(depotHead.getAccountId());
             } else if (accountRequired) {
-                throwSalesAccountInvalid();
+                throwSettlementAccountInvalid();
             }
         }
+    }
+
+    private void validateSalesReturnSettlementAccounts(DepotHead depotHead, boolean accountRequired) throws Exception {
+        validateSettlementAccounts(depotHead, accountRequired);
     }
 
     private String normalizeListValue(String value) {
@@ -3669,13 +3648,34 @@ public class DepotHeadService {
         Account account = accountId == null ? null : accountService.getAccount(accountId);
         if (account == null || !Boolean.TRUE.equals(account.getEnabled())
                 || BusinessConstants.DELETE_FLAG_DELETED.equals(account.getDeleteFlag())) {
-            throwSalesAccountInvalid();
+            throwSettlementAccountInvalid();
         }
     }
 
-    private void throwSalesAccountInvalid() {
-        throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_SALES_ACCOUNT_INVALID_CODE,
-                ExceptionConstants.DEPOT_HEAD_SALES_ACCOUNT_INVALID_MSG);
+    private boolean hasSettlementAmount(DepotHead depotHead) {
+        return depotHead.getChangeAmount() != null
+                && depotHead.getChangeAmount().compareTo(BigDecimal.ZERO) != 0;
+    }
+
+    private boolean requiresSettlementAccountForAudit(DepotHead depotHead) {
+        if(BusinessConstants.PAY_TYPE_PREPAID.equals(depotHead.getPayType())) {
+            return false;
+        }
+        if(isSalesOutbound(depotHead) || isSalesReturn(depotHead)) {
+            return true;
+        }
+        if((BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
+                && BusinessConstants.SUB_TYPE_RETAIL.equals(depotHead.getSubType()))
+                || (BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())
+                && BusinessConstants.SUB_TYPE_RETAIL_RETURN.equals(depotHead.getSubType()))) {
+            return true;
+        }
+        return hasSettlementAmount(depotHead);
+    }
+
+    private void throwSettlementAccountInvalid() {
+        throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_SETTLEMENT_ACCOUNT_INVALID_CODE,
+                ExceptionConstants.DEPOT_HEAD_SETTLEMENT_ACCOUNT_INVALID_MSG);
     }
 
     private void checkSalesCustomerPermission(Long customerId) throws Exception {

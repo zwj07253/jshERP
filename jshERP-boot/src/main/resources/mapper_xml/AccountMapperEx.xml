@@ -281,4 +281,8 @@
         </foreach>
         )
     </update>
+
+    <select id="lockAccountWrite" resultType="java.lang.Object">
+        select pg_advisory_xact_lock(6500000000 + COALESCE(#{tenantId}, 0))
+    </select>
 </mapper>
