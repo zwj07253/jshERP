@@ -1692,6 +1692,15 @@
         ) stock_detail
         group by material_extend_id
     </select>
+    <select id="getCountByMaterialExtendIds" resultType="java.lang.Long">
+        select count(1)
+        from jsh_depot_item
+        where material_extend_id in
+        <foreach collection="materialExtendIds" item="materialExtendId" separator="," open="(" close=")">
+            #{materialExtendId}
+        </foreach>
+        and COALESCE(delete_flag,'0') != '1'
+    </select>
 
     <select id="getLastUnitPriceByParam" resultType="java.math.BigDecimal">
         select di.unit_price from jsh_depot_head dh

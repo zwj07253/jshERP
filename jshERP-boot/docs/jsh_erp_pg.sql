@@ -1229,6 +1229,9 @@ CREATE TABLE jsh_unit (
 CREATE UNIQUE INDEX uk_unit_tenant_name_active
     ON jsh_unit(COALESCE(tenant_id, 0), name)
     WHERE COALESCE(delete_flag, '0') != '1';
+CREATE UNIQUE INDEX uk_material_extend_tenant_material_sku_active
+    ON jsh_material_extend(COALESCE(tenant_id, 0), material_id, sku)
+    WHERE COALESCE(delete_flag, '0') != '1' AND COALESCE(sku, '') != '';
 COMMENT ON TABLE jsh_unit IS '多单位表';
 COMMENT ON COLUMN jsh_unit.id IS '主键';
 COMMENT ON COLUMN jsh_unit.name IS '名称，支持多单位';

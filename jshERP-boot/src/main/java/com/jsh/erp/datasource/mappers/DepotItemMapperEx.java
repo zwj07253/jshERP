@@ -390,6 +390,8 @@ public interface DepotItemMapperEx {
             @Param("forceFlag") Boolean forceFlag,
             @Param("inOutManageFlag") Boolean inOutManageFlag);
 
+    Long getCountByMaterialExtendIds(@Param("materialExtendIds") List<Long> materialExtendIds);
+
     BigDecimal getLastUnitPriceByParam(
             @Param("organId") Long organId,
             @Param("meId") Long meId,

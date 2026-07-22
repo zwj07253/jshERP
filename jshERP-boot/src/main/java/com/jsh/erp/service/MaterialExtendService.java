@@ -10,6 +10,7 @@ import com.jsh.erp.datasource.entities.MaterialExtendExample;
 import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.mappers.MaterialExtendMapper;
 import com.jsh.erp.datasource.mappers.MaterialExtendMapperEx;
+import com.jsh.erp.datasource.mappers.DepotItemMapperEx;
 import com.jsh.erp.datasource.vo.MaterialExtendVo4List;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.exception.JshException;
@@ -38,11 +39,17 @@ public class MaterialExtendService {
     private UserService userService;
     @Resource
     private RedisService redisService;
+    @Resource
+    private DepotItemMapperEx depotItemMapperEx;
     
     public MaterialExtend getMaterialExtend(long id)throws Exception {
         MaterialExtend result=null;
         try{
-            result=materialExtendMapper.selectByPrimaryKey(id);
+            MaterialExtendExample example = new MaterialExtendExample();
+            example.createCriteria().andIdEqualTo(id)
+                    .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+            List<MaterialExtend> list = materialExtendMapper.selectByExample(example);
+            result = list.isEmpty() ? null : list.get(0);
         }catch(Exception e){
             JshException.readFail(logger, e);
         }
@@ -81,7 +88,7 @@ public class MaterialExtendService {
         if (deletedJson == null) {
             deletedJson = new JSONArray();
         }
-        JSONArray sortJson = JSONArray.parseArray(sortList);
+        JSONArray sortJson = StringUtil.isEmpty(sortList) ? new JSONArray() : JSONArray.parseArray(sortList);
         Set<Long> existingDetailIds = new HashSet<>();
         List<MaterialExtendVo4List> existingDetails = Collections.emptyList();
         if ("update".equals(type)) {
@@ -99,8 +106,8 @@ public class MaterialExtendService {
             } else if("update".equals(type)){
                 for (int i = 0; i < meArr.size(); i++) {
                     JSONObject tempJson = meArr.getJSONObject(i);
-                    String tempId = tempJson.getString("id");
-                    if(tempId.length()>19){
+                    Long tempId = tempJson.getLong("id");
+                    if(tempId == null){
                         insertedJson.add(tempJson);
                     } else {
                         requireDetailOwnership(tempJson.getLong("id"), existingDetailIds);
@@ -108,7 +115,7 @@ public class MaterialExtendService {
                     }
                 }
                 //针对多属性商品要考虑到有条码被删的情况，需要和原来的条码明细进行对比
-                if(StringUtil.isNotEmpty(obj.getString("manySku"))) {
+                if(hasManySku(obj)) {
                     //1.先查询原来的条码列表
                     List<MaterialExtendVo4List> meList = existingDetails;
                     //2.构造新的条码列表map
@@ -126,6 +133,7 @@ public class MaterialExtendService {
                 }
             }
         }
+        validateSkuDetails(obj, meArr);
         if (null != deletedJson) {
             List<Long> deletedIds = new ArrayList<>();
             for (int i = 0; i < deletedJson.size(); i++) {
@@ -134,6 +142,7 @@ public class MaterialExtendService {
                 deletedIds.add(detailId);
             }
             if(!deletedIds.isEmpty()) {
+                ensureDetailsNotInUse(deletedIds);
                 this.batchDeleteMaterialExtendByIds(deletedIds);
             }
         }
@@ -173,10 +182,16 @@ public class MaterialExtendService {
             }
         }
         if (null != updatedJson) {
+            List<Long> changedIds = new ArrayList<>();
+            for (int i = 0; i < updatedJson.size(); i++) {
+                changedIds.add(updatedJson.getJSONObject(i).getLong("id"));
+            }
+            ensureDetailsNotInUse(changedIds);
             for (int i = 0; i < updatedJson.size(); i++) {
                 JSONObject tempUpdatedJson = JSONObject.parseObject(updatedJson.getString(i));
                 MaterialExtend materialExtend = new MaterialExtend();
                 materialExtend.setId(tempUpdatedJson.getLong("id"));
+                changedIds.add(materialExtend.getId());
                 if (StringUtils.isNotEmpty(tempUpdatedJson.getString("barCode"))) {
                     int exist = checkIsBarCodeExist(tempUpdatedJson.getLong("id"), tempUpdatedJson.getString("barCode"));
                     if(exist>0) {
@@ -245,6 +260,7 @@ public class MaterialExtendService {
                 }
             }
         }
+        normalizeDefaultFlag(materialId);
         return null;
     }
 
@@ -307,6 +323,8 @@ public class MaterialExtendService {
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteMaterialExtend(Long id, HttpServletRequest request)throws Exception {
         checkMaterialEditPermission();
+        requireActiveDetail(id);
+        ensureDetailsNotInUse(Collections.singletonList(id));
         int result =0;
         MaterialExtend materialExtend = new MaterialExtend();
         materialExtend.setId(id);
@@ -345,6 +363,10 @@ public class MaterialExtendService {
     public int insertMaterialExtend(JSONObject obj, HttpServletRequest request) throws Exception{
         checkMaterialEditPermission();
         MaterialExtend materialExtend = JSONObject.parseObject(obj.toJSONString(), MaterialExtend.class);
+        if (materialExtend.getMaterialId() == null) {
+            throw invalidSku("商品不能为空");
+        }
+        validateStandaloneDetail(materialExtend, 0L);
         materialExtend.setId(null);
         materialExtend.setTenantId(null);
         materialExtend.setDeleteFlag(null);
@@ -360,6 +382,16 @@ public class MaterialExtendService {
     public int updateMaterialExtend(JSONObject obj, HttpServletRequest request)throws Exception {
         checkMaterialEditPermission();
         MaterialExtend materialExtend = JSONObject.parseObject(obj.toJSONString(), MaterialExtend.class);
+        MaterialExtend existing = materialExtend.getId() == null ? null : getMaterialExtend(materialExtend.getId());
+        if (existing == null) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_NOT_EXISTS_CODE,
+                    ExceptionConstants.MATERIAL_NOT_EXISTS_MSG);
+        }
+        if (materialExtend.getMaterialId() != null && !Objects.equals(existing.getMaterialId(), materialExtend.getMaterialId())) {
+            throw invalidSku("明细不属于指定商品");
+        }
+        validateStandaloneDetail(materialExtend, existing.getId());
+        ensureDetailsNotInUse(Collections.singletonList(existing.getId()));
         materialExtend.setMaterialId(null);
         materialExtend.setTenantId(null);
         materialExtend.setDeleteFlag(null);
@@ -379,6 +411,121 @@ public class MaterialExtendService {
             throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_PERMISSION_CODE,
                     ExceptionConstants.MATERIAL_PERMISSION_MSG);
         }
+    }
+
+    private boolean hasManySku(JSONObject obj) {
+        JSONArray manySku = obj == null ? null : obj.getJSONArray("manySku");
+        return manySku != null && !manySku.isEmpty();
+    }
+
+    private void validateSkuDetails(JSONObject obj, JSONArray details) {
+        if (!hasManySku(obj)) {
+            return;
+        }
+        if (details == null || details.isEmpty()) {
+            throw invalidSku("至少需要一条 SKU 明细");
+        }
+        Set<String> skus = new HashSet<>();
+        Set<String> barCodes = new HashSet<>();
+        for (int i = 0; i < details.size(); i++) {
+            JSONObject detail = details.getJSONObject(i);
+            String sku = StringUtil.toNull(detail.getString("sku"));
+            String barCode = StringUtil.toNull(detail.getString("barCode"));
+            if (sku == null || !skus.add(sku)) {
+                throw invalidSku("SKU 不能为空且不能重复");
+            }
+            if (barCode == null || !barCodes.add(barCode)) {
+                throw invalidSku("SKU 条码不能为空且不能重复");
+            }
+        }
+        JSONArray attributes = obj.getJSONArray("manySku");
+        if (attributes.size() > 3) {
+            throw invalidSku("属性维度不能超过3个");
+        }
+        Set<String> expected = buildExpectedSkus(obj);
+        if (!expected.isEmpty() && !expected.equals(skus)) {
+            throw invalidSku("SKU 明细与属性组合不一致");
+        }
+    }
+
+    private Set<String> buildExpectedSkus(JSONObject obj) {
+        List<List<String>> dimensions = new ArrayList<>();
+        for (String field : Arrays.asList("skuOne", "skuTwo", "skuThree")) {
+            JSONArray values = obj.getJSONArray(field);
+            if (values != null && !values.isEmpty()) {
+                List<String> dimension = new ArrayList<>();
+                for (Object value : values) {
+                    String text = StringUtil.toNull(String.valueOf(value));
+                    if (text != null) dimension.add(text);
+                }
+                if (!dimension.isEmpty()) dimensions.add(dimension);
+            }
+        }
+        if (dimensions.isEmpty()) return Collections.emptySet();
+        Set<String> result = new LinkedHashSet<>();
+        result.add("");
+        for (List<String> dimension : dimensions) {
+            Set<String> next = new LinkedHashSet<>();
+            for (String prefix : result) {
+                for (String value : dimension) {
+                    next.add(prefix.isEmpty() ? value : prefix + "/" + value);
+                }
+            }
+            result = next;
+        }
+        return result;
+    }
+
+    private void normalizeDefaultFlag(Long materialId) throws Exception {
+        List<MaterialExtendVo4List> details = materialExtendMapperEx.getDetailList(materialId);
+        for (int i = 0; i < details.size(); i++) {
+            MaterialExtend update = new MaterialExtend();
+            update.setId(details.get(i).getId());
+            update.setDefaultFlag(i == 0 ? "1" : "0");
+            updateMaterialExtend(update);
+        }
+    }
+
+    private void requireActiveDetail(Long id) throws Exception {
+        if (id == null || getMaterialExtend(id) == null) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_NOT_EXISTS_CODE,
+                    ExceptionConstants.MATERIAL_NOT_EXISTS_MSG);
+        }
+    }
+
+    private void validateStandaloneDetail(MaterialExtend detail, Long excludedId) throws Exception {
+        if (StringUtil.isEmpty(detail.getBarCode()) && excludedId != null) {
+            MaterialExtend existing = getMaterialExtend(excludedId);
+            detail.setBarCode(existing.getBarCode());
+        }
+        if (StringUtil.isEmpty(detail.getSku()) && excludedId != null) {
+            MaterialExtend existing = getMaterialExtend(excludedId);
+            detail.setSku(existing.getSku());
+        }
+        if (StringUtil.isEmpty(detail.getBarCode())) {
+            throw invalidSku("条码不能为空");
+        }
+        if (checkIsBarCodeExist(excludedId, detail.getBarCode()) > 0) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_BARCODE_EXISTS_CODE,
+                    String.format(ExceptionConstants.MATERIAL_BARCODE_EXISTS_MSG, detail.getBarCode()));
+        }
+        if (StringUtil.isEmpty(detail.getSku())) {
+            throw invalidSku("SKU不能为空");
+        }
+    }
+
+    private void ensureDetailsNotInUse(Collection<Long> ids) {
+        List<Long> validIds = new ArrayList<>();
+        for (Long id : ids) if (id != null) validIds.add(id);
+        if (!validIds.isEmpty() && depotItemMapperEx.getCountByMaterialExtendIds(validIds) > 0) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_SKU_HISTORY_LOCK_CODE,
+                    ExceptionConstants.MATERIAL_SKU_HISTORY_LOCK_MSG);
+        }
+    }
+
+    private BusinessRunTimeException invalidSku(String reason) {
+        return new BusinessRunTimeException(ExceptionConstants.MATERIAL_SKU_CONFIG_INVALID_CODE,
+                String.format(ExceptionConstants.MATERIAL_SKU_CONFIG_INVALID_MSG, reason));
     }
 
     public List<MaterialExtend> getMaterialExtendByTenantAndTime(Long tenantId, Long lastTime, Long syncNum)throws Exception {

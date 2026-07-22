@@ -389,6 +389,10 @@ public class ExceptionConstants {
     public static final String MATERIAL_UNIT_CONFIG_INVALID_MSG = "商品单位设置不合法：%s";
     public static final int MATERIAL_UNIT_HISTORY_LOCK_CODE = 8000033;
     public static final String MATERIAL_UNIT_HISTORY_LOCK_MSG = "商品已有历史单据，不允许修改单位或多单位方案";
+    public static final int MATERIAL_SKU_CONFIG_INVALID_CODE = 8000034;
+    public static final String MATERIAL_SKU_CONFIG_INVALID_MSG = "多属性明细设置不合法：%s";
+    public static final int MATERIAL_SKU_HISTORY_LOCK_CODE = 8000035;
+    public static final String MATERIAL_SKU_HISTORY_LOCK_MSG = "多属性明细已被历史单据使用，不允许修改或删除";
     public static final String MATERIAL_SKU_BEGIN_STOCK_FAILED_MSG = "多属性商品%s不能输入库存，建议进行盘点录入";
     //商品条码不存在，请重新选择
     public static final int MATERIAL_BARCODE_IS_NOT_EXIST_CODE = 8000026;
