@@ -646,23 +646,25 @@ INSERT INTO `jsh_organization` VALUES (14, '12', '部门2', 13, '4', '', '2020-0
 DROP TABLE IF EXISTS `jsh_person`;
 CREATE TABLE `jsh_person`  (
   `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `type` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '类型',
-  `name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '姓名',
-  `enabled` bit(1) NULL DEFAULT NULL COMMENT '启用',
+  `type` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '类型',
+  `name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '姓名',
+  `enabled` bit(1) NOT NULL DEFAULT b'1' COMMENT '启用',
   `sort` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '排序',
-  `tenant_id` bigint(0) NULL DEFAULT NULL COMMENT '租户id',
-  `delete_flag` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标记，0未删除，1删除',
+  `tenant_id` bigint(0) NOT NULL DEFAULT 0 COMMENT '租户id',
+  `delete_flag` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '0' COMMENT '删除标记，0未删除，1删除',
+  `active_name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci GENERATED ALWAYS AS (CASE WHEN `delete_flag` <> '1' THEN `name` ELSE NULL END) STORED,
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `tenant_id`(`tenant_id`) USING BTREE
+  INDEX `tenant_id`(`tenant_id`) USING BTREE,
+  UNIQUE INDEX `uk_person_active_name`(`tenant_id`, `active_name`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '经手人表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jsh_person
 -- ----------------------------
-INSERT INTO `jsh_person` VALUES (14, '销售员', '小李', b'1', NULL, 63, '0');
-INSERT INTO `jsh_person` VALUES (15, '销售员', '小军', b'1', NULL, 63, '0');
-INSERT INTO `jsh_person` VALUES (16, '财务员', '小夏', b'1', NULL, 63, '0');
-INSERT INTO `jsh_person` VALUES (17, '财务员', '小曹', b'1', NULL, 63, '0');
+INSERT INTO `jsh_person` (`id`, `type`, `name`, `enabled`, `sort`, `tenant_id`, `delete_flag`) VALUES (14, '销售员', '小李', b'1', NULL, 63, '0');
+INSERT INTO `jsh_person` (`id`, `type`, `name`, `enabled`, `sort`, `tenant_id`, `delete_flag`) VALUES (15, '销售员', '小军', b'1', NULL, 63, '0');
+INSERT INTO `jsh_person` (`id`, `type`, `name`, `enabled`, `sort`, `tenant_id`, `delete_flag`) VALUES (16, '财务员', '小夏', b'1', NULL, 63, '0');
+INSERT INTO `jsh_person` (`id`, `type`, `name`, `enabled`, `sort`, `tenant_id`, `delete_flag`) VALUES (17, '财务员', '小曹', b'1', NULL, 63, '0');
 
 -- ----------------------------
 -- Table structure for jsh_platform_config

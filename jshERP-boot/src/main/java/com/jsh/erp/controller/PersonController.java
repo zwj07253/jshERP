@@ -43,6 +43,7 @@ public class PersonController extends BaseController {
     @Operation(summary = "根据id获取信息")
     public String getList(@RequestParam("id") Long id,
                           HttpServletRequest request) throws Exception {
+        personService.checkReadPermission();
         Person person = personService.getPerson(id);
         Map<String, Object> objectMap = new HashMap<>();
         if(person != null) {
@@ -57,6 +58,7 @@ public class PersonController extends BaseController {
     @Operation(summary = "获取信息列表")
     public TableDataInfo getList(@RequestParam(value = Constants.SEARCH, required = false) String search,
                                  HttpServletRequest request)throws Exception {
+        personService.checkReadPermission();
         String name = StringUtil.getInfo(search, "name");
         String type = StringUtil.getInfo(search, "type");
         List<Person> list = personService.select(name, type);
@@ -99,6 +101,7 @@ public class PersonController extends BaseController {
     @Operation(summary = "检查名称是否存在")
     public String checkIsNameExist(@RequestParam Long id, @RequestParam(value ="name", required = false) String name,
                                    HttpServletRequest request)throws Exception {
+        personService.checkReadPermission();
         Map<String, Object> objectMap = new HashMap<>();
         int exist = personService.checkIsNameExist(id, name);
         if(exist > 0) {
@@ -118,6 +121,7 @@ public class PersonController extends BaseController {
     @GetMapping(value = "/getAllList")
     @Operation(summary = "全部数据列表")
     public BaseResponseInfo getAllList(HttpServletRequest request)throws Exception {
+        personService.checkBusinessReadPermission();
         BaseResponseInfo res = new BaseResponseInfo();
         Map<String, Object> map = new HashMap<String, Object>();
         try {
@@ -143,6 +147,7 @@ public class PersonController extends BaseController {
     @Operation(summary = "根据Id获取经手人信息")
     public BaseResponseInfo getPersonByIds(@RequestParam("personIds") String personIds,
                                            HttpServletRequest request)throws Exception {
+        personService.checkBusinessReadPermission();
         BaseResponseInfo res = new BaseResponseInfo();
         Map<String, Object> map = new HashMap<String, Object>();
         try {
@@ -169,6 +174,7 @@ public class PersonController extends BaseController {
     @Operation(summary = "根据类型获取经手人信息")
     public BaseResponseInfo getPersonByType(@RequestParam("type") String type,
                                             HttpServletRequest request)throws Exception {
+        personService.checkSelectPermission(type);
         BaseResponseInfo res = new BaseResponseInfo();
         Map<String, Object> map = new HashMap<String, Object>();
         try {
@@ -195,26 +201,27 @@ public class PersonController extends BaseController {
     public JSONArray getPersonByNumType(@RequestParam("type") String typeNum,
                                         HttpServletRequest request)throws Exception {
         JSONArray dataArray = new JSONArray();
-        try {
-            String type = "";
-            if (typeNum.equals("1")) {
-                type = "销售员";
-            } else if (typeNum.equals("2")) {
-                type = "仓管员";
-            } else if (typeNum.equals("3")) {
-                type = "财务员";
+        String type;
+        if ("1".equals(typeNum)) {
+            type = "销售员";
+        } else if ("2".equals(typeNum)) {
+            type = "仓管员";
+        } else if ("3".equals(typeNum)) {
+            type = "财务员";
+        } else {
+            throw new com.jsh.erp.exception.BusinessRunTimeException(
+                    com.jsh.erp.constants.ExceptionConstants.PERSON_INVALID_CODE,
+                    String.format(com.jsh.erp.constants.ExceptionConstants.PERSON_INVALID_MSG, "数字类型只能为1、2或3"));
+        }
+        personService.checkSelectPermission(type);
+        List<Person> personList = personService.getPersonByType(type);
+        if (null != personList) {
+            for (Person person : personList) {
+                JSONObject item = new JSONObject();
+                item.put("value", person.getId().toString());
+                item.put("text", person.getName());
+                dataArray.add(item);
             }
-            List<Person> personList = personService.getPersonByType(type);
-            if (null != personList) {
-                for (Person person : personList) {
-                    JSONObject item = new JSONObject();
-                    item.put("value", person.getId().toString());
-                    item.put("text", person.getName());
-                    dataArray.add(item);
-                }
-            }
-        } catch(Exception e){
-            logger.error(e.getMessage(), e);
         }
         return dataArray;
     }

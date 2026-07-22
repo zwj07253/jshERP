@@ -197,6 +197,8 @@ public interface DepotHeadMapperEx {
 
     List<DepotHead> getDepotHeadListByCreator(@Param("creatorArray") String[] creatorArray);
 
+    List<DepotHead> getDepotHeadListBySalesPersonIds(@Param("personIds") String[] personIds);
+
     List<InOutPriceVo> getBuyAndSaleStatisticsList(
             @Param("beginTime") String beginTime,
             @Param("endTime") String endTime,

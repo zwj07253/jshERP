@@ -6,11 +6,13 @@ import com.jsh.erp.datasource.entities.Account;
 import com.jsh.erp.datasource.entities.AccountHead;
 import com.jsh.erp.datasource.entities.InOutItem;
 import com.jsh.erp.datasource.mappers.AccountMapper;
+import com.jsh.erp.datasource.mappers.AccountHeadMapper;
 import com.jsh.erp.datasource.vo.AccountItemVo4List;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.service.AccountHeadService;
 import com.jsh.erp.service.AccountItemService;
 import com.jsh.erp.service.InOutItemService;
+import com.jsh.erp.service.PersonService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -35,6 +37,10 @@ class AccountHeadInOutItemValidationTest {
     private AccountItemService accountItemService;
     @Mock
     private InOutItemService inOutItemService;
+    @Mock
+    private PersonService personService;
+    @Mock
+    private AccountHeadMapper accountHeadMapper;
 
     @InjectMocks
     private AccountHeadService accountHeadService;
@@ -66,6 +72,7 @@ class AccountHeadInOutItemValidationTest {
         head.setTotalPrice(new BigDecimal("100"));
         head.setChangeAmount(new BigDecimal("100"));
         head.setDiscountMoney(BigDecimal.ZERO);
+        when(accountHeadMapper.selectByPrimaryKey(9L)).thenReturn(new AccountHead());
 
         JSONObject row = new JSONObject();
         row.put("inOutItemId", 5L);

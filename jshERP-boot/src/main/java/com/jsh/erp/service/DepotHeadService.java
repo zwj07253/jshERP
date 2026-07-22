@@ -2178,6 +2178,8 @@ public class DepotHeadService {
 
     private String validateAndNormalizeBill(DepotHead depotHead, JSONObject headJson, String rows,
                                              DepotHead previousDepotHead) throws Exception {
+        depotHead.setSalesMan(personService.validateSalesPersons(depotHead.getSalesMan(),
+                previousDepotHead == null ? null : previousDepotHead.getSalesMan()));
         if (BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(depotHead.getType())
                 && BusinessConstants.SUB_TYPE_PURCHASE_APPLY.equals(depotHead.getSubType())) {
             return validateAndNormalizePurchaseApply(depotHead, rows);

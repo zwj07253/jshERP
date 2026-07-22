@@ -942,6 +942,17 @@
         )
         and COALESCE(delete_flag,'0') !='1'
     </select>
+    <select id="getDepotHeadListBySalesPersonIds" resultMap="com.jsh.erp.datasource.mappers.DepotHeadMapper.BaseResultMap">
+        select
+        <include refid="com.jsh.erp.datasource.mappers.DepotHeadMapper.Base_Column_List" />
+        from jsh_depot_head
+        where COALESCE(delete_flag,'0') !='1'
+        and (
+        <foreach collection="personIds" item="personId" separator=" or ">
+            sales_man ~ ('(^|,)' || #{personId} || '(,|$)')
+        </foreach>
+        )
+    </select>
 
     <select id="getBuyAndSaleStatisticsList" resultType="com.jsh.erp.datasource.vo.InOutPriceVo">
         select distinct dh.id, dh.discount_last_money, dh.total_price, dh."type", dh.sub_type, dh.oper_time

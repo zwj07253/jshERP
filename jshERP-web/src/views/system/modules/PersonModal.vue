@@ -23,16 +23,17 @@
       <a-spin :spinning="confirmLoading">
         <a-form :form="form" id="personModal">
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="姓名">
-            <a-input placeholder="请输入姓名" v-decorator.trim="[ 'name', validatorRules.name]" />
+            <a-input placeholder="请输入姓名" :disabled="isReadOnly" v-decorator.trim="[ 'name', validatorRules.name]" />
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="类型">
-            <a-select placeholder="请选择类型" v-decorator="[ 'type', validatorRules.type]">
+            <a-select placeholder="请选择类型" :disabled="isReadOnly" v-decorator="[ 'type', validatorRules.type]">
               <a-select-option value="销售员">销售员</a-select-option>
+              <a-select-option value="仓管员">仓管员</a-select-option>
               <a-select-option value="财务员">财务员</a-select-option>
             </a-select>
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="排序">
-            <a-input placeholder="请输入排序" v-decorator.trim="[ 'sort' ]" />
+            <a-input placeholder="请输入排序" :disabled="isReadOnly" v-decorator.trim="[ 'sort', validatorRules.sort ]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -67,12 +68,17 @@
           name:{
             rules: [
               { required: true, message: '请输入姓名!' },
-              { min: 2, max: 30, message: '长度在 2 到 30 个字符', trigger: 'blur' },
+              { max: 50, message: '长度不能超过 50 个字符', trigger: 'blur' },
               { validator: this.validatePersonName}
             ]},
           type:{
             rules: [
               { required: true, message: '请选择类型!' }
+            ]
+          },
+          sort:{
+            rules: [
+              { pattern: /^\d{1,10}$/, message: '排序只能填写不超过10位的非负整数', trigger: 'blur' }
             ]
           }
         },
@@ -82,9 +88,11 @@
     },
     methods: {
       add () {
+        this.isReadOnly = false
         this.edit({});
       },
-      edit (record) {
+      edit (record, isReadOnly = false) {
+        this.isReadOnly = isReadOnly
         this.form.resetFields();
         this.model = Object.assign({}, record);
         this.visible = true;
@@ -112,13 +120,15 @@
             }
             obj.then((res)=>{
               if(res.code === 200){
-                that.$emit('ok');
+                that.$emit('ok')
+                that.confirmLoading = false
+                that.close()
               }else{
                 that.$message.warning(res.data.message);
+                that.confirmLoading = false
               }
-            }).finally(() => {
-              that.confirmLoading = false;
-              that.close();
+            }).catch(() => {
+              that.confirmLoading = false
             })
           }
         })
@@ -139,9 +149,9 @@
               callback("名称已经存在");
             }
           } else {
-            callback(res.data);
+            callback("名称校验失败，请稍后重试");
           }
-        });
+        }).catch(() => callback("名称校验失败，请稍后重试"));
       }
     }
   }

@@ -212,6 +212,16 @@ public class ExceptionConstants {
     //修改经手人信息失败
     public static final int PERSON_EDIT_FAILED_CODE = 4500002;
     public static final String PERSON_EDIT_FAILED_MSG = "修改经手人信息失败";
+    public static final int PERSON_NAME_EXIST_FAILED_CODE = 4500003;
+    public static final String PERSON_NAME_EXIST_FAILED_MSG = "该经手人姓名已经存在，请修改！";
+    public static final int PERSON_PERMISSION_CODE = 4500004;
+    public static final String PERSON_PERMISSION_MSG = "抱歉，您没有经手人管理的操作权限";
+    public static final int PERSON_INVALID_CODE = 4500005;
+    public static final String PERSON_INVALID_MSG = "经手人信息不合法：%s";
+    public static final int PERSON_IN_USE_CODE = 4500006;
+    public static final String PERSON_IN_USE_MSG = "该经手人已被单据使用，不能修改类型";
+    public static final int PERSON_BILL_INVALID_CODE = 4500007;
+    public static final String PERSON_BILL_INVALID_MSG = "单据中的经手人不存在、类型不符或已被禁用";
     /**
      * 用户角色模块关系信息
      * type = 50

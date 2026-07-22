@@ -65,6 +65,8 @@ public class AccountHeadService {
     private InOutItemService inOutItemService;
     @Resource
     private DepotHeadMapperEx depotHeadMapperEx;
+    @Resource
+    private PersonService personService;
 
     private static final String ADVANCE_IN_URL = "/financial/advance_in";
     private static final String MONEY_IN_URL = "/financial/money_in";
@@ -361,6 +363,9 @@ public class AccountHeadService {
     }
 
     private String validateFinancialBill(AccountHead accountHead, String rows, Long excludeHeadId) throws Exception {
+        AccountHead previous = excludeHeadId == null ? null : getAccountHead(excludeHeadId);
+        personService.validateFinancialPerson(accountHead.getHandsPersonId(),
+                previous == null ? null : previous.getHandsPersonId());
         validateIncomeExpenseBill(accountHead, rows, excludeHeadId);
         if(BusinessConstants.TYPE_ADVANCE_IN.equals(accountHead.getType())) {
             return validateAdvanceInBill(accountHead, rows);

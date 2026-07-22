@@ -260,7 +260,7 @@ public class P1BasicDataTest extends ApiTestBase {
     @DisplayName("28b: 按类型查询经手人")
     void personByType() {
         Response resp = authReqGet()
-                .param("type", "业务员")
+                .param("type", "销售员")
                 .get(CONTEXT + "/person/getPersonByType");
         assertSuccess(resp);
     }
@@ -271,9 +271,7 @@ public class P1BasicDataTest extends ApiTestBase {
     void createPerson() {
         JSONObject body = new JSONObject();
         body.put("name", "P1测试经手人_" + System.currentTimeMillis());
-        body.put("type", "业务员");
-        body.put("phonenum", "13900139000");
-        body.put("remark", "P1测试");
+        body.put("type", "销售员");
         Response resp = authReq().body(body.toJSONString()).post(CONTEXT + "/person/add");
         assertSuccess(resp);
     }
