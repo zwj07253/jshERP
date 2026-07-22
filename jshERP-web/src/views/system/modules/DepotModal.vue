@@ -16,36 +16,45 @@
       okText="保存"
       style="top:10%;height: 70%;">
       <template slot="footer">
-        <a-button key="back" v-if="isReadOnly" @click="handleCancel">
+        <a-button key="back" @click="handleCancel">
           取消
+        </a-button>
+        <a-button v-if="!isReadOnly" key="submit" type="primary" :loading="confirmLoading" @click="handleOk">
+          保存
         </a-button>
       </template>
       <a-spin :spinning="confirmLoading">
         <a-form :form="form" id="depotModal">
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="仓库名称">
-            <a-input placeholder="请输入仓库名称" v-decorator.trim="[ 'name', validatorRules.name]" />
+            <a-input :disabled="isReadOnly" placeholder="请输入仓库名称" v-decorator.trim="[ 'name', validatorRules.name]" />
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="仓库地址">
-            <a-input placeholder="请输入仓库地址" v-decorator.trim="[ 'address' ]" />
+            <a-input :disabled="isReadOnly" placeholder="请输入仓库地址" v-decorator.trim="[ 'address', validatorRules.address ]" />
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="仓储费">
-            <a-input placeholder="请输入仓储费" v-decorator.trim="[ 'warehousing' ]" suffix="元/天/KG"/>
+            <a-input-number :disabled="isReadOnly" :min="0" :precision="6" :step="0.01"
+                            style="width: 100%" placeholder="请输入仓储费"
+                            v-decorator="[ 'warehousing', validatorRules.warehousing ]" />
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="搬运费">
-            <a-input placeholder="请输入搬运费" v-decorator.trim="[ 'truckage' ]" suffix="元"/>
+            <a-input-number :disabled="isReadOnly" :min="0" :precision="6" :step="0.01"
+                            style="width: 100%" placeholder="请输入搬运费"
+                            v-decorator="[ 'truckage', validatorRules.truckage ]" />
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="负责人">
-            <a-select placeholder="选择负责人" v-decorator="[ 'principal' ]" :dropdownMatchSelectWidth="false">
+            <a-select :disabled="isReadOnly" placeholder="选择负责人" v-decorator="[ 'principal' ]" :dropdownMatchSelectWidth="false">
               <a-select-option v-for="(item,index) in userList" :key="index" :value="item.id">
                 {{ item.userName }}
               </a-select-option>
             </a-select>
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="排序">
-            <a-input placeholder="请输入排序" v-decorator.trim="[ 'sort' ]" />
+            <a-input-number :disabled="isReadOnly" :min="0" :precision="0" style="width: 100%"
+                            placeholder="请输入排序" v-decorator="[ 'sort', validatorRules.sort ]" />
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="备注">
-            <a-textarea :rows="2" placeholder="请输入备注" v-decorator.trim="[ 'remark' ]" />
+            <a-textarea :disabled="isReadOnly" :rows="2" placeholder="请输入备注"
+                        v-decorator.trim="[ 'remark', validatorRules.remark ]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -82,9 +91,14 @@
           name:{
             rules: [
               { required: true, message: '请输入仓库名称!' },
-              { min: 2, max: 30, message: '长度在 2 到 30 个字符', trigger: 'blur' },
+              { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' },
               { validator: this.validateDepotName}
-            ]}
+            ]},
+          address: { rules: [{ max: 50, message: '仓库地址不能超过 50 个字符', trigger: 'blur' }] },
+          warehousing: { rules: [{ type: 'number', min: 0, message: '仓储费必须为非负数', trigger: 'change' }] },
+          truckage: { rules: [{ type: 'number', min: 0, message: '搬运费必须为非负数', trigger: 'change' }] },
+          sort: { rules: [{ type: 'integer', min: 0, message: '排序必须为非负整数', trigger: 'change' }] },
+          remark: { rules: [{ max: 100, message: '备注不能超过 100 个字符', trigger: 'blur' }] }
         },
       }
     },
@@ -93,6 +107,7 @@
     },
     methods: {
       add () {
+        this.isReadOnly = false
         this.edit({});
       },
       edit (record) {
@@ -125,12 +140,12 @@
             obj.then((res)=>{
               if(res.code === 200){
                 that.$emit('ok');
+                that.close();
               }else{
-                that.$message.warning(res.data.message);
+                that.$message.warning((res.data && res.data.message) || res.data || '保存失败');
               }
             }).finally(() => {
               that.confirmLoading = false;
-              that.close();
             })
           }
         })
@@ -151,7 +166,7 @@
               callback("名称已经存在");
             }
           } else {
-            callback(res.data);
+            callback((res.data && res.data.message) || res.data || '仓库名称校验失败');
           }
         });
       },

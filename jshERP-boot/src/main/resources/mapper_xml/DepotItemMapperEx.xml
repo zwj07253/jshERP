@@ -1212,11 +1212,15 @@
         <include refid="com.jsh.erp.datasource.mappers.DepotItemMapper.Base_Column_List" />
         from jsh_depot_item
         where 1=1
-        and depot_id in (
+        and (depot_id in (
         <foreach collection="depotIds" item="depotId" separator=",">
             #{depotId}::bigint
         </foreach>
-        )
+        ) or another_depot_id in (
+        <foreach collection="depotIds" item="depotId" separator=",">
+            #{depotId}::bigint
+        </foreach>
+        ))
         and COALESCE(delete_flag,'0') !='1'
     </select>
 

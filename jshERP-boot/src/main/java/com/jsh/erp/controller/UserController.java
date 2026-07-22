@@ -469,16 +469,20 @@ public class UserController extends BaseController {
                                   HttpServletRequest request) throws Exception{
         JSONArray arr = new JSONArray();
         try {
-            if (!"UserCustomer".equals(type)) {
+            if (!("UserCustomer".equals(type) || "UserDepot".equals(type))) {
                 throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_INVALID_CODE,
-                        String.format(ExceptionConstants.SUPPLIER_INVALID_MSG, "客户权限类型不合法"));
+                        String.format(ExceptionConstants.SUPPLIER_INVALID_MSG, "用户权限类型不合法"));
             }
             Long currentUserId = userService.getUserId(request);
             if (!userService.hasButtonPermission(currentUserId, "/system/user", "1")) {
                 throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
                         ExceptionConstants.SUPPLIER_PERMISSION_MSG);
             }
-            userBusinessService.validateCustomerId(oneValue);
+            if ("UserCustomer".equals(type)) {
+                userBusinessService.validateCustomerId(oneValue);
+            } else {
+                userBusinessService.validateDepotId(oneValue);
+            }
             //获取权限信息
             List<Long> keyIdList = userBusinessService.getUBKeyIdByTypeAndOneValue(type, oneValue);
             Map<Long, Long> keyIdMap = keyIdList.stream().collect(Collectors.toMap(Function.identity(),Function.identity()));

@@ -17,4 +17,6 @@ public interface DepotMapperEx {
             @Param("remark") String remark);
 
     int batchDeleteDepotByIds(@Param("updateTime") Date updateTime, @Param("updater") Long updater, @Param("ids") String ids[]);
+
+    void lockDepotWrite(@Param("tenantId") Long tenantId);
 }

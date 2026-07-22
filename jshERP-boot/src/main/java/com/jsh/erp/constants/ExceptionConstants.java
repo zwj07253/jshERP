@@ -129,6 +129,16 @@ public class ExceptionConstants {
     //修改仓库信息失败
     public static final int DEPOT_EDIT_FAILED_CODE = 2000002;
     public static final String DEPOT_EDIT_FAILED_MSG = "修改仓库信息失败";
+    public static final int DEPOT_PERMISSION_CODE = 2000003;
+    public static final String DEPOT_PERMISSION_MSG = "抱歉，当前用户没有仓库信息的操作权限";
+    public static final int DEPOT_INVALID_CODE = 2000004;
+    public static final String DEPOT_INVALID_MSG = "仓库信息不合法：%s";
+    public static final int DEPOT_ALREADY_EXISTS_CODE = 2000005;
+    public static final String DEPOT_ALREADY_EXISTS_MSG = "仓库名称已经存在";
+    public static final int DEPOT_IN_USE_CODE = 2000006;
+    public static final String DEPOT_IN_USE_MSG = "仓库已被单据、库存或序列号使用，不能删除";
+    public static final int DEPOT_DEFAULT_OPERATION_CODE = 2000007;
+    public static final String DEPOT_DEFAULT_OPERATION_MSG = "默认仓库不能停用或删除，请先设置其它默认仓库";
 
     /**
      * 功能模块信息

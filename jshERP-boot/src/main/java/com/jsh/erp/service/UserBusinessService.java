@@ -5,12 +5,14 @@ import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.constants.BusinessConstants;
 import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.Supplier;
+import com.jsh.erp.datasource.entities.Depot;
 import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.entities.UserBusiness;
 import com.jsh.erp.datasource.entities.UserBusinessExample;
 import com.jsh.erp.datasource.mappers.UserBusinessMapper;
 import com.jsh.erp.datasource.mappers.UserBusinessMapperEx;
 import com.jsh.erp.datasource.mappers.SupplierMapperEx;
+import com.jsh.erp.datasource.mappers.DepotMapper;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.exception.JshException;
 import org.slf4j.Logger;
@@ -43,6 +45,8 @@ public class UserBusinessService {
     private UserService userService;
     @Resource
     private SupplierMapperEx supplierMapperEx;
+    @Resource
+    private DepotMapper depotMapper;
 
     public UserBusiness getUserBusiness(long id)throws Exception {
         UserBusiness result=null;
@@ -200,10 +204,14 @@ public class UserBusinessService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateOneValueByKeyIdAndType(String type, JSONArray keyIdArr, String oneValue) throws Exception {
-        if (!"UserCustomer".equals(type) || keyIdArr == null) {
-            throw invalidRelation("客户授权参数不合法");
+        if (!("UserCustomer".equals(type) || "UserDepot".equals(type)) || keyIdArr == null) {
+            throw invalidRelation("用户授权参数不合法");
         }
-        validateCustomerId(oneValue);
+        if ("UserCustomer".equals(type)) {
+            validateCustomerId(oneValue);
+        } else {
+            validateDepotId(oneValue);
+        }
         Set<String> validatedUserIds = new HashSet<>();
         for (Object keyIdObj : keyIdArr) {
             String keyId = keyIdObj == null ? null : keyIdObj.toString();
@@ -278,16 +286,49 @@ public class UserBusinessService {
         }
     }
 
+    public void validateDepotId(String depotId) throws Exception {
+        Long id = parsePositiveId(depotId, "仓库ID不合法");
+        Depot depot = depotMapper.selectByPrimaryKey(id);
+        if (depot == null || !Boolean.TRUE.equals(depot.getEnabled())
+                || BusinessConstants.DELETE_FLAG_DELETED.equals(depot.getDeleteFlag())) {
+            throw invalidRelation("仓库不存在或已停用");
+        }
+    }
+
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
+    public int removeOneValueByType(String type, String oneValue) {
+        if (!"UserDepot".equals(type)) {
+            throw invalidRelation("用户授权类型不合法");
+        }
+        String valueToken = "[" + oneValue + "]";
+        int changed = 0;
+        for (UserBusiness item : userBusinessMapperEx.getOldListByType(type)) {
+            String oldValue = item.getValue();
+            if (oldValue == null || !oldValue.contains(valueToken)) {
+                continue;
+            }
+            UserBusiness update = new UserBusiness();
+            update.setId(item.getId());
+            if (oldValue.equals(valueToken)) {
+                update.setDeleteFlag(BusinessConstants.DELETE_FLAG_DELETED);
+            } else {
+                update.setValue(oldValue.replace(valueToken, ""));
+            }
+            changed += userBusinessMapper.updateByPrimaryKeySelective(update);
+        }
+        return changed;
+    }
+
     private void validateCustomerRelation(UserBusiness relation, UserBusiness existing) throws Exception {
-        if (!"UserCustomer".equals(relation.getType())) {
+        if (!("UserCustomer".equals(relation.getType()) || "UserDepot".equals(relation.getType()))) {
             return;
         }
-        if (existing != null && (!"UserCustomer".equals(existing.getType())
+        if (existing != null && (!relation.getType().equals(existing.getType())
                 || !existing.getKeyId().equals(relation.getKeyId()))) {
-            throw invalidRelation("客户授权记录不匹配");
+            throw invalidRelation("用户授权记录不匹配");
         }
         if (relation.getId() != null && existing == null) {
-            throw invalidRelation("客户授权记录不存在");
+            throw invalidRelation("用户授权记录不存在");
         }
         validateUserId(relation.getKeyId());
         String value = relation.getValue();
@@ -298,7 +339,11 @@ public class UserBusinessService {
         if (!normalized.isEmpty()) {
             for (String customerId : normalized.replace("[", "").split("]")) {
                 if (!customerId.isEmpty()) {
-                    validateCustomerId(customerId);
+                    if ("UserCustomer".equals(relation.getType())) {
+                        validateCustomerId(customerId);
+                    } else {
+                        validateDepotId(customerId);
+                    }
                 }
             }
         }

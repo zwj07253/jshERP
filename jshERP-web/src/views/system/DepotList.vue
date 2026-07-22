@@ -49,13 +49,13 @@
             :rowSelection="{selectedRowKeys: selectedRowKeys, onChange: onSelectChange}"
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
-              <a v-if="btnEnableList.indexOf(1)>-1 && depotFlag === '1' && quickBtn.user.indexOf(1)>-1 " @click="btnSetUser(record)">分配用户</a>
-              <a-divider v-if="btnEnableList.indexOf(1)>-1 && depotFlag === '1' && quickBtn.user.indexOf(1)>-1 " type="vertical" />
-              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定设为默认吗?" @confirm="() => handleSetDefault(record.id)">
+              <a v-if="btnEnableList.indexOf(1)>-1 && record.enabled && depotFlag === '1' && quickBtn.user.indexOf(1)>-1 " @click="btnSetUser(record)">分配用户</a>
+              <a-divider v-if="btnEnableList.indexOf(1)>-1 && record.enabled && depotFlag === '1' && quickBtn.user.indexOf(1)>-1 " type="vertical" />
+              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1 && record.enabled && !record.isDefault" title="确定设为默认吗?" @confirm="() => handleSetDefault(record.id)">
                 <a>设为默认</a>
               </a-popconfirm>
-              <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
-              <a @click="handleEdit(record)">编辑</a>
+              <a-divider v-if="btnEnableList.indexOf(1)>-1 && record.enabled && !record.isDefault" type="vertical" />
+              <a v-if="btnEnableList.indexOf(1)>-1" @click="handleEdit(record)">编辑</a>
               <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
               <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定删除吗?" @confirm="() => handleDelete(record.id)">
                 <a>删除</a>
@@ -188,7 +188,7 @@
           if(res.code === 200){
             that.loadData();
           } else {
-            that.$message.warning(res.data.message);
+            that.$message.warning((res.data && res.data.message) || res.data || '设置默认仓库失败');
           }
         });
       },

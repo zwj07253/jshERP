@@ -11,6 +11,8 @@ import com.jsh.erp.datasource.entities.Depot;
 import com.jsh.erp.datasource.entities.DepotEx;
 import com.jsh.erp.datasource.entities.MaterialInitialStock;
 import com.jsh.erp.datasource.entities.User;
+import com.jsh.erp.constants.ExceptionConstants;
+import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.service.DepotService;
 import com.jsh.erp.service.MaterialService;
 import com.jsh.erp.service.UserBusinessService;
@@ -30,8 +32,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.jsh.erp.utils.ResponseJsonUtil.returnJson;
 import static com.jsh.erp.utils.ResponseJsonUtil.returnStr;
@@ -61,6 +61,7 @@ public class DepotController extends BaseController {
     @Operation(summary = "根据id获取信息")
     public String getList(@RequestParam("id") Long id,
                           HttpServletRequest request) throws Exception {
+        depotService.checkReadPermission();
         Depot depot = depotService.getDepot(id);
         Map<String, Object> objectMap = new HashMap<>();
         if(depot != null) {
@@ -78,6 +79,7 @@ public class DepotController extends BaseController {
         String name = StringUtil.getInfo(search, "name");
         Integer type = StringUtil.parseInteger(StringUtil.getInfo(search, "type"));
         String remark = StringUtil.getInfo(search, "remark");
+        depotService.checkReadPermission();
         List<DepotEx> list = depotService.select(name, type, remark);
         return getDataTable(list);
     }
@@ -118,6 +120,7 @@ public class DepotController extends BaseController {
     @Operation(summary = "检查名称是否存在")
     public String checkIsNameExist(@RequestParam Long id, @RequestParam(value ="name", required = false) String name,
                                    HttpServletRequest request)throws Exception {
+        depotService.checkReadPermission();
         Map<String, Object> objectMap = new HashMap<>();
         int exist = depotService.checkIsNameExist(id, name);
         if(exist > 0) {
@@ -139,9 +142,12 @@ public class DepotController extends BaseController {
     public BaseResponseInfo getAllList(HttpServletRequest request) throws Exception{
         BaseResponseInfo res = new BaseResponseInfo();
         try {
+            depotService.checkReadPermission();
             List<Depot> depotList = depotService.getAllList();
             res.code = 200;
             res.data = depotList;
+        } catch(BusinessRunTimeException e) {
+            throw e;
         } catch(Exception e){
             logger.error(e.getMessage(), e);
             res.code = 500;
@@ -163,6 +169,23 @@ public class DepotController extends BaseController {
                                  HttpServletRequest request) throws Exception{
         JSONArray arr = new JSONArray();
         try {
+            depotService.checkUserEditPermission();
+            if (!"UserDepot".equals(type)) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_INVALID_CODE,
+                        String.format(ExceptionConstants.DEPOT_INVALID_MSG, "仓库权限类型不合法"));
+            }
+            Long targetUserId;
+            try {
+                targetUserId = Long.valueOf(keyId);
+            } catch (Exception e) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_INVALID_CODE,
+                        String.format(ExceptionConstants.DEPOT_INVALID_MSG, "用户ID不合法"));
+            }
+            User targetUser = userService.getUser(targetUserId);
+            if (targetUser == null) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_INVALID_CODE,
+                        String.format(ExceptionConstants.DEPOT_INVALID_MSG, "用户不存在"));
+            }
             //获取权限信息
             String ubValue = userBusinessService.getUBValueByTypeAndKeyId(type, keyId);
             List<Depot> dataList = depotService.findUserDepot();
@@ -192,8 +215,11 @@ public class DepotController extends BaseController {
             }
             outer.put("children", dataArray);
             arr.add(outer);
+        } catch (BusinessRunTimeException e) {
+            throw e;
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
+            throw e;
         }
         return arr;
     }
@@ -253,7 +279,8 @@ public class DepotController extends BaseController {
                                        HttpServletRequest request) {
         BaseResponseInfo res = new BaseResponseInfo();
         try {
-            List<Depot> list = depotService.getAllList();
+            depotService.checkMaterialReadPermission();
+            List<Depot> list = depotService.getAllListByCurrentUser();
             List<DepotEx> depotList = new ArrayList<DepotEx>();
             for(Depot depot: list) {
                 DepotEx de = new DepotEx();
@@ -275,6 +302,8 @@ public class DepotController extends BaseController {
             }
             res.code = 200;
             res.data = depotList;
+        } catch(BusinessRunTimeException e) {
+            throw e;
         } catch(Exception e){
             logger.error(e.getMessage(), e);
             res.code = 500;

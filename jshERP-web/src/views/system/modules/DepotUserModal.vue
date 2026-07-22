@@ -96,12 +96,12 @@
               if(res.code === 200){
                 that.$message.info('保存成功');
                 that.$emit('ok');
+                that.close();
               }else{
-                that.$message.warning(res.data.message);
+                that.$message.warning((res.data && res.data.message) || res.data || '保存失败');
               }
             }).finally(() => {
               that.confirmLoading = false;
-              that.close();
             })
           }
         })
@@ -115,7 +115,7 @@
         that.depotUserTree = []
         let params = {};
         params.id='';
-        getAction('/user/getUserWithChecked?UBType=UserDepot&UBValue='+id).then((res) => {
+        getAction('/user/getUserWithChecked', {UBType: 'UserDepot', UBValue: id}).then((res) => {
           if (res) {
             //部门全选后，再添加部门，选中数量增多
             this.allTreeKeys = [];
@@ -126,13 +126,11 @@
               that.setThisExpandedKeys(temp)
               that.getAllKeys(temp);
             }
-            console.log(JSON.stringify(this.checkedKeys))
             this.loading = false
           }
         })
       },
       onCheck(checkedKeys, info) {
-        console.log('onCheck', checkedKeys, info)
         this.hiding = false
         if(this.checkStrictly){
           this.checkedKeys = checkedKeys.checked;

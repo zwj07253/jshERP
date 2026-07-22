@@ -3,9 +3,11 @@ package com.jsh.erp;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.datasource.entities.Supplier;
+import com.jsh.erp.datasource.entities.Depot;
 import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.entities.UserBusiness;
 import com.jsh.erp.datasource.mappers.SupplierMapperEx;
+import com.jsh.erp.datasource.mappers.DepotMapper;
 import com.jsh.erp.datasource.mappers.UserBusinessMapper;
 import com.jsh.erp.datasource.mappers.UserBusinessMapperEx;
 import com.jsh.erp.exception.BusinessRunTimeException;
@@ -34,6 +36,7 @@ class UserBusinessServiceTest {
     @Mock private UserBusinessMapper userBusinessMapper;
     @Mock private UserBusinessMapperEx userBusinessMapperEx;
     @Mock private SupplierMapperEx supplierMapperEx;
+    @Mock private DepotMapper depotMapper;
     @Mock private LogService logService;
     @Mock private UserService userService;
 
@@ -92,6 +95,30 @@ class UserBusinessServiceTest {
         assertEquals("UserCustomer", captor.getValue().getType());
         assertEquals("10", captor.getValue().getKeyId());
         assertEquals("[20]", captor.getValue().getValue());
+    }
+
+    @Test
+    void assignsValidDepotToValidUser() throws Exception {
+        User user = new User();
+        user.setId(10L);
+        Depot depot = new Depot();
+        depot.setId(30L);
+        depot.setEnabled(true);
+        depot.setDeleteFlag("0");
+        when(userService.getUser(10L)).thenReturn(user);
+        when(depotMapper.selectByPrimaryKey(30L)).thenReturn(depot);
+        when(userBusinessMapperEx.getOldListByType("UserDepot")).thenReturn(Collections.emptyList());
+        when(userBusinessMapperEx.getBasicDataByKeyIdAndType("10", "UserDepot"))
+                .thenReturn(Collections.emptyList());
+        JSONArray userIds = new JSONArray();
+        userIds.add(10L);
+
+        assertEquals(1, userBusinessService.updateOneValueByKeyIdAndType("UserDepot", userIds, "30"));
+
+        ArgumentCaptor<UserBusiness> captor = ArgumentCaptor.forClass(UserBusiness.class);
+        verify(userBusinessMapper).insertSelective(captor.capture());
+        assertEquals("UserDepot", captor.getValue().getType());
+        assertEquals("[30]", captor.getValue().getValue());
     }
 
     private UserBusiness relation(Long id, String type, String keyId, String value) {

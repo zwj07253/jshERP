@@ -154,6 +154,12 @@ CREATE TABLE jsh_depot (
     is_default BOOLEAN
 );
 CREATE INDEX idx_depot_tenant_id ON jsh_depot(tenant_id);
+CREATE UNIQUE INDEX uk_depot_tenant_name_active
+ON jsh_depot(COALESCE(tenant_id, 0), name)
+WHERE COALESCE(delete_flag, '0') != '1';
+CREATE UNIQUE INDEX uk_depot_tenant_default_active
+ON jsh_depot(COALESCE(tenant_id, 0))
+WHERE COALESCE(delete_flag, '0') != '1' AND is_default IS TRUE;
 COMMENT ON TABLE jsh_depot IS '仓库表';
 COMMENT ON COLUMN jsh_depot.id IS '主键';
 COMMENT ON COLUMN jsh_depot.name IS '仓库名称';
