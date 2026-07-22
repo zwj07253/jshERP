@@ -53,7 +53,7 @@
 <script>
   import pick from 'lodash.pick'
   import {mixinDevice} from '@/utils/mixin'
-  import {addUserBusiness,editUserBusiness,checkUserBusiness} from '@/api/api'
+  import {saveRoleFunctions} from '@/api/api'
   import {getAction} from '../../../api/manage'
   export default {
     name: "RoleFunctionModal",
@@ -111,24 +111,15 @@
             formData.type = 'RoleFunctions'
             formData.keyId = this.roleId
             formData.value = this.checkedKeys
-            let obj;
-            checkUserBusiness({'type': 'RoleFunctions','keyId': this.roleId}).then((res)=>{
-              if(res.data && res.data.id) {
-                formData.id=res.data.id
-                obj=editUserBusiness(formData);
-              } else {
-                obj=addUserBusiness(formData);
-              }
-              obj.then((res)=>{
-                if(res.code === 200){
-                  that.$emit('ok', this.roleId);
-                }else{
-                  that.$message.warning(res.data.message);
-                }
-              }).finally(() => {
-                that.confirmLoading = false;
+            saveRoleFunctions(formData).then((res)=>{
+              if(res.code === 200){
+                that.$emit('ok', this.roleId);
                 that.close();
-              })
+              }else{
+                that.$message.warning(res.data && res.data.message ? res.data.message : res.data);
+              }
+            }).finally(() => {
+              that.confirmLoading = false;
             })
           }
         })
@@ -153,13 +144,11 @@
               that.setThisExpandedKeys(temp)
               that.getAllKeys(temp);
             }
-            console.log(JSON.stringify(this.checkedKeys))
             this.loading = false
           }
         })
       },
       onCheck(checkedKeys, info) {
-        console.log('onCheck', checkedKeys, info)
         this.hiding = false
         if(this.checkStrictly){
           this.checkedKeys = checkedKeys.checked;
@@ -194,7 +183,7 @@
         this.iExpandedKeys = []
       },
       checkALL () {
-        this.checkStriccheckStrictlytly = false
+        this.checkStrictly = false
         this.checkedKeys = this.allTreeKeys
       },
       cancelCheckALL () {
@@ -208,7 +197,6 @@
         }
       },
       onExpand(expandedKeys) {
-        console.log('onExpand', expandedKeys)
         this.iExpandedKeys = expandedKeys
       }
     }

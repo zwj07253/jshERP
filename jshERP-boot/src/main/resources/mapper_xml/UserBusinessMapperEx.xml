@@ -38,4 +38,15 @@
         where ub.type = #{type}
         and COALESCE(ub.delete_flag,'0') !='1'
     </select>
+
+    <update id="deleteRoleFunctionsByRoleIds">
+        update jsh_user_business
+        set delete_flag='1'
+        where type='RoleFunctions'
+        and COALESCE(delete_flag,'0') !='1'
+        and key_id in
+        <foreach collection="roleIds" item="roleId" open="(" separator="," close=")">
+            #{roleId}
+        </foreach>
+    </update>
 </mapper>

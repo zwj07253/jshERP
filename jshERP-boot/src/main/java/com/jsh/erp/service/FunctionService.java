@@ -251,6 +251,7 @@ public class FunctionService {
                 roleId = Long.parseLong(roleIdStr);
             }
         }
+        userService.getRoleTypeByUserId(userInfo.getTenantId());
         //当前用户所拥有的功能列表，格式如：[1][2][5]
         List<UserBusiness> funList = userBusinessService.getBasicData(roleId.toString(), "RoleFunctions");
         if(funList!=null && funList.size()>0){
@@ -304,6 +305,7 @@ public class FunctionService {
                 roleId = Long.parseLong(roleIdStr);
             }
         }
+        userService.getRoleTypeByUserId(userInfo.getId());
         //当前用户所拥有的功能列表，格式如：[1][2][5]
         List<UserBusiness> funList = userBusinessService.getBasicData(roleId.toString(), "RoleFunctions");
         if(funList!=null && funList.size()>0){

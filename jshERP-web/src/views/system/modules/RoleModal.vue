@@ -108,7 +108,7 @@
           },
           description:{
             rules: [
-              { min: 0, max: 126, message: '长度不超过 126 个字符', trigger: 'blur' }
+              { min: 0, max: 100, message: '长度不超过 100 个字符', trigger: 'blur' }
             ]
           }
         },
@@ -151,12 +151,12 @@
             obj.then((res)=>{
               if(res.code === 200){
                 that.$emit('ok');
+                that.close();
               }else{
-                that.$message.warning(res.data.message);
+                that.$message.warning(res.data && res.data.message ? res.data.message : res.data);
               }
             }).finally(() => {
               that.confirmLoading = false;
-              that.close();
             })
           }
         })

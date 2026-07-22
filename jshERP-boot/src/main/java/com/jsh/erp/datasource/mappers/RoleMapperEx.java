@@ -11,6 +11,8 @@ import java.util.List;
 
 public interface RoleMapperEx {
 
+    Object lockRoleWrite(@Param("tenantId") Long tenantId);
+
     List<RoleEx> selectByConditionRole(
             @Param("name") String name,
             @Param("description") String description);

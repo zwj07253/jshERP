@@ -7,11 +7,14 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.base.BaseController;
 import com.jsh.erp.base.TableDataInfo;
+import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.*;
 import com.jsh.erp.service.FunctionService;
+import com.jsh.erp.service.RoleService;
 import com.jsh.erp.service.SystemConfigService;
 import com.jsh.erp.service.UserBusinessService;
 import com.jsh.erp.service.UserService;
+import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.utils.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +45,9 @@ public class FunctionController extends BaseController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private RoleService roleService;
 
     @Resource
     private UserBusinessService userBusinessService;
@@ -150,6 +156,11 @@ public class FunctionController extends BaseController {
         //存放数据json数组
         JSONArray dataArray = new JSONArray();
         try {
+            User currentUser = userService.getCurrentUser();
+            if(currentUser == null || !currentUser.getId().toString().equals(userId)) {
+                throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
+                        ExceptionConstants.SUPPLIER_PERMISSION_MSG);
+            }
             Long roleId = 0L;
             String fc = "";
             List<UserBusiness> roleList = userBusinessService.getBasicData(userId, "UserRole");
@@ -174,7 +185,7 @@ public class FunctionController extends BaseController {
 
             List<Function> dataList = functionService.getRoleFunction(pNumber);
             if (dataList.size() != 0) {
-                User userInfo = userService.getCurrentUser();
+                User userInfo = currentUser;
                 //获取当前用户所属的租户所拥有的功能id的map
                 Map<Long, Long> funIdMap = functionService.getCurrentTenantFunIdMap();
                 dataArray = getMenuByFunction(dataList, fc, approvalFlag, funIdMap, userInfo);
@@ -234,6 +245,11 @@ public class FunctionController extends BaseController {
     @Operation(summary = "角色对应功能显示")
     public JSONArray findRoleFunction(@RequestParam("UBType") String type, @RequestParam("UBKeyId") String keyId,
                                  HttpServletRequest request)throws Exception {
+        roleService.checkReadPermission();
+        if(!"RoleFunctions".equals(type)) {
+            return new JSONArray();
+        }
+        roleService.requireManagedRole(Long.valueOf(keyId));
         JSONArray arr = new JSONArray();
         try {
             User userInfo = userService.getCurrentUser();
@@ -314,6 +330,8 @@ public class FunctionController extends BaseController {
     @Operation(summary = "根据id列表查找功能信息")
     public BaseResponseInfo findByIds(@RequestParam("roleId") Long roleId,
                                       HttpServletRequest request)throws Exception {
+        roleService.checkReadPermission();
+        roleService.requireManagedRole(roleId);
         BaseResponseInfo res = new BaseResponseInfo();
         try {
             List<UserBusiness> list = userBusinessService.getBasicData(roleId.toString(), "RoleFunctions");

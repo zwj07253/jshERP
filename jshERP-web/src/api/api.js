@@ -100,6 +100,7 @@ const addUserBusiness = (params)=>postAction("/userBusiness/add",params);
 const editUserBusiness = (params)=>putAction("/userBusiness/update",params);
 const checkUserBusiness = (params)=>getAction("/userBusiness/checkIsValueExist",params);
 const updateBtnStrByRoleId = (params)=>postAction("/userBusiness/updateBtnStr",params);
+const saveRoleFunctions = (params)=>postAction("/userBusiness/saveRoleFunctions",params);
 const updateOneValueByKeyIdAndType = (params)=>postAction("/userBusiness/updateOneValueByKeyIdAndType",params);
 //多单位
 const addUnit = (params)=>postAction("/unit/add",params);
@@ -205,6 +206,7 @@ export {
   editUserBusiness,
   checkUserBusiness,
   updateBtnStrByRoleId,
+  saveRoleFunctions,
   updateOneValueByKeyIdAndType,
   addUnit,
   editUnit,

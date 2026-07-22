@@ -757,10 +757,24 @@ public class UserService {
      * @param ue
      */
     private void checkRoleAndOrg(UserEx ue) throws Exception {
-        if(!Objects.equals(ue.getId(), ue.getTenantId())) {
+        Role selectedRole = roleService.requireActiveRole(ue.getRoleId());
+        User currentUser = getCurrentUser();
+        Long currentTenantId = currentUser == null ? null : currentUser.getTenantId();
+        User targetUser = ue.getId() == null ? null : getUser(ue.getId());
+        boolean targetIsTenantManager = targetUser != null
+                && Objects.equals(targetUser.getId(), targetUser.getTenantId());
+        if(currentTenantId != null && currentTenantId != 0L) {
+            boolean localRole = Objects.equals(selectedRole.getTenantId(), currentTenantId);
+            boolean tenantTemplateRole = targetIsTenantManager && selectedRole.getTenantId() == null;
+            if(!localRole && !tenantTemplateRole) {
+                throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
+                        ExceptionConstants.SUPPLIER_PERMISSION_MSG);
+            }
+        }
+        if(!targetIsTenantManager) {
             //只对非租户的用户进行校验
             Long orgaId = ue.getOrgaId();
-            String type = roleService.getRole(ue.getRoleId()).getType();
+            String type = selectedRole.getType();
             if("本部门数据".equals(type) && orgaId==null) {
                 throw new BusinessRunTimeException(ExceptionConstants.USER_ROLE_ORGA_EMPTY_CODE,
                         ExceptionConstants.USER_ROLE_ORGA_EMPTY_MSG);
@@ -833,23 +847,18 @@ public class UserService {
      */
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public Role getRoleTypeByUserId(long userId) throws Exception {
-        Role role = new Role();
         List<UserBusiness> list = userBusinessService.getBasicData(String.valueOf(userId), "UserRole");
-        UserBusiness ub = null;
-        if(list.size() > 0) {
-            ub = list.get(0);
-            String values = ub.getValue();
-            String roleId = null;
-            if(values!=null) {
-                values = values.replaceAll("\\[\\]",",").replace("[","").replace("]","");
-            }
-            String [] valueArray=values.split(",");
-            if(valueArray.length>0) {
-                roleId = valueArray[0];
-            }
-            role = roleService.getRoleWithoutTenant(Long.parseLong(roleId));
+        if(list == null || list.isEmpty() || StringUtil.isEmpty(list.get(0).getValue())) {
+            throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
+                    ExceptionConstants.SUPPLIER_PERMISSION_MSG);
         }
-        return role;
+        String roleId = list.get(0).getValue().replace("[", "").replace("]", "");
+        try {
+            return roleService.requireActiveRole(Long.parseLong(roleId));
+        } catch(NumberFormatException e) {
+            throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
+                    ExceptionConstants.SUPPLIER_PERMISSION_MSG);
+        }
     }
 
     /**
@@ -879,6 +888,11 @@ public class UserService {
             String roleValue = userRoleList.get(0).getValue();
             if(StringUtil.isNotEmpty(roleValue) && roleValue.indexOf("[")>-1 && roleValue.indexOf("]")>-1){
                 roleValue = roleValue.replace("[", "").replace("]", ""); //角色id-单个
+                try {
+                    roleService.requireActiveRole(Long.parseLong(roleValue));
+                } catch(NumberFormatException | BusinessRunTimeException e) {
+                    return btnStrArr;
+                }
                 List<UserBusiness> roleFunctionsList = userBusinessService.getBasicData(roleValue, "RoleFunctions");
                 if(roleFunctionsList!=null && roleFunctionsList.size()>0) {
                     String btnStr = roleFunctionsList.get(0).getBtnStr();
@@ -955,6 +969,11 @@ public class UserService {
             return false;
         }
         String roleId = roleValue.replace("[", "").replace("]", "");
+        try {
+            roleService.requireActiveRole(Long.parseLong(roleId));
+        } catch(NumberFormatException | BusinessRunTimeException e) {
+            return false;
+        }
         List<UserBusiness> roleFunctionsList = userBusinessService.getBasicData(roleId, "RoleFunctions");
         if (roleFunctionsList == null || roleFunctionsList.isEmpty()) {
             return false;

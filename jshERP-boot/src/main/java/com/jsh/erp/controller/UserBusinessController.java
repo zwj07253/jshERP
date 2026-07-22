@@ -10,6 +10,7 @@ import com.jsh.erp.datasource.entities.UserBusiness;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.service.UserBusinessService;
 import com.jsh.erp.service.UserService;
+import com.jsh.erp.service.RoleService;
 import com.jsh.erp.utils.BaseResponseInfo;
 import com.jsh.erp.utils.ErpInfo;
 import org.slf4j.Logger;
@@ -38,6 +39,8 @@ public class UserBusinessController {
     private UserBusinessService userBusinessService;
     @Resource
     private UserService userService;
+    @Resource
+    private RoleService roleService;
 
     @GetMapping(value = "/info")
     @Operation(summary = "根据id获取信息")
@@ -46,6 +49,7 @@ public class UserBusinessController {
         UserBusiness userBusiness = userBusinessService.getUserBusiness(id);
         if (userBusiness != null) {
             checkRelationPermission(userBusiness.getType(), request);
+            validateRoleRelation(userBusiness.getType(), userBusiness.getKeyId());
         }
         Map<String, Object> objectMap = new HashMap<>();
         if(userBusiness != null) {
@@ -60,6 +64,7 @@ public class UserBusinessController {
     @Operation(summary = "新增")
     public String addResource(@RequestBody JSONObject obj, HttpServletRequest request)throws Exception {
         checkRelationPermission(obj.getString("type"), request);
+        validateRoleRelation(obj.getString("type"), obj.getString("keyId"));
         Map<String, Object> objectMap = new HashMap<>();
         int insert = userBusinessService.insertUserBusiness(obj, request);
         return returnStr(objectMap, insert);
@@ -69,6 +74,7 @@ public class UserBusinessController {
     @Operation(summary = "修改")
     public String updateResource(@RequestBody JSONObject obj, HttpServletRequest request)throws Exception {
         checkRelationPermission(obj.getString("type"), request);
+        validateRoleRelation(obj.getString("type"), obj.getString("keyId"));
         Map<String, Object> objectMap = new HashMap<>();
         int update = userBusinessService.updateUserBusiness(obj, request);
         return returnStr(objectMap, update);
@@ -83,6 +89,7 @@ public class UserBusinessController {
                     String.format(ExceptionConstants.SUPPLIER_INVALID_MSG, "用户关系记录不存在"));
         }
         checkRelationPermission(relation.getType(), request);
+        validateRoleRelation(relation.getType(), relation.getKeyId());
         Map<String, Object> objectMap = new HashMap<>();
         int delete = userBusinessService.deleteUserBusiness(id, request);
         return returnStr(objectMap, delete);
@@ -98,6 +105,7 @@ public class UserBusinessController {
                         String.format(ExceptionConstants.SUPPLIER_INVALID_MSG, "用户关系记录不存在"));
             }
             checkRelationPermission(relation.getType(), request);
+            validateRoleRelation(relation.getType(), relation.getKeyId());
         }
         Map<String, Object> objectMap = new HashMap<>();
         int delete = userBusinessService.batchDeleteUserBusiness(ids, request);
@@ -134,6 +142,7 @@ public class UserBusinessController {
         BaseResponseInfo res = new BaseResponseInfo();
         try {
             checkRelationPermission(type, request);
+            validateRoleRelation(type, keyId);
             List<UserBusiness> list = userBusinessService.getBasicData(keyId, type);
             Map<String, List> mapData = new HashMap<String, List>();
             mapData.put("userBusinessList", list);
@@ -163,6 +172,7 @@ public class UserBusinessController {
                                    @RequestParam(value ="keyId", required = false) String keyId,
                                    HttpServletRequest request)throws Exception {
         checkRelationPermission(type, request);
+        validateRoleRelation(type, keyId);
         Map<String, Object> objectMap = new HashMap<String, Object>();
         Long id = userBusinessService.checkIsValueExist(type, keyId);
         objectMap.put("id", id);
@@ -232,6 +242,16 @@ public class UserBusinessController {
         return res;
     }
 
+    @PostMapping(value = "/saveRoleFunctions")
+    @Operation(summary = "保存角色菜单权限")
+    public String saveRoleFunctions(@RequestBody JSONObject jsonObject,
+                                    HttpServletRequest request) throws Exception {
+        checkRelationPermission("RoleFunctions", request);
+        Map<String, Object> objectMap = new HashMap<>();
+        int result = userBusinessService.saveRoleFunctions(jsonObject, request);
+        return returnStr(objectMap, result);
+    }
+
     private void checkRelationPermission(String type, HttpServletRequest request) throws Exception {
         String url;
         if ("UserCustomer".equals(type) || "UserDepot".equals(type)) {
@@ -246,6 +266,18 @@ public class UserBusinessController {
         if (!userService.hasButtonPermission(userId, url, "1")) {
             throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
                     ExceptionConstants.SUPPLIER_PERMISSION_MSG);
+        }
+    }
+
+    private void validateRoleRelation(String type, String keyId) throws Exception {
+        if(!"RoleFunctions".equals(type)) {
+            return;
+        }
+        try {
+            roleService.requireManagedRole(Long.valueOf(keyId));
+        } catch(NumberFormatException e) {
+            throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_INVALID_CODE,
+                    String.format(ExceptionConstants.SUPPLIER_INVALID_MSG, "角色ID不合法"));
         }
     }
 }

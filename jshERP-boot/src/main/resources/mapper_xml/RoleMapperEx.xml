@@ -3,6 +3,9 @@
 <mapper namespace="com.jsh.erp.datasource.mappers.RoleMapperEx">
     <resultMap extends="com.jsh.erp.datasource.mappers.RoleMapper.BaseResultMap" id="ResultExMap" type="com.jsh.erp.datasource.entities.RoleEx">
     </resultMap>
+    <select id="lockRoleWrite" resultType="java.lang.Object">
+        select pg_advisory_xact_lock(5200000000 + COALESCE(#{tenantId}, 0))
+    </select>
     <select id="selectByConditionRole" parameterType="com.jsh.erp.datasource.entities.RoleExample" resultMap="ResultExMap">
         SELECT *
         FROM jsh_role

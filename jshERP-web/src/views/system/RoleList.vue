@@ -48,11 +48,13 @@
             :rowSelection="{selectedRowKeys: selectedRowKeys, onChange: onSelectChange}"
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
-              <a @click="handleSetFunction(record)">分配菜单</a>
-              <a-divider type="vertical" />
-              <a @click="handleSetPushBtn(record.id, record.name)">分配按钮</a>
-              <a-divider type="vertical" />
-              <a @click="handleEdit(record)">编辑</a>
+              <template v-if="btnEnableList.indexOf(1)>-1">
+                <a @click="handleSetFunction(record)">分配菜单</a>
+                <a-divider type="vertical" />
+                <a @click="handleSetPushBtn(record.id, record.name)">分配按钮</a>
+                <a-divider type="vertical" />
+              </template>
+              <a @click="handleEdit(record)">{{ btnEnableList.indexOf(1)>-1 ? '编辑' : '查看' }}</a>
               <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
               <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定删除吗?" @confirm="() => handleDelete(record.id)">
                 <a>删除</a>

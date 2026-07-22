@@ -6,10 +6,15 @@ import com.jsh.erp.datasource.entities.Supplier;
 import com.jsh.erp.datasource.entities.Depot;
 import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.entities.UserBusiness;
+import com.jsh.erp.datasource.entities.Role;
+import com.jsh.erp.datasource.entities.Function;
 import com.jsh.erp.datasource.mappers.SupplierMapperEx;
 import com.jsh.erp.datasource.mappers.DepotMapper;
 import com.jsh.erp.datasource.mappers.UserBusinessMapper;
 import com.jsh.erp.datasource.mappers.UserBusinessMapperEx;
+import com.jsh.erp.datasource.mappers.RoleMapper;
+import com.jsh.erp.datasource.mappers.RoleMapperEx;
+import com.jsh.erp.datasource.mappers.FunctionMapper;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.service.LogService;
 import com.jsh.erp.service.UserBusinessService;
@@ -39,6 +44,9 @@ class UserBusinessServiceTest {
     @Mock private DepotMapper depotMapper;
     @Mock private LogService logService;
     @Mock private UserService userService;
+    @Mock private RoleMapper roleMapper;
+    @Mock private RoleMapperEx roleMapperEx;
+    @Mock private FunctionMapper functionMapper;
 
     @InjectMocks private UserBusinessService userBusinessService;
 
@@ -121,6 +129,55 @@ class UserBusinessServiceTest {
         assertEquals("[30]", captor.getValue().getValue());
     }
 
+    @Test
+    void rejectsRoleMenuBeyondCurrentUserPermission() throws Exception {
+        User currentUser = new User();
+        currentUser.setId(10L);
+        currentUser.setLoginName("manager");
+        when(userService.getCurrentUser()).thenReturn(currentUser);
+        Role currentRole = activeRole(5L);
+        when(userService.getRoleTypeByUserId(10L)).thenReturn(currentRole);
+        when(roleMapper.selectByPrimaryKey(8L)).thenReturn(activeRole(8L));
+        when(userBusinessMapperEx.getBasicDataByKeyIdAndType("5", "RoleFunctions"))
+                .thenReturn(Collections.singletonList(relation(20L, "RoleFunctions", "5", "[10]")));
+        Function function = new Function();
+        function.setId(11L);
+        function.setEnabled(true);
+        function.setDeleteFlag("0");
+        when(functionMapper.selectByPrimaryKey(11L)).thenReturn(function);
+        JSONObject body = new JSONObject();
+        body.put("type", "RoleFunctions");
+        body.put("keyId", "8");
+        body.put("value", "[11]");
+
+        assertThrows(BusinessRunTimeException.class,
+                () -> userBusinessService.insertUserBusiness(body, null));
+
+        verify(userBusinessMapper, never()).insertSelective(any());
+    }
+
+    @Test
+    void rejectsButtonNotSupportedByFunction() throws Exception {
+        User admin = new User();
+        admin.setLoginName("admin");
+        when(userService.getCurrentUser()).thenReturn(admin);
+        when(roleMapper.selectByPrimaryKey(8L)).thenReturn(activeRole(8L));
+        when(userBusinessMapperEx.getBasicDataByKeyIdAndType("8", "RoleFunctions"))
+                .thenReturn(Collections.singletonList(relation(21L, "RoleFunctions", "8", "[10]")));
+        Function function = new Function();
+        function.setId(10L);
+        function.setEnabled(true);
+        function.setDeleteFlag("0");
+        function.setPushBtn("1");
+        when(functionMapper.selectByPrimaryKey(10L)).thenReturn(function);
+
+        assertThrows(BusinessRunTimeException.class,
+                () -> userBusinessService.updateBtnStr("8", "RoleFunctions",
+                        "[{\"funId\":10,\"btnStr\":\"2\"}]"));
+
+        verify(userBusinessMapper, never()).updateByExampleSelective(any(), any());
+    }
+
     private UserBusiness relation(Long id, String type, String keyId, String value) {
         UserBusiness relation = new UserBusiness();
         relation.setId(id);
@@ -128,5 +185,13 @@ class UserBusinessServiceTest {
         relation.setKeyId(keyId);
         relation.setValue(value);
         return relation;
+    }
+
+    private Role activeRole(Long id) {
+        Role role = new Role();
+        role.setId(id);
+        role.setEnabled(true);
+        role.setDeleteFlag("0");
+        return role;
     }
 }

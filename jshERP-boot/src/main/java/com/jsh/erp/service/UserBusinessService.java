@@ -9,8 +9,13 @@ import com.jsh.erp.datasource.entities.Depot;
 import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.entities.UserBusiness;
 import com.jsh.erp.datasource.entities.UserBusinessExample;
+import com.jsh.erp.datasource.entities.Role;
+import com.jsh.erp.datasource.entities.Function;
 import com.jsh.erp.datasource.mappers.UserBusinessMapper;
 import com.jsh.erp.datasource.mappers.UserBusinessMapperEx;
+import com.jsh.erp.datasource.mappers.RoleMapper;
+import com.jsh.erp.datasource.mappers.FunctionMapper;
+import com.jsh.erp.datasource.mappers.RoleMapperEx;
 import com.jsh.erp.datasource.mappers.SupplierMapperEx;
 import com.jsh.erp.datasource.mappers.DepotMapper;
 import com.jsh.erp.exception.BusinessRunTimeException;
@@ -30,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.ArrayList;
 
 @Service
 public class UserBusinessService {
@@ -47,6 +53,12 @@ public class UserBusinessService {
     private SupplierMapperEx supplierMapperEx;
     @Resource
     private DepotMapper depotMapper;
+    @Resource
+    private RoleMapper roleMapper;
+    @Resource
+    private RoleMapperEx roleMapperEx;
+    @Resource
+    private FunctionMapper functionMapper;
 
     public UserBusiness getUserBusiness(long id)throws Exception {
         UserBusiness result=null;
@@ -75,6 +87,7 @@ public class UserBusinessService {
         UserBusiness requested = JSONObject.parseObject(obj.toJSONString(), UserBusiness.class);
         UserBusiness userBusiness = writableRelation(requested);
         validateCustomerRelation(userBusiness, null);
+        validateRoleFunctionRelation(userBusiness, null);
         int result=0;
         try{
             String value = userBusiness.getValue();
@@ -100,6 +113,7 @@ public class UserBusinessService {
             throw invalidRelation("用户关系记录不存在或不匹配");
         }
         validateCustomerRelation(userBusiness, existing);
+        validateRoleFunctionRelation(userBusiness, existing);
         int result=0;
         try{
             String value = userBusiness.getValue();
@@ -181,14 +195,47 @@ public class UserBusinessService {
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
+    public int saveRoleFunctions(JSONObject obj, HttpServletRequest request) throws Exception {
+        User currentUser = userService.getCurrentUser();
+        roleMapperEx.lockRoleWrite(currentUser == null ? 0L : currentUser.getTenantId());
+        UserBusiness relation = new UserBusiness();
+        relation.setType("RoleFunctions");
+        relation.setKeyId(obj.getString("keyId"));
+        relation.setValue(obj.getString("value"));
+        validateRoleFunctionRelation(relation, null);
+        relation.setValue(normalizeRelationValue(relation.getValue()));
+        List<UserBusiness> existing = getBasicData(relation.getKeyId(), relation.getType());
+        int result;
+        if(existing == null || existing.isEmpty()) {
+            result = userBusinessMapper.insertSelective(relation);
+        } else {
+            relation.setId(existing.get(0).getId());
+            result = userBusinessMapper.updateByPrimaryKeySelective(relation);
+            for(int i = 1; i < existing.size(); i++) {
+                UserBusiness duplicate = new UserBusiness();
+                duplicate.setId(existing.get(i).getId());
+                duplicate.setDeleteFlag(BusinessConstants.DELETE_FLAG_DELETED);
+                userBusinessMapper.updateByPrimaryKeySelective(duplicate);
+            }
+        }
+        logService.insertLog("关联关系", "编辑角色菜单权限", request);
+        return result;
+    }
+
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateBtnStr(String keyId, String type, String btnStr) throws Exception{
+        if(!"RoleFunctions".equals(type)) {
+            throw invalidRelation("角色权限类型不合法");
+        }
+        validateRoleButtonRelation(keyId, btnStr);
         logService.insertLog("关联关系",
                 new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_EDIT).append("角色的按钮权限").toString(),
                 ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
         UserBusiness userBusiness = new UserBusiness();
         userBusiness.setBtnStr(btnStr);
         UserBusinessExample example = new UserBusinessExample();
-        example.createCriteria().andKeyIdEqualTo(keyId).andTypeEqualTo(type);
+        example.createCriteria().andKeyIdEqualTo(keyId).andTypeEqualTo(type)
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
         int result=0;
         try{
             result=  userBusinessMapper.updateByExampleSelective(userBusiness, example);
@@ -317,6 +364,159 @@ public class UserBusinessService {
             changed += userBusinessMapper.updateByPrimaryKeySelective(update);
         }
         return changed;
+    }
+
+    private void validateRoleFunctionRelation(UserBusiness relation, UserBusiness existing) throws Exception {
+        if(!"RoleFunctions".equals(relation.getType())) {
+            return;
+        }
+        if(existing != null && (!relation.getType().equals(existing.getType())
+                || !existing.getKeyId().equals(relation.getKeyId()))) {
+            throw invalidRelation("角色菜单权限记录不匹配");
+        }
+        Long roleId = parsePositiveId(relation.getKeyId(), "角色ID不合法");
+        Role role = roleMapper.selectByPrimaryKey(roleId);
+        if(role == null || !Boolean.TRUE.equals(role.getEnabled())
+                || BusinessConstants.DELETE_FLAG_DELETED.equals(role.getDeleteFlag())) {
+            throw invalidRelation("角色不存在、已禁用或已删除");
+        }
+        Set<Long> requestedIds = parseFunctionIds(relation.getValue());
+        Set<Long> assignableIds = currentAssignableFunctionIds();
+        for(Long functionId : requestedIds) {
+            Function function = functionMapper.selectByPrimaryKey(functionId);
+            if(function == null || !Boolean.TRUE.equals(function.getEnabled())
+                    || BusinessConstants.DELETE_FLAG_DELETED.equals(function.getDeleteFlag())) {
+                throw invalidRelation("菜单功能不存在或已停用");
+            }
+            if(assignableIds != null && !assignableIds.contains(functionId)) {
+                throw invalidRelation("不能分配超出当前用户权限的菜单");
+            }
+        }
+    }
+
+    private void validateRoleButtonRelation(String roleIdValue, String btnStr) throws Exception {
+        Long roleId = parsePositiveId(roleIdValue, "角色ID不合法");
+        Role role = roleMapper.selectByPrimaryKey(roleId);
+        if(role == null || !Boolean.TRUE.equals(role.getEnabled())
+                || BusinessConstants.DELETE_FLAG_DELETED.equals(role.getDeleteFlag())) {
+            throw invalidRelation("角色不存在、已禁用或已删除");
+        }
+        List<UserBusiness> targetRelations = getBasicData(roleIdValue, "RoleFunctions");
+        if(targetRelations == null || targetRelations.isEmpty()) {
+            throw invalidRelation("请先分配角色菜单权限");
+        }
+        Set<Long> targetFunctionIds = parseFunctionIds(targetRelations.get(0).getValue());
+        if(btnStr == null || btnStr.trim().isEmpty()) {
+            return;
+        }
+        JSONArray buttons;
+        try {
+            buttons = JSONArray.parseArray(btnStr);
+        } catch(Exception e) {
+            throw invalidRelation("按钮权限格式不合法");
+        }
+        User currentUser = userService.getCurrentUser();
+        boolean administrator = currentUser != null && BusinessConstants.DEFAULT_MANAGER.equals(currentUser.getLoginName());
+        Set<Long> assignableFunctions = administrator ? null : currentAssignableFunctionIds();
+        Map<Long, Set<String>> assignableButtons = administrator ? null : currentAssignableButtons();
+        Set<Long> seenFunctions = new HashSet<>();
+        for(Object value : buttons) {
+            JSONObject button = JSONObject.parseObject(value.toString());
+            Long functionId = button.getLong("funId");
+            if(functionId == null || !seenFunctions.add(functionId) || !targetFunctionIds.contains(functionId)) {
+                throw invalidRelation("按钮权限对应的菜单不合法");
+            }
+            Function function = functionMapper.selectByPrimaryKey(functionId);
+            if(function == null || !Boolean.TRUE.equals(function.getEnabled())
+                    || BusinessConstants.DELETE_FLAG_DELETED.equals(function.getDeleteFlag())) {
+                throw invalidRelation("按钮权限对应的菜单不存在或已停用");
+            }
+            Set<String> requestedButtons = parseButtonCodes(button.getString("btnStr"));
+            Set<String> supportedButtons = parseButtonCodes(function.getPushBtn());
+            if(!supportedButtons.containsAll(requestedButtons)) {
+                throw invalidRelation("按钮权限超出菜单支持范围");
+            }
+            if(!administrator && (!assignableFunctions.contains(functionId)
+                    || !assignableButtons.getOrDefault(functionId, new HashSet<>()).containsAll(requestedButtons))) {
+                throw invalidRelation("不能分配超出当前用户权限的按钮");
+            }
+        }
+    }
+
+    private Set<Long> currentAssignableFunctionIds() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        if(currentUser != null && BusinessConstants.DEFAULT_MANAGER.equals(currentUser.getLoginName())) {
+            return null;
+        }
+        UserBusiness relation = currentRoleFunctionRelation(currentUser);
+        return relation == null ? new HashSet<>() : parseFunctionIds(relation.getValue());
+    }
+
+    private Map<Long, Set<String>> currentAssignableButtons() throws Exception {
+        Map<Long, Set<String>> result = new HashMap<>();
+        User currentUser = userService.getCurrentUser();
+        UserBusiness relation = currentRoleFunctionRelation(currentUser);
+        if(relation == null || relation.getBtnStr() == null || relation.getBtnStr().trim().isEmpty()) {
+            return result;
+        }
+        JSONArray buttons = JSONArray.parseArray(relation.getBtnStr());
+        for(Object value : buttons) {
+            JSONObject button = JSONObject.parseObject(value.toString());
+            if(button.getLong("funId") != null) {
+                result.put(button.getLong("funId"), parseButtonCodes(button.getString("btnStr")));
+            }
+        }
+        return result;
+    }
+
+    private UserBusiness currentRoleFunctionRelation(User currentUser) throws Exception {
+        if(currentUser == null) {
+            return null;
+        }
+        Role activeRole = userService.getRoleTypeByUserId(currentUser.getId());
+        List<UserBusiness> relations = getBasicData(activeRole.getId().toString(), "RoleFunctions");
+        return relations == null || relations.isEmpty() ? null : relations.get(0);
+    }
+
+    private Set<Long> parseFunctionIds(String value) {
+        Set<Long> result = new HashSet<>();
+        if(value == null || value.trim().isEmpty() || "[]".equals(value.trim())) {
+            return result;
+        }
+        String normalized = value.replace("][", ",").replace("[", "").replace("]", "");
+        if(normalized.trim().isEmpty()) {
+            return result;
+        }
+        for(String item : normalized.split(",")) {
+            try {
+                long id = Long.parseLong(item.trim());
+                if(id <= 0 || !result.add(id)) {
+                    throw invalidRelation("菜单功能ID不合法或重复");
+                }
+            } catch(NumberFormatException e) {
+                throw invalidRelation("菜单功能ID不合法");
+            }
+        }
+        return result;
+    }
+
+    private Set<String> parseButtonCodes(String value) {
+        Set<String> result = new HashSet<>();
+        if(value == null || value.trim().isEmpty()) {
+            return result;
+        }
+        for(String item : value.split(",")) {
+            String code = item.trim();
+            if(!code.matches("[1-7]") || !result.add(code)) {
+                throw invalidRelation("按钮权限编码不合法或重复");
+            }
+        }
+        return result;
+    }
+
+    private String normalizeRelationValue(String value) {
+        String newValue = value == null ? "" : value.replaceAll(",","\\]\\[");
+        return newValue.replaceAll("\\[0\\]","").replaceAll("\\[\\]","");
     }
 
     private void validateCustomerRelation(UserBusiness relation, UserBusiness existing) throws Exception {
