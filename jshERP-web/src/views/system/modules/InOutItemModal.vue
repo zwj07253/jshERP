@@ -23,19 +23,19 @@
       <a-spin :spinning="confirmLoading">
         <a-form :form="form" id="inOutItemModal">
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="名称">
-            <a-input placeholder="请输入名称" v-decorator.trim="[ 'name', validatorRules.name]" />
+            <a-input placeholder="请输入名称" :disabled="isReadOnly" v-decorator.trim="[ 'name', validatorRules.name]" />
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="类型">
-            <a-select placeholder="请选择类型" v-decorator="[ 'type', validatorRules.type]" :disabled="typeDisabled">
+            <a-select placeholder="请选择类型" v-decorator="[ 'type', validatorRules.type]" :disabled="typeDisabled || isReadOnly">
               <a-select-option value="收入">收入</a-select-option>
               <a-select-option value="支出">支出</a-select-option>
             </a-select>
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="排序">
-            <a-input placeholder="请输入排序" v-decorator.trim="[ 'sort' ]" />
+            <a-input placeholder="请输入排序" :disabled="isReadOnly" v-decorator.trim="[ 'sort', validatorRules.sort ]" />
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="备注">
-            <a-textarea :rows="2" placeholder="请输入备注" v-decorator="[ 'remark' ]" />
+            <a-textarea :rows="2" placeholder="请输入备注" :disabled="isReadOnly" v-decorator="[ 'remark', validatorRules.remark ]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -72,11 +72,21 @@
           name:{
             rules: [
               { required: true, message: '请输入名称!' },
-              { min: 2, max: 30, message: '长度在 2 到 30 个字符', trigger: 'blur' }
+              { max: 50, message: '长度不能超过 50 个字符', trigger: 'blur' }
             ]},
           type:{
             rules: [
               { required: true, message: '请选择类型!' }
+            ]
+          },
+          sort:{
+            rules: [
+              { pattern: /^\d{1,10}$/, message: '排序只能填写不超过10位的非负整数', trigger: 'blur' }
+            ]
+          },
+          remark:{
+            rules: [
+              { max: 100, message: '备注长度不能超过100个字符', trigger: 'blur' }
             ]
           }
         },
@@ -86,10 +96,12 @@
     },
     methods: {
       add (type) {
+        this.isReadOnly = false
         this.typeParam = type
         this.edit({});
       },
-      edit (record) {
+      edit (record, isReadOnly = false) {
+        this.isReadOnly = isReadOnly
         this.form.resetFields();
         this.model = Object.assign({}, record);
         if(this.typeParam) {

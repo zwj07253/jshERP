@@ -310,23 +310,27 @@ INSERT INTO `jsh_function` VALUES (261, '050203', '请购单', '0502', '/bill/pu
 DROP TABLE IF EXISTS `jsh_in_out_item`;
 CREATE TABLE `jsh_in_out_item`  (
   `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '名称',
-  `type` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '类型',
+  `name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '名称',
+  `type` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '类型',
   `remark` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
-  `enabled` bit(1) NULL DEFAULT NULL COMMENT '启用',
+  `enabled` bit(1) NOT NULL DEFAULT b'1' COMMENT '启用',
   `sort` varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '排序',
-  `tenant_id` bigint(0) NULL DEFAULT NULL COMMENT '租户id',
-  `delete_flag` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '删除标记，0未删除，1删除',
+  `tenant_id` bigint(0) NOT NULL COMMENT '租户id',
+  `delete_flag` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '0' COMMENT '删除标记，0未删除，1删除',
+  `active_unique_name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci GENERATED ALWAYS AS (IF(COALESCE(`delete_flag`, '0') <> '1', `name`, NULL)) STORED,
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `tenant_id`(`tenant_id`) USING BTREE
+  INDEX `tenant_id`(`tenant_id`) USING BTREE,
+  UNIQUE INDEX `uk_in_out_item_active_name`(`tenant_id`, `type`, `active_unique_name`) USING BTREE,
+  CONSTRAINT `chk_in_out_item_type` CHECK (`type` IN ('收入', '支出')),
+  CONSTRAINT `chk_in_out_item_sort` CHECK (`sort` IS NULL OR `sort` REGEXP '^[0-9]{1,10}$')
 ) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '收支项目' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of jsh_in_out_item
 -- ----------------------------
-INSERT INTO `jsh_in_out_item` VALUES (21, '快递费', '支出', '', b'1', NULL, 63, '0');
-INSERT INTO `jsh_in_out_item` VALUES (22, '房租收入', '收入', '', b'1', NULL, 63, '0');
-INSERT INTO `jsh_in_out_item` VALUES (23, '利息收入', '收入', '收入', b'1', NULL, 63, '0');
+INSERT INTO `jsh_in_out_item` (`id`, `name`, `type`, `remark`, `enabled`, `sort`, `tenant_id`, `delete_flag`) VALUES (21, '快递费', '支出', '', b'1', NULL, 63, '0');
+INSERT INTO `jsh_in_out_item` (`id`, `name`, `type`, `remark`, `enabled`, `sort`, `tenant_id`, `delete_flag`) VALUES (22, '房租收入', '收入', '', b'1', NULL, 63, '0');
+INSERT INTO `jsh_in_out_item` (`id`, `name`, `type`, `remark`, `enabled`, `sort`, `tenant_id`, `delete_flag`) VALUES (23, '利息收入', '收入', '收入', b'1', NULL, 63, '0');
 
 -- ----------------------------
 -- Table structure for jsh_log

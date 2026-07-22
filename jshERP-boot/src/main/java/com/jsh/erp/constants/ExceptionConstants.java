@@ -169,6 +169,15 @@ public class ExceptionConstants {
     //该收支项目的名称已经存在
     public static final int IN_OUT_ITEM_NAME_EXIST_FAILED_CODE = 3500003;
     public static final String IN_OUT_ITEM_NAME_EXIST_FAILED_MSG = "该收支项目的名称已经存在，请修改！";
+
+    public static final int IN_OUT_ITEM_PERMISSION_CODE = 3500004;
+    public static final String IN_OUT_ITEM_PERMISSION_MSG = "抱歉，您没有收支项目的操作权限";
+
+    public static final int IN_OUT_ITEM_INVALID_CODE = 3500005;
+    public static final String IN_OUT_ITEM_INVALID_MSG = "收支项目信息不合法：%s";
+
+    public static final int IN_OUT_ITEM_IN_USE_CODE = 3500006;
+    public static final String IN_OUT_ITEM_IN_USE_MSG = "该收支项目已被财务单据使用，不能修改类型";
     /**
      *  多单位信息
      * type = 40

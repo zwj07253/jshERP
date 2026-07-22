@@ -57,7 +57,7 @@
             :rowSelection="{selectedRowKeys: selectedRowKeys, onChange: onSelectChange}"
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
-              <a @click="handleEdit(record)">编辑</a>
+              <a @click="handleEdit(record)">{{ btnEnableList.indexOf(1)>-1 ? '编辑' : '查看' }}</a>
               <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
               <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定删除吗?" @confirm="() => handleDelete(record.id)">
                 <a>删除</a>
@@ -141,12 +141,10 @@
     },
     methods: {
       handleEdit: function (record) {
-        this.$refs.modalForm.edit(record);
-        this.$refs.modalForm.title = "编辑";
+        const isReadOnly = this.btnEnableList.indexOf(1) === -1
+        this.$refs.modalForm.edit(record, isReadOnly);
+        this.$refs.modalForm.title = isReadOnly ? "查看" : "编辑";
         this.$refs.modalForm.disableSubmit = false;
-        if(this.btnEnableList.indexOf(1)===-1) {
-          this.$refs.modalForm.isReadOnly = true
-        }
       }
     }
   }

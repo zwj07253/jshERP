@@ -271,11 +271,23 @@ public class AccountHeadService {
         }
     }
 
-    private void validateIncomeExpenseBill(AccountHead accountHead, String rows) throws Exception {
+    private void validateIncomeExpenseBill(AccountHead accountHead, String rows, Long existingHeadId) throws Exception {
         boolean income = BusinessConstants.TYPE_INCOME.equals(accountHead.getType());
         boolean expense = BusinessConstants.TYPE_EXPENSE.equals(accountHead.getType());
         if(!income && !expense) {
             return;
+        }
+        inOutItemService.lockInOutItemWrite();
+        Set<Long> existingItemIds = new HashSet<>();
+        if (existingHeadId != null) {
+            List<AccountItemVo4List> existingDetails = accountItemService.getDetailList(existingHeadId);
+            if (existingDetails != null) {
+                for (AccountItemVo4List detail : existingDetails) {
+                    if (detail.getInOutItemId() != null) {
+                        existingItemIds.add(detail.getInOutItemId());
+                    }
+                }
+            }
         }
         int detailFailedCode = income ? ExceptionConstants.ACCOUNT_HEAD_INCOME_DETAIL_FAILED_CODE
                 : ExceptionConstants.ACCOUNT_HEAD_EXPENSE_DETAIL_FAILED_CODE;
@@ -311,8 +323,9 @@ public class AccountHeadService {
             InOutItem inOutItem = inOutItemId == null ? null : inOutItemService.getInOutItem(inOutItemId);
             BigDecimal eachAmount = row.getBigDecimal("eachAmount");
             String expectedItemType = income ? BusinessConstants.TYPE_INCOME : BusinessConstants.TYPE_EXPENSE;
+            boolean existingDisabledItem = inOutItemId != null && existingItemIds.contains(inOutItemId);
             if(inOutItem == null || !expectedItemType.equals(inOutItem.getType())
-                    || !Boolean.TRUE.equals(inOutItem.getEnabled())
+                    || (!Boolean.TRUE.equals(inOutItem.getEnabled()) && !existingDisabledItem)
                     || BusinessConstants.DELETE_FLAG_DELETED.equals(inOutItem.getDeleteFlag())
                     || eachAmount == null || eachAmount.compareTo(BigDecimal.ZERO) <= 0
                     || hasValue(row, "accountId") || hasValue(row, "billId")
@@ -348,7 +361,7 @@ public class AccountHeadService {
     }
 
     private String validateFinancialBill(AccountHead accountHead, String rows, Long excludeHeadId) throws Exception {
-        validateIncomeExpenseBill(accountHead, rows);
+        validateIncomeExpenseBill(accountHead, rows, excludeHeadId);
         if(BusinessConstants.TYPE_ADVANCE_IN.equals(accountHead.getType())) {
             return validateAdvanceInBill(accountHead, rows);
         } else if(BusinessConstants.TYPE_MONEY_IN.equals(accountHead.getType())) {
