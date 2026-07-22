@@ -403,10 +403,10 @@
       },
       //选择会员的触发事件
       onChangeOrgan(value) {
-        getAction("/supplier/info", {id: value}).then(res=>{
+        getAction("/supplier/memberAdvance", {id: value}).then(res=>{
           if(res && res.code === 200){
             this.payTypeList = []
-            let info = res.data.info
+            let info = res.data
             if(info.advanceIn) {
               this.payTypeList.push({"value":"预付款", "text":"预付款（" + info.advanceIn + "）"})
               this.payTypeList.push({"value":"现付", "text":"现付"})

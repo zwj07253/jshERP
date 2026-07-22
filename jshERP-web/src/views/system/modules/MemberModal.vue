@@ -37,22 +37,22 @@
           <a-row class="form-row" :gutter="24">
             <a-col :span="24/2">
               <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="手机号码">
-                <a-input placeholder="请输入手机号码" v-decorator.trim="[ 'telephone' ]" />
+                <a-input placeholder="请输入手机号码" v-decorator.trim="[ 'telephone', validatorRules.telephone ]" />
               </a-form-item>
             </a-col>
             <a-col :span="24/2">
               <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="联系电话">
-                <a-input placeholder="请输入联系电话" v-decorator.trim="[ 'phoneNum' ]" />
+                <a-input placeholder="请输入联系电话" v-decorator.trim="[ 'phoneNum', validatorRules.phoneNum ]" />
               </a-form-item>
             </a-col>
             <a-col :span="24/2">
               <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="电子邮箱">
-                <a-input placeholder="请输入电子邮箱" v-decorator.trim="[ 'email' ]" />
+                <a-input placeholder="请输入电子邮箱" v-decorator.trim="[ 'email', validatorRules.email ]" />
               </a-form-item>
             </a-col>
             <a-col :span="24/2">
               <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="排序">
-                <a-input placeholder="请输入排序" v-decorator.trim="[ 'sort' ]" />
+                <a-input-number style="width:100%" :precision="0" placeholder="请输入排序" v-decorator="[ 'sort' ]" />
               </a-form-item>
             </a-col>
             <a-col :span="24/2">
@@ -97,6 +97,15 @@
               { min: 2, max: 60, message: '长度在 2 到 60 个字符', trigger: 'blur' },
               { validator: this.validateSupplierName}
             ]
+          },
+          telephone: {
+            rules: [{ pattern: /^$|^[0-9+\-\s()]{5,30}$/, message: '手机号码格式不正确' }]
+          },
+          phoneNum: {
+            rules: [{ pattern: /^$|^[0-9+\-\s()]{5,30}$/, message: '联系电话格式不正确' }]
+          },
+          email: {
+            rules: [{ type: 'email', message: '电子邮箱格式不正确' }]
           }
         },
       }
@@ -128,11 +137,6 @@
           if (!err) {
             that.confirmLoading = true;
             let formData = Object.assign(this.model, values);
-            if(this.model.beginNeedGet && this.model.beginNeedPay) {
-              that.$message.warn("期初应收和期初应付不能同时输入");
-              that.confirmLoading = false;
-              return;
-            }
             formData.type = "会员";
             let obj;
             if(!this.model.id){
@@ -143,12 +147,12 @@
             obj.then((res)=>{
               if(res.code === 200){
                 that.$emit('ok');
+                that.close();
               }else{
-                that.$message.warning(res.data.message);
+                that.$message.warning(res.data && res.data.message ? res.data.message : res.data);
               }
             }).finally(() => {
               that.confirmLoading = false;
-              that.close();
             })
           }
         })

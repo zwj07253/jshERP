@@ -69,9 +69,9 @@
             :rowSelection="{selectedRowKeys: selectedRowKeys, onChange: onSelectChange}"
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
-              <a @click="handleEdit(record)">编辑</a>
-              <a-divider type="vertical" />
-              <a-popconfirm title="确定删除吗?" @confirm="() => handleDelete(record.id)">
+              <a v-if="btnEnableList.indexOf(1)>-1" @click="handleEdit(record)">编辑</a>
+              <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
+              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定删除吗?" @confirm="() => handleDelete(record.id)">
                 <a>删除</a>
               </a-popconfirm>
             </span>
@@ -213,8 +213,8 @@
                   that.$message.info('修正预付款成功！');
                   that.loadData();
                   that.onClearSelected();
-                } else {
-                  that.$message.warning(res.data.message);
+              } else {
+                that.$message.warning(res.data && res.data.message ? res.data.message : res.data);
                 }
               }).finally(() => {
                 that.loading = false;

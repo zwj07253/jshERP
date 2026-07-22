@@ -18,21 +18,28 @@ import com.jsh.erp.service.SupplierService;
 import com.jsh.erp.service.UserBusinessService;
 import com.jsh.erp.service.UserService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -133,6 +140,66 @@ class SupplierServiceTest {
                 eq(1), eq("客户"), eq("出库"), eq("销售"), eq("入库"), eq("销售退货"),
                 eq("收款"), isNull(), isNull(), isNull(), isNull());
         RequestContextHolder.resetRequestAttributes();
+    }
+
+    @Test
+    void rejectsMemberBalanceRefreshWithoutPermission() throws Exception {
+        User user = new User();
+        user.setId(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasButtonPermission(101L, "/system/member", "1")).thenReturn(false);
+
+        BusinessRunTimeException exception = assertThrows(BusinessRunTimeException.class,
+                () -> supplierService.batchSetAdvanceIn("10"));
+
+        assertEquals(ExceptionConstants.SUPPLIER_PERMISSION_CODE, exception.getCode());
+        verify(supplierMapperEx, never()).lockById(any());
+    }
+
+    @Test
+    void rejectsMemberReadWithoutPermission() throws Exception {
+        User user = new User();
+        user.setId(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasFunctionPermission(101L, "/system/member")).thenReturn(false);
+
+        BusinessRunTimeException exception = assertThrows(BusinessRunTimeException.class,
+                () -> supplierService.checkReadPermission("会员"));
+
+        assertEquals(ExceptionConstants.SUPPLIER_PERMISSION_CODE, exception.getCode());
+    }
+
+    @Test
+    void rejectsInvalidMemberEmail() throws Exception {
+        User user = new User();
+        user.setId(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasButtonPermission(101L, "/system/member", "1")).thenReturn(true);
+        JSONObject body = new JSONObject();
+        body.put("supplier", "Member 001");
+        body.put("type", "会员");
+        body.put("email", "invalid-email");
+
+        assertThrows(BusinessRunTimeException.class, () -> supplierService.insertSupplier(body, null));
+
+        verify(supplierMapper, never()).insertSelective(any());
+    }
+
+    @Test
+    void createsIsolatedExportFiles(@TempDir Path tempDir) throws Exception {
+        ReflectionTestUtils.setField(supplierService, "fileExportTmp", tempDir.toString());
+        Supplier member = new Supplier();
+        member.setId(10L);
+        member.setSupplier("Member 001");
+        member.setType("会员");
+        member.setEnabled(true);
+
+        File first = supplierService.exportExcel(Collections.singletonList(member), "会员");
+        File second = supplierService.exportExcel(Collections.singletonList(member), "会员");
+
+        assertNotEquals(first.getAbsolutePath(), second.getAbsolutePath());
+        assertTrue(Files.exists(first.toPath()));
+        assertTrue(Files.exists(second.toPath()));
     }
 
     private Supplier customer(Long id, String name) {

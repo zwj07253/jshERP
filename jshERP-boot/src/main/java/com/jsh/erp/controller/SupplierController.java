@@ -26,6 +26,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +64,7 @@ public class SupplierController extends BaseController {
         Supplier supplier = supplierService.getSupplier(id);
         Map<String, Object> objectMap = new HashMap<>();
         if(supplier != null) {
+            supplierService.checkReadPermission(supplier.getType());
             objectMap.put("info", supplier);
             return returnJson(objectMap, ErpInfo.OK.name, ErpInfo.OK.code);
         } else {
@@ -79,6 +81,7 @@ public class SupplierController extends BaseController {
         String contacts = StringUtil.getInfo(search, "contacts");
         String phonenum = StringUtil.getInfo(search, "phonenum");
         String telephone = StringUtil.getInfo(search, "telephone");
+        supplierService.checkReadPermission(type);
         List<Supplier> list = supplierService.select(supplier, type, contacts, phonenum, telephone);
         return getDataTable(list);
     }
@@ -178,6 +181,8 @@ public class SupplierController extends BaseController {
                 }
             }
             arr = dataArray;
+        } catch(BusinessRunTimeException e) {
+            throw e;
         } catch(Exception e){
             logger.error(e.getMessage(), e);
             throw new BusinessRunTimeException(ExceptionConstants.DATA_READ_FAIL_CODE,
@@ -212,6 +217,8 @@ public class SupplierController extends BaseController {
                 }
             }
             arr = dataArray;
+        } catch(BusinessRunTimeException e) {
+            throw e;
         } catch(Exception e){
             logger.error(e.getMessage(), e);
             throw new BusinessRunTimeException(ExceptionConstants.DATA_READ_FAIL_CODE,
@@ -282,6 +289,7 @@ public class SupplierController extends BaseController {
                                         HttpServletRequest request)throws Exception {
         JSONArray arr = new JSONArray();
         try {
+            supplierService.checkMemberBusinessReadPermission();
             String key = jsonObject.get("key")!=null ? jsonObject.getString("key") : null;
             Long organId = jsonObject.get("organId")!=null ? jsonObject.getLong("organId") : null;
             Integer limit = jsonObject.get("limit")!=null ? jsonObject.getInteger("limit") : null;
@@ -298,12 +306,29 @@ public class SupplierController extends BaseController {
                 }
             }
             arr = dataArray;
+        } catch(BusinessRunTimeException e) {
+            throw e;
         } catch(Exception e){
             logger.error(e.getMessage(), e);
             throw new BusinessRunTimeException(ExceptionConstants.DATA_READ_FAIL_CODE,
                     ExceptionConstants.DATA_READ_FAIL_MSG);
         }
         return arr;
+    }
+
+    @GetMapping(value = "/memberAdvance")
+    @Operation(summary = "获取会员预付款余额")
+    public BaseResponseInfo getMemberAdvance(@RequestParam("id") Long id,
+                                             HttpServletRequest request) throws Exception {
+        supplierService.checkMemberBusinessReadPermission();
+        Supplier member = supplierService.getActiveMember(id);
+        BaseResponseInfo res = new BaseResponseInfo();
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", member.getId());
+        data.put("advanceIn", member.getAdvanceIn());
+        res.code = 200;
+        res.data = data;
+        return res;
     }
 
     /**
@@ -516,13 +541,21 @@ public class SupplierController extends BaseController {
                             @RequestParam("type") String type,
                             @RequestParam(value = "phonenum", required = false) String phonenum,
                             @RequestParam(value = "telephone", required = false) String telephone,
-                            HttpServletRequest request, HttpServletResponse response) {
+                             HttpServletRequest request, HttpServletResponse response) throws Exception {
+        File file = null;
         try {
+            supplierService.checkExportPermission(type);
             List<Supplier> dataList = supplierService.findByAll(supplier, type, phonenum, telephone);
-            File file = supplierService.exportExcel(dataList, type);
-            ExcelUtils.downloadExcel(file, file.getName(), response);
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            file = supplierService.exportExcel(dataList, type);
+            ExcelUtils.downloadExcel(file, type + "信息", response);
+        } finally {
+            if (file != null) {
+                try {
+                    Files.deleteIfExists(file.toPath());
+                } catch (Exception e) {
+                    logger.warn("删除导出临时文件失败: {}", file.getAbsolutePath(), e);
+                }
+            }
         }
     }
 

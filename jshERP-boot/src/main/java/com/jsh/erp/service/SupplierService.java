@@ -24,15 +24,20 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 
 @Service
 public class SupplierService {
     private static final Set<String> SUPPORTED_TYPES = new HashSet<>(Arrays.asList("供应商", "客户", "会员"));
     private static final String EDIT_BUTTON_CODE = "1";
+    private static final String EXPORT_BUTTON_CODE = "3";
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^[0-9+\\-\\s()]{5,30}$");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
 
     private Logger logger = LoggerFactory.getLogger(SupplierService.class);
 
@@ -286,6 +291,11 @@ public class SupplierService {
                         String.format(ExceptionConstants.SUPPLIER_INVALID_MSG, "排序必须是整数"));
             }
         }
+        validateLength(supplier.getContacts(), 100, "联系人");
+        validateLength(supplier.getDescription(), 500, "备注");
+        validateContactField(supplier.getTelephone(), PHONE_PATTERN, 30, "手机号码格式不正确");
+        validateContactField(supplier.getPhoneNum(), PHONE_PATTERN, 30, "联系电话格式不正确");
+        validateContactField(supplier.getEmail(), EMAIL_PATTERN, 50, "电子邮箱格式不正确");
         SupplierExample example = new SupplierExample();
         example.createCriteria().andSupplierEqualTo(supplier.getSupplier().trim())
                 .andTypeEqualTo(supplier.getType())
@@ -300,17 +310,76 @@ public class SupplierService {
     }
 
     private void checkEditPermission(String type) throws Exception {
-        String url;
-        if ("供应商".equals(type)) url = "/system/vendor";
-        else if ("客户".equals(type)) url = "/system/customer";
-        else if ("会员".equals(type)) url = "/system/member";
-        else throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_INVALID_CODE,
-                String.format(ExceptionConstants.SUPPLIER_INVALID_MSG, "类型不支持"));
+        String url = getPageUrl(type);
         User user = userService.getCurrentUser();
         Long userId = user == null ? null : user.getId();
         if (!userService.hasButtonPermission(userId, url, EDIT_BUTTON_CODE)) {
             throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
                     ExceptionConstants.SUPPLIER_PERMISSION_MSG);
+        }
+    }
+
+    public void checkReadPermission(String type) throws Exception {
+        User user = userService.getCurrentUser();
+        Long userId = user == null ? null : user.getId();
+        if (!userService.hasFunctionPermission(userId, getPageUrl(type))) {
+            throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
+                    ExceptionConstants.SUPPLIER_PERMISSION_MSG);
+        }
+    }
+
+    public void checkExportPermission(String type) throws Exception {
+        String url = getPageUrl(type);
+        User user = userService.getCurrentUser();
+        Long userId = user == null ? null : user.getId();
+        if (!userService.hasButtonPermission(userId, url, EXPORT_BUTTON_CODE)) {
+            throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
+                    ExceptionConstants.SUPPLIER_PERMISSION_MSG);
+        }
+    }
+
+    public void checkMemberBusinessReadPermission() throws Exception {
+        User user = userService.getCurrentUser();
+        Long userId = user == null ? null : user.getId();
+        String[] allowedUrls = {"/system/member", "/bill/retail_out", "/bill/retail_back",
+                "/financial/advance_in", "/report/retail_out_report"};
+        for (String url : allowedUrls) {
+            if (userService.hasFunctionPermission(userId, url)) {
+                return;
+            }
+        }
+        throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
+                ExceptionConstants.SUPPLIER_PERMISSION_MSG);
+    }
+
+    public Supplier getActiveMember(Long memberId) throws Exception {
+        Supplier member = memberId == null ? null : getSupplier(memberId);
+        if (member == null || !"会员".equals(member.getType()) || !Boolean.TRUE.equals(member.getEnabled())) {
+            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ADVANCE_IN_ORGAN_FAILED_CODE,
+                    ExceptionConstants.ACCOUNT_HEAD_ADVANCE_IN_ORGAN_FAILED_MSG);
+        }
+        return member;
+    }
+
+    private String getPageUrl(String type) {
+        if ("供应商".equals(type)) return "/system/vendor";
+        if ("客户".equals(type)) return "/system/customer";
+        if ("会员".equals(type)) return "/system/member";
+        throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_INVALID_CODE,
+                String.format(ExceptionConstants.SUPPLIER_INVALID_MSG, "类型不支持"));
+    }
+
+    private void validateLength(String value, int maxLength, String fieldName) {
+        if (value != null && value.length() > maxLength) {
+            throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_INVALID_CODE,
+                    String.format(ExceptionConstants.SUPPLIER_INVALID_MSG, fieldName + "长度不能超过" + maxLength + "个字符"));
+        }
+    }
+
+    private void validateContactField(String value, Pattern pattern, int maxLength, String message) {
+        if (StringUtil.isNotEmpty(value) && (value.length() > maxLength || !pattern.matcher(value).matches())) {
+            throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_INVALID_CODE,
+                    String.format(ExceptionConstants.SUPPLIER_INVALID_MSG, message));
         }
     }
 
@@ -473,7 +542,7 @@ public class SupplierService {
     public List<Supplier> findBySelectRetail(String key, Long organId, Integer limit)throws Exception {
         List<Supplier> list=null;
         try{
-            list = supplierMapperEx.findByTypeAndKey("会员", key, limit);
+            list = supplierMapperEx.findByTypeAndKey("会员", key, normalizeSelectLimit(limit));
             if(organId!=null) {
                 list = addOrganToList(list, organId, "会员");
             }
@@ -481,6 +550,10 @@ public class SupplierService {
             JshException.readFail(logger, e);
         }
         return list;
+    }
+
+    private Integer normalizeSelectLimit(Integer limit) {
+        return limit == null ? 50 : Math.max(1, Math.min(limit, 500));
     }
 
     /**
@@ -615,7 +688,7 @@ public class SupplierService {
         String fileName = file.getOriginalFilename();
         if(StringUtil.isNotEmpty(fileName)) {
             String fileExt = fileName.substring(fileName.lastIndexOf(".")+1);
-            if(!"xls".equals(fileExt)) {
+            if(!"xls".equalsIgnoreCase(fileExt)) {
                 throw new BusinessRunTimeException(ExceptionConstants.FILE_EXTENSION_ERROR_CODE,
                         ExceptionConstants.FILE_EXTENSION_ERROR_MSG);
             }
@@ -698,14 +771,28 @@ public class SupplierService {
     public void importMember(MultipartFile file, HttpServletRequest request) throws Exception{
         String type = "会员";
         User userInfo = userService.getCurrentUser();
-        Workbook workbook = Workbook.getWorkbook(file.getInputStream());
-        Sheet src = workbook.getSheet(0);
-        //'名称', '联系人', '手机号码', '联系电话', '电子邮箱', '备注', '排序', '状态'
-        List<Supplier> sList = new ArrayList<>();
-        for (int i = 2; i < src.getRows(); i++) {
-            String supplierName = ExcelUtils.getContent(src, i, 0);
-            String enabled = ExcelUtils.getContent(src, i, 7);
-            if(StringUtil.isNotEmpty(supplierName) && StringUtil.isNotEmpty(enabled)) {
+        Workbook workbook = null;
+        try (InputStream inputStream = file.getInputStream()) {
+            workbook = Workbook.getWorkbook(inputStream);
+            Sheet src = workbook.getSheet(0);
+            //'名称', '联系人', '手机号码', '联系电话', '电子邮箱', '备注', '排序', '状态'
+            List<Supplier> sList = new ArrayList<>();
+            Set<String> memberNames = new HashSet<>();
+            for (int i = 2; i < src.getRows(); i++) {
+                if (isEmptyMemberRow(src, i)) {
+                    continue;
+                }
+                String supplierName = ExcelUtils.getContent(src, i, 0);
+                String enabled = ExcelUtils.getContent(src, i, 7);
+                if (StringUtil.isEmpty(supplierName)) {
+                    throw invalidImportRow(i, "会员卡号不能为空");
+                }
+                if (!"0".equals(enabled) && !"1".equals(enabled)) {
+                    throw invalidImportRow(i, "状态只能为0或1");
+                }
+                if (!memberNames.add(supplierName)) {
+                    throw invalidImportRow(i, "会员卡号在文件中重复");
+                }
                 Supplier s = new Supplier();
                 s.setType(type);
                 s.setSupplier(supplierName);
@@ -719,8 +806,27 @@ public class SupplierService {
                 s.setEnabled("1".equals(enabled));
                 sList.add(s);
             }
+            importExcel(sList, type, request);
+        } finally {
+            if (workbook != null) {
+                workbook.close();
+            }
         }
-        importExcel(sList, type, request);
+    }
+
+    private boolean isEmptyMemberRow(Sheet sheet, int row) {
+        for (int column = 0; column < 8; column++) {
+            if (StringUtil.isNotEmpty(ExcelUtils.getContent(sheet, row, column))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private BusinessRunTimeException invalidImportRow(int zeroBasedRow, String detail) {
+        return new BusinessRunTimeException(ExceptionConstants.SUPPLIER_INVALID_CODE,
+                String.format(ExceptionConstants.SUPPLIER_INVALID_MSG,
+                        "Excel第" + (zeroBasedRow + 1) + "行：" + detail));
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
@@ -799,7 +905,8 @@ public class SupplierService {
                     objects.add(objs);
                 }
             }
-            return ExcelUtils.exportObjectsOneSheet(fileExportTmp, title, "*导入时本行内容请勿删除，切记！", names, title, objects);
+            return ExcelUtils.exportObjectsOneSheet(fileExportTmp, uniqueExportFileName(),
+                    "*导入时本行内容请勿删除，切记！", names, title, objects);
         }
     }
 
@@ -839,7 +946,12 @@ public class SupplierService {
                 objects.add(objs);
             }
         }
-        return ExcelUtils.exportObjectsOneSheet(fileExportTmp, title, "*导入时本行内容请勿删除，切记！", names, title, objects);
+        return ExcelUtils.exportObjectsOneSheet(fileExportTmp, uniqueExportFileName(),
+                "*导入时本行内容请勿删除，切记！", names, title, objects);
+    }
+
+    private String uniqueExportFileName() {
+        return "supplier_export_" + UUID.randomUUID() + ".xls";
     }
 
     /**
@@ -894,6 +1006,7 @@ public class SupplierService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetAdvanceIn(String ids) throws Exception {
+        checkEditPermission("会员");
         int res = 0;
         Set<Long> idSet = new TreeSet<>(StringUtil.strToLongList(ids));
         for(Long sId: idSet) {

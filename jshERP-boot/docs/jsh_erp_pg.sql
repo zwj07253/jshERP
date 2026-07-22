@@ -1014,6 +1014,9 @@ CREATE TABLE jsh_supplier (
 );
 CREATE INDEX idx_supplier_type ON jsh_supplier(type);
 CREATE INDEX idx_supplier_tenant_id ON jsh_supplier(tenant_id);
+CREATE UNIQUE INDEX uk_supplier_tenant_type_name_active
+    ON jsh_supplier(COALESCE(tenant_id, 0), type, supplier)
+    WHERE COALESCE(delete_flag, '0') != '1';
 COMMENT ON TABLE jsh_supplier IS '供应商/客户信息表';
 COMMENT ON COLUMN jsh_supplier.id IS '主键';
 COMMENT ON COLUMN jsh_supplier.supplier IS '供应商名称';
