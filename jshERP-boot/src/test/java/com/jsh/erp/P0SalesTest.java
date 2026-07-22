@@ -155,7 +155,7 @@ public class P0SalesTest extends ApiTestBase {
     @DisplayName("14b: 欠款单据列表")
     void verifyDebtList() {
         Response resp = authReqGet()
-                .param("search", "{\"organId\":\"" + customerId + "\"}")
+                .param("search", "{\"organId\":\"" + customerId + "\",\"type\":\"出库\",\"subType\":\"销售\"}")
                 .param("currentPage", 1)
                 .param("pageSize", 10)
                 .get(CONTEXT + "/depotHead/debtList");

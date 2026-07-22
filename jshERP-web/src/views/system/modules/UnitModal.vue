@@ -137,6 +137,11 @@
                 that.confirmLoading = false
                 return
               }
+              if(Number(formData.ratio) <= 1) {
+                that.$message.warning('抱歉，比例必须大于1！')
+                that.confirmLoading = false
+                return
+              }
             }
             if(formData.otherUnitTwo) {
               if(!formData.ratioTwo) {
@@ -149,6 +154,11 @@
                 that.confirmLoading = false
                 return
               }
+              if(Number(formData.ratioTwo) <= 1) {
+                that.$message.warning('抱歉，比例2必须大于1！')
+                that.confirmLoading = false
+                return
+              }
             }
             if(formData.otherUnitThree) {
               if(!formData.ratioThree) {
@@ -158,6 +168,11 @@
               }
               if(!isDecimalThree(formData.ratioThree)) {
                 that.$message.warning('抱歉，比例3只能为数字，最多三位小数！')
+                that.confirmLoading = false
+                return
+              }
+              if(Number(formData.ratioThree) <= 1) {
+                that.$message.warning('抱歉，比例3必须大于1！')
                 that.confirmLoading = false
                 return
               }
@@ -182,6 +197,12 @@
               that.confirmLoading = false;
               return;
             }
+            const unitNames = [formData.basicUnit, formData.otherUnit, formData.otherUnitTwo, formData.otherUnitThree].filter(Boolean)
+            if(new Set(unitNames).size !== unitNames.length) {
+              that.$message.warning('抱歉，单位名称不能重复！')
+              that.confirmLoading = false
+              return
+            }
             let obj;
             if(!this.model.id){
               obj=addUnit(formData);
@@ -191,12 +212,12 @@
             obj.then((res)=>{
               if(res.code === 200){
                 that.$emit('ok');
+                that.close();
               }else{
                 that.$message.warning(res.data.message);
               }
             }).finally(() => {
               that.confirmLoading = false;
-              that.close();
             })
           }
         })

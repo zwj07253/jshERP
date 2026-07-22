@@ -23,14 +23,14 @@
         </foreach>
         )
     </update>
-    <update id="updateRatioTwoById">
+    <update id="updateUnit" parameterType="com.jsh.erp.datasource.entities.Unit">
         update jsh_unit
-        set ratio_two=null
-        where id=#{id}
+        set "name"=#{name}, basic_unit=#{basicUnit}, other_unit=#{otherUnit}, ratio=#{ratio},
+            other_unit_two=#{otherUnitTwo}, ratio_two=#{ratioTwo},
+            other_unit_three=#{otherUnitThree}, ratio_three=#{ratioThree}
+        where id=#{id} and COALESCE(delete_flag,'0') !='1'
     </update>
-    <update id="updateRatioThreeById">
-        update jsh_unit
-        set ratio_three=null
-        where id=#{id}
-    </update>
+    <select id="lockUnitWrite" resultType="java.lang.Object">
+        select pg_advisory_xact_lock(4000000000 + COALESCE(#{tenantId}, 0))
+    </select>
 </mapper>

@@ -25,6 +25,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class DepotItemService {
@@ -603,22 +604,7 @@ public class DepotItemService {
                     depotItem.setOperNumber(rowObj.getBigDecimal("operNumber"));
                     String unit = submittedUnit;
                     BigDecimal oNumber = rowObj.getBigDecimal("operNumber");
-                    if (StringUtil.isNotEmpty(unitInfo.getName())) {
-                        String basicUnit = unitInfo.getBasicUnit(); //基本单位
-                        if (unit.equals(basicUnit)) { //如果等于基本单位
-                            depotItem.setBasicNumber(oNumber); //数量一致
-                        } else if (unit.equals(unitInfo.getOtherUnit())) { //如果等于副单位
-                            depotItem.setBasicNumber(oNumber.multiply(unitInfo.getRatio())); //数量乘以比例
-                        } else if (unit.equals(unitInfo.getOtherUnitTwo())) { //如果等于副单位2
-                            depotItem.setBasicNumber(oNumber.multiply(unitInfo.getRatioTwo())); //数量乘以比例
-                        } else if (unit.equals(unitInfo.getOtherUnitThree())) { //如果等于副单位3
-                            depotItem.setBasicNumber(oNumber.multiply(unitInfo.getRatioThree())); //数量乘以比例
-                        } else {
-                            depotItem.setBasicNumber(oNumber); //数量一致
-                        }
-                    } else {
-                        depotItem.setBasicNumber(oNumber); //其他情况
-                    }
+                    depotItem.setBasicNumber(unitService.parseBasicNumberByUnit(oNumber, unitInfo, unit));
                 }
                 if (depotItem.getOperNumber() == null || depotItem.getOperNumber().compareTo(BigDecimal.ZERO) <= 0) {
                     throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_CODE,
@@ -1433,15 +1419,7 @@ public class DepotItemService {
             String noType = "normal";
             count = depotItemMapperEx.getFinishNumber(meId, linkId, linkStr, noType, goToType);
             //根据多单位情况进行数量的转换
-            if(materialUnit.equals(unitInfo.getOtherUnit()) && unitInfo.getRatio()!=null && unitInfo.getRatio().compareTo(BigDecimal.ZERO)!=0) {
-                count = count.divide(unitInfo.getRatio(),2,BigDecimal.ROUND_HALF_UP);
-            }
-            if(materialUnit.equals(unitInfo.getOtherUnitTwo()) && unitInfo.getRatioTwo()!=null && unitInfo.getRatioTwo().compareTo(BigDecimal.ZERO)!=0) {
-                count = count.divide(unitInfo.getRatioTwo(),2,BigDecimal.ROUND_HALF_UP);
-            }
-            if(materialUnit.equals(unitInfo.getOtherUnitThree()) && unitInfo.getRatioThree()!=null && unitInfo.getRatioThree().compareTo(BigDecimal.ZERO)!=0) {
-                count = count.divide(unitInfo.getRatioThree(),2,BigDecimal.ROUND_HALF_UP);
-            }
+            count = unitService.parseStockByUnit(count, unitInfo, materialUnit);
         }
         return count;
     }
@@ -1484,15 +1462,7 @@ public class DepotItemService {
         }
         BigDecimal count = depotItemMapperEx.getFinishNumber(meId, linkId, linkStr, noType, goToType);
         //根据多单位情况进行数量的转换
-        if(materialUnit.equals(unitInfo.getOtherUnit()) && unitInfo.getRatio()!=null && unitInfo.getRatio().compareTo(BigDecimal.ZERO)!=0) {
-            count = count.divide(unitInfo.getRatio(),2,BigDecimal.ROUND_HALF_UP);
-        }
-        if(materialUnit.equals(unitInfo.getOtherUnitTwo()) && unitInfo.getRatioTwo()!=null && unitInfo.getRatioTwo().compareTo(BigDecimal.ZERO)!=0) {
-            count = count.divide(unitInfo.getRatioTwo(),2,BigDecimal.ROUND_HALF_UP);
-        }
-        if(materialUnit.equals(unitInfo.getOtherUnitThree()) && unitInfo.getRatioThree()!=null && unitInfo.getRatioThree().compareTo(BigDecimal.ZERO)!=0) {
-            count = count.divide(unitInfo.getRatioThree(),2,BigDecimal.ROUND_HALF_UP);
-        }
+        count = unitService.parseStockByUnit(count, unitInfo, materialUnit);
         return count;
     }
 
@@ -1518,15 +1488,7 @@ public class DepotItemService {
         }
         BigDecimal count = depotItemMapperEx.getRealFinishNumber(meId, linkId, linkStr, linkType, currentHeaderId, goToType);
         //根据多单位情况进行数量的转换
-        if(materialUnit.equals(unitInfo.getOtherUnit()) && unitInfo.getRatio()!=null && unitInfo.getRatio().compareTo(BigDecimal.ZERO)!=0) {
-            count = count.divide(unitInfo.getRatio(),2,BigDecimal.ROUND_HALF_UP);
-        }
-        if(materialUnit.equals(unitInfo.getOtherUnitTwo()) && unitInfo.getRatioTwo()!=null && unitInfo.getRatioTwo().compareTo(BigDecimal.ZERO)!=0) {
-            count = count.divide(unitInfo.getRatioTwo(),2,BigDecimal.ROUND_HALF_UP);
-        }
-        if(materialUnit.equals(unitInfo.getOtherUnitThree()) && unitInfo.getRatioThree()!=null && unitInfo.getRatioThree().compareTo(BigDecimal.ZERO)!=0) {
-            count = count.divide(unitInfo.getRatioThree(),2,BigDecimal.ROUND_HALF_UP);
-        }
+        count = unitService.parseStockByUnit(count, unitInfo, materialUnit);
         return count;
     }
 
@@ -1535,11 +1497,12 @@ public class DepotItemService {
         List<DepotItemVoBatchNumberList> reslist = new ArrayList<>();
         List<DepotItemVoBatchNumberList> list =  depotItemMapperEx.getBatchNumberList(StringUtil.toNull(number), name,
                 depotId, barCode, batchNumber, forceFlag, inOutManageFlag);
+        Map<Long, Unit> unitMap = getBatchUnitMap(list);
         for(DepotItemVoBatchNumberList bn: list) {
             if(bn.getTotalNum()!=null && bn.getTotalNum().compareTo(BigDecimal.ZERO)>0) {
                 bn.setExpirationDateStr(Tools.parseDateToStr(bn.getExpirationDate()));
                 if(bn.getUnitId()!=null) {
-                    Unit unit = unitService.getUnit(bn.getUnitId());
+                    Unit unit = unitMap.get(bn.getUnitId());
                     String commodityUnit = bn.getCommodityUnit();
                     bn.setTotalNum(unitService.parseStockByUnit(bn.getTotalNum(), unit, commodityUnit));
                 }
@@ -1563,12 +1526,13 @@ public class DepotItemService {
         Boolean inOutManageFlag = systemConfigService.getInOutManageFlag();
         List<DepotItemVoBatchNumberList> list =  depotItemMapperEx.getBatchNumberList(null, null,
                 depotId, barCode, batchNumber, forceFlag, inOutManageFlag);
+        Map<Long, Unit> unitMap = getBatchUnitMap(list);
         if(list!=null && list.size()>0) {
             for (DepotItemVoBatchNumberList bn : list) {
                 BigDecimal rowTotal = bn.getTotalNum() == null ? BigDecimal.ZERO : bn.getTotalNum();
                 if(rowTotal.compareTo(BigDecimal.ZERO)>0) {
                 if(bn.getUnitId()!=null) {
-                    Unit unit = unitService.getUnit(bn.getUnitId());
+                    Unit unit = unitMap.get(bn.getUnitId());
                     String commodityUnit = bn.getCommodityUnit();
                         rowTotal = unitService.parseStockByUnit(rowTotal, unit, commodityUnit);
                     }
@@ -1577,6 +1541,15 @@ public class DepotItemService {
             }
         }
         return totalNum;
+    }
+
+    private Map<Long, Unit> getBatchUnitMap(List<DepotItemVoBatchNumberList> batchList) throws Exception {
+        if (batchList == null || batchList.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Set<Long> unitIds = batchList.stream().map(DepotItemVoBatchNumberList::getUnitId)
+                .filter(Objects::nonNull).collect(Collectors.toSet());
+        return unitService.getUnitMap(unitIds);
     }
 
     public Long getCountByMaterialAndDepot(Long mId, Long depotId) {
@@ -2128,16 +2101,8 @@ public class DepotItemService {
     }
 
     private boolean isMaterialUnitValid(String submittedUnit, MaterialExtend materialExtend, Unit unitInfo) {
-        if (StringUtil.isEmpty(submittedUnit)) {
-            return false;
-        }
-        if (unitInfo != null && StringUtil.isNotEmpty(unitInfo.getName())) {
-            return submittedUnit.equals(unitInfo.getBasicUnit())
-                    || submittedUnit.equals(unitInfo.getOtherUnit())
-                    || submittedUnit.equals(unitInfo.getOtherUnitTwo())
-                    || submittedUnit.equals(unitInfo.getOtherUnitThree());
-        }
-        return submittedUnit.equals(materialExtend.getCommodityUnit());
+        return StringUtil.isNotEmpty(submittedUnit)
+                && submittedUnit.equals(materialExtend.getCommodityUnit());
     }
 
     private void lockMaterialForStockCheck(DepotItem depotItem, Set<String> lockedStockKeys) {

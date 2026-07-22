@@ -107,7 +107,7 @@ public interface MaterialMapperEx {
 
     List<Material> getMaterialListByCategoryIds(@Param("categoryIds") List<Long> categoryIds);
 
-    List<Material> getMaterialListByUnitIds(@Param("unitIds") String[] unitIds);
+    List<Material> getMaterialListByUnitIds(@Param("unitIds") List<Long> unitIds);
 
     List<String> getBarCodeList();
 

@@ -12,9 +12,9 @@ public interface UnitMapperEx {
     List<Unit> selectByConditionUnit(
             @Param("name") String name);
 
-    int batchDeleteUnitByIds(@Param("updateTime") Date updateTime, @Param("updater") Long updater, @Param("ids") String ids[]);
+    int batchDeleteUnitByIds(@Param("updateTime") Date updateTime, @Param("updater") Long updater, @Param("ids") List<Long> ids);
 
-    void updateRatioTwoById(@Param("id") Long id);
+    int updateUnit(Unit unit);
 
-    void updateRatioThreeById(@Param("id") Long id);
+    Object lockUnitWrite(@Param("tenantId") Long tenantId);
 }

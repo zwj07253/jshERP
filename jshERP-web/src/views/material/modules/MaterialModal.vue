@@ -1125,31 +1125,26 @@
         if(row.commodityUnit === basicUnit) {
           this.$refs.editableMeTable.getValues((error, values) => {
             let mArr = values, basicPurchaseDecimal='', basicCommodityDecimal='', basicWholesaleDecimal='', basicLowDecimal=''
+            const basicInfo = mArr.find(item => item.commodityUnit === basicUnit)
+            const ratioByUnit = {
+              [otherUnit]: ratio,
+              [otherUnitTwo]: ratioTwo,
+              [otherUnitThree]: ratioThree
+            }
+            if(basicInfo) {
+              basicPurchaseDecimal = basicInfo.purchaseDecimal
+              basicCommodityDecimal = basicInfo.commodityDecimal
+              basicWholesaleDecimal = basicInfo.wholesaleDecimal
+              basicLowDecimal = basicInfo.lowDecimal
+            }
             for (let i = 0; i < mArr.length; i++) {
               let mInfo = mArr[i]
-              if(i===0) {
-                basicPurchaseDecimal = mInfo.purchaseDecimal
-                basicCommodityDecimal = mInfo.commodityDecimal
-                basicWholesaleDecimal = mInfo.wholesaleDecimal
-                basicLowDecimal = mInfo.lowDecimal
-              } else {
-                //副单位进行换算
-                if(basicPurchaseDecimal) { mInfo.purchaseDecimal = (basicPurchaseDecimal*ratio).toFixed(2)}
-                if(basicCommodityDecimal) { mInfo.commodityDecimal = (basicCommodityDecimal*ratio).toFixed(2)}
-                if(basicWholesaleDecimal) { mInfo.wholesaleDecimal = (basicWholesaleDecimal*ratio).toFixed(2)}
-                if(basicLowDecimal) { mInfo.lowDecimal = (basicLowDecimal*ratio).toFixed(2)}
-                if(otherUnitTwo && i===2) {
-                  if(basicPurchaseDecimal) { mInfo.purchaseDecimal = (basicPurchaseDecimal*ratioTwo).toFixed(2)}
-                  if(basicCommodityDecimal) { mInfo.commodityDecimal = (basicCommodityDecimal*ratioTwo).toFixed(2)}
-                  if(basicWholesaleDecimal) { mInfo.wholesaleDecimal = (basicWholesaleDecimal*ratioTwo).toFixed(2)}
-                  if(basicLowDecimal) { mInfo.lowDecimal = (basicLowDecimal*ratioTwo).toFixed(2)}
-                }
-                if(otherUnitThree && i===3) {
-                  if(basicPurchaseDecimal) { mInfo.purchaseDecimal = (basicPurchaseDecimal*ratioThree).toFixed(2)}
-                  if(basicCommodityDecimal) { mInfo.commodityDecimal = (basicCommodityDecimal*ratioThree).toFixed(2)}
-                  if(basicWholesaleDecimal) { mInfo.wholesaleDecimal = (basicWholesaleDecimal*ratioThree).toFixed(2)}
-                  if(basicLowDecimal) { mInfo.lowDecimal = (basicLowDecimal*ratioThree).toFixed(2)}
-                }
+              const currentRatio = ratioByUnit[mInfo.commodityUnit]
+              if(mInfo.commodityUnit !== basicUnit && currentRatio) {
+                if(basicPurchaseDecimal) { mInfo.purchaseDecimal = (basicPurchaseDecimal*currentRatio).toFixed(2)}
+                if(basicCommodityDecimal) { mInfo.commodityDecimal = (basicCommodityDecimal*currentRatio).toFixed(2)}
+                if(basicWholesaleDecimal) { mInfo.wholesaleDecimal = (basicWholesaleDecimal*currentRatio).toFixed(2)}
+                if(basicLowDecimal) { mInfo.lowDecimal = (basicLowDecimal*currentRatio).toFixed(2)}
               }
             }
             this.meTable.dataSource = mArr

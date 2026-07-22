@@ -168,6 +168,9 @@ public class MaterialService {
     public int insertMaterial(JSONObject obj, HttpServletRequest request)throws Exception {
         checkMaterialEditPermission();
         Material m = JSONObject.parseObject(obj.toJSONString(), Material.class);
+        if (m.getUnitId() != null && m.getUnitId() <= 0) {
+            m.setUnitId(null);
+        }
         m.setId(null);
         m.setTenantId(null);
         m.setDeleteFlag(null);
@@ -175,6 +178,7 @@ public class MaterialService {
         //构造多属性数组字符串
         m.setAttribute(parseAttributeBySku(obj));
         try{
+            validateMaterialUnitConfiguration(obj, m, true);
             validateInitialStock(obj, m);
             materialMapperEx.insertSelectiveEx(m);
             Long mId = m.getId();
@@ -218,16 +222,34 @@ public class MaterialService {
     public int updateMaterial(JSONObject obj, HttpServletRequest request) throws Exception{
         checkMaterialEditPermission();
         Material material = JSONObject.parseObject(obj.toJSONString(), Material.class);
+        if (material.getUnitId() != null && material.getUnitId() <= 0) {
+            material.setUnitId(null);
+        }
         material.setTenantId(null);
         material.setDeleteFlag(null);
         material.setEnabled(null);
-        if (material.getId() == null || getMaterial(material.getId()) == null) {
+        Material existing = material.getId() == null ? null : getMaterial(material.getId());
+        if (existing == null) {
             throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_NOT_EXISTS_CODE,
                     ExceptionConstants.MATERIAL_NOT_EXISTS_MSG);
+        }
+        if (!obj.containsKey("unit")) {
+            material.setUnit(existing.getUnit());
+        }
+        if (!obj.containsKey("unitId")) {
+            material.setUnitId(existing.getUnitId());
+        }
+        boolean unitChanged = !Objects.equals(StringUtil.toNull(existing.getUnit()), StringUtil.toNull(material.getUnit()))
+                || !Objects.equals(existing.getUnitId(), material.getUnitId());
+        if (unitChanged && !depotItemMapperEx.getDepotItemListListByMaterialIds(
+                Collections.singletonList(material.getId())).isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_UNIT_HISTORY_LOCK_CODE,
+                    ExceptionConstants.MATERIAL_UNIT_HISTORY_LOCK_MSG);
         }
         //构造多属性数组字符串
         material.setAttribute(parseAttributeBySku(obj));
         try{
+            validateMaterialUnitConfiguration(obj, material, unitChanged);
             validateInitialStock(obj, material);
             materialMapper.updateByPrimaryKeySelective(material);
             if(material.getUnitId() == null) {
@@ -323,6 +345,56 @@ public class MaterialService {
     private BusinessRunTimeException invalidInitialStock(String reason) {
         return new BusinessRunTimeException(ExceptionConstants.MATERIAL_INITIAL_STOCK_INVALID_CODE,
                 String.format(ExceptionConstants.MATERIAL_INITIAL_STOCK_INVALID_MSG, reason));
+    }
+
+    private void validateMaterialUnitConfiguration(JSONObject obj, Material material, boolean requireEnabled) throws Exception {
+        JSONArray manySku = obj.getJSONArray("manySku");
+        if (material.getUnitId() != null) {
+            if (manySku != null && !manySku.isEmpty()) {
+                throw invalidMaterialUnit("多属性商品不能使用多单位");
+            }
+            Unit unit = unitService.getUnit(material.getUnitId());
+            if (unit == null || (requireEnabled && !Boolean.TRUE.equals(unit.getEnabled()))) {
+                throw invalidMaterialUnit("多单位方案不存在或未启用");
+            }
+            Set<String> allowedUnits = new HashSet<>();
+            allowedUnits.add(unit.getBasicUnit());
+            allowedUnits.add(unit.getOtherUnit());
+            if (StringUtil.isNotEmpty(unit.getOtherUnitTwo())) allowedUnits.add(unit.getOtherUnitTwo());
+            if (StringUtil.isNotEmpty(unit.getOtherUnitThree())) allowedUnits.add(unit.getOtherUnitThree());
+            validateMaterialExtendUnits(obj.getJSONArray("meList"), allowedUnits, unit.getBasicUnit(), unit.getOtherUnit());
+            material.setUnit("");
+        } else {
+            String singleUnit = StringUtil.toNull(material.getUnit());
+            JSONArray details = obj.getJSONArray("meList");
+            if (singleUnit != null && details != null) {
+                validateMaterialExtendUnits(details, Collections.singleton(singleUnit), singleUnit, null);
+            }
+        }
+    }
+
+    private void validateMaterialExtendUnits(JSONArray details, Set<String> allowedUnits,
+                                             String requiredBasicUnit, String requiredOtherUnit) {
+        if (details == null || details.isEmpty()) {
+            throw invalidMaterialUnit("至少需要一条条码明细");
+        }
+        Set<String> actualUnits = new HashSet<>();
+        for (int index = 0; index < details.size(); index++) {
+            String commodityUnit = details.getJSONObject(index).getString("commodityUnit");
+            if (!allowedUnits.contains(commodityUnit)) {
+                throw invalidMaterialUnit("条码明细单位不属于商品单位方案");
+            }
+            actualUnits.add(commodityUnit);
+        }
+        if (!actualUnits.contains(requiredBasicUnit)
+                || (requiredOtherUnit != null && !actualUnits.contains(requiredOtherUnit))) {
+            throw invalidMaterialUnit("多单位商品必须包含基本单位和副单位条码");
+        }
+    }
+
+    private BusinessRunTimeException invalidMaterialUnit(String reason) {
+        return new BusinessRunTimeException(ExceptionConstants.MATERIAL_UNIT_CONFIG_INVALID_CODE,
+                String.format(ExceptionConstants.MATERIAL_UNIT_CONFIG_INVALID_MSG, reason));
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)

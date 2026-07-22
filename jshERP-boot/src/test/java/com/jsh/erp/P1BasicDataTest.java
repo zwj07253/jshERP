@@ -128,9 +128,10 @@ public class P1BasicDataTest extends ApiTestBase {
     @DisplayName("23b: 新建单位")
     void createUnit() {
         JSONObject body = new JSONObject();
-        body.put("name", "测试单位_" + System.currentTimeMillis());
-        body.put("parentId", 0);
-        body.put("sort", 1);
+        String suffix = String.valueOf(System.currentTimeMillis() % 100000);
+        body.put("basicUnit", "件" + suffix);
+        body.put("otherUnit", "箱" + suffix);
+        body.put("ratio", 12);
         Response resp = authReq().body(body.toJSONString()).post(CONTEXT + "/unit/add");
         assertSuccess(resp);
     }

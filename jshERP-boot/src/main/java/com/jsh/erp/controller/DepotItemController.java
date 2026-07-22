@@ -37,8 +37,10 @@ import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.jsh.erp.utils.ResponseJsonUtil.returnJson;
 
@@ -216,6 +218,32 @@ public class DepotItemController {
             //存放数据json数组
             JSONArray dataArray = new JSONArray();
             if (null != dataList) {
+                Set<Long> unitIds = new LinkedHashSet<>();
+                Map<Long, Set<Long>> materialIdsByDepot = new HashMap<>();
+                Map<Long, Set<Long>> materialExtendIdsByDepot = new HashMap<>();
+                for (DepotItemVo4WithInfoEx detail : dataList) {
+                    if (detail.getUnitId() != null) {
+                        unitIds.add(detail.getUnitId());
+                    }
+                    if (StringUtil.isNotEmpty(detail.getSku()) && detail.getMaterialExtendId() != null) {
+                        materialExtendIdsByDepot.computeIfAbsent(detail.getDepotId(), key -> new LinkedHashSet<>())
+                                .add(detail.getMaterialExtendId());
+                    } else if (detail.getMaterialId() != null) {
+                        materialIdsByDepot.computeIfAbsent(detail.getDepotId(), key -> new LinkedHashSet<>())
+                                .add(detail.getMaterialId());
+                    }
+                }
+                Map<Long, Unit> unitMap = unitService.getUnitMap(unitIds);
+                Map<Long, Map<Long, BigDecimal>> materialStockByDepot = new HashMap<>();
+                for (Map.Entry<Long, Set<Long>> entry : materialIdsByDepot.entrySet()) {
+                    materialStockByDepot.put(entry.getKey(), depotItemService.getCurrentStockByMaterialIds(
+                            entry.getKey(), new ArrayList<>(entry.getValue())));
+                }
+                Map<Long, Map<Long, BigDecimal>> skuStockByDepot = new HashMap<>();
+                for (Map.Entry<Long, Set<Long>> entry : materialExtendIdsByDepot.entrySet()) {
+                    skuStockByDepot.put(entry.getKey(), depotItemService.getSkuStockByMaterialExtendIds(
+                            entry.getKey(), new ArrayList<>(entry.getValue())));
+                }
                 BigDecimal totalOperNumber = BigDecimal.ZERO;
                 BigDecimal totalAllPrice = BigDecimal.ZERO;
                 BigDecimal totalTaxMoney = BigDecimal.ZERO;
@@ -238,13 +266,15 @@ public class DepotItemController {
                     item.put("otherField2", diEx.getMOtherField2());
                     item.put("otherField3", diEx.getMOtherField3());
                     BigDecimal stock;
-                    Unit unitInfo = materialService.findUnit(diEx.getMaterialId()); //查询多单位信息
+                    Unit unitInfo = unitMap.get(diEx.getUnitId()); //查询多单位信息
                     String materialUnit = diEx.getMaterialUnit();
                     if(StringUtil.isNotEmpty(diEx.getSku())){
-                        stock = depotItemService.getSkuStockByParam(diEx.getDepotId(),diEx.getMaterialExtendId(),null,null);
+                        stock = skuStockByDepot.getOrDefault(diEx.getDepotId(), java.util.Collections.emptyMap())
+                                .getOrDefault(diEx.getMaterialExtendId(), BigDecimal.ZERO);
                     } else {
-                        stock = depotItemService.getCurrentStockByParam(diEx.getDepotId(),diEx.getMaterialId());
-                        if (StringUtil.isNotEmpty(unitInfo.getName())) {
+                        stock = materialStockByDepot.getOrDefault(diEx.getDepotId(), java.util.Collections.emptyMap())
+                                .getOrDefault(diEx.getMaterialId(), BigDecimal.ZERO);
+                        if (unitInfo != null) {
                             stock = unitService.parseStockByUnit(stock, unitInfo, materialUnit);
                         }
                     }

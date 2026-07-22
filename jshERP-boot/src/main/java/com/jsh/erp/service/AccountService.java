@@ -337,10 +337,12 @@ public class AccountService {
             if(StringUtil.isNotEmpty(number) && (entry.getNumber() == null || !entry.getNumber().contains(number))) {
                 continue;
             }
-            if(StringUtil.isNotEmpty(beginTime) && entry.getOperTime().compareTo(beginTime) < 0) {
+            if(StringUtil.isNotEmpty(beginTime) && StringUtil.isNotEmpty(entry.getOperTime())
+                    && entry.getOperTime().compareTo(beginTime) < 0) {
                 continue;
             }
-            if(StringUtil.isNotEmpty(endTime) && entry.getOperTime().compareTo(endTime) > 0) {
+            if(StringUtil.isNotEmpty(endTime) && StringUtil.isNotEmpty(entry.getOperTime())
+                    && entry.getOperTime().compareTo(endTime) > 0) {
                 continue;
             }
             filteredEntries.add(entry);

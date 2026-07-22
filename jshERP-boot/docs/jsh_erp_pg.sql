@@ -1226,6 +1226,9 @@ CREATE TABLE jsh_unit (
     tenant_id BIGINT,
     delete_flag VARCHAR(1) DEFAULT '0'
 );
+CREATE UNIQUE INDEX uk_unit_tenant_name_active
+    ON jsh_unit(COALESCE(tenant_id, 0), name)
+    WHERE COALESCE(delete_flag, '0') != '1';
 COMMENT ON TABLE jsh_unit IS '多单位表';
 COMMENT ON COLUMN jsh_unit.id IS '主键';
 COMMENT ON COLUMN jsh_unit.name IS '名称，支持多单位';
@@ -1350,6 +1353,45 @@ SELECT setval('jsh_depot_item_id_seq', 1);
 SELECT setval('jsh_account_head_id_seq', 1);
 SELECT setval('jsh_account_item_id_seq', 1);
 SELECT setval('jsh_material_initial_stock_id_seq', 1);
+
+-- ============================================================
+-- 基础业务测试种子数据：保证回归测试在全新数据库上具备商品、仓库、账户和往来单位
+-- ============================================================
+INSERT INTO jsh_depot (id, name, type, sort, enabled, is_default, delete_flag)
+VALUES (1, '测试仓库', 0, '1', true, true, '0')
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO jsh_account (id, name, serial_no, initial_amount, current_amount, enabled, is_default, delete_flag)
+VALUES (1, '测试现金账户', 'CASH-TEST', 0, 0, true, true, '0')
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO jsh_supplier (id, supplier, contacts, type, enabled, isystem, delete_flag)
+VALUES
+    (1, '测试供应商', '测试联系人', '供应商', true, 0, '0'),
+    (2, '测试客户', '测试联系人', '客户', true, 0, '0')
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO jsh_material (id, name, standard, model, unit, enabled,
+                          enable_serial_number, enable_batch_number, delete_flag)
+VALUES (1, '测试商品', '标准', '型号', '件', true, '0', '0', '0')
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO jsh_material_extend (id, material_id, bar_code, commodity_unit,
+                                 purchase_decimal, commodity_decimal, wholesale_decimal,
+                                 low_decimal, default_flag, delete_flag)
+VALUES (1, 1, 'TEST-0001', '件', 100, 120, 110, 90, '1', '0')
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO jsh_material_current_stock (id, material_id, depot_id, current_number,
+                                        current_unit_price, delete_flag)
+VALUES (1, 1, 1, 100, 100, '0')
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO jsh_material_initial_stock (id, material_id, depot_id, number,
+                                        low_safe_stock, high_safe_stock, delete_flag)
+VALUES (1, 1, 1, 100, 0, 1000, '0')
+ON CONFLICT (id) DO NOTHING;
+SELECT setval('jsh_depot_id_seq', GREATEST((SELECT MAX(id) FROM jsh_depot), 1));
+SELECT setval('jsh_account_id_seq', GREATEST((SELECT MAX(id) FROM jsh_account), 1));
+SELECT setval('jsh_supplier_id_seq', GREATEST((SELECT MAX(id) FROM jsh_supplier), 1));
+SELECT setval('jsh_material_id_seq', GREATEST((SELECT MAX(id) FROM jsh_material), 1));
+SELECT setval('jsh_material_extend_id_seq', GREATEST((SELECT MAX(id) FROM jsh_material_extend), 1));
+SELECT setval('jsh_material_current_stock_id_seq', GREATEST((SELECT MAX(id) FROM jsh_material_current_stock), 1));
+SELECT setval('jsh_material_initial_stock_id_seq', GREATEST((SELECT MAX(id) FROM jsh_material_initial_stock), 1));
 
 -- ============================================================
 -- 完成：更新统计信息
