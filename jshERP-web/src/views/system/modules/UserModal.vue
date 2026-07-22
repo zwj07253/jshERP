@@ -23,16 +23,16 @@
       <a-spin :spinning="confirmLoading">
         <a-form :form="form" id="userModal">
           <a-form-item label="登录名称" :labelCol="labelCol" :wrapperCol="wrapperCol">
-            <a-input placeholder="请输入登录名称" v-decorator.trim="[ 'loginName', validatorRules.loginName]" :readOnly="!!model.id" />
+            <a-input placeholder="请输入登录名称" v-decorator.trim="[ 'loginName', validatorRules.loginName]" :disabled="isReadOnly || !!model.id" />
           </a-form-item>
           <a-form-item label="用户密码" :labelCol="labelCol" :wrapperCol="wrapperCol" v-if="!model.id">
-            <a-input-password placeholder="请输入用户密码" v-decorator.trim="[ 'password', validatorRules.password]" />
+            <a-input-password placeholder="请输入用户密码" v-decorator.trim="[ 'password', validatorRules.password]" :disabled="isReadOnly" />
           </a-form-item>
           <a-form-item label="用户姓名" :labelCol="labelCol" :wrapperCol="wrapperCol" >
-            <a-input placeholder="请输入用户姓名" v-decorator.trim="[ 'username', validatorRules.username]" />
+            <a-input placeholder="请输入用户姓名" v-decorator.trim="[ 'username', validatorRules.username]" :disabled="isReadOnly" />
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="角色">
-            <a-select v-if="!model.id||model.id!==model.tenantId" placeholder="选择角色" v-decorator="[ 'roleId', validatorRules.roleId]" :dropdownMatchSelectWidth="false">
+            <a-select v-if="!model.id||model.id!==model.tenantId" placeholder="选择角色" v-decorator="[ 'roleId', validatorRules.roleId]" :dropdownMatchSelectWidth="false" :disabled="isReadOnly">
               <a-select-option v-for="(item,index) in roleList" :key="index" :value="item.id">
                 {{ item.name }}
               </a-select-option>
@@ -41,29 +41,29 @@
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="部门">
             <a-tree-select style="width:100%" :dropdownStyle="{maxHeight:'200px',overflow:'auto'}" allow-clear
-               :treeData="orgaTree" v-decorator="[ 'orgaId' ]" placeholder="请选择部门">
+               :treeData="orgaTree" v-decorator="[ 'orgaId' ]" placeholder="请选择部门" :disabled="isReadOnly">
             </a-tree-select>
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="职位">
-            <a-input placeholder="请输入职位" v-decorator.trim="[ 'position' ]" />
+            <a-input placeholder="请输入职位" v-decorator.trim="[ 'position' ]" :disabled="isReadOnly" />
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="是否经理">
-            <a-select placeholder="请选择是否经理" v-decorator="[ 'leaderFlag' ]">
+            <a-select placeholder="请选择是否经理" v-decorator="[ 'leaderFlag' ]" :disabled="isReadOnly">
               <a-select-option value="1">是</a-select-option>
               <a-select-option value="0">否</a-select-option>
             </a-select>
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="电话号码">
-            <a-input placeholder="请输入电话号码" v-decorator.trim="[ 'phonenum' ]" />
+            <a-input placeholder="请输入电话号码" v-decorator.trim="[ 'phonenum' ]" :disabled="isReadOnly" />
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="电子邮箱">
-            <a-input placeholder="请输入电子邮箱" v-decorator.trim="[ 'email' ]" />
+            <a-input placeholder="请输入电子邮箱" v-decorator.trim="[ 'email' ]" :disabled="isReadOnly" />
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="排序">
-            <a-input placeholder="请输入排序" v-decorator.trim="[ 'userBlngOrgaDsplSeq' ]" />
+            <a-input placeholder="请输入排序" v-decorator.trim="[ 'userBlngOrgaDsplSeq' ]" :disabled="isReadOnly" />
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="备注">
-            <a-textarea :rows="2" placeholder="请输入备注" v-decorator="[ 'description' ]" />
+            <a-textarea :rows="2" placeholder="请输入备注" v-decorator="[ 'description' ]" :disabled="isReadOnly" />
           </a-form-item>
         </a-form>
       </a-spin>

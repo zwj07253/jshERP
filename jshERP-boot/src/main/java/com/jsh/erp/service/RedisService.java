@@ -127,6 +127,17 @@ public class RedisService {
     }
 
     /**
+     * Atomically increments a short-lived counter and returns the new value.
+     */
+    public long incrementWithExpire(String key, long seconds) {
+        Long value = redisTemplate.opsForValue().increment(key);
+        if (value != null && value == 1L) {
+            redisTemplate.expire(key, seconds, TimeUnit.SECONDS);
+        }
+        return value == null ? 0L : value;
+    }
+
+    /**
      * 删除单个对象
      *
      * @param key

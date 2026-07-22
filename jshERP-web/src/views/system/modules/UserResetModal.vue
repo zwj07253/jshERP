@@ -92,12 +92,12 @@
               if(res.code === 200){
                 that.$message.success('重置密码成功！');
                 that.$emit('ok');
+                that.close();
               }else{
                 that.$message.warning(res.data.message);
               }
             }).finally(() => {
               that.confirmLoading = false;
-              that.close();
             })
           }
         })

@@ -56,8 +56,8 @@
               <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定删除吗?" @confirm="() => handleDelete(record.id)">
                 <a>删除</a>
               </a-popconfirm>
-              <a-divider type="vertical"/>
-              <a @click="handleResetModal(record)">重置密码</a>
+              <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical"/>
+              <a v-if="btnEnableList.indexOf(1)>-1" @click="handleResetModal(record)">重置密码</a>
             </span>
             <!-- 状态渲染模板 -->
             <template slot="customRenderFlag" slot-scope="status">
@@ -172,9 +172,7 @@
         this.$refs.modalForm.edit(record);
         this.$refs.modalForm.title = "编辑";
         this.$refs.modalForm.disableSubmit = false;
-        if(this.btnEnableList.indexOf(1)===-1) {
-          this.$refs.modalForm.isReadOnly = true
-        }
+        this.$refs.modalForm.isReadOnly = this.btnEnableList.indexOf(1) === -1
       },
       handleResetModal(record) {
         this.$refs.userResetModal.edit(record);

@@ -2,6 +2,8 @@ package com.jsh.erp.service;
 
 import com.jsh.erp.datasource.entities.*;
 import com.jsh.erp.datasource.mappers.TenantMapper;
+import com.jsh.erp.datasource.mappers.OrgaUserRelMapper;
+import com.jsh.erp.datasource.mappers.UserBusinessMapper;
 import com.jsh.erp.exception.BusinessParamCheckingException;
 import com.jsh.erp.utils.*;
 import org.springframework.util.StringUtils;
@@ -24,7 +26,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 @Service
@@ -40,6 +41,10 @@ public class UserService {
     @Resource
     private OrgaUserRelService orgaUserRelService;
     @Resource
+    private OrgaUserRelMapper orgaUserRelMapper;
+    @Resource
+    private UserBusinessMapper userBusinessMapper;
+    @Resource
     private LogService logService;
     @Resource
     private UserService userService;
@@ -52,9 +57,16 @@ public class UserService {
     @Resource
     private FunctionService functionService;
     @Resource
+    private OrganizationService organizationService;
+    @Resource
     private PlatformConfigService platformConfigService;
     @Resource
     private RedisService redisService;
+    @Resource
+    private UserPasswordService userPasswordService;
+
+    private static final String USER_URL = "/system/user";
+    private static final String EDIT_BUTTON_CODE = "1";
 
     @Value("${tenant.userNumLimit}")
     private Integer userNumLimit;
@@ -153,85 +165,67 @@ public class UserService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertUser(JSONObject obj, HttpServletRequest request)throws Exception {
-        User user = JSONObject.parseObject(obj.toJSONString(), User.class);
-        String password = "123456";
-        //因密码用MD5加密，需要对密码进行转化
-        try {
-            password = Tools.md5Encryp(password);
-            user.setPassword(password);
-        } catch (NoSuchAlgorithmException e) {
-            logger.error(">>>>>>>>>>>>>>转化MD5字符串错误 ：" + e.getMessage());
-        }
-        int result=0;
-        try{
-            result=userMapper.insertSelective(user);
-            logService.insertLog("用户",
-                    new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_ADD).append(user.getLoginName()).toString(), request);
-        }catch(Exception e){
-            JshException.writeFail(logger, e);
-        }
+        checkEditPermission();
+        User input = JSONObject.parseObject(obj.toJSONString(), User.class);
+        User currentUser = getCurrentUser();
+        User user = editableUserFields(input);
+        user.setTenantId(currentUser.getTenantId());
+        user.setIsystem(BusinessConstants.USER_NOT_SYSTEM);
+        user.setIsmanager(BusinessConstants.USER_NOT_MANAGER);
+        user.setStatus(BusinessConstants.USER_STATUS_NORMAL);
+        user.setDeleteFlag(BusinessConstants.DELETE_FLAG_EXISTS);
+        user.setPassword(userPasswordService.encode(Tools.md5Encryp(BusinessConstants.USER_DEFAULT_PASSWORD)));
+        checkLoginName(toUserEx(user));
+        int result = userMapper.insertSelective(user);
+        logService.insertLog("用户",
+                new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_ADD).append(user.getLoginName()).toString(), request);
         return result;
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateUser(JSONObject obj, HttpServletRequest request) throws Exception{
-        User user = JSONObject.parseObject(obj.toJSONString(), User.class);
-        int result=0;
-        try{
-            //判断是否登录过
-            Object userId = redisService.getObjectFromSessionByKey(request,"userId");
-            if (userId != null) {
-                result = userMapper.updateByPrimaryKeySelective(user);
-                logService.insertLog("用户",
-                        new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_EDIT).append(user.getLoginName()).toString(), request);
-            }
-        }catch(Exception e){
-            JshException.writeFail(logger, e);
-        }
-        return result;
-    }
-
-    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
-    public int updateUserByObj(User user, HttpServletRequest request) throws Exception{
-        int result=0;
-        try{
-            //判断是否登录过
-            Object userId = redisService.getObjectFromSessionByKey(request,"userId");
-            if (userId != null) {
-                result = userMapper.updateByPrimaryKeySelective(user);
-                logService.insertLog("用户",
-                        new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_EDIT).append(user.getId()).toString(),
-                        ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
-            }
-        }catch(Exception e){
-            JshException.writeFail(logger, e);
-        }
+        checkEditPermission();
+        User input = JSONObject.parseObject(obj.toJSONString(), User.class);
+        User existing = requireManageableUser(input.getId(), false);
+        User user = editableUserFields(input);
+        user.setId(existing.getId());
+        user.setLoginName(existing.getLoginName());
+        int result = userMapper.updateByPrimaryKeySelective(user);
+        logService.insertLog("用户",
+                new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_EDIT).append(existing.getLoginName()).toString(), request);
         return result;
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int resetPwd(String md5Pwd, Long id, HttpServletRequest request) throws Exception{
-        int result=0;
-        User u = getUser(id);
-        String loginName = u.getLoginName();
-        if("admin".equals(loginName)){
-            logger.info("禁止重置超管密码");
-        } else {
-            User user = new User();
-            user.setId(id);
-            user.setPassword(md5Pwd);
-            try{
-                //判断是否登录过
-                Object userId = redisService.getObjectFromSessionByKey(request,"userId");
-                if (userId != null) {
-                    result = userMapper.updateByPrimaryKeySelective(user);
-                    logService.insertLog("用户",
-                            new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_EDIT).append(id).toString(),
-                            ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
-                }
-            }catch(Exception e){
-                JshException.writeFail(logger, e);
-            }
+        checkEditPermission();
+        User target = requireManageableUser(id, true);
+        User user = new User();
+        user.setId(id);
+        user.setPassword(userPasswordService.encode(md5Pwd));
+        int result = userMapper.updateByPrimaryKeySelective(user);
+        if (result > 0) {
+            redisService.deleteObjectByUser(id);
+            logService.insertLog("用户",
+                    new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_EDIT).append(target.getLoginName()).toString(), request);
+        }
+        return result;
+    }
+
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
+    public int updateCurrentUserPassword(String oldPassword, String newPassword, HttpServletRequest request) throws Exception {
+        Long currentUserId = getUserId(request);
+        User currentUser = currentUserId == null ? null : userMapper.selectByPrimaryKey(currentUserId);
+        if (currentUser == null || !userPasswordService.matches(oldPassword, currentUser.getPassword())) {
+            return 2;
+        }
+        User update = new User();
+        update.setId(currentUserId);
+        update.setPassword(userPasswordService.encode(newPassword));
+        int result = userMapper.updateByPrimaryKeySelective(update);
+        if (result > 0) {
+            redisService.deleteObjectByUser(currentUserId);
+            logService.insertLog("用户", BusinessConstants.LOG_OPERATION_TYPE_EDIT + currentUserId, request);
         }
         return result;
     }
@@ -248,12 +242,20 @@ public class UserService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batDeleteUser(String ids, HttpServletRequest request) throws Exception{
+        checkEditPermission();
         int result=0;
         StringBuffer sb = new StringBuffer();
         sb.append(BusinessConstants.LOG_OPERATION_TYPE_DELETE);
         List<User> list = getUserListByIds(ids);
+        if (list.isEmpty()) {
+            throw invalidUser("未找到可删除的用户");
+        }
+        Long currentUserId = getUserId(request);
         for(User user: list){
-            if(user.getId().equals(user.getTenantId())) {
+            if(user.getId().equals(currentUserId)) {
+                throw invalidUser("不能删除当前登录用户");
+            }
+            if(BusinessConstants.DEFAULT_MANAGER.equals(user.getLoginName()) || user.getId().equals(user.getTenantId())) {
                 logger.error("异常码[{}],异常提示[{}],参数,ids:[{}]",
                         ExceptionConstants.USER_LIMIT_TENANT_DELETE_CODE,ExceptionConstants.USER_LIMIT_TENANT_DELETE_MSG,ids);
                 throw new BusinessRunTimeException(ExceptionConstants.USER_LIMIT_TENANT_DELETE_CODE,
@@ -263,19 +265,27 @@ public class UserService {
         }
         String[] idsArray =ids.split(",");
         try{
-            //判断是否登录过
-            Object userId = redisService.getObjectFromSessionByKey(request,"userId");
-            if (userId != null) {
-                result = userMapperEx.batDeleteOrUpdateUser(idsArray);
-                if(result>0) {
-                    //从redis中移除这些用户的登录状态
-                    for (String idStr : idsArray) {
-                        redisService.deleteObjectByUser(Long.valueOf(idStr));
-                    }
+            result = userMapperEx.batDeleteOrUpdateUser(idsArray);
+            if(result>0) {
+                List<Long> userIds = list.stream().map(User::getId).collect(java.util.stream.Collectors.toList());
+                OrgaUserRel orgaUpdate = new OrgaUserRel();
+                orgaUpdate.setDeleteFlag(BusinessConstants.DELETE_FLAG_DELETED);
+                OrgaUserRelExample orgaExample = new OrgaUserRelExample();
+                orgaExample.createCriteria().andUserIdIn(userIds);
+                orgaUserRelMapper.updateByExampleSelective(orgaUpdate, orgaExample);
+
+                UserBusiness businessUpdate = new UserBusiness();
+                businessUpdate.setDeleteFlag(BusinessConstants.DELETE_FLAG_DELETED);
+                UserBusinessExample businessExample = new UserBusinessExample();
+                businessExample.createCriteria().andKeyIdIn(
+                        userIds.stream().map(String::valueOf).collect(java.util.stream.Collectors.toList()))
+                        .andTypeIn(Arrays.asList("UserRole", "UserCustomer", "UserDepot"));
+                userBusinessMapper.updateByExampleSelective(businessUpdate, businessExample);
+                for (Long id : userIds) {
+                    redisService.deleteObjectByUser(id);
                 }
-                logService.insertLog("用户", sb.toString(),
-                        ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
             }
+            logService.insertLog("用户", sb.toString(), request);
         }catch(Exception e){
             JshException.writeFail(logger, e);
         }
@@ -381,10 +391,11 @@ public class UserService {
         if(user!=null){
             //校验下密码是不是过于简单
             boolean pwdSimple = false;
-            if(user.getPassword().equals(Tools.md5Encryp(BusinessConstants.USER_DEFAULT_PASSWORD))) {
+            if(userPasswordService.matches(Tools.md5Encryp(BusinessConstants.USER_DEFAULT_PASSWORD), user.getPassword())) {
                 pwdSimple = true;
             }
             user.setPassword(null);
+            user.setWeixinOpenId(null);
             if(BusinessConstants.DEFAULT_MANAGER.equals(user.getLoginName())) {
                 //如果是管理员，则发送登录邮件
                 sendEmailToCurrentUser(request, user);
@@ -423,24 +434,60 @@ public class UserService {
                         return ExceptionCodeConstants.UserExceptionCode.EXPIRE_TENANT;
                     }
                 }
+            } else {
+                return ExceptionCodeConstants.UserExceptionCode.USER_ACCESS_EXCEPTION;
             }
         } catch (Exception e) {
             logger.error(">>>>>>>>访问验证用户姓名是否存在后台信息异常", e);
             return ExceptionCodeConstants.UserExceptionCode.USER_ACCESS_EXCEPTION;
         }
         try {
-            UserExample example = new UserExample();
-            example.createCriteria().andLoginNameEqualTo(loginName).andPasswordEqualTo(password)
-                    .andStatusEqualTo(BusinessConstants.USER_STATUS_NORMAL).andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
-            list = userMapper.selectByExample(example);
-            if (null != list && list.size() == 0) {
+            User user = list.get(0);
+            if (!userPasswordService.matches(password, user.getPassword())) {
                 return ExceptionCodeConstants.UserExceptionCode.USER_PASSWORD_ERROR;
             }
-        } catch (Exception e) {
+            if (userPasswordService.needsUpgrade(user.getPassword())) {
+                User update = new User();
+                update.setId(user.getId());
+                update.setPassword(userPasswordService.encode(password));
+                userMapper.updateByPrimaryKeySelective(update);
+            }
+        } catch (RuntimeException e) {
             logger.error(">>>>>>>>>>访问验证用户密码后台信息异常", e);
             return ExceptionCodeConstants.UserExceptionCode.USER_ACCESS_EXCEPTION;
         }
         return ExceptionCodeConstants.UserExceptionCode.USER_CONDITION_FIT;
+    }
+
+    public Map<String, Object> loginByWeixin(User user, HttpServletRequest request) throws Exception {
+        Map<String, Object> data = new HashMap<>();
+        if (user == null || user.getStatus() == null || user.getStatus() != BusinessConstants.USER_STATUS_NORMAL
+                || BusinessConstants.DELETE_FLAG_DELETED.equals(user.getDeleteFlag())) {
+            data.put("msgTip", "user is black");
+            return data;
+        }
+        Tenant tenant = tenantService.getTenantByTenantId(user.getTenantId());
+        if (tenant != null && (Boolean.FALSE.equals(tenant.getEnabled())
+                || (tenant.getExpireTime() != null && tenant.getExpireTime().before(new Date())))) {
+            data.put("msgTip", "tenant is black or expire");
+            return data;
+        }
+        redisService.deleteObjectBySession(request, "userId");
+        String token = UUID.randomUUID().toString().replace("-", "");
+        if (user.getTenantId() != null) {
+            token += "_" + user.getTenantId();
+        }
+        redisService.storageObjectBySession(token, "userId", user.getId());
+        redisService.storageObjectBySession(token, "clientIp", Tools.getLocalIp(request));
+        logService.insertLogWithUserId(user.getId(), user.getTenantId(), "用户",
+                BusinessConstants.LOG_OPERATION_TYPE_LOGIN + user.getLoginName(), request);
+        user.setPassword(null);
+        user.setWeixinOpenId(null);
+        data.put("msgTip", "user can login");
+        data.put("token", token);
+        data.put("user", user);
+        data.put("pwdSimple", false);
+        return data;
     }
 
     public User getUserByLoginName(String loginName)throws Exception {
@@ -482,9 +529,7 @@ public class UserService {
 
     public int checkIsNameExist(Long id, String name)throws Exception {
         UserExample example = new UserExample();
-        List<Byte> userStatus = new ArrayList<>();
-        userStatus.add(BusinessConstants.USER_STATUS_NORMAL);
-        example.createCriteria().andIdNotEqualTo(id).andLoginNameEqualTo(name).andStatusIn(userStatus)
+        example.createCriteria().andIdNotEqualTo(id).andLoginNameEqualTo(name)
                 .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
         List<User> list=null;
         try{
@@ -527,6 +572,8 @@ public class UserService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public void addUserAndOrgUserRel(UserEx ue, HttpServletRequest request) throws Exception{
+        checkEditPermission();
+        ue = editableUserEx(ue, false);
         if(BusinessConstants.DEFAULT_MANAGER.equals(ue.getLoginName())) {
             throw new BusinessRunTimeException(ExceptionConstants.USER_NAME_LIMIT_USE_CODE,
                     ExceptionConstants.USER_NAME_LIMIT_USE_MSG);
@@ -580,7 +627,7 @@ public class UserService {
         }
     }
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
-    public UserEx addUser(UserEx ue) throws Exception{
+    private UserEx addUser(UserEx ue) throws Exception{
         /**
          * 新增用户默认设置
          * 1是否系统自带默认为非系统自带
@@ -592,6 +639,9 @@ public class UserService {
             ue.setIsmanager(BusinessConstants.USER_NOT_MANAGER);
         }
         ue.setStatus(BusinessConstants.USER_STATUS_NORMAL);
+        ue.setTenantId(getCurrentUser().getTenantId());
+        ue.setDeleteFlag(BusinessConstants.DELETE_FLAG_EXISTS);
+        ue.setPassword(userPasswordService.encode(ue.getPassword()));
         int result=0;
         try{
             result= userMapper.insertSelective(ue);
@@ -613,12 +663,15 @@ public class UserService {
             throw new BusinessRunTimeException(ExceptionConstants.USER_NAME_LIMIT_USE_CODE,
                     ExceptionConstants.USER_NAME_LIMIT_USE_MSG);
         } else {
-            ue.setPassword(ue.getPassword());
+            UserEx registration = new UserEx();
+            registration.setLoginName(ue.getLoginName());
+            registration.setUsername(ue.getLoginName());
+            registration.setPassword(userPasswordService.encode(ue.getPassword()));
+            ue = registration;
             ue.setIsystem(BusinessConstants.USER_NOT_SYSTEM);
-            if (ue.getIsmanager() == null) {
-                ue.setIsmanager(BusinessConstants.USER_NOT_MANAGER);
-            }
+            ue.setIsmanager(BusinessConstants.USER_NOT_MANAGER);
             ue.setStatus(BusinessConstants.USER_STATUS_NORMAL);
+            ue.setDeleteFlag(BusinessConstants.DELETE_FLAG_EXISTS);
             try{
                 userMapper.insertSelective(ue);
                 Long userId = getIdByLoginName(ue.getLoginName());
@@ -630,7 +683,7 @@ public class UserService {
             User user = new User();
             user.setId(ue.getId());
             user.setTenantId(ue.getId());
-            userService.updateUserTenant(user);
+            updateUserTenant(user);
             //新增用户与角色的关系
             JSONObject ubObj = new JSONObject();
             ubObj.put("type", "UserRole");
@@ -644,24 +697,17 @@ public class UserService {
             JSONObject tenantObj = new JSONObject();
             tenantObj.put("tenantId", ue.getId());
             tenantObj.put("loginName",ue.getLoginName());
-            tenantObj.put("userNumLimit", ue.getUserNumLimit());
-            tenantObj.put("expireTime", ue.getExpireTime());
-            tenantObj.put("remark", ue.getRemark());
             Tenant tenant = JSONObject.parseObject(tenantObj.toJSONString(), Tenant.class);
             tenant.setCreateTime(new Date());
-            if(tenant.getUserNumLimit()==null) {
-                tenant.setUserNumLimit(userNumLimit); //默认用户限制数量
-            }
-            if(tenant.getExpireTime()==null) {
-                tenant.setExpireTime(Tools.addDays(new Date(), tryDayLimit)); //租户允许试用的天数
-            }
+            tenant.setUserNumLimit(userNumLimit);
+            tenant.setExpireTime(Tools.addDays(new Date(), tryDayLimit));
             tenantMapper.insertSelective(tenant);
             logger.info("===============创建租户信息完成===============");
         }
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
-    public void updateUserTenant(User user) throws Exception{
+    private void updateUserTenant(User user) throws Exception{
         UserExample example = new UserExample();
         example.createCriteria().andIdEqualTo(user.getId());
         try{
@@ -673,6 +719,12 @@ public class UserService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public void updateUserAndOrgUserRel(UserEx ue, HttpServletRequest request) throws Exception{
+        checkEditPermission();
+        User target = requireManageableUser(ue.getId(), false);
+        UserEx input = ue;
+        ue = editableUserEx(input, true);
+        ue.setId(target.getId());
+        ue.setLoginName(target.getLoginName());
         if(BusinessConstants.DEFAULT_MANAGER.equals(ue.getLoginName())) {
             throw new BusinessRunTimeException(ExceptionConstants.USER_NAME_LIMIT_USE_CODE,
                     ExceptionConstants.USER_NAME_LIMIT_USE_MSG);
@@ -682,8 +734,6 @@ public class UserService {
                     ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
             //校验角色和部门的选择逻辑
             checkRoleAndOrg(ue);
-            //检查用户名和登录名
-            checkLoginName(ue);
             //更新用户信息
             ue = this.updateUser(ue);
             if (ue == null) {
@@ -724,6 +774,10 @@ public class UserService {
             //用户在部门中的排序
             oul.setUserBlngOrgaDsplSeq(ue.getUserBlngOrgaDsplSeq());
             if (oul.getId() != null) {
+                OrgaUserRel existingRelation = orgaUserRelMapper.selectByPrimaryKey(oul.getId());
+                if (existingRelation == null || !ue.getId().equals(existingRelation.getUserId())) {
+                    throw invalidUser("部门用户关系与目标用户不匹配");
+                }
                 //已存在部门和用户的关联关系，更新
                 oul = orgaUserRelService.updateOrgaUserRel(oul);
             } else {
@@ -739,7 +793,7 @@ public class UserService {
         }
     }
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
-    public UserEx updateUser(UserEx ue)throws Exception{
+    private UserEx updateUser(UserEx ue)throws Exception{
         int result =0;
         try{
             result=userMapper.updateByPrimaryKeySelective(ue);
@@ -771,6 +825,15 @@ public class UserService {
                         ExceptionConstants.SUPPLIER_PERMISSION_MSG);
             }
         }
+        validateAssignableRole(selectedRole, currentUser);
+        if (ue.getOrgaId() != null) {
+            Organization organization = organizationService.getOrganization(ue.getOrgaId());
+            if (organization == null || BusinessConstants.DELETE_FLAG_DELETED.equals(organization.getDeleteFlag())
+                    || (currentTenantId != null && currentTenantId != 0L
+                    && !Objects.equals(currentTenantId, organization.getTenantId()))) {
+                throw invalidUser("部门不存在或不属于当前租户");
+            }
+        }
         if(!targetIsTenantManager) {
             //只对非租户的用户进行校验
             Long orgaId = ue.getOrgaId();
@@ -780,6 +843,68 @@ public class UserService {
                         ExceptionConstants.USER_ROLE_ORGA_EMPTY_MSG);
             }
         }
+    }
+
+    private void validateAssignableRole(Role selectedRole, User currentUser) throws Exception {
+        if (currentUser == null || BusinessConstants.DEFAULT_MANAGER.equals(currentUser.getLoginName())) {
+            return;
+        }
+        Role currentRole = getRoleTypeByUserId(currentUser.getId());
+        if (BusinessConstants.ROLE_TYPE_THIS_ORG.equals(currentRole.getType())
+                && BusinessConstants.ROLE_TYPE_PUBLIC.equals(selectedRole.getType())) {
+            throw invalidUser("不能分配超出当前用户数据范围的角色");
+        }
+        UserBusiness currentPermissions = getRolePermissions(currentRole.getId());
+        UserBusiness selectedPermissions = getRolePermissions(selectedRole.getId());
+        Set<Long> currentFunctions = parseRelationIds(currentPermissions == null ? null : currentPermissions.getValue());
+        Set<Long> selectedFunctions = parseRelationIds(selectedPermissions == null ? null : selectedPermissions.getValue());
+        if (!currentFunctions.containsAll(selectedFunctions)) {
+            throw invalidUser("不能分配超出当前用户菜单权限的角色");
+        }
+        Map<Long, Set<String>> currentButtons = parseRoleButtons(currentPermissions == null ? null : currentPermissions.getBtnStr());
+        Map<Long, Set<String>> selectedButtons = parseRoleButtons(selectedPermissions == null ? null : selectedPermissions.getBtnStr());
+        for (Map.Entry<Long, Set<String>> entry : selectedButtons.entrySet()) {
+            if (!currentButtons.getOrDefault(entry.getKey(), Collections.emptySet()).containsAll(entry.getValue())) {
+                throw invalidUser("不能分配超出当前用户按钮权限的角色");
+            }
+        }
+    }
+
+    private UserBusiness getRolePermissions(Long roleId) throws Exception {
+        List<UserBusiness> relations = userBusinessService.getBasicData(String.valueOf(roleId), "RoleFunctions");
+        return relations == null || relations.isEmpty() ? null : relations.get(0);
+    }
+
+    private Set<Long> parseRelationIds(String value) {
+        Set<Long> result = new HashSet<>();
+        if (StringUtil.isEmpty(value)) {
+            return result;
+        }
+        String normalized = value.replace("][", ",").replace("[", "").replace("]", "");
+        if (StringUtil.isEmpty(normalized)) {
+            return result;
+        }
+        for (String item : normalized.split(",")) {
+            result.add(Long.parseLong(item.trim()));
+        }
+        return result;
+    }
+
+    private Map<Long, Set<String>> parseRoleButtons(String value) {
+        Map<Long, Set<String>> result = new HashMap<>();
+        if (StringUtil.isEmpty(value)) {
+            return result;
+        }
+        for (Object item : JSONArray.parseArray(value)) {
+            JSONObject button = JSONObject.parseObject(item.toString());
+            Long functionId = button.getLong("funId");
+            if (functionId != null) {
+                String buttonValue = button.getString("btnStr");
+                result.put(functionId, StringUtil.isEmpty(buttonValue)
+                        ? new HashSet<>() : new HashSet<>(Arrays.asList(buttonValue.split(","))));
+            }
+        }
+        return result;
     }
     /**
      *  检查登录名不能重复
@@ -992,31 +1117,149 @@ public class UserService {
         return false;
     }
 
+    public void checkReadPermission() throws Exception {
+        User currentUser = getCurrentUser();
+        if (currentUser == null || !hasFunctionPermission(currentUser.getId(), USER_URL)) {
+            throw permissionDenied();
+        }
+    }
+
+    public void checkEditPermission() throws Exception {
+        User currentUser = getCurrentUser();
+        if (currentUser == null || !hasButtonPermission(currentUser.getId(), USER_URL, EDIT_BUTTON_CODE)) {
+            throw permissionDenied();
+        }
+    }
+
+    public User getSafeUser(Long id) throws Exception {
+        checkReadPermission();
+        User user = requireManageableUser(id, false);
+        User safe = editableUserFields(user);
+        safe.setId(user.getId());
+        safe.setStatus(user.getStatus());
+        safe.setIsmanager(user.getIsmanager());
+        safe.setIsystem(user.getIsystem());
+        safe.setTenantId(user.getTenantId());
+        safe.setDeleteFlag(user.getDeleteFlag());
+        return safe;
+    }
+
+    public void checkRateLimit(String action, HttpServletRequest request, int maximum, long seconds) {
+        String source = Tools.getLocalIp(request);
+        String key = "security:rate:" + action + ":" + (source == null ? "unknown" : source);
+        if (redisService.incrementWithExpire(key, seconds) > maximum) {
+            throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_INVALID_CODE, "操作过于频繁，请稍后重试");
+        }
+    }
+
+    private User requireManageableUser(Long id, boolean sensitiveOperation) throws Exception {
+        User currentUser = getCurrentUser();
+        User target = id == null ? null : userMapper.selectByPrimaryKey(id);
+        if (currentUser == null || target == null || BusinessConstants.DELETE_FLAG_DELETED.equals(target.getDeleteFlag())) {
+            throw invalidUser("用户不存在或已删除");
+        }
+        boolean administrator = BusinessConstants.DEFAULT_MANAGER.equals(currentUser.getLoginName());
+        if (!administrator && !Objects.equals(currentUser.getTenantId(), target.getTenantId())) {
+            throw permissionDenied();
+        }
+        boolean tenantManager = Objects.equals(target.getId(), target.getTenantId());
+        if (!administrator && tenantManager && (!Objects.equals(currentUser.getId(), target.getId()) || sensitiveOperation)) {
+            throw permissionDenied();
+        }
+        if (!administrator && BusinessConstants.DEFAULT_MANAGER.equals(target.getLoginName())) {
+            throw permissionDenied();
+        }
+        return target;
+    }
+
+    private User editableUserFields(User source) {
+        User target = new User();
+        if (source == null) {
+            return target;
+        }
+        target.setLoginName(source.getLoginName());
+        target.setUsername(source.getUsername());
+        target.setLeaderFlag(source.getLeaderFlag());
+        target.setPosition(source.getPosition());
+        target.setDepartment(source.getDepartment());
+        target.setEmail(source.getEmail());
+        target.setPhonenum(source.getPhonenum());
+        target.setDescription(source.getDescription());
+        target.setRemark(source.getRemark());
+        return target;
+    }
+
+    private UserEx editableUserEx(UserEx source, boolean update) {
+        UserEx target = new UserEx();
+        User fields = editableUserFields(source);
+        target.setLoginName(fields.getLoginName());
+        target.setUsername(fields.getUsername());
+        target.setLeaderFlag(fields.getLeaderFlag());
+        target.setPosition(fields.getPosition());
+        target.setDepartment(fields.getDepartment());
+        target.setEmail(fields.getEmail());
+        target.setPhonenum(fields.getPhonenum());
+        target.setDescription(fields.getDescription());
+        target.setRemark(fields.getRemark());
+        target.setRoleId(source.getRoleId());
+        target.setOrgaId(source.getOrgaId());
+        target.setUserBlngOrgaDsplSeq(source.getUserBlngOrgaDsplSeq());
+        target.setOrgaUserRelId(update ? source.getOrgaUserRelId() : null);
+        if (!update) {
+            target.setPassword(source.getPassword());
+        }
+        return target;
+    }
+
+    private UserEx toUserEx(User user) {
+        UserEx result = new UserEx();
+        result.setId(user.getId());
+        result.setLoginName(user.getLoginName());
+        return result;
+    }
+
+    private BusinessRunTimeException permissionDenied() {
+        return new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
+                ExceptionConstants.SUPPLIER_PERMISSION_MSG);
+    }
+
+    private BusinessRunTimeException invalidUser(String message) {
+        return new BusinessRunTimeException(ExceptionConstants.SUPPLIER_INVALID_CODE, message);
+    }
+
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetStatus(Byte status, String ids, HttpServletRequest request)throws Exception {
+        checkEditPermission();
+        if (status == null || (status != BusinessConstants.USER_STATUS_NORMAL && status != 2)) {
+            throw invalidUser("用户状态不合法");
+        }
         int result=0;
         List<User> list = getUserListByIds(ids);
-        //选中的用户的数量
-        int selectUserSize = list.size();
-        //查询启用状态的用户的数量
+        if (list.isEmpty()) {
+            throw invalidUser("未找到可操作的用户");
+        }
+        int newlyEnabled = (int) list.stream()
+                .filter(item -> item.getStatus() == null || item.getStatus() != BusinessConstants.USER_STATUS_NORMAL).count();
         int enableUserSize = getUser(request).size();
         User userInfo = userService.getCurrentUser();
         Tenant tenant = tenantService.getTenantByTenantId(userInfo.getTenantId());
         if(tenant!=null) {
-            if (selectUserSize + enableUserSize > tenant.getUserNumLimit() && status == 0) {
+            if (newlyEnabled + enableUserSize > tenant.getUserNumLimit()
+                    && status == BusinessConstants.USER_STATUS_NORMAL) {
                 throw new BusinessParamCheckingException(ExceptionConstants.USER_ENABLE_OVER_LIMIT_FAILED_CODE,
                         ExceptionConstants.USER_ENABLE_OVER_LIMIT_FAILED_MSG);
             }
         }
         StringBuilder userStr = new StringBuilder();
         List<Long> idList = new ArrayList<>();
+        Long currentUserId = getUserId(request);
         for(User user: list) {
-            if(user.getId().equals(user.getTenantId())) {
-                //租户不能进行禁用
-            } else {
-                idList.add(user.getId());
-                userStr.append(user.getLoginName()).append(" ");
+            if (status == 2 && user.getId().equals(currentUserId)) {
+                throw invalidUser("不能禁用当前登录用户");
             }
+            requireManageableUser(user.getId(), status == 2);
+            idList.add(user.getId());
+            userStr.append(user.getLoginName()).append(" ");
         }
         String statusStr ="";
         if(status == 0) {
@@ -1030,6 +1273,11 @@ public class UserService {
             UserExample example = new UserExample();
             example.createCriteria().andIdIn(idList);
             result = userMapper.updateByExampleSelective(user, example);
+            if (status == 2 && result > 0) {
+                for (Long id : idList) {
+                    redisService.deleteObjectByUser(id);
+                }
+            }
             logService.insertLog("用户",
                     new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_EDIT).append(userStr).append("-").append(statusStr).toString(),
                     ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
@@ -1065,7 +1313,14 @@ public class UserService {
         if(jsonObject!=null) {
             String weixinOpenId = jsonObject.getString("openid");
             if(StringUtil.isNotEmpty(weixinOpenId)) {
-                return userMapperEx.updateUserWithWeixinOpenId(loginName, password, weixinOpenId);
+                User user = getUserByLoginName(loginName);
+                if (user == null || !userPasswordService.matches(password, user.getPassword())) {
+                    return 0;
+                }
+                User update = new User();
+                update.setId(user.getId());
+                update.setWeixinOpenId(weixinOpenId);
+                return userMapper.updateByPrimaryKeySelective(update);
             }
         }
         return 0;

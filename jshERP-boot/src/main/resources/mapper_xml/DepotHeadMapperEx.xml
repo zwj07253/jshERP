@@ -983,7 +983,7 @@
         select distinct dh.*, s.supplier OrganName, u.username userName
         from jsh_depot_head dh
         left join jsh_supplier s on dh.organ_id=s.id and COALESCE(s.delete_Flag,'0') !='1'
-        left join jsh_user u on dh.creator=u.id and COALESCE(u.delete_flag,'0') !='1'
+        left join jsh_user u on dh.creator=u.id
         left join jsh_depot_item di on dh.id = di.header_id and COALESCE(di.delete_flag,'0') !='1'
         left join jsh_material m on di.material_id = m.id and COALESCE(m.delete_flag,'0') !='1'
         where 1=1
@@ -1049,7 +1049,7 @@
         select distinct dh.*, s.supplier OrganName, u.username userName
         from jsh_depot_head dh
         left join jsh_supplier s on dh.organ_id=s.id and COALESCE(s.delete_Flag,'0') !='1'
-        left join jsh_user u on dh.creator=u.id and COALESCE(u.delete_flag,'0') !='1'
+        left join jsh_user u on dh.creator=u.id
         left join jsh_depot_item di on dh.id = di.header_id and COALESCE(di.delete_flag,'0') !='1'
         left join jsh_material m on di.material_id = m.id and COALESCE(m.delete_flag,'0') !='1'
         where 1=1
@@ -1205,7 +1205,7 @@
         </if>) tb
         left join jsh_depot_head jdh on jdh.id=tb.id and COALESCE(jdh.delete_flag,'0') !='1'
         left join jsh_supplier s on jdh.organ_id=s.id and COALESCE(s.delete_flag,'0') !='1'
-        left join jsh_user u on jdh.creator=u.id and COALESCE(u.delete_flag,'0') !='1'
+        left join jsh_user u on jdh.creator=u.id
         left join jsh_account a on jdh.account_id=a.id and COALESCE(a.delete_flag,'0') !='1'
     </select>
 

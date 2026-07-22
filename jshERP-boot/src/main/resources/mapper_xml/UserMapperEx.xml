@@ -58,7 +58,6 @@
         u.description, u.remark,u.isystem
         FROM jsh_user u
         where 1=1
-        and u.status = 0
         and COALESCE(u.delete_flag,'0') !='1'
         <if test="userName != null and userName != ''">
             and u.userName = #{userName}

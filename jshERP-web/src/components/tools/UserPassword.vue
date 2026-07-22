@@ -104,8 +104,7 @@
             that.confirmLoading = true
             values.oldpassword = md5(values.oldpassword)
             values.password = md5(values.password)
-            let params = Object.assign({userId:this.userId},values)
-            console.log("修改密码提交数据",params)
+            let params = Object.assign({}, values)
             putAction(this.url,params).then((res)=>{
               if(res.code === 200){
                 if(res.data.status === 2 || res.data.status === 3) {

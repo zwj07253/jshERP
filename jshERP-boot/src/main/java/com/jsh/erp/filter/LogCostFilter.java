@@ -1,5 +1,8 @@
 package com.jsh.erp.filter;
 
+import com.jsh.erp.constants.BusinessConstants;
+import com.jsh.erp.datasource.entities.User;
+import com.jsh.erp.datasource.mappers.UserMapper;
 import com.jsh.erp.service.RedisService;
 import org.springframework.util.StringUtils;
 
@@ -23,6 +26,8 @@ public class LogCostFilter implements Filter {
     private String[] allowUrls;
     @Resource
     private RedisService redisService;
+    @Resource
+    private UserMapper userMapper;
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -45,9 +50,18 @@ public class LogCostFilter implements Filter {
         }
         //具体，比如：处理若用户未登录，则跳转到登录页
         Object userId = redisService.getObjectFromSessionByKey(servletRequest,"userId");
-        if(userId!=null) { //如果已登录，不阻止
-            chain.doFilter(request, response);
-            return;
+        if(userId!=null) {
+            try {
+                User user = userMapper.selectByPrimaryKey(Long.parseLong(userId.toString()));
+                if (user != null && user.getStatus() != null && user.getStatus() == BusinessConstants.USER_STATUS_NORMAL
+                        && !BusinessConstants.DELETE_FLAG_DELETED.equals(user.getDeleteFlag())) {
+                    chain.doFilter(request, response);
+                    return;
+                }
+            } catch (RuntimeException e) {
+                // Invalid or stale sessions fail closed.
+            }
+            redisService.deleteObjectBySession(servletRequest, "userId");
         }
         if (requestUrl.equals("/jshERP-boot/doc.html") || requestUrl.equals("/jshERP-boot/user/login")
                 || requestUrl.equals("/jshERP-boot/user/register") || requestUrl.equals("/jshERP-boot/user/weixinLogin")
