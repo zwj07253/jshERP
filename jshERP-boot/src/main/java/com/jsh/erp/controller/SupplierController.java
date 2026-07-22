@@ -179,6 +179,8 @@ public class SupplierController extends BaseController {
             arr = dataArray;
         } catch(Exception e){
             logger.error(e.getMessage(), e);
+            throw new BusinessRunTimeException(ExceptionConstants.DATA_READ_FAIL_CODE,
+                    ExceptionConstants.DATA_READ_FAIL_MSG);
         }
         return arr;
     }
@@ -211,6 +213,8 @@ public class SupplierController extends BaseController {
             arr = dataArray;
         } catch(Exception e){
             logger.error(e.getMessage(), e);
+            throw new BusinessRunTimeException(ExceptionConstants.DATA_READ_FAIL_CODE,
+                    ExceptionConstants.DATA_READ_FAIL_MSG);
         }
         return arr;
     }
@@ -260,6 +264,8 @@ public class SupplierController extends BaseController {
             arr = dataArray;
         } catch(Exception e){
             logger.error(e.getMessage(), e);
+            throw new BusinessRunTimeException(ExceptionConstants.DATA_READ_FAIL_CODE,
+                    ExceptionConstants.DATA_READ_FAIL_MSG);
         }
         return arr;
     }
@@ -293,6 +299,8 @@ public class SupplierController extends BaseController {
             arr = dataArray;
         } catch(Exception e){
             logger.error(e.getMessage(), e);
+            throw new BusinessRunTimeException(ExceptionConstants.DATA_READ_FAIL_CODE,
+                    ExceptionConstants.DATA_READ_FAIL_MSG);
         }
         return arr;
     }

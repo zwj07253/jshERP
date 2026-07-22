@@ -1,0 +1,112 @@
+package com.jsh.erp;
+
+import com.alibaba.fastjson2.JSONObject;
+import com.jsh.erp.constants.ExceptionConstants;
+import com.jsh.erp.datasource.entities.Supplier;
+import com.jsh.erp.datasource.entities.SupplierExample;
+import com.jsh.erp.datasource.entities.User;
+import com.jsh.erp.datasource.mappers.AccountHeadMapperEx;
+import com.jsh.erp.datasource.mappers.AccountItemMapperEx;
+import com.jsh.erp.datasource.mappers.DepotHeadMapperEx;
+import com.jsh.erp.datasource.mappers.SupplierMapper;
+import com.jsh.erp.datasource.mappers.SupplierMapperEx;
+import com.jsh.erp.exception.BusinessRunTimeException;
+import com.jsh.erp.service.DepotHeadService;
+import com.jsh.erp.service.LogService;
+import com.jsh.erp.service.SupplierService;
+import com.jsh.erp.service.UserBusinessService;
+import com.jsh.erp.service.UserService;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Collections;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class SupplierServiceTest {
+
+    @Mock private SupplierMapper supplierMapper;
+    @Mock private SupplierMapperEx supplierMapperEx;
+    @Mock private UserService userService;
+    @Mock private LogService logService;
+    @Mock private AccountHeadMapperEx accountHeadMapperEx;
+    @Mock private DepotHeadMapperEx depotHeadMapperEx;
+    @Mock private AccountItemMapperEx accountItemMapperEx;
+    @Mock private DepotHeadService depotHeadService;
+    @Mock private UserBusinessService userBusinessService;
+
+    @InjectMocks private SupplierService supplierService;
+
+    @Test
+    void rejectsWriteWithoutPermission() throws Exception {
+        User user = new User();
+        user.setId(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasButtonPermission(101L, "/system/vendor", "1")).thenReturn(false);
+
+        BusinessRunTimeException exception = assertThrows(BusinessRunTimeException.class,
+                () -> supplierService.insertSupplier(validBody(), null));
+
+        assertEquals(ExceptionConstants.SUPPLIER_PERMISSION_CODE, exception.getCode());
+        verify(supplierMapper, never()).insertSelective(any());
+    }
+
+    @Test
+    void readsLegacyRecordWithNullDeleteFlag() throws Exception {
+        Supplier supplier = new Supplier();
+        supplier.setId(10L);
+        supplier.setSupplier("Legacy Supplier");
+        when(supplierMapperEx.getInfoById(10L)).thenReturn(supplier);
+
+        assertEquals(supplier, supplierService.getSupplier(10L));
+    }
+
+    @Test
+    void insertUsesWhitelistAndClearsProtectedFields() throws Exception {
+        User user = new User();
+        user.setId(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasButtonPermission(101L, "/system/vendor", "1")).thenReturn(true);
+        when(supplierMapper.selectByExample(any(SupplierExample.class))).thenReturn(Collections.emptyList());
+        when(supplierMapper.insertSelective(any(Supplier.class))).thenReturn(1);
+
+        JSONObject body = validBody();
+        body.put("id", 999L);
+        body.put("tenantId", 888L);
+        body.put("deleteFlag", "1");
+        body.put("enabled", false);
+        body.put("creator", 777L);
+
+        supplierService.insertSupplier(body, null);
+
+        ArgumentCaptor<Supplier> captor = ArgumentCaptor.forClass(Supplier.class);
+        verify(supplierMapper).insertSelective(captor.capture());
+        Supplier inserted = captor.getValue();
+        assertNull(inserted.getId());
+        assertNull(inserted.getTenantId());
+        assertNull(inserted.getDeleteFlag());
+        assertEquals(Boolean.TRUE, inserted.getEnabled());
+        assertEquals(101L, inserted.getCreator());
+    }
+
+    private JSONObject validBody() {
+        JSONObject body = new JSONObject();
+        body.put("supplier", "Supplier A");
+        body.put("type", "供应商");
+        body.put("beginNeedPay", 10);
+        body.put("taxRate", 13);
+        body.put("sort", "1");
+        return body;
+    }
+}

@@ -263,6 +263,14 @@ public class ExceptionConstants {
     public static final String SUPPLIER_DELETE_FAILED_MSG = "删除供应商信息失败";
     //修改供应商信息失败
     public static final int SUPPLIER_EDIT_FAILED_CODE = 7000002;
+    public static final int SUPPLIER_PERMISSION_CODE = 7000003;
+    public static final String SUPPLIER_PERMISSION_MSG = "当前用户没有往来单位编辑权限";
+    public static final int SUPPLIER_INVALID_CODE = 7000004;
+    public static final String SUPPLIER_INVALID_MSG = "往来单位信息不合法：%s";
+    public static final int SUPPLIER_NOT_EXISTS_CODE = 7000005;
+    public static final String SUPPLIER_NOT_EXISTS_MSG = "往来单位不存在或已删除";
+    public static final int SUPPLIER_IN_USE_CODE = 7000006;
+    public static final String SUPPLIER_IN_USE_MSG = "往来单位已被业务使用，不允许修改或删除";
     public static final String SUPPLIER_EDIT_FAILED_MSG = "修改供应商信息失败";
     /**
      * 商品类别信息

@@ -37,17 +37,17 @@
           <a-row class="form-row" :gutter="24">
             <a-col :span="24/2">
               <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="手机号码">
-                <a-input placeholder="请输入手机号码" v-decorator.trim="[ 'telephone' ]" />
+                <a-input placeholder="请输入手机号码" v-decorator.trim="[ 'telephone', validatorRules.telephone ]" />
               </a-form-item>
             </a-col>
             <a-col :span="24/2">
               <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="联系电话">
-                <a-input placeholder="请输入联系电话" v-decorator.trim="[ 'phoneNum' ]" />
+                <a-input placeholder="请输入联系电话" v-decorator.trim="[ 'phoneNum', validatorRules.phoneNum ]" />
               </a-form-item>
             </a-col>
             <a-col :span="24/2">
               <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="电子邮箱">
-                <a-input placeholder="请输入电子邮箱" v-decorator.trim="[ 'email' ]" />
+                <a-input placeholder="请输入电子邮箱" v-decorator.trim="[ 'email', validatorRules.email ]" />
               </a-form-item>
             </a-col>
             <a-col :span="24/2">
@@ -57,7 +57,7 @@
             </a-col>
             <a-col :span="24/2">
               <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="期初应付">
-                <a-input placeholder="请输入期初应付" v-decorator.trim="[ 'beginNeedPay' ]" />
+                <a-input-number style="width:100%" :min="0" :precision="2" placeholder="请输入期初应付" v-decorator="[ 'beginNeedPay' ]" />
               </a-form-item>
             </a-col>
             <a-col :span="24/2">
@@ -72,7 +72,7 @@
             </a-col>
             <a-col :span="24/2">
               <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="税率(%)">
-                <a-input-number style="width:100%" placeholder="请输入税率" v-decorator.trim="[ 'taxRate' ]" />
+                <a-input-number style="width:100%" :min="0" :max="100" :precision="2" placeholder="请输入税率" v-decorator="[ 'taxRate' ]" />
               </a-form-item>
             </a-col>
             <a-col :span="24/2">
@@ -92,7 +92,7 @@
             </a-col>
             <a-col :span="24/2">
               <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="排序">
-                <a-input placeholder="请输入排序" v-decorator.trim="[ 'sort' ]" />
+                <a-input-number style="width:100%" :precision="0" placeholder="请输入排序" v-decorator="[ 'sort' ]" />
               </a-form-item>
             </a-col>
             <a-col :span="24/2">
@@ -137,6 +137,15 @@
               { min: 2, max: 60, message: '长度在 2 到 60 个字符', trigger: 'blur' },
               { validator: this.validateSupplierName}
             ]
+          },
+          telephone: {
+            rules: [{ pattern: /^$|^[0-9+\-\s()]{5,30}$/, message: '手机号码格式不正确' }]
+          },
+          phoneNum: {
+            rules: [{ pattern: /^$|^[0-9+\-\s()]{5,30}$/, message: '联系电话格式不正确' }]
+          },
+          email: {
+            rules: [{ type: 'email', message: '电子邮箱格式不正确' }]
           }
         },
       }
@@ -179,12 +188,12 @@
             obj.then((res)=>{
               if(res.code === 200){
                 that.$emit('ok');
+                that.close();
               }else{
                 that.$message.warning(res.data.message);
               }
             }).finally(() => {
               that.confirmLoading = false;
-              that.close();
             })
           }
         })
