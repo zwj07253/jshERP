@@ -2,6 +2,7 @@ package com.jsh.erp.service;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.constants.BusinessConstants;
+import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.Tenant;
 import com.jsh.erp.datasource.entities.TenantEx;
 import com.jsh.erp.datasource.entities.TenantExample;
@@ -10,6 +11,7 @@ import com.jsh.erp.datasource.mappers.TenantMapper;
 import com.jsh.erp.datasource.mappers.TenantMapperEx;
 import com.jsh.erp.datasource.mappers.UserBusinessMapperEx;
 import com.jsh.erp.datasource.mappers.UserMapperEx;
+import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.exception.JshException;
 import com.jsh.erp.utils.PageUtils;
 import com.jsh.erp.utils.StringUtil;
@@ -48,6 +50,12 @@ public class TenantService {
 
     @Resource
     private LogService logService;
+
+    @Resource
+    private RedisService redisService;
+
+    @Resource
+    private com.jsh.erp.datasource.mappers.UserMapper userMapper;
 
     @Value("${manage.roleId}")
     private Integer manageRoleId;
@@ -105,18 +113,26 @@ public class TenantService {
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateTenant(JSONObject obj, HttpServletRequest request)throws Exception {
         Tenant tenant = JSONObject.parseObject(obj.toJSONString(), Tenant.class);
+        // 保护不可修改字段：tenantId 是整个租户数据隔离的边界，修改会导致所有业务表数据归属断裂
+        tenant.setTenantId(null);
+        tenant.setCreateTime(null);
         int result=0;
         try{
             if(BusinessConstants.DEFAULT_MANAGER.equals(userService.getCurrentUser().getLoginName())) {
-                //如果租户下的用户限制数量为1，则将该租户之外的用户全部禁用
-                if (1 == tenant.getUserNumLimit()) {
-                    userMapperEx.disableUserByLimit(tenant.getTenantId());
+                // 校验用户数量限制：不允许降低到当前启用用户数以下
+                if (tenant.getUserNumLimit() != null && obj.get("tenantId") != null) {
+                    Long tenantId = obj.getLong("tenantId");
+                    int currentUserCount = userMapperEx.countActiveUsersByTenantId(tenantId);
+                    if (tenant.getUserNumLimit() < currentUserCount) {
+                        throw new BusinessRunTimeException(ExceptionConstants.TENANT_USER_LIMIT_UPDATE_CODE,
+                                ExceptionConstants.TENANT_USER_LIMIT_UPDATE_MSG);
+                    }
                 }
                 result = tenantMapper.updateByPrimaryKeySelective(tenant);
                 //更新租户对应的角色
                 if(obj.get("roleId")!=null) {
                     String ubValue = "[" + obj.getString("roleId") + "]";
-                    userBusinessMapperEx.updateValueByTypeAndKeyId("UserRole", tenant.getTenantId().toString(), ubValue);
+                    userBusinessMapperEx.updateValueByTypeAndKeyId("UserRole", obj.getString("tenantId"), ubValue);
                 }
             }
         }catch(Exception e){
@@ -196,10 +212,41 @@ public class TenantService {
                 TenantExample example = new TenantExample();
                 example.createCriteria().andIdIn(idList);
                 result = tenantMapper.updateByExampleSelective(tenant, example);
+                // 禁用租户时，清除该租户所有用户的 Redis session，使已登录用户立即失效
+                if (!status && result > 0) {
+                    for (Long id : idList) {
+                        Tenant t = tenantMapper.selectByPrimaryKey(id);
+                        if (t != null && t.getTenantId() != null) {
+                            deleteSessionsByTenantId(t.getTenantId());
+                        }
+                    }
+                }
             }
         }catch(Exception e){
             JshException.writeFail(logger, e);
         }
         return result;
+    }
+
+    /**
+     * 清除指定租户下所有用户的 Redis session
+     */
+    private void deleteSessionsByTenantId(Long tenantId) {
+        java.util.Set<String> tokens = redisService.redisTemplate.keys("*");
+        for (String token : tokens) {
+            if (redisService.redisTemplate.hasKey(token)
+                    && redisService.redisTemplate.type(token) == org.springframework.data.redis.connection.DataType.HASH) {
+                Object userIdValue = redisService.redisTemplate.opsForHash().get(token, "userId");
+                if (userIdValue != null) {
+                    try {
+                        com.jsh.erp.datasource.entities.User user = userMapper.selectByPrimaryKey(Long.parseLong(userIdValue.toString()));
+                        if (user != null && tenantId.equals(user.getTenantId())) {
+                            redisService.redisTemplate.delete(token);
+                        }
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+        }
     }
 }
