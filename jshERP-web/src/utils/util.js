@@ -104,13 +104,29 @@ function generateChildRouters (data) {
   for (let item of data) {
     let componentPath = "";
     item.route = "1";
-    if(item.component.indexOf("layouts")>=0){
-      componentPath = () => import('@/components'+item.component);
-    } else {
-      componentPath = () => import('@/views'+item.component);
+    // 校验组件路径合法性：不能包含..，必须以/开头
+    let component = item.component || '';
+    if(component.indexOf('..') >= 0 || !component.startsWith('/')) {
+      console.warn('非法组件路径，已跳过:', component);
+      continue;
     }
-    // eslint-disable-next-line
-    let URL = (item.url|| '').replace(/{{([^}}]+)?}}/g, (s1, s2) => eval(s2)) // URL支持{{ window.xxx }}占位符变量
+    if(component.indexOf("layouts")>=0){
+      componentPath = () => import('@/components'+component);
+    } else {
+      componentPath = () => import('@/views'+component);
+    }
+    // 安全解析URL占位符，只允许 window.xxx 模式
+    let URL = (item.url|| '').replace(/{{([^}}]+)?}}/g, (s1, s2) => {
+      try {
+        let key = s2.trim();
+        if(key.startsWith('window.')) {
+          return key.split('.').reduce((obj, k) => (obj && obj[k] !== undefined) ? obj[k] : '', window);
+        }
+        return '';
+      } catch(e) {
+        return '';
+      }
+    })
     if (isURL(URL)) {
       item.url = URL;
     }

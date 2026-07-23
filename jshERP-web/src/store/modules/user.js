@@ -119,6 +119,7 @@ const user = {
     Logout({ commit, state }) {
       return new Promise((resolve) => {
         //let logoutToken = state.token;
+        let currentUserId = Vue.ls.get(USER_ID)
         commit('SET_TOKEN', '')
         commit('SET_PERMISSIONLIST', [])
         Vue.ls.remove(USER_ID)
@@ -126,6 +127,10 @@ const user = {
         Vue.ls.remove(USER_INFO)
         Vue.ls.remove(UI_CACHE_DB_DICT_DATA)
         Vue.ls.remove(CACHE_INCLUDED_ROUTES)
+        Vue.ls.remove(ACCESS_TOKEN)
+        if(currentUserId) {
+          Vue.ls.remove('winBtnStrList_' + currentUserId)
+        }
         logout().then(() => {
           resolve()
         }).catch(() => {

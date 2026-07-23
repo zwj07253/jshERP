@@ -74,6 +74,9 @@ public class ExceptionConstants {
     //租户不能被删除
     public static final int USER_LIMIT_TENANT_DELETE_CODE = 500008;
     public static final String USER_LIMIT_TENANT_DELETE_MSG = "抱歉，租户不能被删除";
+    //租户用户数量限制不能降低到当前人数以下
+    public static final int TENANT_USER_LIMIT_UPDATE_CODE = 500030;
+    public static final String TENANT_USER_LIMIT_UPDATE_MSG = "当前租户启用用户数已超过新限制，请先减少用户数量后再修改";
     //当前部门已经存在经理
     public static final int USER_LEADER_IS_EXIST_CODE = 500009;
     public static final String USER_LEADER_IS_EXIST_MSG = "抱歉，当前部门已经存在经理";
@@ -153,6 +156,10 @@ public class ExceptionConstants {
     //修改角色信息失败
     public static final int FUNCTIONS_EDIT_FAILED_CODE = 3000002;
     public static final String FUNCTIONS_EDIT_FAILED_MSG = "修改功能模块信息失败";
+    public static final int FUNCTIONS_INVALID_CODE = 3000004;
+    public static final String FUNCTIONS_INVALID_MSG = "功能模块信息不合法：%s";
+    public static final int FUNCTIONS_IN_USE_CODE = 3000005;
+    public static final String FUNCTIONS_IN_USE_MSG = "该菜单存在子菜单或已被角色引用，不能删除";
     /**
      * 收支项目信息
      * type = 35

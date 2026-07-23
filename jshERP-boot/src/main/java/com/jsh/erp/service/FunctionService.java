@@ -2,9 +2,11 @@ package com.jsh.erp.service;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.constants.BusinessConstants;
+import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.*;
 import com.jsh.erp.datasource.mappers.FunctionMapper;
 import com.jsh.erp.datasource.mappers.FunctionMapperEx;
+import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.exception.JshException;
 import com.jsh.erp.utils.PageUtils;
 import com.jsh.erp.utils.StringUtil;
@@ -95,6 +97,7 @@ public class FunctionService {
         int result=0;
         try{
             if(BusinessConstants.DEFAULT_MANAGER.equals(userService.getCurrentUser().getLoginName())) {
+                validateParentNumber(functions.getNumber(), functions.getParentNumber());
                 functions.setState(false);
                 functions.setType("电脑版");
                 result = functionsMapper.insertSelective(functions);
@@ -113,6 +116,16 @@ public class FunctionService {
         int result=0;
         try{
             if(BusinessConstants.DEFAULT_MANAGER.equals(userService.getCurrentUser().getLoginName())) {
+                // 禁止修改已创建菜单的number
+                if(functions.getId() != null) {
+                    Function existing = functionsMapper.selectByPrimaryKey(functions.getId());
+                    if(existing != null && existing.getNumber() != null
+                            && !existing.getNumber().equals(functions.getNumber())) {
+                        throw new BusinessRunTimeException(ExceptionConstants.FUNCTIONS_INVALID_CODE,
+                                String.format(ExceptionConstants.FUNCTIONS_INVALID_MSG, "菜单编号不可修改"));
+                    }
+                }
+                validateParentNumber(functions.getNumber(), functions.getParentNumber());
                 result = functionsMapper.updateByPrimaryKeySelective(functions);
                 logService.insertLog("功能",
                         new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_EDIT).append(functions.getName()).toString(), request);
@@ -146,6 +159,22 @@ public class FunctionService {
         int result=0;
         try{
             if(BusinessConstants.DEFAULT_MANAGER.equals(userService.getCurrentUser().getLoginName())) {
+                // 检查是否存在子菜单
+                for(Function function : list) {
+                    if(hasChildren(function.getNumber())) {
+                        throw new BusinessRunTimeException(ExceptionConstants.FUNCTIONS_IN_USE_CODE,
+                                ExceptionConstants.FUNCTIONS_IN_USE_MSG);
+                    }
+                }
+                // 检查是否被角色权限引用
+                List<Long> functionIds = new ArrayList<>();
+                for(Function function : list) {
+                    functionIds.add(function.getId());
+                }
+                if(isReferencedByRoleFunctions(functionIds)) {
+                    throw new BusinessRunTimeException(ExceptionConstants.FUNCTIONS_IN_USE_CODE,
+                            ExceptionConstants.FUNCTIONS_IN_USE_MSG);
+                }
                 result = functionMapperEx.batchDeleteFunctionByIds(new Date(), userInfo == null ? null : userInfo.getId(), idArray);
                 logService.insertLog("功能", sb.toString(),
                         ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
@@ -178,6 +207,76 @@ public class FunctionService {
             JshException.readFail(logger, e);
         }
         return list==null?0:list.size();
+    }
+
+    /**
+     * 根据编号查询单个菜单（未删除）
+     */
+    public Function getByNumber(String number) throws Exception {
+        FunctionExample example = new FunctionExample();
+        example.createCriteria().andNumberEqualTo(number).andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        List<Function> list = functionsMapper.selectByExample(example);
+        return (list != null && !list.isEmpty()) ? list.get(0) : null;
+    }
+
+    /**
+     * 校验父菜单编号的合法性：父菜单必须存在，且不能形成循环引用
+     */
+    private void validateParentNumber(String number, String parentNumber) {
+        if(parentNumber == null || parentNumber.trim().isEmpty() || "0".equals(parentNumber)) {
+            return;
+        }
+        try {
+            Function parent = getByNumber(parentNumber);
+            if(parent == null) {
+                throw new BusinessRunTimeException(ExceptionConstants.FUNCTIONS_INVALID_CODE,
+                        String.format(ExceptionConstants.FUNCTIONS_INVALID_MSG, "上级菜单不存在"));
+            }
+            // 沿父节点链向上遍历检测循环
+            String current = parentNumber;
+            int depth = 0;
+            while(current != null && !"0".equals(current)) {
+                if(current.equals(number)) {
+                    throw new BusinessRunTimeException(ExceptionConstants.FUNCTIONS_INVALID_CODE,
+                            String.format(ExceptionConstants.FUNCTIONS_INVALID_MSG, "菜单层级存在循环引用"));
+                }
+                Function node = getByNumber(current);
+                if(node == null) break;
+                current = node.getParentNumber();
+                depth++;
+                if(depth > 10) {
+                    throw new BusinessRunTimeException(ExceptionConstants.FUNCTIONS_INVALID_CODE,
+                            String.format(ExceptionConstants.FUNCTIONS_INVALID_MSG, "菜单层级超过最大深度"));
+                }
+            }
+        } catch(BusinessRunTimeException e) {
+            throw e;
+        } catch(Exception e) {
+            logger.error("校验父菜单编号异常", e);
+        }
+    }
+
+    /**
+     * 检查菜单是否存在未删除的子菜单
+     */
+    private boolean hasChildren(String number) throws Exception {
+        FunctionExample example = new FunctionExample();
+        example.createCriteria().andParentNumberEqualTo(number).andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        List<Function> list = functionsMapper.selectByExample(example);
+        return list != null && !list.isEmpty();
+    }
+
+    /**
+     * 检查菜单是否被角色权限引用
+     */
+    private boolean isReferencedByRoleFunctions(List<Long> functionIds) throws Exception {
+        for(Long funId : functionIds) {
+            List<Long> roleIds = userBusinessService.getUBKeyIdByTypeAndOneValue("RoleFunctions", funId.toString());
+            if(roleIds != null && !roleIds.isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public List<Function> getRoleFunction(String pNumber)throws Exception {
@@ -234,35 +333,47 @@ public class FunctionService {
     }
 
     /**
-     * 获取当前用户所属的租户所拥有的功能id列表
+     * 从格式如 [1][2][5] 的值中解析所有ID
+     */
+    private List<Long> parseIdsFromBracketValue(String value) {
+        List<Long> ids = new ArrayList<>();
+        if(StringUtil.isNotEmpty(value)) {
+            String normalized = value.replace("][", ",").replace("[", "").replace("]", "");
+            if(StringUtil.isNotEmpty(normalized)) {
+                for(String item : normalized.split(",")) {
+                    try {
+                        ids.add(Long.parseLong(item.trim()));
+                    } catch(NumberFormatException e) {
+                        // skip invalid
+                    }
+                }
+            }
+        }
+        return ids;
+    }
+
+    /**
+     * 获取当前用户所属的租户所拥有的功能id列表（支持多角色取并集）
      * @return
      */
     public List<Long> getCurrentTenantFunIdList() throws Exception {
-        List<Long> funIdList = new ArrayList<>();
-        Long roleId = 0L;
-        String fc = "";
+        Set<Long> funIdSet = new HashSet<>();
         User userInfo = userService.getCurrentUser();
         //获取当前用户所有的角色id
         List<UserBusiness> roleList = userBusinessService.getBasicData(userInfo.getTenantId().toString(), "UserRole");
         if(roleList!=null && roleList.size()>0){
             String value = roleList.get(0).getValue();
-            if(StringUtil.isNotEmpty(value)){
-                String roleIdStr = value.replace("[", "").replace("]", "");
-                roleId = Long.parseLong(roleIdStr);
+            List<Long> roleIds = parseIdsFromBracketValue(value);
+            for(Long roleId : roleIds) {
+                List<UserBusiness> funList = userBusinessService.getBasicData(roleId.toString(), "RoleFunctions");
+                if(funList!=null && funList.size()>0){
+                    String fc = funList.get(0).getValue();
+                    funIdSet.addAll(parseIdsFromBracketValue(fc));
+                }
             }
         }
         userService.getRoleTypeByUserId(userInfo.getTenantId());
-        //当前用户所拥有的功能列表，格式如：[1][2][5]
-        List<UserBusiness> funList = userBusinessService.getBasicData(roleId.toString(), "RoleFunctions");
-        if(funList!=null && funList.size()>0){
-            fc = funList.get(0).getValue();
-        }
-        if(StringUtil.isNotEmpty(fc)) {
-            fc = fc.substring(1, fc.length() - 1);
-            fc = fc.replace("][",",");
-            funIdList = StringUtil.strToLongList(fc);
-        }
-        return funIdList;
+        return new ArrayList<>(funIdSet);
     }
 
     /**
@@ -288,35 +399,27 @@ public class FunctionService {
     }
 
     /**
-     * 获取当前用户所拥有的功能id列表
+     * 获取当前用户所拥有的功能id列表（支持多角色取并集）
      * @return
      */
     public List<Long> getCurrentUserFunIdList() throws Exception {
-        List<Long> funIdList = new ArrayList<>();
-        Long roleId = 0L;
-        String fc = "";
+        Set<Long> funIdSet = new HashSet<>();
         User userInfo = userService.getCurrentUser();
         //获取当前用户所有的角色id
         List<UserBusiness> roleList = userBusinessService.getBasicData(userInfo.getId().toString(), "UserRole");
         if(roleList!=null && roleList.size()>0){
             String value = roleList.get(0).getValue();
-            if(StringUtil.isNotEmpty(value)){
-                String roleIdStr = value.replace("[", "").replace("]", "");
-                roleId = Long.parseLong(roleIdStr);
+            List<Long> roleIds = parseIdsFromBracketValue(value);
+            for(Long roleId : roleIds) {
+                List<UserBusiness> funList = userBusinessService.getBasicData(roleId.toString(), "RoleFunctions");
+                if(funList!=null && funList.size()>0){
+                    String fc = funList.get(0).getValue();
+                    funIdSet.addAll(parseIdsFromBracketValue(fc));
+                }
             }
         }
         userService.getRoleTypeByUserId(userInfo.getId());
-        //当前用户所拥有的功能列表，格式如：[1][2][5]
-        List<UserBusiness> funList = userBusinessService.getBasicData(roleId.toString(), "RoleFunctions");
-        if(funList!=null && funList.size()>0){
-            fc = funList.get(0).getValue();
-        }
-        if(StringUtil.isNotEmpty(fc)) {
-            fc = fc.substring(1, fc.length() - 1);
-            fc = fc.replace("][",",");
-            funIdList = StringUtil.strToLongList(fc);
-        }
-        return funIdList;
+        return new ArrayList<>(funIdSet);
     }
 
     /**

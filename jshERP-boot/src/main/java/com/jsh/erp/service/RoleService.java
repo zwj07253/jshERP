@@ -354,6 +354,17 @@ public class RoleService {
         if(role == null || BusinessConstants.DELETE_FLAG_DELETED.equals(role.getDeleteFlag())) {
             throw invalidRole("角色不存在或已删除");
         }
+        // 租户归属校验：非admin用户只能操作自己租户的角色
+        User currentUser = userService.getCurrentUser();
+        if(currentUser != null && !BusinessConstants.DEFAULT_MANAGER.equals(currentUser.getLoginName())) {
+            Long currentTenantId = currentUser.getTenantId();
+            Long roleTenantId = role.getTenantId();
+            if(currentTenantId != null && currentTenantId != 0L) {
+                if(!currentTenantId.equals(roleTenantId)) {
+                    throw permissionDenied();
+                }
+            }
+        }
         return role;
     }
 

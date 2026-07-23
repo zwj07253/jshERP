@@ -7,7 +7,7 @@ import { filterObj, getMpListShort, getNowFormatStr } from '@/utils/util'
 import { deleteAction, getAction, postAction, downFile, downFilePost, getFileAccessHttpUrl } from '@/api/manage'
 import Vue from 'vue'
 import VueDraggableResizable from 'vue-draggable-resizable'
-import { ACCESS_TOKEN } from "@/store/mutation-types"
+import { ACCESS_TOKEN, USER_ID } from "@/store/mutation-types"
 import {mixinDevice} from '@/utils/mixin.js'
 
 export const JeecgListMixin = {
@@ -425,7 +425,7 @@ export const JeecgListMixin = {
     },
     /* 按钮权限 */
     initActiveBtnStr() {
-      let btnStrList = Vue.ls.get('winBtnStrList'); //按钮功能列表 JSON字符串
+      let btnStrList = Vue.ls.get('winBtnStrList_' + Vue.ls.get(USER_ID)); //按钮功能列表 JSON字符串（按用户隔离）
       this.btnEnableList = ""; //按钮列表
       if (this.urlPath && btnStrList) {
         for (let i = 0; i < btnStrList.length; i++) {
