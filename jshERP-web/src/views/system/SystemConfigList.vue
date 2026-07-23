@@ -159,6 +159,7 @@
 <!-- b y 7 5 2 7  1 8 9 2 0 -->
 <script>
   import pick from 'lodash.pick'
+  import debounce from 'lodash/debounce'
   import JSelectMultiple from '@/components/jeecg/JSelectMultiple'
   import { addSystemConfig, editSystemConfig } from '@/api/api'
   import { autoJumpNextInput } from '@/utils/util'
@@ -237,6 +238,7 @@
       }
     },
     created () {
+      this.debouncedSave = debounce(this.doSave, 500)
       this.init()
       this.loadPlugins()
       if(this.isDesktop()) {
@@ -462,8 +464,11 @@
         this.model.materialPriceTaxFlag = checked?'1':'0'
         this.handleChange()
       },
-      //改变内容
+      //改变内容（防抖，500ms内多次操作只提交最后一次）
       handleChange() {
+        this.debouncedSave()
+      },
+      doSave() {
         this.confirmLoading = true
         let obj
         if(!this.model.id){
@@ -476,6 +481,8 @@
             this.init()
           }else{
             this.$message.warning(res.data.message)
+            // 保存失败时回滚UI状态：重新从服务端加载
+            this.init()
           }
         }).finally(() => {
           this.confirmLoading = false

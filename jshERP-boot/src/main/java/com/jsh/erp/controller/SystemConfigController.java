@@ -143,6 +143,8 @@ public class SystemConfigController extends BaseController {
             res.code = 200;
             if(list.size()>0) {
                 res.data = list.get(0);
+            } else {
+                res.data = new SystemConfig();
             }
         } catch(Exception e){
             logger.error(e.getMessage(), e);

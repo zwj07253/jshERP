@@ -953,6 +953,7 @@ COMMENT ON COLUMN jsh_platform_config.platform_key_info IS '关键词名称';
 COMMENT ON COLUMN jsh_platform_config.platform_value IS '值';
 
 SELECT setval('jsh_platform_config_id_seq', 1);
+CREATE UNIQUE INDEX uk_platform_config_key ON jsh_platform_config(platform_key);
 
 -- ============================================================
 -- 22. jsh_role - 角色表
@@ -1267,6 +1268,7 @@ COMMENT ON COLUMN jsh_system_config.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_system_config.delete_flag IS '删除标记，0未删除，1删除';
 
 SELECT setval('jsh_system_config_id_seq', 1);
+CREATE UNIQUE INDEX uk_system_config_tenant_id ON jsh_system_config(tenant_id);
 
 -- ============================================================
 -- 29. jsh_tenant - 租户

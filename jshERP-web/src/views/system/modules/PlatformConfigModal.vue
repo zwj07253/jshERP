@@ -88,12 +88,12 @@
             obj.then((res)=>{
               if(res.code === 200){
                 that.$emit('ok');
+                that.close();
               }else{
                 that.$message.warning(res.data.message);
               }
             }).finally(() => {
               that.confirmLoading = false;
-              that.close();
             })
           }
         })

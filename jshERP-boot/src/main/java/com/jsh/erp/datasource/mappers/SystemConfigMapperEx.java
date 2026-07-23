@@ -12,5 +12,6 @@ public interface SystemConfigMapperEx {
     List<SystemConfig> selectByConditionSystemConfig(
             @Param("companyName") String companyName);
 
-    int batchDeleteSystemConfigByIds(@Param("updateTime") Date updateTime, @Param("updater") Long updater, @Param("ids") String ids[]);
+    int batchDeleteSystemConfigByIds(@Param("updateTime") Date updateTime, @Param("updater") Long updater, @Param("ids") String ids[],
+                                    @Param("tenantId") Long tenantId);
 }

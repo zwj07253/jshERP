@@ -20,13 +20,32 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.mail.*;
 import javax.mail.internet.*;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 @Service
 public class PlatformConfigService {
     private Logger logger = LoggerFactory.getLogger(PlatformConfigService.class);
+
+    /** 公开可查询的平台配置 key（无需 admin 权限） */
+    private static final Set<String> PUBLIC_PLATFORM_KEYS = new HashSet<>(Arrays.asList(
+            "platform_name", "platform_url", "register_flag", "checkcode_flag",
+            "bill_print_flag", "bill_print_url", "pay_fee_url", "send_workflow_url",
+            "bill_excel_url"
+    ));
+
+    /** 可通过 updatePlatformConfigByKey 修改的 key */
+    private static final Set<String> MUTABLE_PLATFORM_KEYS = new HashSet<>(Arrays.asList(
+            "platform_name", "platform_url", "register_flag", "checkcode_flag",
+            "bill_print_flag", "bill_print_url", "pay_fee_url", "send_workflow_url",
+            "bill_excel_url", "email_from", "email_auth_code", "email_smtp_host",
+            "aliOss_endpoint", "aliOss_accessKeyId", "aliOss_accessKeySecret",
+            "aliOss_bucketName", "aliOss_linkUrl", "weixinUrl", "weixinAppid", "weixinSecret"
+    ));
 
     @Resource
     private UserService userService;
@@ -140,6 +159,10 @@ public class PlatformConfigService {
         int result=0;
         try{
             if(BusinessConstants.DEFAULT_MANAGER.equals(userService.getCurrentUser().getLoginName())) {
+                if(!MUTABLE_PLATFORM_KEYS.contains(platformKey)) {
+                    logger.warn("拒绝更新非允许的平台配置key: {}", platformKey);
+                    return 0;
+                }
                 PlatformConfig platformConfig = new PlatformConfig();
                 platformConfig.setPlatformValue(platformValue);
                 PlatformConfigExample example = new PlatformConfigExample();
@@ -155,7 +178,7 @@ public class PlatformConfigService {
     public PlatformConfig getInfoByKey(String platformKey)throws Exception {
         PlatformConfig platformConfig = new PlatformConfig();
         try{
-            if(platformKey.contains("aliOss") || platformKey.contains("weixin")) {
+            if(!PUBLIC_PLATFORM_KEYS.contains(platformKey)) {
                 platformConfig = null;
             } else {
                 PlatformConfigExample example = new PlatformConfigExample();
