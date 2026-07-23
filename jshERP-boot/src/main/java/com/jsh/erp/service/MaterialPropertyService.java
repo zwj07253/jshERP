@@ -2,12 +2,14 @@ package com.jsh.erp.service;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.constants.BusinessConstants;
+import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.MaterialProperty;
 import com.jsh.erp.datasource.entities.MaterialPropertyExample;
 import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.mappers.MaterialPropertyMapper;
 import com.jsh.erp.datasource.mappers.MaterialPropertyMapperEx;
 import com.jsh.erp.exception.JshException;
+import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.utils.PageUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +24,9 @@ import java.util.*;
 
 @Service
 public class MaterialPropertyService {
+    private static final String MATERIAL_PROPERTY_URL = "/material/material_property";
+    private static final String EDIT_BUTTON_CODE = "1";
+    private static final Set<String> ALLOWED_NATIVE_NAMES = new LinkedHashSet<>(Arrays.asList("扩展1", "扩展2", "扩展3"));
     private Logger logger = LoggerFactory.getLogger(MaterialPropertyService.class);
 
     @Resource
@@ -109,7 +114,12 @@ public class MaterialPropertyService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertMaterialProperty(JSONObject obj, HttpServletRequest request)throws Exception {
-        MaterialProperty materialProperty = JSONObject.parseObject(obj.toJSONString(), MaterialProperty.class);
+        checkEditPermission();
+        MaterialProperty materialProperty = buildMaterialProperty(obj, false);
+        validateMaterialProperty(materialProperty);
+        if (checkIsNativeNameExist(materialProperty.getNativeName())) {
+            throw invalidProperty("扩展字段已存在");
+        }
         int  result=0;
         try{
             result = materialPropertyMapper.insertSelective(materialProperty);
@@ -123,7 +133,14 @@ public class MaterialPropertyService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateMaterialProperty(JSONObject obj, HttpServletRequest request)throws Exception {
-        MaterialProperty materialProperty = JSONObject.parseObject(obj.toJSONString(), MaterialProperty.class);
+        checkEditPermission();
+        MaterialProperty materialProperty = buildMaterialProperty(obj, true);
+        MaterialProperty existing = materialProperty.getId() == null ? null : getMaterialProperty(materialProperty.getId());
+        if (existing == null || BusinessConstants.DELETE_FLAG_DELETED.equals(existing.getDeleteFlag())) {
+            throw invalidProperty("扩展字段不存在或已删除");
+        }
+        materialProperty.setNativeName(existing.getNativeName());
+        validateMaterialProperty(materialProperty);
         int  result=0;
         try{
             result = materialPropertyMapper.updateByPrimaryKeySelective(materialProperty);
@@ -137,16 +154,18 @@ public class MaterialPropertyService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteMaterialProperty(Long id, HttpServletRequest request)throws Exception {
+        checkEditPermission();
         return batchDeleteMaterialPropertyByIds(id.toString());
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteMaterialProperty(String ids, HttpServletRequest request)throws Exception {
+        checkEditPermission();
         return batchDeleteMaterialPropertyByIds(ids);
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
-    public int batchDeleteMaterialPropertyByIds(String ids) throws Exception{
+    private int batchDeleteMaterialPropertyByIds(String ids) throws Exception{
         User userInfo=userService.getCurrentUser();
         String [] idArray=ids.split(",");
         int  result=0;
@@ -170,8 +189,56 @@ public class MaterialPropertyService {
         return count>0;
     }
 
-    public int updateMaterialPropertyByNativeName(String nativeName, String anotherName) {
-        materialPropertyMapperEx.updateMaterialPropertyByNativeName(nativeName, anotherName);
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
+    public int updateMaterialPropertyByNativeName(String nativeName, String anotherName, HttpServletRequest request) throws Exception {
+        checkEditPermission();
+        MaterialProperty property = new MaterialProperty();
+        property.setNativeName(nativeName);
+        property.setAnotherName(anotherName);
+        validateMaterialProperty(property);
+        materialPropertyMapperEx.updateMaterialPropertyByNativeName(property.getNativeName(), property.getAnotherName());
+        logService.insertLog("商品扩展字段",
+                new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_EDIT).append(property.getNativeName()).toString(), request);
         return 1;
+    }
+
+    private MaterialProperty buildMaterialProperty(JSONObject obj, boolean update) {
+        MaterialProperty property = new MaterialProperty();
+        if (update) {
+            property.setId(obj.getLong("id"));
+        }
+        property.setNativeName(obj.getString("nativeName"));
+        property.setAnotherName(obj.getString("anotherName"));
+        if (!update) {
+            property.setEnabled(true);
+            property.setDeleteFlag(BusinessConstants.DELETE_FLAG_EXISTS);
+        }
+        return property;
+    }
+
+    private void validateMaterialProperty(MaterialProperty property) {
+        String nativeName = com.jsh.erp.utils.StringUtil.toNull(property.getNativeName());
+        String anotherName = com.jsh.erp.utils.StringUtil.toNull(property.getAnotherName());
+        if (!ALLOWED_NATIVE_NAMES.contains(nativeName)) {
+            throw invalidProperty("原始字段名称无效");
+        }
+        if (anotherName == null || anotherName.length() > 30) {
+            throw invalidProperty("别名不能为空且不能超过30个字符");
+        }
+        property.setNativeName(nativeName);
+        property.setAnotherName(anotherName);
+    }
+
+    private void checkEditPermission() throws Exception {
+        User user = userService.getCurrentUser();
+        if (!userService.hasButtonPermission(user == null ? null : user.getId(), MATERIAL_PROPERTY_URL, EDIT_BUTTON_CODE)) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_PERMISSION_CODE,
+                    ExceptionConstants.MATERIAL_PERMISSION_MSG);
+        }
+    }
+
+    private BusinessRunTimeException invalidProperty(String reason) {
+        return new BusinessRunTimeException(ExceptionConstants.MATERIAL_ATTRIBUTE_INVALID_CODE,
+                String.format(ExceptionConstants.MATERIAL_ATTRIBUTE_INVALID_MSG, reason));
     }
 }

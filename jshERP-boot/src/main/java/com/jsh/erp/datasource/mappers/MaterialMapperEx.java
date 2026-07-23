@@ -109,6 +109,8 @@ public interface MaterialMapperEx {
 
     List<Material> getMaterialListByUnitIds(@Param("unitIds") List<Long> unitIds);
 
+    int getCountByMaterialAttributeIds(@Param("attributeIds") List<Long> attributeIds);
+
     List<String> getBarCodeList();
 
     List<MaterialVo4Unit> getMaterialByMeId(
@@ -117,6 +119,10 @@ public interface MaterialMapperEx {
     List<String> getMaterialNameList();
 
     int setUnitIdToNull(@Param("id") Long id);
+
+    int setCategoryIdToNull(@Param("id") Long id);
+
+    int batchSetCategoryIdToNull(@Param("ids") List<Long> ids);
 
     int setExpiryNumToNull(@Param("id") Long id);
 

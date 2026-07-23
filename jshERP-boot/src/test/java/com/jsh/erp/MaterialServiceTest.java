@@ -15,6 +15,7 @@ import com.jsh.erp.datasource.mappers.MaterialMapperEx;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.service.MaterialService;
 import com.jsh.erp.service.MaterialExtendService;
+import com.jsh.erp.service.MaterialCategoryService;
 import com.jsh.erp.service.LogService;
 import com.jsh.erp.service.UnitService;
 import com.jsh.erp.service.UserService;
@@ -31,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,6 +54,8 @@ class MaterialServiceTest {
     private UnitService unitService;
     @Mock
     private DepotItemMapperEx depotItemMapperEx;
+    @Mock
+    private MaterialCategoryService materialCategoryService;
 
     @InjectMocks
     private MaterialService materialService;
@@ -64,6 +68,37 @@ class MaterialServiceTest {
                 () -> materialService.insertMaterial(new JSONObject(), null));
 
         assertEquals(ExceptionConstants.MATERIAL_PERMISSION_CODE, exception.getCode());
+        verify(materialMapperEx, never()).insertSelectiveEx(any());
+    }
+
+    @Test
+    void rejectsExportWithoutExportPermission() throws Exception {
+        User user = new User();
+        user.setId(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasButtonPermission(101L, "/material/material", "3")).thenReturn(false);
+
+        BusinessRunTimeException exception = assertThrows(BusinessRunTimeException.class,
+                () -> materialService.exportExcel(null, null, null, null, null, null, null,
+                        null, null, null, null, new org.springframework.mock.web.MockHttpServletRequest(), null));
+
+        assertEquals(ExceptionConstants.MATERIAL_EXPORT_PERMISSION_CODE, exception.getCode());
+        verify(materialMapperEx, never()).exportExcel(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void rejectsMissingMaterialCategory() throws Exception {
+        stubCurrentUser(true);
+        JSONObject body = new JSONObject();
+        body.put("name", "商品");
+        body.put("categoryId", 999L);
+        body.put("sortList", "[]");
+        when(materialCategoryService.getMaterialCategory(999L)).thenReturn(null);
+
+        BusinessRunTimeException exception = assertThrows(BusinessRunTimeException.class,
+                () -> materialService.insertMaterial(body, null));
+
+        assertEquals(ExceptionConstants.MATERIAL_CATEGORY_REFERENCE_INVALID_CODE, exception.getCode());
         verify(materialMapperEx, never()).insertSelectiveEx(any());
     }
 
@@ -102,6 +137,7 @@ class MaterialServiceTest {
         body.put("tenantId", 888L);
         body.put("deleteFlag", "1");
         body.put("enabled", false);
+        body.put("categoryId", 0L);
         body.put("sortList", "[]");
 
         materialService.insertMaterial(body, null);
@@ -112,7 +148,25 @@ class MaterialServiceTest {
         assertNull(inserted.getId());
         assertNull(inserted.getTenantId());
         assertNull(inserted.getDeleteFlag());
+        assertNull(inserted.getCategoryId());
         assertEquals(true, inserted.getEnabled());
+    }
+
+    @Test
+    void batchUpdateClearsLegacyZeroCategory() throws Exception {
+        stubCurrentUser(true);
+        when(materialMapper.updateByExampleSelective(any(), any())).thenReturn(1);
+        when(materialMapperEx.batchSetCategoryIdToNull(Collections.singletonList(1L))).thenReturn(1);
+        JSONObject requested = new JSONObject();
+        requested.put("categoryId", 0L);
+        JSONObject body = new JSONObject();
+        body.put("ids", "1");
+        body.put("material", requested.toJSONString());
+
+        assertEquals(1, materialService.batchUpdate(body));
+
+        verify(materialMapperEx).batchSetCategoryIdToNull(Collections.singletonList(1L));
+        verify(materialCategoryService, never()).getMaterialCategory(anyLong());
     }
 
     @Test

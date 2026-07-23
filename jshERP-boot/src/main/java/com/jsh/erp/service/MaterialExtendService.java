@@ -7,9 +7,12 @@ import com.jsh.erp.constants.BusinessConstants;
 import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.MaterialExtend;
 import com.jsh.erp.datasource.entities.MaterialExtendExample;
+import com.jsh.erp.datasource.entities.Material;
+import com.jsh.erp.datasource.entities.MaterialExample;
 import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.mappers.MaterialExtendMapper;
 import com.jsh.erp.datasource.mappers.MaterialExtendMapperEx;
+import com.jsh.erp.datasource.mappers.MaterialMapper;
 import com.jsh.erp.datasource.mappers.DepotItemMapperEx;
 import com.jsh.erp.datasource.vo.MaterialExtendVo4List;
 import com.jsh.erp.exception.BusinessRunTimeException;
@@ -41,6 +44,8 @@ public class MaterialExtendService {
     private RedisService redisService;
     @Resource
     private DepotItemMapperEx depotItemMapperEx;
+    @Resource
+    private MaterialMapper materialMapper;
     
     public MaterialExtend getMaterialExtend(long id)throws Exception {
         MaterialExtend result=null;
@@ -151,6 +156,7 @@ public class MaterialExtendService {
                 MaterialExtend materialExtend = new MaterialExtend();
                 JSONObject tempInsertedJson = JSONObject.parseObject(insertedJson.getString(i));
                 materialExtend.setMaterialId(materialId);
+                materialExtend.setDefaultFlag("0");
                 if (StringUtils.isNotEmpty(tempInsertedJson.getString("barCode"))) {
                     int exist = checkIsBarCodeExist(0L, tempInsertedJson.getString("barCode"));
                     if(exist>0) {
@@ -360,25 +366,29 @@ public class MaterialExtendService {
         return result;
     }
 
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertMaterialExtend(JSONObject obj, HttpServletRequest request) throws Exception{
         checkMaterialEditPermission();
         MaterialExtend materialExtend = JSONObject.parseObject(obj.toJSONString(), MaterialExtend.class);
         if (materialExtend.getMaterialId() == null) {
             throw invalidSku("商品不能为空");
         }
+        requireActiveMaterial(materialExtend.getMaterialId());
         validateStandaloneDetail(materialExtend, 0L);
         materialExtend.setId(null);
         materialExtend.setTenantId(null);
         materialExtend.setDeleteFlag(null);
-        int result=0;
-        try{
-            result = materialExtendMapper.insertSelective(materialExtend);
-        }catch(Exception e){
-            JshException.writeFail(logger, e);
-        }
+        materialExtend.setDefaultFlag("0");
+        materialExtend.setCreateTime(null);
+        materialExtend.setCreateSerial(null);
+        materialExtend.setUpdateTime(null);
+        materialExtend.setUpdateSerial(null);
+        int result = insertMaterialExtend(materialExtend);
+        normalizeDefaultFlag(materialExtend.getMaterialId());
         return result;
     }
 
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateMaterialExtend(JSONObject obj, HttpServletRequest request)throws Exception {
         checkMaterialEditPermission();
         MaterialExtend materialExtend = JSONObject.parseObject(obj.toJSONString(), MaterialExtend.class);
@@ -395,12 +405,13 @@ public class MaterialExtendService {
         materialExtend.setMaterialId(null);
         materialExtend.setTenantId(null);
         materialExtend.setDeleteFlag(null);
-        int result=0;
-        try{
-            result = materialExtendMapper.updateByPrimaryKeySelective(materialExtend);
-        }catch(Exception e){
-            JshException.writeFail(logger, e);
-        }
+        materialExtend.setDefaultFlag(null);
+        materialExtend.setCreateTime(null);
+        materialExtend.setCreateSerial(null);
+        materialExtend.setUpdateTime(null);
+        materialExtend.setUpdateSerial(null);
+        int result = updateMaterialExtend(materialExtend);
+        normalizeDefaultFlag(existing.getMaterialId());
         return result;
     }
 
@@ -488,6 +499,17 @@ public class MaterialExtendService {
 
     private void requireActiveDetail(Long id) throws Exception {
         if (id == null || getMaterialExtend(id) == null) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_NOT_EXISTS_CODE,
+                    ExceptionConstants.MATERIAL_NOT_EXISTS_MSG);
+        }
+    }
+
+    private void requireActiveMaterial(Long materialId) {
+        MaterialExample example = new MaterialExample();
+        example.createCriteria().andIdEqualTo(materialId)
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        List<Material> materials = materialMapper.selectByExample(example);
+        if (materials == null || materials.isEmpty()) {
             throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_NOT_EXISTS_CODE,
                     ExceptionConstants.MATERIAL_NOT_EXISTS_MSG);
         }

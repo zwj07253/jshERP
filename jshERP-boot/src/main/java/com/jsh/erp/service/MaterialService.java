@@ -36,6 +36,7 @@ import java.util.*;
 public class MaterialService {
     private static final String MATERIAL_URL = "/material/material";
     private static final String EDIT_BUTTON_CODE = "1";
+    private static final String EXPORT_BUTTON_CODE = "3";
 
     private Logger logger = LoggerFactory.getLogger(MaterialService.class);
 
@@ -168,6 +169,9 @@ public class MaterialService {
     public int insertMaterial(JSONObject obj, HttpServletRequest request)throws Exception {
         checkMaterialEditPermission();
         Material m = JSONObject.parseObject(obj.toJSONString(), Material.class);
+        if (m.getCategoryId() != null && m.getCategoryId() <= 0) {
+            m.setCategoryId(null);
+        }
         if (m.getUnitId() != null && m.getUnitId() <= 0) {
             m.setUnitId(null);
         }
@@ -178,6 +182,7 @@ public class MaterialService {
         //构造多属性数组字符串
         m.setAttribute(parseAttributeBySku(obj));
         try{
+            validateMaterialCategory(m.getCategoryId());
             validateMaterialUnitConfiguration(obj, m, true);
             validateInitialStock(obj, m);
             materialMapperEx.insertSelectiveEx(m);
@@ -222,6 +227,11 @@ public class MaterialService {
     public int updateMaterial(JSONObject obj, HttpServletRequest request) throws Exception{
         checkMaterialEditPermission();
         Material material = JSONObject.parseObject(obj.toJSONString(), Material.class);
+        boolean clearCategory = obj.containsKey("categoryId")
+                && (material.getCategoryId() == null || material.getCategoryId() <= 0);
+        if (clearCategory) {
+            material.setCategoryId(null);
+        }
         if (material.getUnitId() != null && material.getUnitId() <= 0) {
             material.setUnitId(null);
         }
@@ -249,9 +259,15 @@ public class MaterialService {
         //构造多属性数组字符串
         material.setAttribute(parseAttributeBySku(obj));
         try{
+            if (obj.containsKey("categoryId")) {
+                validateMaterialCategory(material.getCategoryId());
+            }
             validateMaterialUnitConfiguration(obj, material, unitChanged);
             validateInitialStock(obj, material);
             materialMapper.updateByPrimaryKeySelective(material);
+            if (clearCategory) {
+                materialMapperEx.setCategoryIdToNull(material.getId());
+            }
             if(material.getUnitId() == null) {
                 materialMapperEx.setUnitIdToNull(material.getId());
             }
@@ -615,8 +631,12 @@ public class MaterialService {
     }
 
     public void exportExcel(String categoryId, String materialParam, String color, String materialOther, String weight,
-                                             String expiryNum, String enabled, String enableSerialNumber, String enableBatchNumber,
-                                             String remark, String mpList, HttpServletResponse response)throws Exception {
+                                              String expiryNum, String enabled, String enableSerialNumber, String enableBatchNumber,
+                                              String remark, String mpList, HttpServletRequest request,
+                                              HttpServletResponse response)throws Exception {
+        checkMaterialExportPermission();
+        Long userId = userService.getUserId(request);
+        String priceLimit = userService.getRoleTypeByUserId(userId).getPriceLimit();
         String title = "商品信息";
         List<Long> idList = new ArrayList<>();
         if(StringUtil.isNotEmpty(categoryId)){
@@ -678,10 +698,14 @@ public class MaterialService {
                 objs[11] = otherMaterialMap.get(m.getId()) == null ? "" : otherMaterialMap.get(m.getId()).getBarCode();
                 objs[12] = m.getRatio() == null ? "" : m.getRatio();
                 objs[13] = m.getSku();
-                objs[14] = m.getPurchaseDecimal() == null ? "" : m.getPurchaseDecimal().setScale(3, BigDecimal.ROUND_HALF_UP);
-                objs[15] = m.getCommodityDecimal() == null ? "" : m.getCommodityDecimal().setScale(3, BigDecimal.ROUND_HALF_UP);
-                objs[16] = m.getWholesaleDecimal() == null ? "" : m.getWholesaleDecimal().setScale(3, BigDecimal.ROUND_HALF_UP);
-                objs[17] = m.getLowDecimal() == null ? "" : m.getLowDecimal().setScale(3, BigDecimal.ROUND_HALF_UP);
+                BigDecimal purchasePrice = roleService.parseBillPriceByLimit(m.getPurchaseDecimal(), "buy", priceLimit, request);
+                BigDecimal retailPrice = roleService.parseBillPriceByLimit(m.getCommodityDecimal(), "retail", priceLimit, request);
+                BigDecimal salePrice = roleService.parseBillPriceByLimit(m.getWholesaleDecimal(), "sale", priceLimit, request);
+                BigDecimal lowPrice = roleService.parseBillPriceByLimit(m.getLowDecimal(), "sale", priceLimit, request);
+                objs[14] = purchasePrice == null ? "" : purchasePrice.setScale(3, BigDecimal.ROUND_HALF_UP);
+                objs[15] = retailPrice == null ? "" : retailPrice.setScale(3, BigDecimal.ROUND_HALF_UP);
+                objs[16] = salePrice == null ? "" : salePrice.setScale(3, BigDecimal.ROUND_HALF_UP);
+                objs[17] = lowPrice == null ? "" : lowPrice.setScale(3, BigDecimal.ROUND_HALF_UP);
                 objs[18] = m.getEnabled() ? "1" : "0";
                 objs[19] = m.getEnableSerialNumber();
                 objs[20] = m.getEnableBatchNumber();
@@ -1617,10 +1641,23 @@ public class MaterialService {
         String ids = jsonObject.getString("ids");
         String materialStr = jsonObject.getString("material");
         List<Long> idList = StringUtil.strToLongList(ids);
-        Material material = buildBatchUpdateMaterial(JSONObject.parseObject(materialStr));
+        JSONObject source = JSONObject.parseObject(materialStr);
+        Material material = buildBatchUpdateMaterial(source);
+        boolean clearCategory = source.containsKey("categoryId")
+                && (material.getCategoryId() == null || material.getCategoryId() <= 0);
+        if (clearCategory) {
+            material.setCategoryId(null);
+        }
+        if (material.getCategoryId() != null) {
+            validateMaterialCategory(material.getCategoryId());
+        }
         MaterialExample example = new MaterialExample();
         example.createCriteria().andIdIn(idList).andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
-        return materialMapper.updateByExampleSelective(material, example);
+        int result = materialMapper.updateByExampleSelective(material, example);
+        if (clearCategory) {
+            result = materialMapperEx.batchSetCategoryIdToNull(idList);
+        }
+        return result;
     }
 
     public void checkMaterialEditPermission() throws Exception {
@@ -1629,6 +1666,25 @@ public class MaterialService {
         if (!userService.hasButtonPermission(userId, MATERIAL_URL, EDIT_BUTTON_CODE)) {
             throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_PERMISSION_CODE,
                     ExceptionConstants.MATERIAL_PERMISSION_MSG);
+        }
+    }
+
+    public void checkMaterialExportPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if (!userService.hasButtonPermission(userId, MATERIAL_URL, EXPORT_BUTTON_CODE)) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_EXPORT_PERMISSION_CODE,
+                    ExceptionConstants.MATERIAL_EXPORT_PERMISSION_MSG);
+        }
+    }
+
+    private void validateMaterialCategory(Long categoryId) throws Exception {
+        if (categoryId == null) {
+            return;
+        }
+        if (materialCategoryService.getMaterialCategory(categoryId) == null) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_CATEGORY_REFERENCE_INVALID_CODE,
+                    ExceptionConstants.MATERIAL_CATEGORY_REFERENCE_INVALID_MSG);
         }
     }
 

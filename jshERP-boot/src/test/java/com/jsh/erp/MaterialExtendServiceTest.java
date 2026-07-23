@@ -5,6 +5,7 @@ import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.datasource.mappers.MaterialExtendMapperEx;
 import com.jsh.erp.datasource.mappers.MaterialExtendMapper;
 import com.jsh.erp.datasource.mappers.DepotItemMapperEx;
+import com.jsh.erp.datasource.mappers.MaterialMapper;
 import com.jsh.erp.datasource.vo.MaterialExtendVo4List;
 import com.jsh.erp.service.UserService;
 import com.jsh.erp.service.RedisService;
@@ -38,6 +39,8 @@ class MaterialExtendServiceTest {
     private UserService userService;
     @Mock
     private RedisService redisService;
+    @Mock
+    private MaterialMapper materialMapper;
 
     @InjectMocks
     private MaterialExtendService materialExtendService;
@@ -62,6 +65,17 @@ class MaterialExtendServiceTest {
 
         assertThrows(BusinessRunTimeException.class,
                 () -> materialExtendService.saveDetials(body, "[]", 10L, "update"));
+    }
+
+    @Test
+    void rejectsStandaloneWriteWithoutMaterialEditPermission() throws Exception {
+        com.jsh.erp.datasource.entities.User user = new com.jsh.erp.datasource.entities.User();
+        user.setId(101L);
+        when(userService.getCurrentUser()).thenReturn(user);
+        when(userService.hasButtonPermission(101L, "/material/material", "1")).thenReturn(false);
+
+        assertThrows(BusinessRunTimeException.class,
+                () -> materialExtendService.insertMaterialExtend(new JSONObject(), new MockHttpServletRequest()));
     }
 
     @Test

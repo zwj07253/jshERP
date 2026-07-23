@@ -570,6 +570,22 @@
         and COALESCE(delete_flag,'0') !='1'
     </select>
 
+    <select id="getCountByMaterialAttributeIds" resultType="java.lang.Integer">
+        select count(*)
+        from jsh_material m
+        where COALESCE(m.delete_flag, '0') != '1'
+          and m.attribute is not null
+          and btrim(m.attribute) != ''
+          and EXISTS (
+            select 1
+            from jsonb_array_elements_text(COALESCE(m.attribute::jsonb -> 'manySku', '[]'::jsonb)) attr(value)
+            where attr.value in
+            <foreach collection="attributeIds" item="id" separator="," open="(" close=")">
+                CAST(#{id} AS text)
+            </foreach>
+          )
+    </select>
+
     <select id="getBarCodeList" resultType="java.lang.String">
         select me.bar_code from jsh_material_extend me
         where COALESCE(me.delete_Flag,'0') !='1'
@@ -869,5 +885,22 @@
             )
         </if>
     </select>
+
+    <update id="setCategoryIdToNull">
+        update jsh_material
+        set category_id = null
+        where id = #{id}
+          and COALESCE(delete_flag, '0') != '1'
+    </update>
+
+    <update id="batchSetCategoryIdToNull">
+        update jsh_material
+        set category_id = null
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        and COALESCE(delete_flag, '0') != '1'
+    </update>
 
 </mapper>

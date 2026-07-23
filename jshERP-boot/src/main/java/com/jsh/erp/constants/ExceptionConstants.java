@@ -440,6 +440,14 @@ public class ExceptionConstants {
     public static final String MATERIAL_SKU_CONFIG_INVALID_MSG = "多属性明细设置不合法：%s";
     public static final int MATERIAL_SKU_HISTORY_LOCK_CODE = 8000035;
     public static final String MATERIAL_SKU_HISTORY_LOCK_MSG = "多属性明细已被历史单据使用，不允许修改或删除";
+    public static final int MATERIAL_ATTRIBUTE_INVALID_CODE = 8000036;
+    public static final String MATERIAL_ATTRIBUTE_INVALID_MSG = "商品属性设置不合法：%s";
+    public static final int MATERIAL_ATTRIBUTE_IN_USE_CODE = 8000037;
+    public static final String MATERIAL_ATTRIBUTE_IN_USE_MSG = "商品属性已被商品使用，不允许修改或删除";
+    public static final int MATERIAL_CATEGORY_REFERENCE_INVALID_CODE = 8000038;
+    public static final String MATERIAL_CATEGORY_REFERENCE_INVALID_MSG = "商品类别不存在或已删除";
+    public static final int MATERIAL_EXPORT_PERMISSION_CODE = 8000039;
+    public static final String MATERIAL_EXPORT_PERMISSION_MSG = "抱歉，当前用户没有商品信息的导出权限";
     public static final String MATERIAL_SKU_BEGIN_STOCK_FAILED_MSG = "多属性商品%s不能输入库存，建议进行盘点录入";
     //商品条码不存在，请重新选择
     public static final int MATERIAL_BARCODE_IS_NOT_EXIST_CODE = 8000026;
