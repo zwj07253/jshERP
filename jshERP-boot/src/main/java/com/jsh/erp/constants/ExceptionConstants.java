@@ -80,6 +80,15 @@ public class ExceptionConstants {
     //当前部门已经存在经理
     public static final int USER_LEADER_IS_EXIST_CODE = 500009;
     public static final String USER_LEADER_IS_EXIST_MSG = "抱歉，当前部门已经存在经理";
+    //注册功能已关闭
+    public static final int REGISTER_DISABLED_CODE = 500014;
+    public static final String REGISTER_DISABLED_MSG = "注册功能已关闭，请联系平台管理员";
+    //平台配置URL格式不合法
+    public static final int PLATFORM_CONFIG_URL_INVALID_CODE = 500015;
+    public static final String PLATFORM_CONFIG_URL_INVALID_MSG = "URL格式不合法，必须以http://或https://开头";
+    //平台配置开关值不合法
+    public static final int PLATFORM_CONFIG_FLAG_INVALID_CODE = 500016;
+    public static final String PLATFORM_CONFIG_FLAG_INVALID_MSG = "开关配置值不合法，只能为0或1";
     //验证码错误
     public static final int USER_JCAPTCHA_ERROR_CODE = 500010;
     public static final String USER_JCAPTCHA_ERROR_MSG = "验证码错误";

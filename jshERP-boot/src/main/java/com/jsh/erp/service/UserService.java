@@ -554,6 +554,16 @@ public class UserService {
     }
 
     /**
+     * 判断当前用户是否为平台超级管理员
+     * 平台超管 = loginName 为 admin 且 tenantId 为 null
+     */
+    public boolean isPlatformSuperAdmin(User user) {
+        return user != null
+                && BusinessConstants.DEFAULT_MANAGER.equals(user.getLoginName())
+                && user.getTenantId() == null;
+    }
+
+    /**
      * 根据用户名查询id
      * @param loginName
      * @return

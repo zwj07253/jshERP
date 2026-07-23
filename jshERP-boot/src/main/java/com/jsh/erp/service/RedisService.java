@@ -134,6 +134,14 @@ public class RedisService {
     }
 
     /**
+     * 仅当 key 不存在时设置值（分布式锁原语）
+     */
+    public boolean setIfAbsent(String key, String value, long timeout, TimeUnit timeUnit) {
+        Boolean result = redisTemplate.opsForValue().setIfAbsent(key, value, timeout, timeUnit);
+        return Boolean.TRUE.equals(result);
+    }
+
+    /**
      * Atomically increments a short-lived counter and returns the new value.
      */
     public long incrementWithExpire(String key, long seconds) {

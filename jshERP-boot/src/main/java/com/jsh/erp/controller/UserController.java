@@ -10,6 +10,7 @@ import com.jsh.erp.base.BaseController;
 import com.jsh.erp.base.TableDataInfo;
 import com.jsh.erp.constants.BusinessConstants;
 import com.jsh.erp.constants.ExceptionConstants;
+import com.jsh.erp.datasource.entities.PlatformConfig;
 import com.jsh.erp.datasource.entities.Tenant;
 import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.entities.UserEx;
@@ -59,6 +60,9 @@ public class UserController extends BaseController {
 
     @Resource
     private RedisService redisService;
+
+    @Resource
+    private PlatformConfigService platformConfigService;
 
     private static String SUCCESS = "操作成功";
     private static String ERROR = "操作失败";
@@ -363,6 +367,12 @@ public class UserController extends BaseController {
                                HttpServletRequest request)throws Exception{
         JSONObject result = ExceptionConstants.standardSuccess();
         userService.checkRateLimit("register", request, 5, 3600);
+        // 后端强制检查注册开关
+        PlatformConfig registerFlag = platformConfigService.getInfoByKey("register_flag");
+        if(registerFlag == null || !"1".equals(registerFlag.getPlatformValue())) {
+            throw new BusinessRunTimeException(ExceptionConstants.REGISTER_DISABLED_CODE,
+                    ExceptionConstants.REGISTER_DISABLED_MSG);
+        }
         ue.setUsername(ue.getLoginName());
         userService.validateCaptcha(ue.getCode(), ue.getUuid());
         userService.checkLoginName(ue); //检查登录名
