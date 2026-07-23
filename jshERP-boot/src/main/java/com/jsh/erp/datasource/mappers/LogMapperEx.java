@@ -6,6 +6,7 @@ import com.jsh.erp.datasource.entities.LogExample;
 import com.jsh.erp.datasource.vo.LogVo4List;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.Date;
 import java.util.List;
 
 public interface LogMapperEx {
@@ -20,12 +21,9 @@ public interface LogMapperEx {
             @Param("endTime") String endTime,
             @Param("content") String content);
 
-    Long getCountByIpAndDate(
-            @Param("userId") Long userId,
-            @Param("moduleName") String moduleName,
-            @Param("clientIp") String clientIp,
-            @Param("createTime") String createTime);
-
     @InterceptorIgnore(tenantLine = "true")
     int insertLogWithUserId(Log log);
+
+    @InterceptorIgnore(tenantLine = "true")
+    int deleteLogsBefore(@Param("cutoff") Date cutoff);
 }

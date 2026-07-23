@@ -135,6 +135,13 @@
           },
           {title: '操作模块', dataIndex: 'operation', width: 120, align: "left"},
           {title: '操作详情', dataIndex: 'content', scopedSlots: { customRender: 'content' }, width: 360, align:"left" },
+          {
+            title: '结果',
+            dataIndex: 'status',
+            width: 60,
+            align: "center",
+            customRender: status => status === 0 || status === '0' ? '成功' : '失败'
+          },
           {title: '操作员账号', dataIndex: 'loginName', width: 80, align: "left"},
           {title: '操作员姓名', dataIndex: 'userName', width: 80, align: "left"},
           {title: '操作IP', dataIndex: 'clientIp', width: 100, align: "left"},
