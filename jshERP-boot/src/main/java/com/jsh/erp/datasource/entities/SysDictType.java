@@ -32,6 +32,10 @@ public class SysDictType extends BaseEntity {
 
     private String deleteFlag;
 
+    /** 是否内置（0否 1是） */
+    @Schema(description = "是否内置（0否 1是）")
+    private String builtIn;
+
     public Long getDictId()
     {
         return dictId;
@@ -83,5 +87,13 @@ public class SysDictType extends BaseEntity {
 
     public void setDeleteFlag(String deleteFlag) {
         this.deleteFlag = deleteFlag;
+    }
+
+    public String getBuiltIn() {
+        return builtIn;
+    }
+
+    public void setBuiltIn(String builtIn) {
+        this.builtIn = builtIn;
     }
 }

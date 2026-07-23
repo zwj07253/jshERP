@@ -1104,6 +1104,27 @@ public class ExceptionConstants {
     //字典类型已分配,不能删除
     public static final int DICT_TYPE_ALREADY_USED_CODE = 12500001;
     public static final String DICT_TYPE_ALREADY_USED_MSG = "%s已分配,不能删除";
+    //没有字典管理的查看权限
+    public static final int DICT_READ_PERMISSION_CODE = 12500002;
+    public static final String DICT_READ_PERMISSION_MSG = "抱歉，当前用户没有字典管理的查看权限";
+    //没有字典管理的编辑权限
+    public static final int DICT_EDIT_PERMISSION_CODE = 12500003;
+    public static final String DICT_EDIT_PERMISSION_MSG = "抱歉，当前用户没有字典管理的编辑权限";
+    //字典类型不允许修改
+    public static final int DICT_TYPE_IMMUTABLE_CODE = 12500004;
+    public static final String DICT_TYPE_IMMUTABLE_MSG = "字典类型不允许修改";
+    //字典键值不允许修改
+    public static final int DICT_VALUE_IMMUTABLE_CODE = 12500005;
+    public static final String DICT_VALUE_IMMUTABLE_MSG = "字典键值不允许修改";
+    //内置字典不允许删除或禁用
+    public static final int DICT_BUILT_IN_PROTECTED_CODE = 12500006;
+    public static final String DICT_BUILT_IN_PROTECTED_MSG = "内置字典不允许删除";
+    //同一字典类型下已存在默认值
+    public static final int DICT_DEFAULT_ALREADY_EXISTS_CODE = 12500007;
+    public static final String DICT_DEFAULT_ALREADY_EXISTS_MSG = "同一字典类型下已存在默认值";
+    //字典键值已存在
+    public static final int DICT_VALUE_ALREADY_EXISTS_CODE = 12500008;
+    public static final String DICT_VALUE_ALREADY_EXISTS_MSG = "同一字典类型下字典键值已存在";
 
     //演示用户禁止操作
     public static final int SYSTEM_CONFIG_TEST_USER_CODE = -1;

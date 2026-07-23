@@ -433,7 +433,7 @@ INSERT INTO jsh_function (id, number, name, parent_number, url, component, state
 (248, '030150', '调拨明细', '0301', '/report/allocation_detail', '/report/AllocationDetail', FALSE, '0646', TRUE, '电脑版', '', 'profile', '0'),
 (258, '000112', '平台配置', '0001', '/system/platform_config', '/system/PlatformConfigList', FALSE, '0175', TRUE, '电脑版', '', 'profile', '0'),
 (259, '030105', '零售统计', '0301', '/report/retail_out_report', '/report/RetailOutReport', FALSE, '0615', TRUE, '电脑版', '', 'profile', '0'),
-(260, '000113', '字典管理', '0001', '/system/dict', '/system/DictList', FALSE, '0172', TRUE, '电脑版', '', 'profile', '0'),
+(260, '000113', '字典管理', '0001', '/system/dict', '/system/DictList', FALSE, '0172', TRUE, '电脑版', '1', 'profile', '0'),
 (261, '050203', '请购单', '0502', '/bill/purchase_apply', '/bill/PurchaseApplyList', FALSE, '0330', TRUE, '电脑版', '1,2,3,7', 'profile', '0')
 ON CONFLICT (id) DO NOTHING;
 
@@ -952,8 +952,41 @@ COMMENT ON COLUMN jsh_platform_config.platform_key IS '关键词';
 COMMENT ON COLUMN jsh_platform_config.platform_key_info IS '关键词名称';
 COMMENT ON COLUMN jsh_platform_config.platform_value IS '值';
 
-SELECT setval('jsh_platform_config_id_seq', 1);
 CREATE UNIQUE INDEX uk_platform_config_key ON jsh_platform_config(platform_key);
+
+INSERT INTO jsh_platform_config (id, platform_key, platform_key_info, platform_value)
+SELECT v.id, v.platform_key, v.platform_key_info, v.platform_value
+FROM (VALUES
+    (1::BIGINT, 'platform_name', '平台名称', 'YUEWEIERP'),
+    (2::BIGINT, 'activation_code', '激活码', ''),
+    (3::BIGINT, 'platform_url', '官方网站', 'http://www.gyjerp.com/'),
+    (4::BIGINT, 'bill_print_flag', '三联打印启用标记', '0'),
+    (5::BIGINT, 'bill_print_url', '三联打印地址', ''),
+    (6::BIGINT, 'pay_fee_url', '租户续费地址', ''),
+    (7::BIGINT, 'register_flag', '注册启用标记', '1'),
+    (8::BIGINT, 'app_activation_code', '手机端激活码', ''),
+    (9::BIGINT, 'send_workflow_url', '发起流程地址', ''),
+    (10::BIGINT, 'weixinUrl', '微信url', ''),
+    (11::BIGINT, 'weixinAppid', '微信appid', ''),
+    (12::BIGINT, 'weixinSecret', '微信secret', ''),
+    (13::BIGINT, 'aliOss_endpoint', '阿里OSS-endpoint', ''),
+    (14::BIGINT, 'aliOss_accessKeyId', '阿里OSS-accessKeyId', ''),
+    (15::BIGINT, 'aliOss_accessKeySecret', '阿里OSS-accessKeySecret', ''),
+    (16::BIGINT, 'aliOss_bucketName', '阿里OSS-bucketName', ''),
+    (17::BIGINT, 'aliOss_linkUrl', '阿里OSS-linkUrl', ''),
+    (18::BIGINT, 'bill_excel_url', '单据Excel地址', ''),
+    (19::BIGINT, 'email_from', '邮件发送端-发件人', ''),
+    (20::BIGINT, 'email_auth_code', '邮件发送端-授权码', ''),
+    (21::BIGINT, 'email_smtp_host', '邮件发送端-SMTP服务器', ''),
+    (22::BIGINT, 'checkcode_flag', '验证码启用标记', '1')
+) AS v(id, platform_key, platform_key_info, platform_value)
+WHERE NOT EXISTS (
+    SELECT 1 FROM jsh_platform_config p
+    WHERE p.platform_key = v.platform_key
+);
+
+SELECT setval('jsh_platform_config_id_seq',
+    GREATEST((SELECT COALESCE(MAX(id), 1) FROM jsh_platform_config), 1));
 
 -- ============================================================
 -- 22. jsh_role - 角色表
@@ -1174,7 +1207,18 @@ COMMENT ON COLUMN jsh_sys_dict_data.update_time IS '更新时间';
 COMMENT ON COLUMN jsh_sys_dict_data.remark IS '备注';
 COMMENT ON COLUMN jsh_sys_dict_data.delete_flag IS '删除标记，0未删除，1删除';
 
-SELECT setval('jsh_sys_dict_data_dict_code_seq', 1);
+CREATE INDEX idx_dict_data_type ON jsh_sys_dict_data(dict_type) WHERE COALESCE(delete_flag, '0') != '1';
+CREATE UNIQUE INDEX idx_dict_data_type_value ON jsh_sys_dict_data(dict_type, dict_value) WHERE COALESCE(delete_flag, '0') != '1';
+CREATE UNIQUE INDEX idx_dict_data_type_default ON jsh_sys_dict_data(dict_type) WHERE COALESCE(delete_flag, '0') != '1' AND is_default = 'Y';
+
+INSERT INTO jsh_sys_dict_data (dict_code, dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, update_by, update_time, remark, delete_flag) VALUES
+(1, 1, '男', '0', 'sys_user_sex', '', 'default', 'Y', '0', 'admin', NOW(), 'admin', NOW(), '性别男', '0'),
+(2, 2, '女', '1', 'sys_user_sex', '', 'default', 'N', '0', 'admin', NOW(), 'admin', NOW(), '性别女', '0'),
+(11, 1, '正常', '0', 'sys_normal_disable', '', 'green', 'N', '0', 'admin', NOW(), 'admin', NOW(), '正常状态', '0'),
+(12, 2, '停用', '1', 'sys_normal_disable', '', 'red', 'N', '0', 'admin', NOW(), 'admin', NOW(), '停用状态', '0')
+ON CONFLICT (dict_code) DO NOTHING;
+
+SELECT setval('jsh_sys_dict_data_dict_code_seq', 100);
 
 -- ============================================================
 -- 27. jsh_sys_dict_type - 字典类型表
@@ -1190,9 +1234,10 @@ CREATE TABLE jsh_sys_dict_type (
     update_by VARCHAR(64) DEFAULT '',
     update_time TIMESTAMP,
     remark VARCHAR(500),
-    delete_flag VARCHAR(1) DEFAULT '0'
+    delete_flag VARCHAR(1) DEFAULT '0',
+    built_in CHAR(1) DEFAULT '0'
 );
-CREATE UNIQUE INDEX idx_dict_type_dict_type ON jsh_sys_dict_type(dict_type);
+CREATE UNIQUE INDEX idx_dict_type_dict_type ON jsh_sys_dict_type(dict_type) WHERE COALESCE(delete_flag, '0') != '1';
 COMMENT ON TABLE jsh_sys_dict_type IS '字典类型表';
 COMMENT ON COLUMN jsh_sys_dict_type.dict_id IS '字典主键';
 COMMENT ON COLUMN jsh_sys_dict_type.dict_name IS '字典名称';
@@ -1204,8 +1249,14 @@ COMMENT ON COLUMN jsh_sys_dict_type.update_by IS '更新者';
 COMMENT ON COLUMN jsh_sys_dict_type.update_time IS '更新时间';
 COMMENT ON COLUMN jsh_sys_dict_type.remark IS '备注';
 COMMENT ON COLUMN jsh_sys_dict_type.delete_flag IS '删除标记，0未删除，1删除';
+COMMENT ON COLUMN jsh_sys_dict_type.built_in IS '是否内置（0否 1是），内置字典不允许删除';
 
-SELECT setval('jsh_sys_dict_type_dict_id_seq', 1);
+INSERT INTO jsh_sys_dict_type (dict_id, dict_name, dict_type, status, create_by, create_time, update_by, update_time, remark, delete_flag, built_in) VALUES
+(1, '用户性别', 'sys_user_sex', '0', 'admin', NOW(), 'admin', NOW(), '用户性别列表', '0', '1'),
+(12, '系统开关', 'sys_normal_disable', '0', 'admin', NOW(), 'admin', NOW(), '系统开关列表', '0', '1')
+ON CONFLICT (dict_id) DO NOTHING;
+
+SELECT setval('jsh_sys_dict_type_dict_id_seq', 100);
 
 -- ============================================================
 -- 28. jsh_system_config - 系统参数
@@ -1299,6 +1350,10 @@ COMMENT ON COLUMN jsh_tenant.create_time IS '创建时间';
 COMMENT ON COLUMN jsh_tenant.expire_time IS '到期时间';
 COMMENT ON COLUMN jsh_tenant.remark IS '备注';
 COMMENT ON COLUMN jsh_tenant.delete_flag IS '删除标记，0未删除，1删除';
+
+CREATE UNIQUE INDEX uk_tenant_login_name
+    ON jsh_tenant(lower(trim(login_name)))
+    WHERE COALESCE(delete_flag, '0') != '1';
 
 SELECT setval('jsh_tenant_id_seq', 1);
 

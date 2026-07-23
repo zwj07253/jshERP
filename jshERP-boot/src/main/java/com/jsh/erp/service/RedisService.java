@@ -77,6 +77,13 @@ public class RedisService {
     }
 
     /**
+     * 缓存基本对象，设置过期时间
+     */
+    public <T> void setCacheObjectWithTTL(final String key, final T value, final Long timeout, final java.util.concurrent.TimeUnit timeUnit) {
+        redisTemplate.opsForValue().set(key, value, timeout, timeUnit);
+    }
+
+    /**
      * 获得缓存的基本对象。
      *
      * @param key 缓存键值
@@ -223,5 +230,33 @@ public class RedisService {
      */
     public Collection<String> keys(final String pattern) {
         return redisTemplate.keys(pattern);
+    }
+
+    /**
+     * 使用 SCAN 命令匹配 key，避免 KEYS 阻塞 Redis
+     */
+    public java.util.Set<String> scanKeys(final String pattern) {
+        java.util.Set<String> keys = new java.util.HashSet<>();
+        try {
+            redisTemplate.execute((org.springframework.data.redis.core.RedisCallback<Void>) connection -> {
+                org.springframework.data.redis.core.ScanOptions options =
+                        org.springframework.data.redis.core.ScanOptions.scanOptions()
+                                .match(pattern)
+                                .count(100)
+                                .build();
+                try (org.springframework.data.redis.core.Cursor<byte[]> cursor = connection.scan(options)) {
+                    while (cursor.hasNext()) {
+                        keys.add(new String(cursor.next()));
+                    }
+                }
+                return null;
+            });
+        } catch (Exception e) {
+            Collection<String> fallbackKeys = redisTemplate.keys(pattern);
+            if (fallbackKeys != null) {
+                keys.addAll(fallbackKeys);
+            }
+        }
+        return keys;
     }
 }

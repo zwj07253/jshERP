@@ -55,9 +55,9 @@
         </div>
         <!-- 操作按钮区域 -->
         <div class="table-operator" style="border-top: 5px">
-          <a-button @click="handleAdd" type="primary" icon="plus">新增</a-button>
-          <a-button @click="batchDel" icon="delete">删除</a-button>
-          <a-button @click="handleRefreshCache" icon="reload">刷新缓存</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd" type="primary" icon="plus">新增</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchDel" icon="delete">删除</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleRefreshCache" icon="reload">刷新缓存</a-button>
         </div>
         <!-- table区域-begin -->
         <div>
@@ -74,9 +74,9 @@
             :rowSelection="{selectedRowKeys: selectedRowKeys, onChange: onSelectChange}"
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
-              <a @click="handleEdit(record)">编辑</a>
-              <a-divider type="vertical" />
-              <a-popconfirm title="确定删除吗?" @confirm="() => handleDelete(record.dictId)">
+              <a v-if="btnEnableList.indexOf(1)>-1" @click="handleEdit(record)">编辑</a>
+              <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
+              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定删除吗?" @confirm="() => handleDelete(record.dictId)">
                 <a>删除</a>
               </a-popconfirm>
             </span>
@@ -113,6 +113,7 @@
     },
     data() {
       return {
+        urlPath: '/system/dict',
         labelCol: {
           span: 5
         },

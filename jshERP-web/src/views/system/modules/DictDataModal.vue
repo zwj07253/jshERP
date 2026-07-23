@@ -24,7 +24,7 @@
             <a-input placeholder="请输入字典标签" v-decorator.trim="[ 'dictLabel', validatorRules.dictLabel]" />
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="字典键值">
-            <a-input placeholder="请输入字典键值" v-decorator.trim="[ 'dictValue', validatorRules.dictValue]" />
+            <a-input placeholder="请输入字典键值" v-decorator.trim="[ 'dictValue', validatorRules.dictValue]" :disabled="!!model.dictCode" />
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="字典排序">
             <a-input-number style="width: 100%" placeholder="请输入字典排序" v-decorator.trim="[ 'dictSort', validatorRules.dictSort ]" />

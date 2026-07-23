@@ -7,8 +7,9 @@ import com.jsh.erp.datasource.entities.SysDictData;
 import com.jsh.erp.service.RedisService;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 字典工具类
@@ -30,7 +31,8 @@ public class DictUtils {
     public static void setDictCache(String key, List<SysDictData> dictDatas)
     {
         String dictDatasStr = JSONObject.toJSONString(dictDatas);
-        StringUtil.getBean(RedisService.class).setCacheObject(getCacheKey(key), dictDatasStr);
+        StringUtil.getBean(RedisService.class).setCacheObjectWithTTL(
+                getCacheKey(key), dictDatasStr, BusinessConstants.SYS_DICT_TTL_SECONDS, TimeUnit.SECONDS);
     }
 
     /**
@@ -232,8 +234,10 @@ public class DictUtils {
      */
     public static void clearDictCache()
     {
-        Collection<String> keys = StringUtil.getBean(RedisService.class).keys(BusinessConstants.SYS_DICT_KEY + "*");
-        StringUtil.getBean(RedisService.class).deleteObject(keys);
+        Set<String> keys = StringUtil.getBean(RedisService.class).scanKeys(BusinessConstants.SYS_DICT_KEY + "*");
+        if (keys != null && !keys.isEmpty()) {
+            StringUtil.getBean(RedisService.class).deleteObject(keys);
+        }
     }
 
     /**

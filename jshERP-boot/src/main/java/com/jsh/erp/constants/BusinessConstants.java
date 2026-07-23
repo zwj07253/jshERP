@@ -219,7 +219,12 @@ public class BusinessConstants {
     /**
      * 字典管理 cache key
      */
-    public static final String SYS_DICT_KEY = "sys_dict:";
+    public static final String SYS_DICT_KEY = "jsh:dict:v1:";
+
+    /**
+     * 字典缓存过期时间（秒），24小时，作为兜底防止缓存永久驻留
+     */
+    public static final Long SYS_DICT_TTL_SECONDS = 24 * 60 * 60L;
 
     /**
      * redis相关

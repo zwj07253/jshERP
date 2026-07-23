@@ -2,6 +2,7 @@ package com.jsh.erp.datasource.entities;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 /**
@@ -105,6 +106,17 @@ public class SysDictData extends BaseEntity {
         this.dictType = dictType;
     }
 
+    @Pattern(regexp = "^$|^(default|blue|green|grey|orange|red)$", message = "回显样式值不合法")
+    public String getListClass()
+    {
+        return listClass;
+    }
+
+    public void setListClass(String listClass)
+    {
+        this.listClass = listClass;
+    }
+
     @Size(min = 0, max = 100, message = "样式属性长度不能超过100个字符")
     public String getCssClass()
     {
@@ -114,16 +126,6 @@ public class SysDictData extends BaseEntity {
     public void setCssClass(String cssClass)
     {
         this.cssClass = cssClass;
-    }
-
-    public String getListClass()
-    {
-        return listClass;
-    }
-
-    public void setListClass(String listClass)
-    {
-        this.listClass = listClass;
     }
 
     public String getIsDefault()

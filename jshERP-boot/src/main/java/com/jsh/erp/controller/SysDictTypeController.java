@@ -42,7 +42,8 @@ public class SysDictTypeController extends BaseController {
 
     @Operation(summary = "获取字典分页列表")
     @GetMapping("/list")
-    public TableDataInfo list(@RequestParam(value = Constants.SEARCH, required = false) String search) {
+    public TableDataInfo list(@RequestParam(value = Constants.SEARCH, required = false) String search) throws Exception {
+        dictTypeService.checkReadPermission();
         SysDictType dictType = new SysDictType();
         dictType.setDictName(StringUtil.getInfo(search, "dictName"));
         dictType.setDictType(StringUtil.getInfo(search, "dictType"));
@@ -60,7 +61,8 @@ public class SysDictTypeController extends BaseController {
      */
     @Operation(summary = "查询字典类型详细")
     @GetMapping(value = "/{dictId}")
-    public AjaxResult getInfo(@PathVariable Long dictId) {
+    public AjaxResult getInfo(@PathVariable Long dictId) throws Exception {
+        dictTypeService.checkReadPermission();
         return success(dictTypeService.selectDictTypeById(dictId));
     }
 
@@ -70,6 +72,7 @@ public class SysDictTypeController extends BaseController {
     @Operation(summary = "新增字典类型")
     @PostMapping(value = "/add")
     public String add(@Validated @RequestBody SysDictType dict) throws Exception {
+        dictTypeService.checkEditPermission();
         Map<String, Object> objectMap = new HashMap<>();
         if (!dictTypeService.checkDictTypeUnique(dict)) {
             return returnJson(objectMap, "新增字典'" + dict.getDictName() + "'失败，字典类型已存在", ErpInfo.ERROR.code);
@@ -84,6 +87,7 @@ public class SysDictTypeController extends BaseController {
     @Operation(summary = "修改字典类型")
     @PutMapping(value = "/update")
     public String edit(@Validated @RequestBody SysDictType dict) throws Exception {
+        dictTypeService.checkEditPermission();
         Map<String, Object> objectMap = new HashMap<>();
         if (!dictTypeService.checkDictTypeUnique(dict)) {
             return returnJson(objectMap, "修改字典'" + dict.getDictName() + "'失败，字典类型已存在", ErpInfo.ERROR.code);
@@ -95,6 +99,7 @@ public class SysDictTypeController extends BaseController {
     @DeleteMapping(value = "/delete")
     @Operation(summary = "删除")
     public String deleteResource(@RequestParam("id") Long id, HttpServletRequest request)throws Exception {
+        dictTypeService.checkEditPermission();
         Map<String, Object> objectMap = new HashMap<>();
         int delete = dictTypeService.deleteDictType(id, request);
         return returnStr(objectMap, delete);
@@ -103,6 +108,7 @@ public class SysDictTypeController extends BaseController {
     @DeleteMapping(value = "/deleteBatch")
     @Operation(summary = "批量删除")
     public String batchDeleteResource(@RequestParam("ids") String ids, HttpServletRequest request)throws Exception {
+        dictTypeService.checkEditPermission();
         Map<String, Object> objectMap = new HashMap<>();
         int delete = dictTypeService.batchDeleteDictType(ids, request);
         return returnStr(objectMap, delete);
@@ -113,7 +119,8 @@ public class SysDictTypeController extends BaseController {
      */
     @Operation(summary = "刷新字典缓存")
     @DeleteMapping("/refreshCache")
-    public AjaxResult refreshCache() {
+    public AjaxResult refreshCache() throws Exception {
+        dictTypeService.checkEditPermission();
         dictTypeService.resetDictCache();
         return success();
     }
@@ -123,7 +130,8 @@ public class SysDictTypeController extends BaseController {
      */
     @Operation(summary = "获取字典选择框列表")
     @GetMapping("/optionselect")
-    public AjaxResult optionselect() {
+    public AjaxResult optionselect() throws Exception {
+        dictTypeService.checkReadPermission();
         List<SysDictType> dictTypes = dictTypeService.selectDictTypeAll();
         return success(dictTypes);
     }

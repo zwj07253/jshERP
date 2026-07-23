@@ -7,6 +7,7 @@ import com.jsh.erp.datasource.entities.Depot;
 import com.jsh.erp.datasource.entities.DepotExample;
 import com.jsh.erp.datasource.entities.SysDictData;
 import com.jsh.erp.datasource.entities.SysDictType;
+import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.mappers.SysDictDataMapper;
 import com.jsh.erp.datasource.mappers.SysDictTypeMapper;
 import com.jsh.erp.exception.BusinessRunTimeException;
@@ -14,6 +15,8 @@ import com.jsh.erp.exception.JshException;
 import com.jsh.erp.utils.DictUtils;
 import com.jsh.erp.utils.PageUtils;
 import com.jsh.erp.utils.StringUtil;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -37,6 +40,9 @@ public class SysDictTypeService {
 
     private Logger logger = LoggerFactory.getLogger(SysDictTypeService.class);
 
+    private static final String DICT_URL = "/system/dict";
+    private static final String EDIT_BUTTON_CODE = "1";
+
     @Resource
     private LogService logService;
 
@@ -48,6 +54,9 @@ public class SysDictTypeService {
 
     @Resource
     private RedisService redisService;
+
+    @Resource
+    private UserService userService;
 
     /**
      * 项目启动时，初始化字典到缓存
@@ -127,12 +136,16 @@ public class SysDictTypeService {
      */
     public void loadingDictCache()
     {
-        SysDictData dictData = new SysDictData();
-        dictData.setStatus("0");
-        Map<String, List<SysDictData>> dictDataMap = dictDataMapper.selectDictDataList(dictData).stream().collect(Collectors.groupingBy(SysDictData::getDictType));
-        for (Map.Entry<String, List<SysDictData>> entry : dictDataMap.entrySet())
-        {
-            DictUtils.setDictCache(entry.getKey(), entry.getValue().stream().sorted(Comparator.comparing(SysDictData::getDictSort)).collect(Collectors.toList()));
+        try {
+            SysDictData dictData = new SysDictData();
+            dictData.setStatus("0");
+            Map<String, List<SysDictData>> dictDataMap = dictDataMapper.selectDictDataList(dictData).stream().collect(Collectors.groupingBy(SysDictData::getDictType));
+            for (Map.Entry<String, List<SysDictData>> entry : dictDataMap.entrySet())
+            {
+                DictUtils.setDictCache(entry.getKey(), entry.getValue().stream().sorted(Comparator.comparing(SysDictData::getDictSort)).collect(Collectors.toList()));
+            }
+        } catch (Exception e) {
+            logger.error("字典缓存预热失败，将依赖懒加载", e);
         }
     }
 
@@ -153,18 +166,87 @@ public class SysDictTypeService {
         loadingDictCache();
     }
 
+    public void checkReadPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if (!userService.hasFunctionPermission(userId, DICT_URL)) {
+            throw new BusinessRunTimeException(ExceptionConstants.DICT_READ_PERMISSION_CODE,
+                    ExceptionConstants.DICT_READ_PERMISSION_MSG);
+        }
+    }
+
+    public void checkEditPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if (!userService.hasButtonPermission(userId, DICT_URL, EDIT_BUTTON_CODE)) {
+            throw new BusinessRunTimeException(ExceptionConstants.DICT_EDIT_PERMISSION_CODE,
+                    ExceptionConstants.DICT_EDIT_PERMISSION_MSG);
+        }
+    }
+
+    private void checkBuiltInProtected(SysDictType dictType) {
+        if ("1".equals(dictType.getBuiltIn())) {
+            throw new BusinessRunTimeException(ExceptionConstants.DICT_BUILT_IN_PROTECTED_CODE,
+                    String.format(ExceptionConstants.DICT_BUILT_IN_PROTECTED_MSG, dictType.getDictName()));
+        }
+    }
+
+    private void scheduleCacheRefresh(String dictType) {
+        Runnable task = () -> {
+            try {
+                List<SysDictData> dictDatas = dictDataMapper.selectDictDataByType(dictType);
+                DictUtils.setDictCache(dictType, dictDatas);
+            } catch (Exception e) {
+                logger.error("字典缓存刷新失败: {}", dictType, e);
+            }
+        };
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+                && TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    task.run();
+                }
+            });
+        } else {
+            task.run();
+        }
+    }
+
+    private void scheduleCacheRemove(String dictType) {
+        Runnable task = () -> {
+            try {
+                DictUtils.removeDictCache(dictType);
+            } catch (Exception e) {
+                logger.error("字典缓存删除失败: {}", dictType, e);
+            }
+        };
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+                && TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    task.run();
+                }
+            });
+        } else {
+            task.run();
+        }
+    }
+
     /**
      * 新增保存字典类型信息
      *
      * @param dict 字典类型信息
      * @return 结果
      */
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertDictType(SysDictType dict)
     {
         int row = dictTypeMapper.insertDictType(dict);
         if (row > 0)
         {
-            DictUtils.setDictCache(dict.getDictType(), null);
+            scheduleCacheRefresh(dict.getDictType());
         }
         return row;
     }
@@ -179,12 +261,21 @@ public class SysDictTypeService {
     public int updateDictType(SysDictType dict)
     {
         SysDictType oldDict = dictTypeMapper.selectDictTypeById(dict.getDictId());
-        dictDataMapper.updateDictDataType(oldDict.getDictType(), dict.getDictType());
+        if (oldDict == null) {
+            throw new BusinessRunTimeException(ExceptionConstants.DICT_TYPE_IMMUTABLE_CODE,
+                    "字典类型不存在");
+        }
+        if (!oldDict.getDictType().equals(dict.getDictType())) {
+            throw new BusinessRunTimeException(ExceptionConstants.DICT_TYPE_IMMUTABLE_CODE,
+                    ExceptionConstants.DICT_TYPE_IMMUTABLE_MSG);
+        }
+        if ("1".equals(oldDict.getBuiltIn())) {
+            dict.setStatus(oldDict.getStatus());
+        }
         int row = dictTypeMapper.updateDictType(dict);
         if (row > 0)
         {
-            List<SysDictData> dictDatas = dictDataMapper.selectDictDataByType(dict.getDictType());
-            DictUtils.setDictCache(dict.getDictType(), dictDatas);
+            scheduleCacheRefresh(dict.getDictType());
         }
         return row;
     }
@@ -223,6 +314,10 @@ public class SysDictTypeService {
         List<String> dictTypeList = new ArrayList<>();
         for (String dictId : idArray) {
             SysDictType dictType = selectDictTypeById(Long.valueOf(dictId));
+            if (dictType == null) {
+                continue;
+            }
+            checkBuiltInProtected(dictType);
             dictTypeList.add(dictType.getDictType());
             if (dictDataMapper.countDictDataByType(dictType.getDictType()) > 0) {
                 throw new BusinessRunTimeException(ExceptionConstants.DICT_TYPE_ALREADY_USED_CODE,
@@ -239,11 +334,13 @@ public class SysDictTypeService {
             }
             result = dictTypeMapper.batchDeleteDictTypeByIds(idArray);
             for (String dictType : dictTypeList) {
-                DictUtils.removeDictCache(dictType);
+                scheduleCacheRemove(dictType);
             }
             //记录日志
             logService.insertLog("字典类型", sb.toString(),
                     ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
+        } catch (BusinessRunTimeException e) {
+            throw e;
         } catch (Exception e) {
             JshException.writeFail(logger, e);
         }

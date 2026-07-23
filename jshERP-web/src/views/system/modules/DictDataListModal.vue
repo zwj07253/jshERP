@@ -54,8 +54,8 @@
       </div>
       <!-- 操作按钮区域 -->
       <div class="table-operator" style="border-top: 5px">
-        <a-button @click="handleAddWithData" type="primary" icon="plus">新增</a-button>
-        <a-button @click="batchDel" icon="delete">删除</a-button>
+        <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAddWithData" type="primary" icon="plus">新增</a-button>
+        <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchDel" icon="delete">删除</a-button>
       </div>
       <!-- table区域-begin -->
       <a-table
@@ -71,9 +71,9 @@
         :rowSelection="{selectedRowKeys: selectedRowKeys, onChange: onSelectChange}"
         @change="handleTableChange">
         <span slot="action" slot-scope="text, record">
-          <a @click="handleEdit(record)">编辑</a>
-          <a-divider type="vertical" />
-          <a-popconfirm title="确定删除吗?" @confirm="() => handleDelete(record.dictCode)">
+          <a v-if="btnEnableList.indexOf(1)>-1" @click="handleEdit(record)">编辑</a>
+          <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
+          <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定删除吗?" @confirm="() => handleDelete(record.dictCode)">
             <a>删除</a>
           </a-popconfirm>
         </span>
@@ -160,6 +160,7 @@
         this.queryParam.dictType = record.dictType
         this.getTypeList()
         this.loadData(1)
+        this.initActiveBtnStr()
       },
       /** 查询字典类型列表 */
       getTypeList() {

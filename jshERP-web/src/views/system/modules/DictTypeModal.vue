@@ -21,7 +21,7 @@
             <a-input placeholder="请输入字典名称" v-decorator.trim="[ 'dictName', validatorRules.dictName]" />
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="字典类型">
-            <a-input placeholder="请输入字典类型" v-decorator.trim="[ 'dictType', validatorRules.dictType]" />
+            <a-input placeholder="请输入字典类型" v-decorator.trim="[ 'dictType', validatorRules.dictType]" :disabled="!!model.dictId" />
           </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="状态">
             <a-select style="width:100%" placeholder="请选择状态" v-decorator.trim="[ 'status' ]">
