@@ -294,7 +294,7 @@
   import JEditableTable from '@/components/jeecg/JEditableTable'
   import { FormTypes, getRefPromise, VALIDATE_NO_PASSED, validateFormAndTables } from '@/utils/JEditableTableUtil'
   import { changeNameToPinYin, checkMaterial, checkMaterialBarCode, getMaterialAttributeNameList, getMaterialAttributeValueListById, getMaxBarCode, queryMaterialCategoryTreeList } from '@/api/api'
-  import { autoJumpNextInput, handleIntroJs, removeByVal, addBigNumbers } from '@/utils/util'
+  import { autoJumpNextInput, handleIntroJs, removeByVal, addBigNumbers, getMaterialPropertyList } from '@/utils/util'
   import { getAction, httpAction } from '@/api/manage'
   import JImageUpload from '@/components/jeecg/JImageUpload'
   import JDate from '@/components/jeecg/JDate'
@@ -1035,6 +1035,7 @@
               let commodityDecimal = ''
               let wholesaleDecimal = ''
               let lowDecimal = ''
+              let defaultFlag = ''
               for (let j = 0; j < this.meOldDataSource.length; j++) {
                 if(barCodeSku[i] === this.meOldDataSource[j].sku) {
                   currentBarCode = this.meOldDataSource[j].barCode
@@ -1043,13 +1044,14 @@
                   commodityDecimal = this.meOldDataSource[j].commodityDecimal
                   wholesaleDecimal = this.meOldDataSource[j].wholesaleDecimal
                   lowDecimal = this.meOldDataSource[j].lowDecimal
+                  defaultFlag = this.meOldDataSource[j].defaultFlag
                 }
               }
               if(currentBarCode) {
                 //此时说明该sku之前就存在
                 meTableData.push({id: currentId, barCode: currentBarCode, commodityUnit: unit, sku: barCodeSku[i],
                   purchaseDecimal: purchaseDecimal, commodityDecimal: commodityDecimal,
-                  wholesaleDecimal: wholesaleDecimal, lowDecimal: lowDecimal})
+                  wholesaleDecimal: wholesaleDecimal, lowDecimal: lowDecimal, defaultFlag: defaultFlag})
               } else {
                 k = k+1
                 currentBarCode = addBigNumbers(maxBarCode, k)
@@ -1218,7 +1220,7 @@
         })
       },
       loadParseMaterialProperty() {
-        let mpList = Vue.ls.get('materialPropertyList')
+        let mpList = getMaterialPropertyList()
         for (let i = 0; i < mpList.length; i++) {
           if (mpList[i].nativeName === "扩展1") {
             this.mpShort.otherField1.name = mpList[i].anotherName

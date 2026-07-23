@@ -440,6 +440,8 @@ public class ExceptionConstants {
     public static final String MATERIAL_SKU_CONFIG_INVALID_MSG = "多属性明细设置不合法：%s";
     public static final int MATERIAL_SKU_HISTORY_LOCK_CODE = 8000035;
     public static final String MATERIAL_SKU_HISTORY_LOCK_MSG = "多属性明细已被历史单据使用，不允许修改或删除";
+    public static final int MATERIAL_SKU_HISTORY_IDENTITY_LOCK_CODE = 8000040;
+    public static final String MATERIAL_SKU_HISTORY_IDENTITY_LOCK_MSG = "多属性明细已被历史单据使用，不允许修改SKU、条码或单位，仅允许修改价格";
     public static final int MATERIAL_ATTRIBUTE_INVALID_CODE = 8000036;
     public static final String MATERIAL_ATTRIBUTE_INVALID_MSG = "商品属性设置不合法：%s";
     public static final int MATERIAL_ATTRIBUTE_IN_USE_CODE = 8000037;

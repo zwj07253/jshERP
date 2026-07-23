@@ -77,7 +77,7 @@
   import md5 from 'md5'
   import TwoStepCaptcha from '@/components/tools/TwoStepCaptcha'
   import { mapActions } from 'vuex'
-  import { timeFix } from '@/utils/util'
+  import { timeFix, getMaterialPropertyCacheKey } from '@/utils/util'
   import Vue from 'vue'
   import { getPlatformConfigByKey} from '@/api/api'
   import { ACCESS_TOKEN, ENCRYPTED_STRING } from '@/store/mutation-types'
@@ -379,6 +379,7 @@
           if(res && res.code === 200){
             if(res.data) {
               let thisRows = res.data; //属性列表
+              Vue.ls.set(getMaterialPropertyCacheKey(), thisRows, 7 * 24 * 60 * 60 * 1000);
               Vue.ls.set('materialPropertyList', thisRows, 7 * 24 * 60 * 60 * 1000);
             }
           }

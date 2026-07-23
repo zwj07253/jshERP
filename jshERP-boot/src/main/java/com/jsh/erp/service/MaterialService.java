@@ -17,6 +17,7 @@ import jxl.Workbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
@@ -217,6 +218,10 @@ public class MaterialService {
         catch (BusinessRunTimeException ex) {
             throw new BusinessRunTimeException(ex.getCode(), ex.getMessage());
         }
+        catch(DuplicateKeyException e){
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_BARCODE_EXISTS_CODE,
+                    ExceptionConstants.MATERIAL_BARCODE_EXISTS_MSG);
+        }
         catch(Exception e){
             JshException.writeFail(logger, e);
             return 0;
@@ -308,6 +313,9 @@ public class MaterialService {
             return 1;
         }catch(BusinessRunTimeException e) {
             throw e;
+        }catch(DuplicateKeyException e){
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_BARCODE_EXISTS_CODE,
+                    ExceptionConstants.MATERIAL_BARCODE_EXISTS_MSG);
         }catch(Exception e){
             JshException.writeFail(logger, e);
             return 0;
@@ -1723,6 +1731,42 @@ public class MaterialService {
             JSONArray skuOne = obj.getJSONArray("skuOne");
             JSONArray skuTwo = obj.getJSONArray("skuTwo");
             JSONArray skuThree = obj.getJSONArray("skuThree");
+            // 按属性ID排序，确保存储顺序一致，避免SKU字符串因选择顺序不同而产生差异
+            if (manySku != null && manySku.size() > 1) {
+                List<Integer> skuIds = new ArrayList<>();
+                for (int i = 0; i < manySku.size(); i++) {
+                    skuIds.add(manySku.getIntValue(i));
+                }
+                // 记录排序前的顺序，用于重排值数组
+                int[] originalOrder = new int[skuIds.size()];
+                for (int i = 0; i < skuIds.size(); i++) originalOrder[i] = i;
+                // 按ID排序
+                for (int i = 0; i < skuIds.size() - 1; i++) {
+                    for (int j = i + 1; j < skuIds.size(); j++) {
+                        if (skuIds.get(originalOrder[i]) > skuIds.get(originalOrder[j])) {
+                            int tmp = originalOrder[i];
+                            originalOrder[i] = originalOrder[j];
+                            originalOrder[j] = tmp;
+                        }
+                    }
+                }
+                JSONArray sortedManySku = new JSONArray();
+                JSONArray[] valueArrays = {skuOne, skuTwo, skuThree};
+                JSONArray sortedSkuOne = new JSONArray();
+                JSONArray sortedSkuTwo = new JSONArray();
+                JSONArray sortedSkuThree = new JSONArray();
+                JSONArray[] sortedArrays = {sortedSkuOne, sortedSkuTwo, sortedSkuThree};
+                for (int i = 0; i < skuIds.size(); i++) {
+                    sortedManySku.add(skuIds.get(originalOrder[i]));
+                    if (originalOrder[i] < 3 && valueArrays[originalOrder[i]] != null) {
+                        sortedArrays[i].addAll(valueArrays[originalOrder[i]]);
+                    }
+                }
+                manySku = sortedManySku;
+                skuOne = sortedSkuOne;
+                skuTwo = sortedSkuTwo;
+                skuThree = sortedSkuThree;
+            }
             attributeObj.put("manySku", manySku);
             attributeObj.put("skuOne", skuOne);
             attributeObj.put("skuTwo", skuTwo);

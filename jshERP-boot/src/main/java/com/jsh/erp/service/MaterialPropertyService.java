@@ -139,6 +139,7 @@ public class MaterialPropertyService {
         if (existing == null || BusinessConstants.DELETE_FLAG_DELETED.equals(existing.getDeleteFlag())) {
             throw invalidProperty("扩展字段不存在或已删除");
         }
+        requireTenantOwnership(existing);
         materialProperty.setNativeName(existing.getNativeName());
         validateMaterialProperty(materialProperty);
         int  result=0;
@@ -155,13 +156,25 @@ public class MaterialPropertyService {
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteMaterialProperty(Long id, HttpServletRequest request)throws Exception {
         checkEditPermission();
-        return batchDeleteMaterialPropertyByIds(id.toString());
+        // 扩展字段为系统内置，不允许删除
+        return 0;
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteMaterialProperty(String ids, HttpServletRequest request)throws Exception {
         checkEditPermission();
-        return batchDeleteMaterialPropertyByIds(ids);
+        // 扩展字段为系统内置，不允许删除
+        return 0;
+    }
+
+    private void requireTenantOwnership(MaterialProperty record) throws Exception {
+        if (record == null) return;
+        User currentUser = userService.getCurrentUser();
+        Long currentTenantId = currentUser == null ? null : currentUser.getTenantId();
+        if (currentTenantId != null && record.getTenantId() != null
+                && !currentTenantId.equals(record.getTenantId())) {
+            throw invalidProperty("扩展字段不存在或已删除");
+        }
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)

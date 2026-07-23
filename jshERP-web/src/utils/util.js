@@ -417,6 +417,9 @@ export function replaceAll(text, checker, replacer) {
  * @returns {string}
  */
 export function getMpListShort(thisRows, checker, replacer) {
+  if (!thisRows) {
+    thisRows = Vue.ls.get(getMaterialPropertyCacheKey()) || Vue.ls.get('materialPropertyList') || []
+  }
   let mPropertyListShort = ''
   let anotherNameStr = ''
   for (let i = 0; i < thisRows.length; i++) {
@@ -429,7 +432,28 @@ export function getMpListShort(thisRows, checker, replacer) {
 }
 
 /**
- * js获取当前年份， 格式“yyyy”
+ * 获取租户相关的 materialPropertyList 缓存 key
+ * 防止多租户/多账号切换时缓存串数据
+ */
+export function getMaterialPropertyCacheKey() {
+  try {
+    let userInfo = Vue.ls.get('Login_Userinfo')
+    let tenantId = userInfo && userInfo.tenantId ? userInfo.tenantId : 'default'
+    return 'materialPropertyList_' + tenantId
+  } catch (e) {
+    return 'materialPropertyList_default'
+  }
+}
+
+/**
+ * 从租户隔离的缓存中获取 materialPropertyList
+ */
+export function getMaterialPropertyList() {
+  return Vue.ls.get(getMaterialPropertyCacheKey()) || []
+}
+
+/**
+ * js获取当前年份， 格式”yyyy”
  */
 export function getNowFormatYear() {
   let date = new Date();

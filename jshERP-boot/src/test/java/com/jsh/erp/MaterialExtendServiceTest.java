@@ -21,9 +21,12 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.util.Arrays;
 import java.util.Collections;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,6 +56,7 @@ class MaterialExtendServiceTest {
     @Test
     void rejectsDetailIdOwnedByAnotherMaterial() throws Exception {
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(new MockHttpServletRequest()));
+        mockActiveMaterial(10L);
         when(materialExtendMapperEx.getDetailList(10L)).thenReturn(Collections.emptyList());
         JSONObject detail = new JSONObject();
         detail.put("id", 20L);
@@ -81,6 +85,7 @@ class MaterialExtendServiceTest {
     @Test
     void rejectsDuplicateSkuAndBarcode() throws Exception {
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(new MockHttpServletRequest()));
+        mockActiveMaterial(10L);
         JSONObject first = detail(null, "SKU-A", "CODE-A");
         JSONObject second = detail(null, "SKU-A", "CODE-B");
         JSONObject body = body(first, second);
@@ -94,7 +99,8 @@ class MaterialExtendServiceTest {
     @Test
     void rejectsUpdatingSkuUsedByDocument() throws Exception {
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(new MockHttpServletRequest()));
-        org.mockito.Mockito.lenient().when(materialExtendMapperEx.getDetailList(10L)).thenReturn(Collections.singletonList(existing(20L, "SKU-A", "CODE-A")));
+        mockActiveMaterial(10L);
+        when(materialExtendMapperEx.getDetailList(10L)).thenReturn(Collections.singletonList(existing(20L, "SKU-A", "CODE-A")));
         when(depotItemMapperEx.getCountByMaterialExtendIds(Collections.singletonList(20L))).thenReturn(1L);
         JSONObject body = body(detail(20L, "SKU-B", "CODE-A"));
 
@@ -105,6 +111,7 @@ class MaterialExtendServiceTest {
     @Test
     void treatsMissingIdAsNewDetail() throws Exception {
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(new MockHttpServletRequest()));
+        mockActiveMaterial(10L);
         when(userService.getCurrentUser()).thenReturn(new com.jsh.erp.datasource.entities.User());
         JSONObject body = body(detail(null, "红", "CODE-A"));
         body.put("manySku", new JSONArray(Collections.singletonList("颜色")));
@@ -112,6 +119,76 @@ class MaterialExtendServiceTest {
         when(materialExtendMapperEx.getDetailList(10L)).thenReturn(Collections.emptyList());
 
         materialExtendService.saveDetials(body, "[]", 10L, "update");
+    }
+
+    @Test
+    void rejectsMissingSkuComparedToCartesianProduct() throws Exception {
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(new MockHttpServletRequest()));
+        mockActiveMaterial(10L);
+        // 提交了"红"但缺少"蓝"
+        JSONObject row = detail(null, "红", "CODE-A");
+        JSONObject body = body(row);
+        body.put("manySku", new JSONArray(Collections.singletonList("颜色")));
+        body.put("skuOne", new JSONArray(Arrays.asList("红", "蓝")));
+
+        assertThrows(BusinessRunTimeException.class,
+                () -> materialExtendService.saveDetials(body, "[]", 10L, "insert"));
+    }
+
+    @Test
+    void rejectsDuplicateBarcodeWithinRequest() throws Exception {
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(new MockHttpServletRequest()));
+        mockActiveMaterial(10L);
+        JSONObject first = detail(null, "红", "SAME-CODE");
+        JSONObject second = detail(null, "蓝", "SAME-CODE");
+        JSONObject body = body(first, second);
+        body.put("manySku", new JSONArray(Collections.singletonList("颜色")));
+        body.put("skuOne", new JSONArray(Arrays.asList("红", "蓝")));
+
+        assertThrows(BusinessRunTimeException.class,
+                () -> materialExtendService.saveDetials(body, "[]", 10L, "insert"));
+    }
+
+    @Test
+    void rejectsHistorySkuIdentityFieldChange() throws Exception {
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(new MockHttpServletRequest()));
+        mockActiveMaterial(10L);
+        MaterialExtendVo4List existingDetail = existing(20L, "SKU-A", "CODE-A");
+        existingDetail.setCommodityUnit("件");
+        when(materialExtendMapperEx.getDetailList(10L)).thenReturn(Collections.singletonList(existingDetail));
+        // 历史单据引用了该SKU
+        when(depotItemMapperEx.getCountByMaterialExtendIds(Arrays.asList(20L))).thenReturn(1L);
+        // 尝试修改SKU身份字段
+        JSONObject body = body(detail(20L, "SKU-CHANGED", "CODE-A"));
+
+        assertThrows(BusinessRunTimeException.class,
+                () -> materialExtendService.saveDetials(body, "[]", 10L, "update"));
+    }
+
+    @Test
+    void allowsHistorySkuPriceChange() throws Exception {
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(new MockHttpServletRequest()));
+        mockActiveMaterial(10L);
+        when(userService.getCurrentUser()).thenReturn(new com.jsh.erp.datasource.entities.User());
+        MaterialExtendVo4List existingDetail = existing(20L, "SKU-A", "CODE-A");
+        existingDetail.setCommodityUnit("件");
+        when(materialExtendMapperEx.getDetailList(10L)).thenReturn(Collections.singletonList(existingDetail));
+        // 历史单据引用了该SKU
+        when(depotItemMapperEx.getCountByMaterialExtendIds(Arrays.asList(20L))).thenReturn(1L);
+        // 只修改价格，不修改身份字段 → 应该允许
+        JSONObject priceOnly = detail(20L, "SKU-A", "CODE-A");
+        priceOnly.put("purchaseDecimal", "100.00");
+        JSONObject body = body(priceOnly);
+
+        assertDoesNotThrow(
+                () -> materialExtendService.saveDetials(body, "[]", 10L, "update"));
+    }
+
+    private void mockActiveMaterial(Long materialId) {
+        com.jsh.erp.datasource.entities.Material material = new com.jsh.erp.datasource.entities.Material();
+        material.setId(materialId);
+        material.setDeleteFlag("0");
+        when(materialMapper.selectByExample(any())).thenReturn(Collections.singletonList(material));
     }
 
     private JSONObject detail(Long id, String sku, String barCode) {

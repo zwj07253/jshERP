@@ -101,6 +101,7 @@ public class MaterialAttributeService {
         if (existing == null) {
             throw invalidAttribute("商品属性不存在或已删除");
         }
+        requireTenantOwnership(existing);
         validateMaterialAttribute(materialAttribute, existing);
         try{
             materialAttributeMapper.updateByPrimaryKeySelective(materialAttribute);
@@ -116,6 +117,10 @@ public class MaterialAttributeService {
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteMaterialAttribute(Long id, HttpServletRequest request)throws Exception {
         checkEditPermission();
+        MaterialAttribute existing = getInfoById(id);
+        if (existing != null) {
+            requireTenantOwnership(existing);
+        }
         return batchDeleteMaterialAttributeByIds(id.toString());
     }
 
@@ -129,12 +134,35 @@ public class MaterialAttributeService {
     private int batchDeleteMaterialAttributeByIds(String ids) throws Exception{
         List<Long> idList = StringUtil.strToLongList(ids);
         ensureAttributesNotInUse(idList);
+        requireBatchTenantOwnership(idList);
         String [] idArray = idList.stream().map(String::valueOf).toArray(String[]::new);
         try{
             return materialAttributeMapperEx.batchDeleteMaterialAttributeByIds(idArray);
         }catch(Exception e){
             JshException.writeFail(logger, e);
             return 0;
+        }
+    }
+
+    private void requireTenantOwnership(MaterialAttribute record) throws Exception {
+        if (record == null) return;
+        User currentUser = userService.getCurrentUser();
+        Long currentTenantId = currentUser == null ? null : currentUser.getTenantId();
+        if (currentTenantId != null && !currentTenantId.equals(record.getTenantId())) {
+            throw invalidAttribute("商品属性不存在或已删除");
+        }
+    }
+
+    private void requireBatchTenantOwnership(List<Long> idList) throws Exception {
+        if (idList == null || idList.isEmpty()) return;
+        User currentUser = userService.getCurrentUser();
+        Long currentTenantId = currentUser == null ? null : currentUser.getTenantId();
+        if (currentTenantId == null) return;
+        for (Long id : idList) {
+            MaterialAttribute record = getInfoById(id);
+            if (record != null && !currentTenantId.equals(record.getTenantId())) {
+                throw invalidAttribute("商品属性不存在或已删除");
+            }
         }
     }
 

@@ -33,6 +33,7 @@
   import JDate from '@/components/jeecg/JDate'
   import { getAction } from '@/api/manage'
   import Vue from 'vue'
+  import { getMaterialPropertyCacheKey } from '@/utils/util'
   export default {
     name: "MaterialPropertyList",
     mixins:[JeecgListMixin],
@@ -92,6 +93,7 @@
           if (res.code===200) {
             this.dataSource = res.data.rows
             this.ipagination.total = res.data.total
+            Vue.ls.set(getMaterialPropertyCacheKey(), res.data.rows, 7 * 24 * 60 * 60 * 1000);
             Vue.ls.set('materialPropertyList', res.data.rows, 7 * 24 * 60 * 60 * 1000);
           } else if(res.code===510){
             this.$message.warning(res.data)
