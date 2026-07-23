@@ -228,6 +228,7 @@
       },
       loginSuccess (res) {
         let that = this
+        this.loginBtn = false
         this.$router.push({ path: "/dashboard/analysis" })
         this.$notification.success({
           message: '欢迎',

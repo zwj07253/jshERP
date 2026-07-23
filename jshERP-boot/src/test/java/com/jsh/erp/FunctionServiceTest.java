@@ -42,6 +42,20 @@ class FunctionServiceTest {
 
     @InjectMocks private FunctionService functionService;
 
+    @Test
+    void platformAdminDoesNotRequireVirtualTenantRole() throws Exception {
+        User admin = new User();
+        admin.setId(120L);
+        admin.setTenantId(0L);
+        admin.setLoginName(BusinessConstants.DEFAULT_MANAGER);
+        when(userService.getCurrentUser()).thenReturn(admin);
+
+        assertEquals(Collections.emptyList(), functionService.getCurrentTenantFunIdList());
+
+        verify(userBusinessService, never()).getBasicData("0", "UserRole");
+        verify(userService, never()).getRoleTypeByUserId(0L);
+    }
+
     // === 循环引用检测 ===
 
     @Test

@@ -2,6 +2,7 @@ package com.jsh.erp;
 
 import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.mappers.UserMapper;
+import com.jsh.erp.datasource.mappers.TenantMapper;
 import com.jsh.erp.filter.LogCostFilter;
 import com.jsh.erp.service.RedisService;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ class LogCostFilterSecurityTest {
 
     @Mock private RedisService redisService;
     @Mock private UserMapper userMapper;
+    @Mock private TenantMapper tenantMapper;
     @Mock private HttpServletRequest request;
     @Mock private HttpServletResponse response;
     @Mock private FilterChain chain;
@@ -58,6 +60,26 @@ class LogCostFilterSecurityTest {
         filter.doFilter(request, response, chain);
 
         verify(chain).doFilter(request, response);
+        verify(redisService, never()).deleteObjectBySession(request, "userId");
+    }
+
+    @Test
+    void platformAdminDoesNotRequireTenantRecord() throws Exception {
+        User admin = new User();
+        admin.setId(120L);
+        admin.setLoginName("admin");
+        admin.setTenantId(0L);
+        admin.setStatus((byte) 0);
+        admin.setDeleteFlag("0");
+        when(request.getRequestURI()).thenReturn("/jshERP-boot/function/findMenuByPNumber");
+        when(request.getHeader("X-Access-Token")).thenReturn("token_0");
+        when(redisService.getObjectFromSessionByKey(request, "userId")).thenReturn("120");
+        when(userMapper.selectByPrimaryKey(120L)).thenReturn(admin);
+
+        filter.doFilter(request, response, chain);
+
+        verify(chain).doFilter(request, response);
+        verifyNoInteractions(tenantMapper);
         verify(redisService, never()).deleteObjectBySession(request, "userId");
     }
 }
