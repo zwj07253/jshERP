@@ -21,8 +21,7 @@ import java.io.IOException;
 @WebFilter(filterName = "LogCostFilter", urlPatterns = {"/*"},
         initParams = {@WebInitParam(name = "filterPath",
                       value = "/jshERP-boot/platformConfig/getPlatform#/jshERP-boot/v2/api-docs#/jshERP-boot/v3/api-docs#/jshERP-boot/swagger-ui#/jshERP-boot/webjars#" +
-                              "/jshERP-boot/systemConfig/static#/jshERP-boot/api/plugin/wechat/weChat/share#" +
-                              "/jshERP-boot/api/plugin/general-ledger/pdf/voucher#/jshERP-boot/api/plugin/tenant-statistics/tenantClean")})
+                              "/jshERP-boot/systemConfig/static#/jshERP-boot/api/plugin/wechat/weChat/share")})
 public class LogCostFilter implements Filter {
 
     private static final String FILTER_PATH = "filterPath";
@@ -72,7 +71,8 @@ public class LogCostFilter implements Filter {
                         return;
                     }
                     // 校验租户状态：未禁用且未过期
-                    if (userTenantId != null) {
+                    // admin uses the virtual tenant 0, which has no jsh_tenant row.
+                    if (userTenantId != null && !BusinessConstants.DEFAULT_MANAGER.equals(user.getLoginName())) {
                         TenantExample tenantExample = new TenantExample();
                         tenantExample.createCriteria().andTenantIdEqualTo(userTenantId)
                                 .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);

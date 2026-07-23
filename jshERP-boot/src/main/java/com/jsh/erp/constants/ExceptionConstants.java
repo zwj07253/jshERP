@@ -1110,6 +1110,21 @@ public class ExceptionConstants {
     public static final String SYSTEM_CONFIG_TEST_USER_MSG = "演示用户禁止操作";
 
     /**
+     * 插件管理
+     * type = 130
+     * */
+    public static final int PLUGIN_FILE_INVALID_CODE = 13000001;
+    public static final String PLUGIN_FILE_INVALID_MSG = "插件文件不合法：%s";
+    public static final int PLUGIN_PATH_INVALID_CODE = 13000002;
+    public static final String PLUGIN_PATH_INVALID_MSG = "非法的插件安装路径";
+    public static final int PLUGIN_IN_USE_CODE = 13000003;
+    public static final String PLUGIN_IN_USE_MSG = "插件正在被系统功能使用，不能卸载：%s";
+    public static final int PLUGIN_START_FAILED_CODE = 13000004;
+    public static final String PLUGIN_START_FAILED_MSG = "插件启动失败：%s";
+    public static final int PLUGIN_OPERATION_CONFLICT_CODE = 13000005;
+    public static final String PLUGIN_OPERATION_CONFLICT_MSG = "插件正在执行其他操作，请稍后重试";
+
+    /**
      * 标准正常返回/操作成功返回
      * @return
      */

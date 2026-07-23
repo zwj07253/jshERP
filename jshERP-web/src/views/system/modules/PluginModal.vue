@@ -66,7 +66,8 @@
             this.model.platformKey = res.data
             getPlatformConfigByKey( {"platformKey": "activation_code"}).then((res)=>{
               if(res && res.code == 200) {
-                this.model.platformValue = res.data.platformValue
+                let val = res.data.platformValue || ''
+                this.model.platformValue = val.length > 4 ? '****' + val.substring(val.length - 4) : ''
                 this.visible = true;
                 this.$nextTick(() => {
                   this.form.setFieldsValue(pick(this.model, 'platformKey','platformValue'))
