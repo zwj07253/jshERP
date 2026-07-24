@@ -37,7 +37,7 @@ class UserServicePasswordMigrationTest {
         User user = activeUser(legacyCredential);
         when(userMapper.selectByExample(any(UserExample.class))).thenReturn(Collections.singletonList(user));
 
-        int result = userService.validateUser("demo", legacyCredential);
+        int result = userService.validateUser("", "demo", legacyCredential);
 
         assertEquals(ExceptionCodeConstants.UserExceptionCode.USER_CONDITION_FIT, result);
         ArgumentCaptor<User> update = ArgumentCaptor.forClass(User.class);
