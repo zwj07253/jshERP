@@ -50,6 +50,9 @@ public class UserService {
     private UserService userService;
     @Resource
     private TenantService tenantService;
+
+    @Resource
+    private TenantFeatureMappingService tenantFeatureMappingService;
     @Resource
     private UserBusinessService userBusinessService;
     @Resource
@@ -336,7 +339,7 @@ public class UserService {
      * @return
      * @throws Exception
      */
-    public Map<String, Object> login(String loginName, String password, HttpServletRequest request) throws Exception {
+    public Map<String, Object> login(String companyCode, String loginName, String password, HttpServletRequest request) throws Exception {
         Map<String, Object> data = new HashMap<>();
         String msgTip = "";
         User user = null;
@@ -350,7 +353,7 @@ public class UserService {
         int userStatus = -1;
         try {
             redisService.deleteObjectBySession(request,"userId");
-            userStatus = validateUser(loginName, password);
+            userStatus = validateUser(companyCode, loginName, password);
         } catch (Exception e) {
             logger.error(">>>>>>>>>>>>>用户  " + loginName + " 登录 login 方法 访问服务层异常====", e);
             msgTip = "access service exception";
@@ -375,10 +378,13 @@ public class UserService {
             case ExceptionCodeConstants.UserExceptionCode.EXPIRE_TENANT:
                 msgTip = "tenant is expire";
                 break;
+            case ExceptionCodeConstants.UserExceptionCode.COMPANY_NOT_EXIST:
+                msgTip = "company not exist";
+                break;
             case ExceptionCodeConstants.UserExceptionCode.USER_CONDITION_FIT:
                 msgTip = "user can login";
                 //验证通过 ，可以登录，放入session，记录登录日志
-                user = getUserByLoginName(loginName);
+                user = getUserByLoginNameAndCompanyCode(companyCode, loginName);
                 if(user.getTenantId()!=null) {
                     token = token + "_" + user.getTenantId();
                 }
@@ -411,12 +417,34 @@ public class UserService {
         return data;
     }
 
-    public int validateUser(String loginName, String password) throws Exception {
+    public int validateUser(String companyCode, String loginName, String password) throws Exception {
         /**默认是可以登录的*/
         List<User> list = null;
         try {
+            // 通过公司编码查找租户
+            Long targetTenantId = null;
+            if(StringUtil.isNotEmpty(companyCode)) {
+                Tenant tenant = tenantService.getTenantByTenantCode(companyCode);
+                if(tenant == null) {
+                    return ExceptionCodeConstants.UserExceptionCode.COMPANY_NOT_EXIST;
+                }
+                if(tenant.getEnabled()!=null && !tenant.getEnabled()) {
+                    return ExceptionCodeConstants.UserExceptionCode.BLACK_TENANT;
+                }
+                if(tenant.getExpireTime()!=null && tenant.getExpireTime().getTime()<System.currentTimeMillis()){
+                    return ExceptionCodeConstants.UserExceptionCode.EXPIRE_TENANT;
+                }
+                targetTenantId = tenant.getTenantId();
+            }
             UserExample example = new UserExample();
-            example.createCriteria().andLoginNameEqualTo(loginName).andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+            UserExample.Criteria criteria = example.createCriteria();
+            criteria.andLoginNameEqualTo(loginName).andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+            if(targetTenantId != null) {
+                criteria.andTenantIdEqualTo(targetTenantId);
+            } else {
+                // 未传 companyCode 时，只查找平台管理员（tenantId 为 0 或 null）
+                criteria.andTenantIdEqualTo(0L);
+            }
             list = userMapper.selectByExample(example);
             if (null != list && list.size() == 0) {
                 return ExceptionCodeConstants.UserExceptionCode.USER_NOT_EXIST;
@@ -424,14 +452,17 @@ public class UserService {
                 if(list.get(0).getStatus()!=0) {
                     return ExceptionCodeConstants.UserExceptionCode.BLACK_USER;
                 }
-                Long tenantId = list.get(0).getTenantId();
-                Tenant tenant = tenantService.getTenantByTenantId(tenantId);
-                if(tenant!=null) {
-                    if(tenant.getEnabled()!=null && !tenant.getEnabled()) {
-                        return ExceptionCodeConstants.UserExceptionCode.BLACK_TENANT;
-                    }
-                    if(tenant.getExpireTime()!=null && tenant.getExpireTime().getTime()<System.currentTimeMillis()){
-                        return ExceptionCodeConstants.UserExceptionCode.EXPIRE_TENANT;
+                // 未传 companyCode 时，仍需检查租户状态
+                if(StringUtil.isEmpty(companyCode)) {
+                    Long tenantId = list.get(0).getTenantId();
+                    Tenant tenant = tenantService.getTenantByTenantId(tenantId);
+                    if(tenant!=null) {
+                        if(tenant.getEnabled()!=null && !tenant.getEnabled()) {
+                            return ExceptionCodeConstants.UserExceptionCode.BLACK_TENANT;
+                        }
+                        if(tenant.getExpireTime()!=null && tenant.getExpireTime().getTime()<System.currentTimeMillis()){
+                            return ExceptionCodeConstants.UserExceptionCode.EXPIRE_TENANT;
+                        }
                     }
                 }
             } else {
@@ -502,6 +533,32 @@ public class UserService {
         }
         User user =null;
         if(list!=null&&list.size()>0){
+            user = list.get(0);
+        }
+        return user;
+    }
+
+    public User getUserByLoginNameAndCompanyCode(String companyCode, String loginName) throws Exception {
+        UserExample example = new UserExample();
+        UserExample.Criteria criteria = example.createCriteria();
+        criteria.andLoginNameEqualTo(loginName).andStatusEqualTo(BusinessConstants.USER_STATUS_NORMAL)
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        if(StringUtil.isNotEmpty(companyCode)) {
+            Tenant tenant = tenantService.getTenantByTenantCode(companyCode);
+            if(tenant != null) {
+                criteria.andTenantIdEqualTo(tenant.getTenantId());
+            }
+        } else {
+            criteria.andTenantIdEqualTo(0L);
+        }
+        List<User> list = null;
+        try {
+            list = userMapper.selectByExample(example);
+        } catch(Exception e) {
+            JshException.readFail(logger, e);
+        }
+        User user = null;
+        if(list != null && list.size() > 0) {
             user = list.get(0);
         }
         return user;
@@ -1119,8 +1176,17 @@ public class UserService {
         }
         List<Long> functionIds = StringUtil.strToLongList(
                 functionValue.substring(1, functionValue.length() - 1).replace("][", ","));
+        // 获取租户已开通的功能模块
+        Set<String> tenantFeatureCodes = tenantFeatureMappingService.getTenantFeatureCodes(user != null ? user.getTenantId() : null);
+        boolean isPlatformAdmin = user != null && "admin".equals(user.getLoginName()) && user.getTenantId() == null;
         for (Function function : functionService.getFunction()) {
             if (functionIds.contains(function.getId()) && url.equals(function.getUrl())) {
+                // 租户功能模块校验：非平台管理员且菜单有featureCode时，检查租户是否开通了该功能模块
+                if (!isPlatformAdmin && function.getFeatureCode() != null && !function.getFeatureCode().isEmpty()) {
+                    if (tenantFeatureCodes == null || !tenantFeatureCodes.contains(function.getFeatureCode())) {
+                        return false;
+                    }
+                }
                 return true;
             }
         }

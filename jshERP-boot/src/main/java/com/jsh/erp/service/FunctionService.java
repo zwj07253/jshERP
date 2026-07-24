@@ -361,7 +361,7 @@ public class FunctionService {
         User userInfo = userService.getCurrentUser();
         // Platform administrators belong to the virtual tenant 0. There is no tenant
         // owner/role relation for tenant 0, and callers grant admin access separately.
-        if(BusinessConstants.DEFAULT_MANAGER.equals(userInfo.getLoginName())) {
+        if(userService.isPlatformSuperAdmin(userInfo)) {
             return new ArrayList<>();
         }
         //获取当前用户所有的角色id

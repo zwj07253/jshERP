@@ -39,5 +39,10 @@ public interface ExceptionCodeConstants {
          * 租户已经过期
          */
         public static final int EXPIRE_TENANT = 7;
+
+        /**
+         * 公司编码不存在
+         */
+        public static final int COMPANY_NOT_EXIST = 8;
     }
 }

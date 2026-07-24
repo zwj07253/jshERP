@@ -17,6 +17,9 @@
       style="top:15%;height: 60%;">
       <a-spin :spinning="confirmLoading">
         <a-form :form="form">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="公司编码">
+            <a-input placeholder="请输入公司编码（如 A001）" v-decorator.trim="[ 'tenantCode' ]" />
+          </a-form-item>
           <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="登录名称">
             <a-input placeholder="请输入登录名称" v-decorator.trim="[ 'loginName', validatorRules.loginName]" :readOnly="!!model.id"
                      suffix="初始密码：123456" />
@@ -99,7 +102,7 @@
         this.model.expireTime = this.model.expireTimeStr
         this.visible = true;
         this.$nextTick(() => {
-          this.form.setFieldsValue(pick(this.model,'loginName', 'userNumLimit', 'type', 'roleId', 'expireTime', 'remark'))
+          this.form.setFieldsValue(pick(this.model,'tenantCode', 'loginName', 'userNumLimit', 'type', 'roleId', 'expireTime', 'remark'))
         })
         this.getTenantRoleList()
       },

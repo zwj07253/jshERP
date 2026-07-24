@@ -40,6 +40,11 @@ public class UserEx extends User{
      */
     private String uuid;
 
+    /**
+     * 公司编码
+     */
+    private String companyCode;
+
     public String getOrgAbr() {
         return orgAbr;
     }
@@ -134,5 +139,13 @@ public class UserEx extends User{
 
     public void setUuid(String uuid) {
         this.uuid = uuid;
+    }
+
+    public String getCompanyCode() {
+        return companyCode;
+    }
+
+    public void setCompanyCode(String companyCode) {
+        this.companyCode = companyCode;
     }
 }

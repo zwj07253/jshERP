@@ -193,6 +193,16 @@ public class TenantService {
         return tenant;
     }
 
+    public Tenant getTenantByTenantCode(String tenantCode) {
+        TenantExample example = new TenantExample();
+        example.createCriteria().andTenantCodeEqualTo(tenantCode).andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        List<Tenant> list = tenantMapper.selectByExample(example);
+        if(list != null && list.size()>0) {
+            return list.get(0);
+        }
+        return null;
+    }
+
     public int batchSetStatus(Boolean status, String ids)throws Exception {
         int result=0;
         try{

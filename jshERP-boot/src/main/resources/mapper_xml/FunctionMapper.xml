@@ -14,6 +14,7 @@
     <result column="type" jdbcType="VARCHAR" property="type" />
     <result column="push_btn" jdbcType="VARCHAR" property="pushBtn" />
     <result column="icon" jdbcType="VARCHAR" property="icon" />
+    <result column="feature_code" jdbcType="VARCHAR" property="featureCode" />
     <result column="delete_flag" jdbcType="VARCHAR" property="deleteFlag" />
   </resultMap>
   <sql id="Example_Where_Clause">
@@ -75,8 +76,8 @@
     </where>
   </sql>
   <sql id="Base_Column_List">
-    id, number, name, parent_number, url, component, state, sort, enabled, type, push_btn, 
-    icon, delete_flag
+    id, number, name, parent_number, url, component, state, sort, enabled, type, push_btn,
+    icon, feature_code, delete_flag
   </sql>
   <select id="selectByExample" parameterType="com.jsh.erp.datasource.entities.FunctionExample" resultMap="BaseResultMap">
     select
@@ -159,6 +160,9 @@
       <if test="icon != null">
         icon,
       </if>
+      <if test="featureCode != null">
+        feature_code,
+      </if>
       <if test="deleteFlag != null">
         delete_flag,
       </if>
@@ -199,6 +203,9 @@
       </if>
       <if test="icon != null">
         #{icon,jdbcType=VARCHAR},
+      </if>
+      <if test="featureCode != null">
+        #{featureCode,jdbcType=VARCHAR},
       </if>
       <if test="deleteFlag != null">
         #{deleteFlag,jdbcType=VARCHAR},
@@ -313,6 +320,9 @@
       <if test="icon != null">
         icon = #{icon,jdbcType=VARCHAR},
       </if>
+      <if test="featureCode != null">
+        feature_code = #{featureCode,jdbcType=VARCHAR},
+      </if>
       <if test="deleteFlag != null">
         delete_flag = #{deleteFlag,jdbcType=VARCHAR},
       </if>
@@ -332,6 +342,7 @@
       type = #{type,jdbcType=VARCHAR},
       push_btn = #{pushBtn,jdbcType=VARCHAR},
       icon = #{icon,jdbcType=VARCHAR},
+      feature_code = #{featureCode,jdbcType=VARCHAR},
       delete_flag = #{deleteFlag,jdbcType=VARCHAR}
     where id = #{id,jdbcType=BIGINT}
   </update>

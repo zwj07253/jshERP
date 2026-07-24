@@ -48,9 +48,12 @@ public abstract class ComputerInfo {
         List<NetworkInterface> sorted = Collections.list(interfaces);
         // 优先选择非 loopback、非 virtual 的物理网卡
         sorted.sort((a, b) -> {
-            boolean aVirtual = a.isLoopback() || a.isVirtual() || !a.isUp();
-            boolean bVirtual = b.isLoopback() || b.isVirtual() || !b.isUp();
-            if (aVirtual != bVirtual) return aVirtual ? 1 : -1;
+            try {
+                boolean aVirtual = a.isLoopback() || a.isVirtual() || !a.isUp();
+                boolean bVirtual = b.isLoopback() || b.isVirtual() || !b.isUp();
+                if (aVirtual != bVirtual) return aVirtual ? 1 : -1;
+            } catch (java.net.SocketException ignored) {
+            }
             return 0;
         });
         for (NetworkInterface ni : sorted) {

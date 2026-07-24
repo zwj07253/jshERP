@@ -21,6 +21,8 @@ public class Tenant {
 
     private String remark;
 
+    private String tenantCode;
+
     private String deleteFlag;
 
     public Long getId() {
@@ -93,6 +95,14 @@ public class Tenant {
 
     public void setRemark(String remark) {
         this.remark = remark == null ? null : remark.trim();
+    }
+
+    public String getTenantCode() {
+        return tenantCode;
+    }
+
+    public void setTenantCode(String tenantCode) {
+        this.tenantCode = tenantCode == null ? null : tenantCode.trim();
     }
 
     public String getDeleteFlag() {

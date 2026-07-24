@@ -5,6 +5,16 @@
       <a-form-item>
         <a-input
           size="large"
+          v-decorator="['companyCode',{initialValue:'', rules: validatorRules.companyCode.rules}]"
+          type="text"
+          placeholder="请输入公司编码">
+          <a-icon slot="prefix" type="home" :style="{ color: 'rgba(0,0,0,.25)' }"/>
+        </a-input>
+      </a-form-item>
+
+      <a-form-item>
+        <a-input
+          size="large"
           v-decorator="['loginName',{initialValue:'', rules: validatorRules.loginName.rules}]"
           type="text"
           placeholder="请输入用户名">
@@ -110,6 +120,7 @@
           smsSendBtn: false,
         },
         validatorRules:{
+          companyCode:{rules: [{ required: true, message: '请输入公司编码!'}]},
           loginName:{rules: [{ required: true, message: '请输入用户名!'},{validator: this.handleLoginName}]},
           password:{rules: [{ required: true, message: '请输入密码!',validator: 'click'}]},
           inputCode:{rules: [{ required: true, message: '请输入验证码!',validator: 'click'}]}
@@ -150,6 +161,9 @@
         //从缓存中获取登录名和密码
         this.$nextTick(() => {
           if(Vue.ls.get('cache_loginName') && Vue.ls.get('cache_password')) {
+            if(Vue.ls.get('cache_companyCode')) {
+              this.form.setFieldsValue({'companyCode': Vue.ls.get('cache_companyCode')})
+            }
             this.form.setFieldsValue({'loginName': Vue.ls.get('cache_loginName')})
             this.form.setFieldsValue({'password': Vue.ls.get('cache_password')})
             this.checked = true
@@ -200,18 +214,21 @@
         that.loginBtn = true;
         // 使用账户密码登陆
         if (that.customActiveKey === 'tab1') {
-          that.form.validateFields([ 'loginName', 'password', 'inputCode' ], { force: true }, (err, values) => {
+          that.form.validateFields([ 'companyCode', 'loginName', 'password', 'inputCode' ], { force: true }, (err, values) => {
             if (!err) {
+              loginParams.companyCode = values.companyCode
               loginParams.loginName = values.loginName
               loginParams.password = md5(values.password)
               loginParams.code = values.inputCode
               loginParams.uuid = that.uuid
               if(that.checked) {
                 //勾选的时候进行缓存
+                Vue.ls.set('cache_companyCode', values.companyCode)
                 Vue.ls.set('cache_loginName', values.loginName)
                 Vue.ls.set('cache_password', values.password)
               } else {
                 //没勾选的时候清缓存
+                Vue.ls.remove('cache_companyCode')
                 Vue.ls.remove('cache_loginName')
                 Vue.ls.remove('cache_password')
               }
@@ -244,7 +261,7 @@
         }
         if(res.data && res.data.user) {
           if(res.data.user.loginName === 'admin'){
-            let desc = 'admin只是平台运维用户，真正的管理员是租户(测试账号为jsh），admin不能编辑任何业务数据，只能配置平台菜单和创建租户'
+            let desc = 'admin只是平台运维用户，admin不能编辑任何业务数据，只能配置平台菜单和创建租户'
             this.$message.info(desc,30)
           } else {
             getPlatformConfigByKey({ "platformKey": "bill_excel_url" }).then((res) => {
@@ -309,6 +326,10 @@
             this.Logout();
           } else if(res.data.msgTip === 'user password error'){
             err.message = '用户密码不正确';
+            this.requestFailed(err)
+            this.Logout();
+          } else if(res.data.msgTip === 'company not exist'){
+            err.message = '公司编码不存在';
             this.requestFailed(err)
             this.Logout();
           } else if(res.data.msgTip === 'user is black'){

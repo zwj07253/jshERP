@@ -12,6 +12,7 @@ import com.jsh.erp.datasource.entities.*;
 import com.jsh.erp.service.FunctionService;
 import com.jsh.erp.service.RoleService;
 import com.jsh.erp.service.SystemConfigService;
+import com.jsh.erp.service.TenantFeatureMappingService;
 import com.jsh.erp.service.UserBusinessService;
 import com.jsh.erp.service.UserService;
 import com.jsh.erp.exception.BusinessRunTimeException;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.jsh.erp.utils.ResponseJsonUtil.returnJson;
 import static com.jsh.erp.utils.ResponseJsonUtil.returnStr;
@@ -54,6 +56,9 @@ public class FunctionController extends BaseController {
 
     @Resource
     private SystemConfigService systemConfigService;
+
+    @Resource
+    private TenantFeatureMappingService tenantFeatureMappingService;
 
     @GetMapping(value = "/info")
     @Operation(summary = "根据id获取信息")
@@ -188,7 +193,9 @@ public class FunctionController extends BaseController {
                 User userInfo = currentUser;
                 //获取当前用户所属的租户所拥有的功能id的map
                 Map<Long, Long> funIdMap = functionService.getCurrentTenantFunIdMap();
-                dataArray = getMenuByFunction(dataList, fc, approvalFlag, funIdMap, userInfo);
+                //获取当前租户已开通的功能模块编码集合
+                Set<String> tenantFeatureCodes = tenantFeatureMappingService.getTenantFeatureCodes(currentUser.getTenantId());
+                dataArray = getMenuByFunction(dataList, fc, approvalFlag, funIdMap, userInfo, tenantFeatureCodes);
                 //增加首页菜单项
                 JSONObject homeItem = new JSONObject();
                 homeItem.put("id", 0);
@@ -204,11 +211,18 @@ public class FunctionController extends BaseController {
         return dataArray;
     }
 
-    public JSONArray getMenuByFunction(List<Function> dataList, String fc, String approvalFlag, Map<Long, Long> funIdMap, User userInfo) throws Exception {
+    public JSONArray getMenuByFunction(List<Function> dataList, String fc, String approvalFlag, Map<Long, Long> funIdMap, User userInfo, Set<String> tenantFeatureCodes) throws Exception {
         JSONArray dataArray = new JSONArray();
+        boolean isPlatformAdmin = "admin".equals(userInfo.getLoginName()) && userInfo.getTenantId() == null;
         for (Function function : dataList) {
             //如果不是超管也不是租户就需要校验，防止分配下级用户的功能权限，大于租户的权限
-            if("admin".equals(userInfo.getLoginName()) || userInfo.getId().equals(userInfo.getTenantId()) || funIdMap.get(function.getId())!=null) {
+            if(isPlatformAdmin || userInfo.getId().equals(userInfo.getTenantId()) || (funIdMap != null && funIdMap.get(function.getId())!=null)) {
+                //租户功能模块过滤：非平台管理员且菜单有featureCode时，检查租户是否开通了该功能模块
+                if(!isPlatformAdmin && function.getFeatureCode() != null && !function.getFeatureCode().isEmpty()) {
+                    if(tenantFeatureCodes == null || !tenantFeatureCodes.contains(function.getFeatureCode())) {
+                        continue;
+                    }
+                }
                 //如果关闭多级审核，遇到任务审核菜单直接跳过
                 if("0".equals(approvalFlag) && "/workflow".equals(function.getUrl())) {
                     continue;
@@ -221,7 +235,7 @@ public class FunctionController extends BaseController {
                 item.put("url", function.getUrl());
                 item.put("component", function.getComponent());
                 if (newList.size()>0) {
-                    JSONArray childrenArr = getMenuByFunction(newList, fc, approvalFlag, funIdMap, userInfo);
+                    JSONArray childrenArr = getMenuByFunction(newList, fc, approvalFlag, funIdMap, userInfo, tenantFeatureCodes);
                     if(childrenArr.size()>0) {
                         item.put("children", childrenArr);
                         dataArray.add(item);

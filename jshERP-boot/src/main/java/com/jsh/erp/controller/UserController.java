@@ -146,7 +146,8 @@ public class UserController extends BaseController {
         try {
             userService.checkRateLimit("login", request, 20, 300);
             userService.validateCaptcha(userParam.getCode(), userParam.getUuid());
-            Map<String, Object> data = userService.login(userParam.getLoginName().trim(), userParam.getPassword().trim(), request);
+            String companyCode = userParam.getCompanyCode() != null ? userParam.getCompanyCode().trim() : "";
+            Map<String, Object> data = userService.login(companyCode, userParam.getLoginName().trim(), userParam.getPassword().trim(), request);
             res.code = 200;
             res.data = data;
         } catch (BusinessRunTimeException e) {

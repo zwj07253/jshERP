@@ -25,6 +25,8 @@ public class Function {
 
     private String icon;
 
+    private String featureCode;
+
     private String deleteFlag;
 
     public Long getId() {
@@ -121,6 +123,14 @@ public class Function {
 
     public void setIcon(String icon) {
         this.icon = icon == null ? null : icon.trim();
+    }
+
+    public String getFeatureCode() {
+        return featureCode;
+    }
+
+    public void setFeatureCode(String featureCode) {
+        this.featureCode = featureCode == null ? null : featureCode.trim();
     }
 
     public String getDeleteFlag() {

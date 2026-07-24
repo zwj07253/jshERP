@@ -71,6 +71,8 @@
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
               <a @click="handleEdit(record)">编辑</a>
+              <a-divider type="vertical" />
+              <a @click="handleFeatureAuth(record)">功能授权</a>
             </span>
             <!-- 状态渲染模板 -->
             <template slot="customRenderType" slot-scope="type">
@@ -85,6 +87,7 @@
         </div>
         <!-- table区域-end -->
         <tenant-modal ref="modalForm" @ok="modalFormOk"></tenant-modal>
+        <tenant-feature-modal ref="tenantFeatureModal" @ok="modalFormOk"></tenant-feature-modal>
       </a-card>
     </a-col>
   </a-row>
@@ -92,6 +95,7 @@
 <!-- b y 7 5 2 7  1 8 9 2 0 -->
 <script>
   import TenantModal from './modules/TenantModal'
+  import TenantFeatureModal from './modules/TenantFeatureModal'
   import {JeecgListMixin} from '@/mixins/JeecgListMixin'
   import JInput from '@/components/jeecg/JInput'
   import { getTenantRoleList } from '@/api/api'
@@ -100,6 +104,7 @@
     mixins: [JeecgListMixin],
     components: {
       TenantModal,
+      TenantFeatureModal,
       JInput
     },
     data() {
@@ -136,6 +141,7 @@
             align: "center",
             width: 100
           },
+          { title: '公司编码', dataIndex: 'tenantCode', width: 80, align: "center"},
           { title: '登录名称', dataIndex: 'loginName', width: 100, align: "center"},
           { title: '用户数量', dataIndex: 'userCount', width: 60, align: "center"},
           { title: '用户数量限制', dataIndex: 'userNumLimit', width: 80, align: "center"},
@@ -159,6 +165,9 @@
     created () {
     },
     methods: {
+      handleFeatureAuth(record) {
+        this.$refs.tenantFeatureModal.show(record.tenantId, record.loginName)
+      }
     }
   }
 </script>

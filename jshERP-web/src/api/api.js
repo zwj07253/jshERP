@@ -7,6 +7,14 @@ const buyOrSalePrice = (params)=>getAction("/depotItem/buyOrSalePrice",params);
 const checkTenant = (params)=>getAction("/tenant/checkIsNameExist",params);
 const addTenant = (params)=>postAction("/tenant/add",params);
 const editTenant = (params)=>putAction("/tenant/update",params);
+//功能模块管理
+const getAllFeatures = (params)=>getAction("/feature/getAllList",params);
+const addFeature = (params)=>postAction("/feature/add",params);
+const editFeature = (params)=>postAction("/feature/update",params);
+const deleteFeature = (params)=>postAction("/feature/delete",params);
+//租户功能授权
+const getTenantFeatures = (params)=>getAction("/tenantFeature/getByTenantId",params);
+const batchUpdateTenantFeatures = (params)=>postAction("/tenantFeature/batchUpdate",params);
 //角色管理
 const addRole = (params)=>postAction("/role/add",params);
 const editRole = (params)=>putAction("/role/update",params);

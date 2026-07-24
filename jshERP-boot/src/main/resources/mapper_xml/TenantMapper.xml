@@ -11,6 +11,7 @@
     <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
     <result column="expire_time" jdbcType="TIMESTAMP" property="expireTime" />
     <result column="remark" jdbcType="VARCHAR" property="remark" />
+    <result column="tenant_code" jdbcType="VARCHAR" property="tenantCode" />
     <result column="delete_flag" jdbcType="VARCHAR" property="deleteFlag" />
   </resultMap>
   <sql id="Example_Where_Clause">
@@ -72,8 +73,8 @@
     </where>
   </sql>
   <sql id="Base_Column_List">
-    id, tenant_id, login_name, user_num_limit, type, enabled, create_time, expire_time, 
-    remark, delete_flag
+    id, tenant_id, login_name, user_num_limit, type, enabled, create_time, expire_time,
+    remark, tenant_code, delete_flag
   </sql>
   <select id="selectByExample" parameterType="com.jsh.erp.datasource.entities.TenantExample" resultMap="BaseResultMap">
     select
@@ -106,14 +107,14 @@
     </if>
   </delete>
   <insert id="insert" parameterType="com.jsh.erp.datasource.entities.Tenant">
-    insert into jsh_tenant (id, tenant_id, login_name, 
-      user_num_limit, type, enabled, 
-      create_time, expire_time, remark, 
-      delete_flag)
-    values (#{id,jdbcType=BIGINT}, #{tenantId,jdbcType=BIGINT}, #{loginName,jdbcType=VARCHAR}, 
-      #{userNumLimit,jdbcType=INTEGER}, #{type,jdbcType=VARCHAR}, #{enabled,jdbcType=BOOLEAN}, 
-      #{createTime,jdbcType=TIMESTAMP}, #{expireTime,jdbcType=TIMESTAMP}, #{remark,jdbcType=VARCHAR}, 
-      #{deleteFlag,jdbcType=VARCHAR})
+    insert into jsh_tenant (id, tenant_id, login_name,
+      user_num_limit, type, enabled,
+      create_time, expire_time, remark,
+      tenant_code, delete_flag)
+    values (#{id,jdbcType=BIGINT}, #{tenantId,jdbcType=BIGINT}, #{loginName,jdbcType=VARCHAR},
+      #{userNumLimit,jdbcType=INTEGER}, #{type,jdbcType=VARCHAR}, #{enabled,jdbcType=BOOLEAN},
+      #{createTime,jdbcType=TIMESTAMP}, #{expireTime,jdbcType=TIMESTAMP}, #{remark,jdbcType=VARCHAR},
+      #{tenantCode,jdbcType=VARCHAR}, #{deleteFlag,jdbcType=VARCHAR})
   </insert>
   <insert id="insertSelective" parameterType="com.jsh.erp.datasource.entities.Tenant">
     insert into jsh_tenant
@@ -144,6 +145,9 @@
       </if>
       <if test="remark != null">
         remark,
+      </if>
+      <if test="tenantCode != null">
+        tenant_code,
       </if>
       <if test="deleteFlag != null">
         delete_flag,
@@ -176,6 +180,9 @@
       </if>
       <if test="remark != null">
         #{remark,jdbcType=VARCHAR},
+      </if>
+      <if test="tenantCode != null">
+        #{tenantCode,jdbcType=VARCHAR},
       </if>
       <if test="deleteFlag != null">
         #{deleteFlag,jdbcType=VARCHAR},
@@ -218,6 +225,9 @@
       <if test="record.remark != null">
         remark = #{record.remark,jdbcType=VARCHAR},
       </if>
+      <if test="record.tenantCode != null">
+        tenant_code = #{record.tenantCode,jdbcType=VARCHAR},
+      </if>
       <if test="record.deleteFlag != null">
         delete_flag = #{record.deleteFlag,jdbcType=VARCHAR},
       </if>
@@ -237,6 +247,7 @@
       create_time = #{record.createTime,jdbcType=TIMESTAMP},
       expire_time = #{record.expireTime,jdbcType=TIMESTAMP},
       remark = #{record.remark,jdbcType=VARCHAR},
+      tenant_code = #{record.tenantCode,jdbcType=VARCHAR},
       delete_flag = #{record.deleteFlag,jdbcType=VARCHAR}
     <if test="_parameter != null">
       <include refid="Update_By_Example_Where_Clause" />
@@ -269,6 +280,9 @@
       <if test="remark != null">
         remark = #{remark,jdbcType=VARCHAR},
       </if>
+      <if test="tenantCode != null">
+        tenant_code = #{tenantCode,jdbcType=VARCHAR},
+      </if>
       <if test="deleteFlag != null">
         delete_flag = #{deleteFlag,jdbcType=VARCHAR},
       </if>
@@ -285,6 +299,7 @@
       create_time = #{createTime,jdbcType=TIMESTAMP},
       expire_time = #{expireTime,jdbcType=TIMESTAMP},
       remark = #{remark,jdbcType=VARCHAR},
+      tenant_code = #{tenantCode,jdbcType=VARCHAR},
       delete_flag = #{deleteFlag,jdbcType=VARCHAR}
     where id = #{id,jdbcType=BIGINT}
   </update>

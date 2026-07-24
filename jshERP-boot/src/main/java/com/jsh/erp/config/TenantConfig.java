@@ -23,7 +23,8 @@ public class TenantConfig {
      */
     private static final List<String> IGNORE_TABLES = Arrays.asList(
             "jsh_sequence", "jsh_function", "jsh_platform_config",
-            "jsh_tenant", "jsh_sys_dict_data", "jsh_sys_dict_type"
+            "jsh_tenant", "jsh_sys_dict_data", "jsh_sys_dict_type",
+            "jsh_feature", "jsh_tenant_feature"
     );
 
     @Bean

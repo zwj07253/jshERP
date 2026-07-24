@@ -350,6 +350,7 @@ CREATE TABLE jsh_function (
     type VARCHAR(50),
     push_btn VARCHAR(50),
     icon VARCHAR(50),
+    feature_code VARCHAR(50),
     delete_flag VARCHAR(1) DEFAULT '0'
 );
 CREATE UNIQUE INDEX idx_function_url ON jsh_function(url);
@@ -366,75 +367,76 @@ COMMENT ON COLUMN jsh_function.enabled IS '启用';
 COMMENT ON COLUMN jsh_function.type IS '类型';
 COMMENT ON COLUMN jsh_function.push_btn IS '功能按钮';
 COMMENT ON COLUMN jsh_function.icon IS '图标';
+COMMENT ON COLUMN jsh_function.feature_code IS '所属功能模块编码，关联jsh_feature.feature_code';
 COMMENT ON COLUMN jsh_function.delete_flag IS '删除标记，0未删除，1删除';
 
 -- ============================================
-INSERT INTO jsh_function (id, number, name, parent_number, url, component, state, sort, enabled, type, push_btn, icon, delete_flag) VALUES
-(1, '0001', '系统管理', '0', '/system', '/layouts/TabLayout', TRUE, '0910', TRUE, '电脑版', '', 'setting', '0'),
-(13, '000102', '角色管理', '0001', '/system/role', '/system/RoleList', FALSE, '0130', TRUE, '电脑版', '1', 'profile', '0'),
-(14, '000103', '用户管理', '0001', '/system/user', '/system/UserList', FALSE, '0140', TRUE, '电脑版', '1', 'profile', '0'),
-(15, '000104', '日志管理', '0001', '/system/log', '/system/LogList', FALSE, '0160', TRUE, '电脑版', '', 'profile', '0'),
-(16, '000105', '菜单管理', '0001', '/system/function', '/system/FunctionList', FALSE, '0166', TRUE, '电脑版', '1', 'profile', '0'),
-(18, '000109', '租户管理', '0001', '/system/tenant', '/system/TenantList', FALSE, '0167', TRUE, '电脑版', '1', 'profile', '0'),
-(21, '0101', '商品管理', '0', '/material', '/layouts/TabLayout', FALSE, '0620', TRUE, '电脑版', NULL, 'shopping', '0'),
-(22, '010101', '商品类别', '0101', '/material/material_category', '/material/MaterialCategoryList', FALSE, '0230', TRUE, '电脑版', '1', 'profile', '0'),
-(23, '010102', '商品信息', '0101', '/material/material', '/material/MaterialList', FALSE, '0240', TRUE, '电脑版', '1,3', 'profile', '0'),
-(24, '0102', '基础资料', '0', '/systemA', '/layouts/TabLayout', FALSE, '0750', TRUE, '电脑版', NULL, 'appstore', '0'),
-(25, '01020101', '供应商信息', '0102', '/system/vendor', '/system/VendorList', FALSE, '0260', TRUE, '电脑版', '1,3', 'profile', '0'),
-(26, '010202', '仓库信息', '0102', '/system/depot', '/system/DepotList', FALSE, '0270', TRUE, '电脑版', '1', 'profile', '0'),
-(31, '010206', '经手人管理', '0102', '/system/person', '/system/PersonList', FALSE, '0284', TRUE, '电脑版', '1', 'profile', '0'),
-(32, '0502', '采购管理', '0', '/bill', '/layouts/TabLayout', FALSE, '0330', TRUE, '电脑版', '', 'retweet', '0'),
-(33, '050201', '采购入库', '0502', '/bill/purchase_in', '/bill/PurchaseInList', FALSE, '0340', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(38, '0603', '销售管理', '0', '/billB', '/layouts/TabLayout', FALSE, '0390', TRUE, '电脑版', '', 'shopping-cart', '0'),
-(40, '080107', '调拨出库', '0801', '/bill/allocation_out', '/bill/AllocationOutList', FALSE, '0807', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(41, '060303', '销售出库', '0603', '/bill/sale_out', '/bill/SaleOutList', FALSE, '0394', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(44, '0704', '财务管理', '0', '/financial', '/layouts/TabLayout', FALSE, '0450', TRUE, '电脑版', '', 'money-collect', '0'),
-(59, '030101', '进销存统计', '0301', '/report/in_out_stock_report', '/report/InOutStockReport', FALSE, '0658', TRUE, '电脑版', '', 'profile', '0'),
-(194, '010204', '收支项目', '0102', '/system/in_out_item', '/system/InOutItemList', FALSE, '0282', TRUE, '电脑版', '1', 'profile', '0'),
-(195, '010205', '结算账户', '0102', '/system/account', '/system/AccountList', FALSE, '0283', TRUE, '电脑版', '1', 'profile', '0'),
-(197, '070402', '收入单', '0704', '/financial/item_in', '/financial/ItemInList', FALSE, '0465', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(198, '0301', '报表查询', '0', '/report', '/layouts/TabLayout', FALSE, '0570', TRUE, '电脑版', NULL, 'pie-chart', '0'),
-(199, '050204', '采购退货', '0502', '/bill/purchase_back', '/bill/PurchaseBackList', FALSE, '0345', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(200, '060305', '销售退货', '0603', '/bill/sale_back', '/bill/SaleBackList', FALSE, '0396', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(201, '080103', '其它入库', '0801', '/bill/other_in', '/bill/OtherInList', FALSE, '0803', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(202, '080105', '其它出库', '0801', '/bill/other_out', '/bill/OtherOutList', FALSE, '0805', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(203, '070403', '支出单', '0704', '/financial/item_out', '/financial/ItemOutList', FALSE, '0470', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(204, '070404', '收款单', '0704', '/financial/money_in', '/financial/MoneyInList', FALSE, '0475', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(205, '070405', '付款单', '0704', '/financial/money_out', '/financial/MoneyOutList', FALSE, '0480', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(206, '070406', '转账单', '0704', '/financial/giro', '/financial/GiroList', FALSE, '0490', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(207, '030102', '账户统计', '0301', '/report/account_report', '/report/AccountReport', FALSE, '0610', TRUE, '电脑版', '', 'profile', '0'),
-(208, '030103', '采购统计', '0301', '/report/buy_in_report', '/report/BuyInReport', FALSE, '0620', TRUE, '电脑版', '', 'profile', '0'),
-(209, '030104', '销售统计', '0301', '/report/sale_out_report', '/report/SaleOutReport', FALSE, '0630', TRUE, '电脑版', '', 'profile', '0'),
-(210, '040102', '零售出库', '0401', '/bill/retail_out', '/bill/RetailOutList', FALSE, '0405', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(211, '040104', '零售退货', '0401', '/bill/retail_back', '/bill/RetailBackList', FALSE, '0407', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(212, '070407', '收预付款', '0704', '/financial/advance_in', '/financial/AdvanceInList', FALSE, '0495', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(217, '01020102', '客户信息', '0102', '/system/customer', '/system/CustomerList', FALSE, '0262', TRUE, '电脑版', '1,3', 'profile', '0'),
-(218, '01020103', '会员信息', '0102', '/system/member', '/system/MemberList', FALSE, '0263', TRUE, '电脑版', '1,3', 'profile', '0'),
-(220, '010103', '多单位', '0101', '/system/unit', '/system/UnitList', FALSE, '0245', TRUE, '电脑版', '1', 'profile', '0'),
-(225, '0401', '零售管理', '0', '/billC', '/layouts/TabLayout', FALSE, '0101', TRUE, '电脑版', '', 'gift', '0'),
-(226, '030106', '入库明细', '0301', '/report/in_detail', '/report/InDetail', FALSE, '0640', TRUE, '电脑版', '', 'profile', '0'),
-(227, '030107', '出库明细', '0301', '/report/out_detail', '/report/OutDetail', FALSE, '0645', TRUE, '电脑版', '', 'profile', '0'),
-(228, '030108', '入库汇总', '0301', '/report/in_material_count', '/report/InMaterialCount', FALSE, '0650', TRUE, '电脑版', '', 'profile', '0'),
-(229, '030109', '出库汇总', '0301', '/report/out_material_count', '/report/OutMaterialCount', FALSE, '0655', TRUE, '电脑版', '', 'profile', '0'),
-(232, '080109', '组装单', '0801', '/bill/assemble', '/bill/AssembleList', FALSE, '0809', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(233, '080111', '拆卸单', '0801', '/bill/disassemble', '/bill/DisassembleList', FALSE, '0811', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(234, '000105', '系统配置', '0001', '/system/system_config', '/system/SystemConfigList', FALSE, '0164', TRUE, '电脑版', '1', 'profile', '0'),
-(235, '030110', '客户对账', '0301', '/report/customer_account', '/report/CustomerAccount', FALSE, '0660', TRUE, '电脑版', '', 'profile', '0'),
-(236, '000106', '商品属性', '0001', '/material/material_property', '/material/MaterialPropertyList', FALSE, '0163', TRUE, '电脑版', '1', 'profile', '0'),
-(237, '030111', '供应商对账', '0301', '/report/vendor_account', '/report/VendorAccount', FALSE, '0665', TRUE, '电脑版', '', 'profile', '0'),
-(239, '0801', '仓库管理', '0', '/billD', '/layouts/TabLayout', FALSE, '0420', TRUE, '电脑版', '', 'hdd', '0'),
-(241, '050202', '采购订单', '0502', '/bill/purchase_order', '/bill/PurchaseOrderList', FALSE, '0335', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(242, '060301', '销售订单', '0603', '/bill/sale_order', '/bill/SaleOrderList', FALSE, '0392', TRUE, '电脑版', '1,2,3,7', 'profile', '0'),
-(243, '000108', '部门管理', '0001', '/system/organization', '/system/OrganizationList', TRUE, '0150', TRUE, '电脑版', '1', 'profile', '0'),
-(244, '030112', '库存预警', '0301', '/report/stock_warning_report', '/report/StockWarningReport', FALSE, '0670', TRUE, '电脑版', '', 'profile', '0'),
-(245, '000107', '插件管理', '0001', '/system/plugin', '/system/PluginList', FALSE, '0170', TRUE, '电脑版', '1', 'profile', '0'),
-(246, '030113', '商品库存', '0301', '/report/material_stock', '/report/MaterialStock', FALSE, '0605', TRUE, '电脑版', '', 'profile', '0'),
-(247, '010105', '多属性', '0101', '/material/material_attribute', '/material/MaterialAttributeList', FALSE, '0250', TRUE, '电脑版', '1', 'profile', '0'),
-(248, '030150', '调拨明细', '0301', '/report/allocation_detail', '/report/AllocationDetail', FALSE, '0646', TRUE, '电脑版', '', 'profile', '0'),
-(258, '000112', '平台配置', '0001', '/system/platform_config', '/system/PlatformConfigList', FALSE, '0175', TRUE, '电脑版', '', 'profile', '0'),
-(259, '030105', '零售统计', '0301', '/report/retail_out_report', '/report/RetailOutReport', FALSE, '0615', TRUE, '电脑版', '', 'profile', '0'),
-(260, '000113', '字典管理', '0001', '/system/dict', '/system/DictList', FALSE, '0172', TRUE, '电脑版', '1', 'profile', '0'),
-(261, '050203', '请购单', '0502', '/bill/purchase_apply', '/bill/PurchaseApplyList', FALSE, '0330', TRUE, '电脑版', '1,2,3,7', 'profile', '0')
+INSERT INTO jsh_function (id, number, name, parent_number, url, component, state, sort, enabled, type, push_btn, icon, feature_code, delete_flag) VALUES
+(1, '0001', '系统管理', '0', '/system', '/layouts/TabLayout', TRUE, '0910', TRUE, '电脑版', '', 'setting', 'SYSTEM', '0'),
+(13, '000102', '角色管理', '0001', '/system/role', '/system/RoleList', FALSE, '0130', TRUE, '电脑版', '1', 'profile', 'SYSTEM', '0'),
+(14, '000103', '用户管理', '0001', '/system/user', '/system/UserList', FALSE, '0140', TRUE, '电脑版', '1', 'profile', 'SYSTEM', '0'),
+(15, '000104', '日志管理', '0001', '/system/log', '/system/LogList', FALSE, '0160', TRUE, '电脑版', '', 'profile', 'SYSTEM', '0'),
+(16, '000105', '菜单管理', '0001', '/system/function', '/system/FunctionList', FALSE, '0166', TRUE, '电脑版', '1', 'profile', 'SYSTEM', '0'),
+(18, '000109', '租户管理', '0001', '/system/tenant', '/system/TenantList', FALSE, '0167', TRUE, '电脑版', '1', 'profile', 'SYSTEM', '0'),
+(21, '0101', '商品管理', '0', '/material', '/layouts/TabLayout', FALSE, '0620', TRUE, '电脑版', NULL, 'shopping', 'STOCK', '0'),
+(22, '010101', '商品类别', '0101', '/material/material_category', '/material/MaterialCategoryList', FALSE, '0230', TRUE, '电脑版', '1', 'profile', 'STOCK', '0'),
+(23, '010102', '商品信息', '0101', '/material/material', '/material/MaterialList', FALSE, '0240', TRUE, '电脑版', '1,3', 'profile', 'STOCK', '0'),
+(24, '0102', '基础资料', '0', '/systemA', '/layouts/TabLayout', FALSE, '0750', TRUE, '电脑版', NULL, 'appstore', 'SYSTEM', '0'),
+(25, '01020101', '供应商信息', '0102', '/system/vendor', '/system/VendorList', FALSE, '0260', TRUE, '电脑版', '1,3', 'profile', 'SYSTEM', '0'),
+(26, '010202', '仓库信息', '0102', '/system/depot', '/system/DepotList', FALSE, '0270', TRUE, '电脑版', '1', 'profile', 'STOCK', '0'),
+(31, '010206', '经手人管理', '0102', '/system/person', '/system/PersonList', FALSE, '0284', TRUE, '电脑版', '1', 'profile', 'SYSTEM', '0'),
+(32, '0502', '采购管理', '0', '/bill', '/layouts/TabLayout', FALSE, '0330', TRUE, '电脑版', '', 'retweet', 'PURCHASE', '0'),
+(33, '050201', '采购入库', '0502', '/bill/purchase_in', '/bill/PurchaseInList', FALSE, '0340', TRUE, '电脑版', '1,2,3,7', 'profile', 'PURCHASE', '0'),
+(38, '0603', '销售管理', '0', '/billB', '/layouts/TabLayout', FALSE, '0390', TRUE, '电脑版', '', 'shopping-cart', 'SALE', '0'),
+(40, '080107', '调拨出库', '0801', '/bill/allocation_out', '/bill/AllocationOutList', FALSE, '0807', TRUE, '电脑版', '1,2,3,7', 'profile', 'STOCK', '0'),
+(41, '060303', '销售出库', '0603', '/bill/sale_out', '/bill/SaleOutList', FALSE, '0394', TRUE, '电脑版', '1,2,3,7', 'profile', 'SALE', '0'),
+(44, '0704', '财务管理', '0', '/financial', '/layouts/TabLayout', FALSE, '0450', TRUE, '电脑版', '', 'money-collect', 'FINANCE', '0'),
+(59, '030101', '进销存统计', '0301', '/report/in_out_stock_report', '/report/InOutStockReport', FALSE, '0658', TRUE, '电脑版', '', 'profile', 'STOCK', '0'),
+(194, '010204', '收支项目', '0102', '/system/in_out_item', '/system/InOutItemList', FALSE, '0282', TRUE, '电脑版', '1', 'profile', 'FINANCE', '0'),
+(195, '010205', '结算账户', '0102', '/system/account', '/system/AccountList', FALSE, '0283', TRUE, '电脑版', '1', 'profile', 'FINANCE', '0'),
+(197, '070402', '收入单', '0704', '/financial/item_in', '/financial/ItemInList', FALSE, '0465', TRUE, '电脑版', '1,2,3,7', 'profile', 'FINANCE', '0'),
+(198, '0301', '报表查询', '0', '/report', '/layouts/TabLayout', FALSE, '0570', TRUE, '电脑版', NULL, 'pie-chart', 'STOCK', '0'),
+(199, '050204', '采购退货', '0502', '/bill/purchase_back', '/bill/PurchaseBackList', FALSE, '0345', TRUE, '电脑版', '1,2,3,7', 'profile', 'PURCHASE', '0'),
+(200, '060305', '销售退货', '0603', '/bill/sale_back', '/bill/SaleBackList', FALSE, '0396', TRUE, '电脑版', '1,2,3,7', 'profile', 'SALE', '0'),
+(201, '080103', '其它入库', '0801', '/bill/other_in', '/bill/OtherInList', FALSE, '0803', TRUE, '电脑版', '1,2,3,7', 'profile', 'STOCK', '0'),
+(202, '080105', '其它出库', '0801', '/bill/other_out', '/bill/OtherOutList', FALSE, '0805', TRUE, '电脑版', '1,2,3,7', 'profile', 'STOCK', '0'),
+(203, '070403', '支出单', '0704', '/financial/item_out', '/financial/ItemOutList', FALSE, '0470', TRUE, '电脑版', '1,2,3,7', 'profile', 'FINANCE', '0'),
+(204, '070404', '收款单', '0704', '/financial/money_in', '/financial/MoneyInList', FALSE, '0475', TRUE, '电脑版', '1,2,3,7', 'profile', 'FINANCE', '0'),
+(205, '070405', '付款单', '0704', '/financial/money_out', '/financial/MoneyOutList', FALSE, '0480', TRUE, '电脑版', '1,2,3,7', 'profile', 'FINANCE', '0'),
+(206, '070406', '转账单', '0704', '/financial/giro', '/financial/GiroList', FALSE, '0490', TRUE, '电脑版', '1,2,3,7', 'profile', 'FINANCE', '0'),
+(207, '030102', '账户统计', '0301', '/report/account_report', '/report/AccountReport', FALSE, '0610', TRUE, '电脑版', '', 'profile', 'FINANCE', '0'),
+(208, '030103', '采购统计', '0301', '/report/buy_in_report', '/report/BuyInReport', FALSE, '0620', TRUE, '电脑版', '', 'profile', 'PURCHASE', '0'),
+(209, '030104', '销售统计', '0301', '/report/sale_out_report', '/report/SaleOutReport', FALSE, '0630', TRUE, '电脑版', '', 'profile', 'SALE', '0'),
+(210, '040102', '零售出库', '0401', '/bill/retail_out', '/bill/RetailOutList', FALSE, '0405', TRUE, '电脑版', '1,2,3,7', 'profile', 'SALE', '0'),
+(211, '040104', '零售退货', '0401', '/bill/retail_back', '/bill/RetailBackList', FALSE, '0407', TRUE, '电脑版', '1,2,3,7', 'profile', 'SALE', '0'),
+(212, '070407', '收预付款', '0704', '/financial/advance_in', '/financial/AdvanceInList', FALSE, '0495', TRUE, '电脑版', '1,2,3,7', 'profile', 'FINANCE', '0'),
+(217, '01020102', '客户信息', '0102', '/system/customer', '/system/CustomerList', FALSE, '0262', TRUE, '电脑版', '1,3', 'profile', 'SALE', '0'),
+(218, '01020103', '会员信息', '0102', '/system/member', '/system/MemberList', FALSE, '0263', TRUE, '电脑版', '1,3', 'profile', 'SALE', '0'),
+(220, '010103', '多单位', '0101', '/system/unit', '/system/UnitList', FALSE, '0245', TRUE, '电脑版', '1', 'profile', 'STOCK', '0'),
+(225, '0401', '零售管理', '0', '/billC', '/layouts/TabLayout', FALSE, '0101', TRUE, '电脑版', '', 'gift', 'SALE', '0'),
+(226, '030106', '入库明细', '0301', '/report/in_detail', '/report/InDetail', FALSE, '0640', TRUE, '电脑版', '', 'profile', 'STOCK', '0'),
+(227, '030107', '出库明细', '0301', '/report/out_detail', '/report/OutDetail', FALSE, '0645', TRUE, '电脑版', '', 'profile', 'STOCK', '0'),
+(228, '030108', '入库汇总', '0301', '/report/in_material_count', '/report/InMaterialCount', FALSE, '0650', TRUE, '电脑版', '', 'profile', 'STOCK', '0'),
+(229, '030109', '出库汇总', '0301', '/report/out_material_count', '/report/OutMaterialCount', FALSE, '0655', TRUE, '电脑版', '', 'profile', 'STOCK', '0'),
+(232, '080109', '组装单', '0801', '/bill/assemble', '/bill/AssembleList', FALSE, '0809', TRUE, '电脑版', '1,2,3,7', 'profile', 'STOCK', '0'),
+(233, '080111', '拆卸单', '0801', '/bill/disassemble', '/bill/DisassembleList', FALSE, '0811', TRUE, '电脑版', '1,2,3,7', 'profile', 'STOCK', '0'),
+(234, '000105', '系统配置', '0001', '/system/system_config', '/system/SystemConfigList', FALSE, '0164', TRUE, '电脑版', '1', 'profile', 'SYSTEM', '0'),
+(235, '030110', '客户对账', '0301', '/report/customer_account', '/report/CustomerAccount', FALSE, '0660', TRUE, '电脑版', '', 'profile', 'SALE', '0'),
+(236, '000106', '商品属性', '0001', '/material/material_property', '/material/MaterialPropertyList', FALSE, '0163', TRUE, '电脑版', '1', 'profile', 'STOCK', '0'),
+(237, '030111', '供应商对账', '0301', '/report/vendor_account', '/report/VendorAccount', FALSE, '0665', TRUE, '电脑版', '', 'profile', 'PURCHASE', '0'),
+(239, '0801', '仓库管理', '0', '/billD', '/layouts/TabLayout', FALSE, '0420', TRUE, '电脑版', '', 'hdd', 'STOCK', '0'),
+(241, '050202', '采购订单', '0502', '/bill/purchase_order', '/bill/PurchaseOrderList', FALSE, '0335', TRUE, '电脑版', '1,2,3,7', 'profile', 'PURCHASE', '0'),
+(242, '060301', '销售订单', '0603', '/bill/sale_order', '/bill/SaleOrderList', FALSE, '0392', TRUE, '电脑版', '1,2,3,7', 'profile', 'SALE', '0'),
+(243, '000108', '部门管理', '0001', '/system/organization', '/system/OrganizationList', TRUE, '0150', TRUE, '电脑版', '1', 'profile', 'SYSTEM', '0'),
+(244, '030112', '库存预警', '0301', '/report/stock_warning_report', '/report/StockWarningReport', FALSE, '0670', TRUE, '电脑版', '', 'profile', 'STOCK', '0'),
+(245, '000107', '插件管理', '0001', '/system/plugin', '/system/PluginList', FALSE, '0170', TRUE, '电脑版', '1', 'profile', 'SYSTEM', '0'),
+(246, '030113', '商品库存', '0301', '/report/material_stock', '/report/MaterialStock', FALSE, '0605', TRUE, '电脑版', '', 'profile', 'STOCK', '0'),
+(247, '010105', '多属性', '0101', '/material/material_attribute', '/material/MaterialAttributeList', FALSE, '0250', TRUE, '电脑版', '1', 'profile', 'STOCK', '0'),
+(248, '030150', '调拨明细', '0301', '/report/allocation_detail', '/report/AllocationDetail', FALSE, '0646', TRUE, '电脑版', '', 'profile', 'STOCK', '0'),
+(258, '000112', '平台配置', '0001', '/system/platform_config', '/system/PlatformConfigList', FALSE, '0175', TRUE, '电脑版', '', 'profile', 'SYSTEM', '0'),
+(259, '030105', '零售统计', '0301', '/report/retail_out_report', '/report/RetailOutReport', FALSE, '0615', TRUE, '电脑版', '', 'profile', 'SALE', '0'),
+(260, '000113', '字典管理', '0001', '/system/dict', '/system/DictList', FALSE, '0172', TRUE, '电脑版', '1', 'profile', 'SYSTEM', '0'),
+(261, '050203', '请购单', '0502', '/bill/purchase_apply', '/bill/PurchaseApplyList', FALSE, '0330', TRUE, '电脑版', '1,2,3,7', 'profile', 'PURCHASE', '0')
 ON CONFLICT (id) DO NOTHING;
 
 SELECT setval('jsh_function_id_seq', COALESCE((SELECT MAX(id) FROM jsh_function), 1));
@@ -1335,10 +1337,12 @@ CREATE TABLE jsh_tenant (
     create_time TIMESTAMP,
     expire_time TIMESTAMP,
     remark VARCHAR(500),
+    tenant_code VARCHAR(50),
     delete_flag VARCHAR(1) DEFAULT '0'
 );
 CREATE INDEX idx_tenant_create_time ON jsh_tenant(create_time);
 CREATE INDEX idx_tenant_tenant_id ON jsh_tenant(tenant_id);
+CREATE UNIQUE INDEX uk_tenant_code ON jsh_tenant(tenant_code) WHERE tenant_code IS NOT NULL;
 COMMENT ON TABLE jsh_tenant IS '租户';
 COMMENT ON COLUMN jsh_tenant.id IS '主键';
 COMMENT ON COLUMN jsh_tenant.tenant_id IS '用户id';
@@ -1349,6 +1353,7 @@ COMMENT ON COLUMN jsh_tenant.enabled IS '启用 0-禁用  1-启用';
 COMMENT ON COLUMN jsh_tenant.create_time IS '创建时间';
 COMMENT ON COLUMN jsh_tenant.expire_time IS '到期时间';
 COMMENT ON COLUMN jsh_tenant.remark IS '备注';
+COMMENT ON COLUMN jsh_tenant.tenant_code IS '公司编码，用于登录时定位租户';
 COMMENT ON COLUMN jsh_tenant.delete_flag IS '删除标记，0未删除，1删除';
 
 CREATE UNIQUE INDEX uk_tenant_login_name
@@ -1358,7 +1363,67 @@ CREATE UNIQUE INDEX uk_tenant_login_name
 SELECT setval('jsh_tenant_id_seq', 1);
 
 -- ============================================================
--- 30. jsh_unit - 多单位表
+-- 30. jsh_feature - 功能模块定义表
+-- ============================================================
+DROP TABLE IF EXISTS jsh_feature CASCADE;
+CREATE TABLE jsh_feature (
+    id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    feature_code VARCHAR(50) NOT NULL,
+    feature_name VARCHAR(100) NOT NULL,
+    description VARCHAR(255),
+    sort INTEGER DEFAULT 0,
+    enabled BOOLEAN DEFAULT TRUE,
+    delete_flag VARCHAR(1) DEFAULT '0',
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP
+);
+CREATE UNIQUE INDEX uk_feature_code ON jsh_feature(feature_code) WHERE COALESCE(delete_flag, '0') != '1';
+COMMENT ON TABLE jsh_feature IS '功能模块定义表';
+COMMENT ON COLUMN jsh_feature.id IS '主键';
+COMMENT ON COLUMN jsh_feature.feature_code IS '功能模块编码';
+COMMENT ON COLUMN jsh_feature.feature_name IS '功能模块名称';
+COMMENT ON COLUMN jsh_feature.description IS '描述';
+COMMENT ON COLUMN jsh_feature.sort IS '排序';
+COMMENT ON COLUMN jsh_feature.enabled IS '启用';
+COMMENT ON COLUMN jsh_feature.delete_flag IS '删除标记，0未删除，1删除';
+COMMENT ON COLUMN jsh_feature.create_time IS '创建时间';
+COMMENT ON COLUMN jsh_feature.update_time IS '更新时间';
+
+INSERT INTO jsh_feature (feature_code, feature_name, description, sort) VALUES
+('SYSTEM', '系统管理', '系统管理、基础资料、部门管理等基础功能', 0),
+('STOCK', '库存管理', '商品管理、仓库管理、出入库、库存报表', 10),
+('PURCHASE', '采购管理', '采购入库、采购退货、采购订单、请购单', 20),
+('SALE', '销售管理', '销售出库、销售退货、销售订单、零售管理、客户管理', 30),
+('FINANCE', '财务管理', '收付款、转账、收支项目、结算账户', 40);
+
+SELECT setval('jsh_feature_id_seq', COALESCE((SELECT MAX(id) FROM jsh_feature), 1));
+
+-- ============================================================
+-- 31. jsh_tenant_feature - 租户功能授权表
+-- ============================================================
+DROP TABLE IF EXISTS jsh_tenant_feature CASCADE;
+CREATE TABLE jsh_tenant_feature (
+    id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    feature_id BIGINT NOT NULL,
+    enabled BOOLEAN DEFAULT TRUE,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP
+);
+CREATE UNIQUE INDEX uk_tenant_feature ON jsh_tenant_feature(tenant_id, feature_id);
+CREATE INDEX idx_tenant_feature_tenant_id ON jsh_tenant_feature(tenant_id);
+COMMENT ON TABLE jsh_tenant_feature IS '租户功能授权表';
+COMMENT ON COLUMN jsh_tenant_feature.id IS '主键';
+COMMENT ON COLUMN jsh_tenant_feature.tenant_id IS '租户id';
+COMMENT ON COLUMN jsh_tenant_feature.feature_id IS '功能模块id';
+COMMENT ON COLUMN jsh_tenant_feature.enabled IS '启用';
+COMMENT ON COLUMN jsh_tenant_feature.create_time IS '创建时间';
+COMMENT ON COLUMN jsh_tenant_feature.update_time IS '更新时间';
+
+SELECT setval('jsh_tenant_feature_id_seq', 1);
+
+-- ============================================================
+-- 32. jsh_unit - 多单位表
 -- ============================================================
 DROP TABLE IF EXISTS jsh_unit CASCADE;
 CREATE TABLE jsh_unit (
@@ -1442,7 +1507,7 @@ COMMENT ON COLUMN jsh_user.tenant_id IS '租户id';
 COMMENT ON COLUMN jsh_user.delete_flag IS '删除标记，0未删除，1删除';
 
 CREATE UNIQUE INDEX uk_jsh_user_active_login_name
-    ON jsh_user (login_name) WHERE COALESCE(delete_flag, '0') != '1';
+    ON jsh_user (login_name, COALESCE(tenant_id, 0)) WHERE COALESCE(delete_flag, '0') != '1';
 
 SELECT setval('jsh_user_id_seq', 1);
 
