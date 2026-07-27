@@ -811,6 +811,8 @@
               })
             }
           }
+        }).catch(() => {
+          this.$message.error('商品校验失败，请稍后重试')
         })
       },
       parseParam(param) {

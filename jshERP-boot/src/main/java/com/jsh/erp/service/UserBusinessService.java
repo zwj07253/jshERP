@@ -18,6 +18,7 @@ import com.jsh.erp.datasource.mappers.FunctionMapper;
 import com.jsh.erp.datasource.mappers.RoleMapperEx;
 import com.jsh.erp.datasource.mappers.SupplierMapperEx;
 import com.jsh.erp.datasource.mappers.DepotMapper;
+import org.springframework.context.annotation.Lazy;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.exception.JshException;
 import org.slf4j.Logger;
@@ -59,6 +60,10 @@ public class UserBusinessService {
     private RoleMapperEx roleMapperEx;
     @Resource
     private FunctionMapper functionMapper;
+
+    @Lazy
+    @Resource
+    private FunctionService functionService;
     @Resource
     private PlatformAccessService platformAccessService;
 
@@ -109,17 +114,16 @@ public class UserBusinessService {
         UserBusiness userBusiness = writableRelation(requested);
         validateCustomerRelation(userBusiness, null);
         validateRoleFunctionRelation(userBusiness, null);
-        int result=0;
-        try{
-            String value = userBusiness.getValue();
-            String newValue = value.replaceAll(",","\\]\\[");
-            newValue = newValue.replaceAll("\\[0\\]","").replaceAll("\\[\\]","");
-            userBusiness.setValue(newValue);
-            result=userBusinessMapper.insertSelective(userBusiness);
-            logService.insertLog("关联关系", BusinessConstants.LOG_OPERATION_TYPE_ADD, request);
-        }catch(Exception e){
-            JshException.writeFail(logger, e);
+        String value = userBusiness.getValue();
+        String newValue = value.replaceAll(",","\\]\\[");
+        newValue = newValue.replaceAll("\\[0\\]","").replaceAll("\\[\\]","");
+        userBusiness.setValue(newValue);
+        int result = userBusinessMapper.insertSelective(userBusiness);
+        if (result != 1) {
+            throw new BusinessRunTimeException(ExceptionConstants.DATA_WRITE_FAIL_CODE,
+                    ExceptionConstants.DATA_WRITE_FAIL_MSG);
         }
+        logService.insertLog("关联关系", BusinessConstants.LOG_OPERATION_TYPE_ADD, request);
         return result;
     }
 
@@ -136,17 +140,16 @@ public class UserBusinessService {
         }
         validateCustomerRelation(userBusiness, existing);
         validateRoleFunctionRelation(userBusiness, existing);
-        int result=0;
-        try{
-            String value = userBusiness.getValue();
-            String newValue = value.replaceAll(",","\\]\\[");
-            newValue = newValue.replaceAll("\\[0\\]","").replaceAll("\\[\\]","");
-            userBusiness.setValue(newValue);
-            result=userBusinessMapper.updateByPrimaryKeySelective(userBusiness);
-            logService.insertLog("关联关系", BusinessConstants.LOG_OPERATION_TYPE_EDIT, request);
-        }catch(Exception e){
-            JshException.writeFail(logger, e);
+        String value = userBusiness.getValue();
+        String newValue = value.replaceAll(",","\\]\\[");
+        newValue = newValue.replaceAll("\\[0\\]","").replaceAll("\\[\\]","");
+        userBusiness.setValue(newValue);
+        int result = userBusinessMapper.updateByPrimaryKeySelective(userBusiness);
+        if (result != 1) {
+            throw new BusinessRunTimeException(ExceptionConstants.DATA_WRITE_FAIL_CODE,
+                    ExceptionConstants.DATA_WRITE_FAIL_MSG);
         }
+        logService.insertLog("关联关系", BusinessConstants.LOG_OPERATION_TYPE_EDIT, request);
         return result;
     }
 
@@ -415,6 +418,26 @@ public class UserBusinessService {
                 throw invalidRelation("不能分配超出当前用户权限的菜单");
             }
         }
+        // 校验：选了父节点就必须至少选一个子节点，防止保存后菜单为空
+        for(Long functionId : requestedIds) {
+            Function function = functionMapper.selectByPrimaryKey(functionId);
+            if(function != null && function.getNumber() != null) {
+                List<Function> children = functionService.getRoleFunction(function.getNumber());
+                if(children != null && !children.isEmpty()) {
+                    // 这是一个父节点，检查是否至少选了一个子节点
+                    boolean hasSelectedChild = false;
+                    for(Function child : children) {
+                        if(requestedIds.contains(child.getId())) {
+                            hasSelectedChild = true;
+                            break;
+                        }
+                    }
+                    if(!hasSelectedChild) {
+                        throw invalidRelation("菜单【" + function.getName() + "】是目录节点，请至少选择一个子菜单页面");
+                    }
+                }
+            }
+        }
     }
 
     private void validateRoleButtonRelation(String roleIdValue, String btnStr) throws Exception {
@@ -578,6 +601,7 @@ public class UserBusinessService {
         target.setType(source.getType());
         target.setKeyId(source.getKeyId());
         target.setValue(source.getValue());
+        target.setTenantId(source.getTenantId());
         return target;
     }
 
