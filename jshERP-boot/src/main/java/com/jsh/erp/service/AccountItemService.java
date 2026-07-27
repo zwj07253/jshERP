@@ -43,6 +43,8 @@ public class AccountItemService {
     private UserService userService;
     @Resource
     private DepotHeadService depotHeadService;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public List<AccountItem> getAccountItem()throws Exception {
         AccountItemExample example = new AccountItemExample();
@@ -80,6 +82,7 @@ public class AccountItemService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertAccountItemWithObj(AccountItem accountItem)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         int result=0;
         try{
             result = accountItemMapper.insertSelective(accountItem);
@@ -91,6 +94,7 @@ public class AccountItemService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateAccountItemWithObj(AccountItem accountItem)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         int result=0;
         try{
             result = accountItemMapper.updateByPrimaryKeySelective(accountItem);
@@ -112,6 +116,7 @@ public class AccountItemService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public void saveDetials(String rows, Long headerId, String type, HttpServletRequest request) throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         Set<Long> affectedBillIds = new LinkedHashSet<>(getBillIdsByHeaderIds(new String[]{headerId.toString()}));
         //删除单据的明细
         deleteAccountItemHeadId(headerId);

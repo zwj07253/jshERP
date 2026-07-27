@@ -67,6 +67,8 @@ public class AccountHeadService {
     private DepotHeadMapperEx depotHeadMapperEx;
     @Resource
     private PersonService personService;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     private static final String ADVANCE_IN_URL = "/financial/advance_in";
     private static final String MONEY_IN_URL = "/financial/money_in";
@@ -813,6 +815,7 @@ public class AccountHeadService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertAccountHead(JSONObject obj, HttpServletRequest request) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         AccountHead accountHead = JSONObject.parseObject(obj.toJSONString(), AccountHead.class);
         int result=0;
         try{
@@ -829,6 +832,7 @@ public class AccountHeadService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateAccountHead(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         AccountHead accountHead = JSONObject.parseObject(obj.toJSONString(), AccountHead.class);
         int result=0;
         try{
@@ -843,11 +847,13 @@ public class AccountHeadService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteAccountHead(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeleteAccountHeadByIds(id.toString());
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteAccountHead(String ids, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeleteAccountHeadByIds(ids);
     }
 
@@ -919,6 +925,7 @@ public class AccountHeadService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetStatus(String status, String accountHeadIds)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         if(!BusinessConstants.BILLS_STATUS_UN_AUDIT.equals(status)
                 && !BusinessConstants.BILLS_STATUS_AUDIT.equals(status)) {
             throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_STATUS_FAILED_CODE,
@@ -992,6 +999,7 @@ public class AccountHeadService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public void addAccountHeadAndDetail(String beanJson, String rows, HttpServletRequest request) throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         AccountHead accountHead = JSONObject.parseObject(beanJson, AccountHead.class);
         validateFinancialType(accountHead.getType());
         checkAccountHeadButtonPermission(accountHead.getType(), "1", "新增");
@@ -1035,6 +1043,7 @@ public class AccountHeadService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public void updateAccountHeadAndDetail(String beanJson, String rows, HttpServletRequest request) throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         AccountHead accountHead = JSONObject.parseObject(beanJson, AccountHead.class);
         if(accountHead.getId() == null) {
             throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_DATA_PERMISSION_CODE,

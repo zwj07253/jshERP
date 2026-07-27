@@ -98,6 +98,8 @@ public class DepotHeadService {
     DepotItemMapperEx depotItemMapperEx;
     @Resource
     private LogService logService;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     @Value(value="${file.exportTmp}")
     private String fileExportTmp;
@@ -396,6 +398,7 @@ public class DepotHeadService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertDepotHead(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         DepotHead depotHead = JSONObject.parseObject(obj.toJSONString(), DepotHead.class);
         depotHead.setCreateTime(new Timestamp(System.currentTimeMillis()));
         depotHead.setStatus(BusinessConstants.BILLS_STATUS_UN_AUDIT);
@@ -411,6 +414,7 @@ public class DepotHeadService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateDepotHead(JSONObject obj, HttpServletRequest request) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         DepotHead depotHead = JSONObject.parseObject(obj.toJSONString(), DepotHead.class);
         DepotHead dh=null;
         try{
@@ -433,11 +437,13 @@ public class DepotHeadService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteDepotHead(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeleteBillByIds(id.toString());
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteDepotHead(String ids, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeleteBillByIds(ids);
     }
 
@@ -644,6 +650,7 @@ public class DepotHeadService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchForceClose(String ids, HttpServletRequest request) throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         int result = 0;
         StringBuilder billNoStr = new StringBuilder();
         List<Long> idList = StringUtil.strToLongList(ids);
@@ -770,6 +777,7 @@ public class DepotHeadService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetStatus(String status, String depotHeadIDs)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         int result = 0;
         boolean forceApprovalFlag = systemConfigService.getForceApprovalFlag();
         boolean minusStockFlag = systemConfigService.getMinusStockFlag();
@@ -1468,6 +1476,7 @@ public class DepotHeadService {
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public void addDepotHeadAndDetail(String beanJson, String rows,
                                       HttpServletRequest request) throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         /**处理单据主表数据*/
         JSONObject headJson = JSONObject.parseObject(beanJson);
         DepotHead depotHead = headJson.toJavaObject(DepotHead.class);
@@ -1582,6 +1591,7 @@ public class DepotHeadService {
      */
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public void updateDepotHeadAndDetail(String beanJson, String rows,HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         /**更新单据主表信息*/
         JSONObject headJson = JSONObject.parseObject(beanJson);
         DepotHead depotHead = headJson.toJavaObject(DepotHead.class);

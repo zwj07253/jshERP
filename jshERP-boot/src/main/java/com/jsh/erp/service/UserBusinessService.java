@@ -59,6 +59,8 @@ public class UserBusinessService {
     private RoleMapperEx roleMapperEx;
     @Resource
     private FunctionMapper functionMapper;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public UserBusiness getUserBusiness(long id)throws Exception {
         UserBusiness result=null;
@@ -84,6 +86,7 @@ public class UserBusinessService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertUserBusiness(JSONObject obj, HttpServletRequest request) throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         UserBusiness requested = JSONObject.parseObject(obj.toJSONString(), UserBusiness.class);
         UserBusiness userBusiness = writableRelation(requested);
         validateCustomerRelation(userBusiness, null);
@@ -104,6 +107,7 @@ public class UserBusinessService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateUserBusiness(JSONObject obj, HttpServletRequest request) throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         UserBusiness requested = JSONObject.parseObject(obj.toJSONString(), UserBusiness.class);
         UserBusiness userBusiness = writableRelation(requested);
         UserBusiness existing = userBusiness.getId() == null ? null
@@ -130,6 +134,7 @@ public class UserBusinessService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteUserBusiness(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeleteUserBusinessByIds(id.toString());
     }
 

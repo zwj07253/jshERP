@@ -51,6 +51,8 @@ public class UnitService {
     private LogService logService;
     @Resource
     private MaterialMapperEx materialMapperEx;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public Unit getUnit(long id)throws Exception {
         Unit result=null;
@@ -119,6 +121,7 @@ public class UnitService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertUnit(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkUnitEditPermission();
         lockUnitWrite();
         Unit unit = buildUnit(obj, null);
@@ -142,6 +145,7 @@ public class UnitService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateUnit(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkUnitEditPermission();
         lockUnitWrite();
         Long id = obj.getLong("id");
@@ -192,11 +196,13 @@ public class UnitService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteUnit(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeleteUnitByIds(id.toString());
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteUnit(String ids, HttpServletRequest request) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeleteUnitByIds(ids);
     }
 
@@ -347,6 +353,7 @@ public class UnitService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetStatus(Boolean status, String ids)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkUnitEditPermission();
         lockUnitWrite();
         logService.insertLog("多单位",

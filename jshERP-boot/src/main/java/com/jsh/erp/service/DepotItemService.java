@@ -68,6 +68,8 @@ public class DepotItemService {
     private MaterialMapperEx materialMapperEx;
     @Resource
     private LogService logService;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public void checkRetailReportPermission() throws Exception {
         User currentUser = userService.getCurrentUser();
@@ -158,6 +160,7 @@ public class DepotItemService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertDepotItem(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         DepotItem depotItem = JSONObject.parseObject(obj.toJSONString(), DepotItem.class);
         int result =0;
         try{
@@ -170,6 +173,7 @@ public class DepotItemService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateDepotItem(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         DepotItem depotItem = JSONObject.parseObject(obj.toJSONString(), DepotItem.class);
         int result =0;
         try{
@@ -182,6 +186,7 @@ public class DepotItemService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteDepotItem(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         int result =0;
         try{
             result=depotItemMapper.deleteByPrimaryKey(id);
@@ -193,6 +198,7 @@ public class DepotItemService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteDepotItem(String ids, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         List<Long> idList = StringUtil.strToLongList(ids);
         DepotItemExample example = new DepotItemExample();
         example.createCriteria().andIdIn(idList);

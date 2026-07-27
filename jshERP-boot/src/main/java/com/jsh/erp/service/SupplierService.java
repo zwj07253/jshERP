@@ -62,6 +62,8 @@ public class SupplierService {
     private UserBusinessService userBusinessService;
     @Resource
     private UserBusinessMapper userBusinessMapper;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     @Value(value="${file.exportTmp}")
     private String fileExportTmp;
@@ -166,6 +168,7 @@ public class SupplierService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertSupplier(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         Supplier supplier = buildSupplier(obj, null);
         checkEditPermission(supplier.getType());
         validateSupplier(supplier, null);
@@ -190,6 +193,7 @@ public class SupplierService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateSupplier(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         Long id = obj.getLong("id");
         Supplier existing = id == null ? null : getSupplier(id);
         if (existing == null) {
@@ -397,11 +401,13 @@ public class SupplierService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteSupplier(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeleteSupplierByIds(id.toString());
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteSupplier(String ids, HttpServletRequest request) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeleteSupplierByIds(ids);
     }
 
@@ -596,6 +602,7 @@ public class SupplierService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetStatus(Boolean status, String ids)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         if (status == null) {
             throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_INVALID_CODE,
                     String.format(ExceptionConstants.SUPPLIER_INVALID_MSG, "状态不能为空"));

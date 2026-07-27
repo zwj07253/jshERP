@@ -63,6 +63,8 @@ public class PersonService {
     private AccountHeadMapperEx accountHeadMapperEx;
     @Resource
     private DepotHeadMapperEx depotHeadMapperEx;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public Person getPerson(long id)throws Exception {
         try {
@@ -117,6 +119,7 @@ public class PersonService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertPerson(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         lockPersonWrite();
         Person person = buildPerson(obj, null);
@@ -139,6 +142,7 @@ public class PersonService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updatePerson(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         lockPersonWrite();
         Long id = obj.getLong("id");
@@ -169,11 +173,13 @@ public class PersonService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deletePerson(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeletePersonByIds(id == null ? null : id.toString());
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeletePerson(String ids, HttpServletRequest request) throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeletePersonByIds(ids);
     }
 
@@ -266,6 +272,7 @@ public class PersonService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetStatus(Boolean status, String ids)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         lockPersonWrite();
         if (status == null) {

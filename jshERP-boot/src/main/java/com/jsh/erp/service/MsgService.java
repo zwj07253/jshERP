@@ -45,6 +45,8 @@ public class MsgService {
 
     @Resource
     private LogService logService;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public Msg getMsg(long id)throws Exception {
         Msg result=null;
@@ -102,6 +104,7 @@ public class MsgService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertMsg(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         Msg msg = JSONObject.parseObject(obj.toJSONString(), Msg.class);
         int result=0;
         try{
@@ -124,6 +127,7 @@ public class MsgService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateMsg(JSONObject obj, HttpServletRequest request) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         Msg msg = JSONObject.parseObject(obj.toJSONString(), Msg.class);
         int result=0;
         try{
@@ -141,6 +145,7 @@ public class MsgService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteMsg(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         int result=0;
         try{
             result=msgMapper.deleteByPrimaryKey(id);

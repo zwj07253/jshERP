@@ -59,6 +59,8 @@ public class DepotService {
     private MaterialCurrentStockMapper materialCurrentStockMapper;
     @Resource
     private SerialNumberMapper serialNumberMapper;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public Depot getDepot(long id)throws Exception {
         Depot result=null;
@@ -122,6 +124,7 @@ public class DepotService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertDepot(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         lockDepotWrite();
         Depot depot = buildDepot(obj, null);
@@ -157,6 +160,7 @@ public class DepotService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateDepot(JSONObject obj, HttpServletRequest request) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         lockDepotWrite();
         Long id = obj.getLong("id");
@@ -180,12 +184,14 @@ public class DepotService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteDepot(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         return batchDeleteDepotByIds(id.toString());
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteDepot(String ids, HttpServletRequest request) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         return batchDeleteDepotByIds(ids);
     }
@@ -467,6 +473,7 @@ public class DepotService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetStatus(Boolean status, String ids)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         lockDepotWrite();
         if (status == null) {

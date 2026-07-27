@@ -54,6 +54,8 @@ public class MaterialCategoryService {
     private LogService logService;
     @Resource
     private MaterialMapperEx materialMapperEx;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public MaterialCategory getMaterialCategory(long id)throws Exception {
         return getActiveMaterialCategory(id);
@@ -92,6 +94,7 @@ public class MaterialCategoryService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public synchronized int insertMaterialCategory(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkMaterialCategoryEditPermission();
         lockMaterialCategoryWrite();
         MaterialCategory materialCategory = buildMaterialCategory(obj, null);
@@ -111,6 +114,7 @@ public class MaterialCategoryService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public synchronized int updateMaterialCategory(JSONObject obj, HttpServletRequest request) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         checkMaterialCategoryEditPermission();
         lockMaterialCategoryWrite();
         Long id = obj.getLong("id");
@@ -143,11 +147,13 @@ public class MaterialCategoryService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteMaterialCategory(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeleteMaterialCategoryByIds(id.toString());
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteMaterialCategory(String ids, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeleteMaterialCategoryByIds(ids);
     }
 

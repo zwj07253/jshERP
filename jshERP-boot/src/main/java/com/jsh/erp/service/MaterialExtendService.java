@@ -44,7 +44,9 @@ public class MaterialExtendService {
     private DepotItemMapperEx depotItemMapperEx;
     @Resource
     private MaterialMapper materialMapper;
-    
+    @Resource
+    private PlatformAccessService platformAccessService;
+
     public MaterialExtend getMaterialExtend(long id)throws Exception {
         MaterialExtend result=null;
         try{
@@ -375,6 +377,7 @@ public class MaterialExtendService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteMaterialExtend(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkMaterialEditPermission();
         MaterialExtend existing = getMaterialExtend(id);
         if (existing == null) {
@@ -401,6 +404,7 @@ public class MaterialExtendService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteMaterialExtendByIds(String ids, HttpServletRequest request) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         checkMaterialEditPermission();
         List<Long> idList = StringUtil.strToLongList(ids);
         requireBatchTenantOwnership(idList);
@@ -422,6 +426,7 @@ public class MaterialExtendService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertMaterialExtend(JSONObject obj, HttpServletRequest request) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         checkMaterialEditPermission();
         MaterialExtend materialExtend = JSONObject.parseObject(obj.toJSONString(), MaterialExtend.class);
         if (materialExtend.getMaterialId() == null) {
@@ -444,6 +449,7 @@ public class MaterialExtendService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateMaterialExtend(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkMaterialEditPermission();
         MaterialExtend materialExtend = JSONObject.parseObject(obj.toJSONString(), MaterialExtend.class);
         MaterialExtend existing = materialExtend.getId() == null ? null : getMaterialExtend(materialExtend.getId());

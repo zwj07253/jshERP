@@ -555,12 +555,12 @@ public class UserService {
 
     /**
      * 判断当前用户是否为平台超级管理员
-     * 平台超管 = loginName 为 admin 且 tenantId 为 null
+     * 平台超管 = loginName 为 admin 且 tenantId 为 null 或 0
      */
     public boolean isPlatformSuperAdmin(User user) {
         return user != null
                 && BusinessConstants.DEFAULT_MANAGER.equals(user.getLoginName())
-                && user.getTenantId() == null;
+                && (user.getTenantId() == null || user.getTenantId() == 0L);
     }
 
     /**
@@ -1059,7 +1059,7 @@ public class UserService {
 
     /**
      * 校验当前用户是否拥有指定页面的按钮权限。
-     * admin 保持系统原有的超级管理员行为，默认拥有全部按钮权限。
+     * 平台管理员仅对平台模块拥有按钮权限，业务模块返回 false。
      */
     public boolean hasButtonPermission(Long userId, String url, String buttonCode) throws Exception {
         if (userId == null) {
@@ -1067,7 +1067,7 @@ public class UserService {
         }
         User user = getUser(userId);
         if (user != null && "admin".equals(user.getLoginName())) {
-            return true;
+            return isPlatformModuleUrl(url);
         }
         JSONArray buttonList = getBtnStrArrById(userId);
         for (Object item : buttonList) {
@@ -1084,8 +1084,22 @@ public class UserService {
     }
 
     /**
+     * 判断 URL 是否属于平台管理模块（平台管理员可访问的模块）
+     */
+    private boolean isPlatformModuleUrl(String url) {
+        if (url == null) {
+            return false;
+        }
+        return url.startsWith("/system/tenant")
+                || url.startsWith("/system/role")
+                || url.startsWith("/system/functions")
+                || url.startsWith("/platformConfig")
+                || url.startsWith("/system/plugin");
+    }
+
+    /**
      * 校验当前用户是否拥有指定页面的菜单功能权限。
-     * 按钮权限只覆盖增删改审，详情查询仍需用菜单权限兜底。
+     * 平台管理员仅对平台模块拥有菜单权限，业务模块返回 false。
      */
     public boolean hasFunctionPermission(Long userId, String url) throws Exception {
         if (userId == null) {
@@ -1093,7 +1107,7 @@ public class UserService {
         }
         User user = getUser(userId);
         if (user != null && "admin".equals(user.getLoginName())) {
-            return true;
+            return isPlatformModuleUrl(url);
         }
         List<UserBusiness> userRoleList = userBusinessService.getBasicData(userId.toString(), "UserRole");
         if (userRoleList == null || userRoleList.isEmpty()) {

@@ -44,6 +44,8 @@ public class MaterialAttributeService {
     private MaterialMapperEx materialMapperEx;
     @Resource
     private UserService userService;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public MaterialAttribute getMaterialAttribute(long id)throws Exception {
         return getInfoById(id);
@@ -75,6 +77,7 @@ public class MaterialAttributeService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertMaterialAttribute(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         MaterialAttribute m = buildMaterialAttribute(obj, false);
         validateMaterialAttribute(m, null);
@@ -95,6 +98,7 @@ public class MaterialAttributeService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateMaterialAttribute(JSONObject obj, HttpServletRequest request) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         MaterialAttribute materialAttribute = buildMaterialAttribute(obj, true);
         MaterialAttribute existing = materialAttribute.getId() == null ? null : getInfoById(materialAttribute.getId());
@@ -116,6 +120,7 @@ public class MaterialAttributeService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteMaterialAttribute(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         MaterialAttribute existing = getInfoById(id);
         if (existing != null) {

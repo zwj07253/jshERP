@@ -38,6 +38,8 @@ public class MaterialPropertyService {
     private UserService userService;
     @Resource
     private LogService logService;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public MaterialProperty getMaterialProperty(long id)throws Exception {
         MaterialProperty result=null;
@@ -114,6 +116,7 @@ public class MaterialPropertyService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertMaterialProperty(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         MaterialProperty materialProperty = buildMaterialProperty(obj, false);
         validateMaterialProperty(materialProperty);
@@ -133,6 +136,7 @@ public class MaterialPropertyService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateMaterialProperty(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         MaterialProperty materialProperty = buildMaterialProperty(obj, true);
         MaterialProperty existing = materialProperty.getId() == null ? null : getMaterialProperty(materialProperty.getId());
@@ -155,6 +159,7 @@ public class MaterialPropertyService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteMaterialProperty(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         // 扩展字段为系统内置，不允许删除
         return 0;
@@ -204,6 +209,7 @@ public class MaterialPropertyService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateMaterialPropertyByNativeName(String nativeName, String anotherName, HttpServletRequest request) throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         MaterialProperty property = new MaterialProperty();
         property.setNativeName(nativeName);

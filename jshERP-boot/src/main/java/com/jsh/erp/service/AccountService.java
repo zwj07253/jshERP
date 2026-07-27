@@ -59,6 +59,8 @@ public class AccountService {
     private UserService userService;
     @Resource
     private SystemConfigService systemConfigService;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public Account getAccount(long id) throws Exception{
         return accountMapper.selectByPrimaryKey(id);
@@ -131,6 +133,7 @@ public class AccountService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertAccount(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         lockAccountWrite();
         Account account = buildAccount(obj, null);
@@ -159,6 +162,7 @@ public class AccountService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateAccount(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         lockAccountWrite();
         Long id = obj.getLong("id");
@@ -187,12 +191,14 @@ public class AccountService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteAccount(Long id, HttpServletRequest request) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         return batchDeleteAccountByIds(id.toString());
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteAccount(String ids, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         return batchDeleteAccountByIds(ids);
     }
@@ -543,6 +549,7 @@ public class AccountService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetStatus(Boolean status, String ids)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         lockAccountWrite();
         if(status == null) {

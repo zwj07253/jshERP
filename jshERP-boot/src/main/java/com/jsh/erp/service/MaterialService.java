@@ -77,6 +77,8 @@ public class MaterialService {
     private SystemConfigService systemConfigService;
     @Resource
     private RoleService roleService;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     @Value(value="${file.uploadType}")
     private Long fileUploadType;
@@ -168,6 +170,7 @@ public class MaterialService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertMaterial(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkMaterialEditPermission();
         Material m = JSONObject.parseObject(obj.toJSONString(), Material.class);
         if (m.getCategoryId() != null && m.getCategoryId() <= 0) {
@@ -230,6 +233,7 @@ public class MaterialService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateMaterial(JSONObject obj, HttpServletRequest request) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         checkMaterialEditPermission();
         Material material = JSONObject.parseObject(obj.toJSONString(), Material.class);
         boolean clearCategory = obj.containsKey("categoryId")
@@ -423,11 +427,13 @@ public class MaterialService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteMaterial(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeleteMaterialByIds(id.toString());
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteMaterial(String ids, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeleteMaterialByIds(ids);
     }
 
@@ -501,6 +507,7 @@ public class MaterialService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetStatus(Boolean status, String ids)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkMaterialEditPermission();
         logService.insertLog("商品",
                 new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_EDIT).append(ids).toString(),
@@ -739,6 +746,7 @@ public class MaterialService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public BaseResponseInfo importExcel(MultipartFile file, HttpServletRequest request) throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkMaterialEditPermission();
         BaseResponseInfo info = new BaseResponseInfo();
         try {

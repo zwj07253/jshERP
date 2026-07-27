@@ -43,6 +43,8 @@ public class OrgaUserRelService {
     private OrganizationService organizationService;
     @Resource
     private LogService logService;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public OrgaUserRel getOrgaUserRel(long id) throws Exception{
         return orgaUserRelMapper.selectByPrimaryKey(id);
@@ -50,6 +52,7 @@ public class OrgaUserRelService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertOrgaUserRel(JSONObject obj, HttpServletRequest request) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         OrgaUserRel orgaUserRel = JSONObject.parseObject(obj.toJSONString(), OrgaUserRel.class);
         int result=0;
         try{
@@ -62,6 +65,7 @@ public class OrgaUserRelService {
     }
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateOrgaUserRel(JSONObject obj, HttpServletRequest request) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         OrgaUserRel orgaUserRel = JSONObject.parseObject(obj.toJSONString(), OrgaUserRel.class);
         int result=0;
         try{
@@ -75,6 +79,7 @@ public class OrgaUserRelService {
     }
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteOrgaUserRel(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         int result=0;
         try{
             result=orgaUserRelMapper.deleteByPrimaryKey(id);

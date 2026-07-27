@@ -50,6 +50,8 @@ public class InOutItemService {
     private LogService logService;
     @Resource
     private AccountItemMapperEx accountItemMapperEx;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public InOutItem getInOutItem(long id)throws Exception {
         InOutItem result=null;
@@ -104,6 +106,7 @@ public class InOutItemService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertInOutItem(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         lockInOutItemWrite();
         InOutItem inOutItem = buildInOutItem(obj, null);
@@ -127,6 +130,7 @@ public class InOutItemService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateInOutItem(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         lockInOutItemWrite();
         Long id = obj.getLong("id");
@@ -158,11 +162,13 @@ public class InOutItemService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteInOutItem(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeleteInOutItemByIds(id.toString());
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteInOutItem(String ids, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeleteInOutItemByIds(ids);
     }
 
@@ -257,6 +263,7 @@ public class InOutItemService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetStatus(Boolean status, String ids)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         lockInOutItemWrite();
         if (status == null) {

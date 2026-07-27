@@ -36,6 +36,8 @@ public class SerialNumberService {
     private UserService userService;
     @Resource
     private LogService logService;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public SerialNumber getSerialNumber(long id)throws Exception {
         SerialNumber result=null;
@@ -190,6 +192,7 @@ public class SerialNumberService {
      */
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public void sellSerialNumber(Long materialId, String outBillNo, String snList, User user) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         if (materialId == null || StringUtil.isEmpty(snList)) {
             throw new BusinessRunTimeException(ExceptionConstants.SERIAL_NUMBERE_NOT_EXISTS_CODE,
                     String.format(ExceptionConstants.SERIAL_NUMBERE_NOT_EXISTS_MSG, ""));
@@ -241,6 +244,7 @@ public class SerialNumberService {
      */
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int cancelSerialNumber(Long materialId, String outBillNo,int count,User user) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         int result=0;
         try{
             result = serialNumberMapperEx.cancelSerialNumber(materialId,outBillNo,count,new Date(),user==null?null:user.getId());
@@ -255,6 +259,7 @@ public class SerialNumberService {
      */
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batAddSerialNumber(String materialCode, String serialNumberPrefix, Integer batAddTotal, String remark)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         int result=0;
         try {
             if (StringUtil.isNotEmpty(materialCode)) {

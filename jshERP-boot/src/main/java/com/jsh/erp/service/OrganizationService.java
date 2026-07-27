@@ -55,6 +55,8 @@ public class OrganizationService {
     private UserService userService;
     @Resource
     private LogService logService;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public Organization getOrganization(long id) throws Exception {
         return organizationMapper.selectByPrimaryKey(id);
@@ -75,6 +77,7 @@ public class OrganizationService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertOrganization(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         lockOrganizationWrite();
         Organization organization = buildOrganization(obj, null);
@@ -98,6 +101,7 @@ public class OrganizationService {
     }
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateOrganization(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         checkEditPermission();
         lockOrganizationWrite();
         Long id = obj.getLong("id");
@@ -126,11 +130,13 @@ public class OrganizationService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteOrganization(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeleteOrganizationByIds(id.toString());
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteOrganization(String ids, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         return batchDeleteOrganizationByIds(ids);
     }
 

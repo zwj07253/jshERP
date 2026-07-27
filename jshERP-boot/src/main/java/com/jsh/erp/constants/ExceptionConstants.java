@@ -77,6 +77,9 @@ public class ExceptionConstants {
     //租户用户数量限制不能降低到当前人数以下
     public static final int TENANT_USER_LIMIT_UPDATE_CODE = 500030;
     public static final String TENANT_USER_LIMIT_UPDATE_MSG = "当前租户启用用户数已超过新限制，请先减少用户数量后再修改";
+    //平台管理员禁止写入租户业务数据
+    public static final int PLATFORM_ADMIN_BUSINESS_WRITE_FORBIDDEN_CODE = 800001;
+    public static final String PLATFORM_ADMIN_BUSINESS_WRITE_FORBIDDEN_MSG = "平台管理员不可修改租户业务数据，请使用租户管理员账号";
     //当前部门已经存在经理
     public static final int USER_LEADER_IS_EXIST_CODE = 500009;
     public static final String USER_LEADER_IS_EXIST_MSG = "抱歉，当前部门已经存在经理";
