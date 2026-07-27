@@ -96,7 +96,7 @@
       edit (record) {
         this.form.resetFields();
         this.model = Object.assign({}, record);
-        this.model.expireTime = this.model.expireTimeStr
+        this.model.expireTime = this.model.expireTimeStr === '永久有效' ? null : this.model.expireTimeStr
         this.visible = true;
         this.$nextTick(() => {
           this.form.setFieldsValue(pick(this.model,'loginName', 'userNumLimit', 'type', 'roleId', 'expireTime', 'remark'))
@@ -132,7 +132,7 @@
               if(res.code === 200){
                 that.$emit('ok');
               }else{
-                that.$message.warning(res.data.message);
+                that.$message.warning(res.message || res.data || '保存失败');
               }
             }).finally(() => {
               that.confirmLoading = false;

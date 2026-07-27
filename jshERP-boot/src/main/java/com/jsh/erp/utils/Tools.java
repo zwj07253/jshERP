@@ -146,6 +146,26 @@ public class Tools {
         return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date);
     }
 
+    /**
+     * 判断字符串是否为合法日期格式（支持 yyyy-MM-dd 和 yyyy-MM-dd HH:mm:ss）
+     */
+    public static boolean isValidDateString(String dateStr) {
+        if (StringUtil.isEmpty(dateStr)) {
+            return false;
+        }
+        String[] patterns = {"yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd"};
+        for (String pattern : patterns) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat(pattern);
+                sdf.setLenient(false);
+                sdf.parse(dateStr);
+                return true;
+            } catch (ParseException ignored) {
+            }
+        }
+        return false;
+    }
+
     public static String parseDayToTime(String day, String timeStr) {
         if(StringUtil.isNotEmpty(day)){
             if(day.length() > 10) {

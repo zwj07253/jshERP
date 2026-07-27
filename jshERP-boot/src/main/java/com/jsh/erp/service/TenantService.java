@@ -112,6 +112,11 @@ public class TenantService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateTenant(JSONObject obj, HttpServletRequest request)throws Exception {
+        // 防御：expireTime 非日期字符串（如"永久有效"）时置空，避免 fastjson 解析失败
+        Object expireTimeObj = obj.get("expireTime");
+        if (expireTimeObj instanceof String && !Tools.isValidDateString((String) expireTimeObj)) {
+            obj.put("expireTime", null);
+        }
         Tenant tenant = JSONObject.parseObject(obj.toJSONString(), Tenant.class);
         // 保护不可修改字段：tenantId 是整个租户数据隔离的边界，修改会导致所有业务表数据归属断裂
         tenant.setTenantId(null);
