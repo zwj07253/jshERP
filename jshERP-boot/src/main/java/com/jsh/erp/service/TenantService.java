@@ -91,7 +91,7 @@ public class TenantService {
                 if (null != list) {
                     for (TenantEx tenantEx : list) {
                         tenantEx.setCreateTimeStr(Tools.getCenternTime(tenantEx.getCreateTime()));
-                        tenantEx.setExpireTimeStr(Tools.getCenternTime(tenantEx.getExpireTime()));
+                        tenantEx.setExpireTimeStr(tenantEx.getExpireTime() != null ? Tools.getCenternTime(tenantEx.getExpireTime()) : "永久有效");
                     }
                 }
             }
