@@ -84,6 +84,24 @@ public class UserBusinessService {
         return list;
     }
 
+    /**
+     * 仅供租户开通流程调用：创建初始管理员角色关联，跳过平台管理员写入守卫。
+     * 不吞异常——失败时直接抛出，由调用方事务整体回滚。
+     */
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
+    public int insertUserBusinessForTenantSetup(UserBusiness userBusiness) throws Exception {
+        String value = userBusiness.getValue();
+        String newValue = value.replaceAll(",", "\\]\\[");
+        newValue = newValue.replaceAll("\\[0\\]", "").replaceAll("\\[\\]", "");
+        userBusiness.setValue(newValue);
+        int result = userBusinessMapper.insertSelective(userBusiness);
+        if (result != 1) {
+            throw new BusinessRunTimeException(ExceptionConstants.DATA_WRITE_FAIL_CODE,
+                    "创建租户管理员角色关联失败，影响行数=" + result);
+        }
+        return result;
+    }
+
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertUserBusiness(JSONObject obj, HttpServletRequest request) throws Exception {
         platformAccessService.assertBusinessWriteAllowed();

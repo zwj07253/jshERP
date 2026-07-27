@@ -443,4 +443,32 @@ public class FunctionService {
             return null;
         }
     }
+
+    /**
+     * 平台专属菜单 URL 前缀 —— 仅 admin 可见，租户不可见。
+     * 使用 URL 匹配而非固定菜单 ID，避免菜单 ID 变化导致权限泄漏。
+     */
+    private static final String[] PLATFORM_EXCLUSIVE_URLS = {
+            "/system/function",       // 菜单管理
+            "/system/tenant",         // 租户管理
+            "/system/plugin",         // 插件管理
+            "/system/platform_config", // 平台配置
+            "/system/dict"            // 字典管理
+    };
+
+    /**
+     * 判断指定功能是否为平台专属（租户不可见），按 URL 匹配。
+     */
+    public boolean isPlatformExclusiveFunction(Function function) {
+        if (function == null || function.getUrl() == null) {
+            return false;
+        }
+        String url = function.getUrl();
+        for (String prefix : PLATFORM_EXCLUSIVE_URLS) {
+            if (url.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

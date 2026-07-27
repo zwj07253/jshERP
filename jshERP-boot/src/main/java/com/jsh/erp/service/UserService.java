@@ -694,15 +694,15 @@ public class UserService {
             user.setId(ue.getId());
             user.setTenantId(ue.getId());
             updateUserTenant(user);
-            //新增用户与角色的关系
-            JSONObject ubObj = new JSONObject();
-            ubObj.put("type", "UserRole");
-            ubObj.put("keyid", ue.getId());
-            JSONArray ubArr = new JSONArray();
-            ubArr.add(manageRoleId);
-            ubObj.put("value", ubArr.toString());
-            ubObj.put("tenantId", ue.getId());
-            userBusinessService.insertUserBusiness(ubObj, null);
+            //从模板角色复制一个新角色给新租户
+            Long newRoleId = roleService.copyTemplateRoleForTenant(manageRoleId, ue.getId());
+            //新增用户与角色的关系（使用内部方法，跳过平台管理员写入守卫）
+            UserBusiness ub = new UserBusiness();
+            ub.setType("UserRole");
+            ub.setKeyId(ue.getId().toString());
+            ub.setValue("[" + newRoleId + "]");
+            ub.setTenantId(ue.getId());
+            userBusinessService.insertUserBusinessForTenantSetup(ub);
             //创建租户信息
             JSONObject tenantObj = new JSONObject();
             tenantObj.put("tenantId", ue.getId());
@@ -1091,10 +1091,10 @@ public class UserService {
             return false;
         }
         return url.startsWith("/system/tenant")
-                || url.startsWith("/system/role")
-                || url.startsWith("/system/functions")
-                || url.startsWith("/platformConfig")
-                || url.startsWith("/system/plugin");
+                || url.startsWith("/system/function")
+                || url.startsWith("/system/plugin")
+                || url.startsWith("/system/platform_config")
+                || url.startsWith("/system/dict");
     }
 
     /**

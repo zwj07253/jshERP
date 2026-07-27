@@ -3,12 +3,10 @@ package com.jsh.erp.service;
 import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.constants.BusinessConstants;
 import com.jsh.erp.constants.ExceptionConstants;
-import com.jsh.erp.datasource.entities.Role;
-import com.jsh.erp.datasource.entities.RoleEx;
-import com.jsh.erp.datasource.entities.RoleExample;
-import com.jsh.erp.datasource.entities.User;
+import com.jsh.erp.datasource.entities.*;
 import com.jsh.erp.datasource.mappers.RoleMapper;
 import com.jsh.erp.datasource.mappers.RoleMapperEx;
+import com.jsh.erp.datasource.mappers.UserBusinessMapper;
 import com.jsh.erp.datasource.mappers.UserBusinessMapperEx;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.exception.JshException;
@@ -46,6 +44,9 @@ public class RoleService {
     private UserService userService;
     @Resource
     private UserBusinessMapperEx userBusinessMapperEx;
+
+    @Resource
+    private UserBusinessMapper userBusinessMapper;
 
     //超管的专用角色
     private static final Long MANAGE_ROLE_ID = 4L;
@@ -564,5 +565,64 @@ public class RoleService {
     public String getCurrentPriceLimit(HttpServletRequest request) throws Exception {
         Long userId = userService.getUserId(request);
         return userService.getRoleTypeByUserId(userId).getPriceLimit();
+    }
+
+    /**
+     * 仅供租户开通流程调用：从模板角色复制一个新角色给新租户，跳过权限检查。
+     * @param templateRoleId 模板角色ID（manage.roleId 配置值）
+     * @param tenantId 新租户ID
+     * @return 新角色的ID
+     */
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
+    public Long copyTemplateRoleForTenant(Integer templateRoleId, Long tenantId) throws Exception {
+        // 校验模板角色
+        Role template = roleMapper.selectByPrimaryKey(templateRoleId.longValue());
+        if (template == null) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADD_FAILED_CODE,
+                    "模板角色(ID=" + templateRoleId + ")不存在，无法创建租户角色");
+        }
+        if (BusinessConstants.DELETE_FLAG_DELETED.equals(template.getDeleteFlag())) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADD_FAILED_CODE,
+                    "模板角色(ID=" + templateRoleId + ")已删除，无法创建租户角色");
+        }
+        if (!Boolean.TRUE.equals(template.getEnabled())) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADD_FAILED_CODE,
+                    "模板角色(ID=" + templateRoleId + ")已停用，无法创建租户角色");
+        }
+        if (template.getTenantId() != null) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADD_FAILED_CODE,
+                    "模板角色(ID=" + templateRoleId + ")不是全局模板(tenantId应为null)，无法创建租户角色");
+        }
+        // 校验模板的 RoleFunctions
+        List<UserBusiness> templateRFList = userBusinessMapperEx.getBasicDataByKeyIdAndType(
+                templateRoleId.toString(), "RoleFunctions");
+        if (templateRFList == null || templateRFList.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADD_FAILED_CODE,
+                    "模板角色(ID=" + templateRoleId + ")没有菜单权限配置(RoleFunctions)，无法创建租户角色");
+        }
+        UserBusiness templateRF = templateRFList.get(0);
+        // 创建新角色（复制模板属性，绑定到新租户）
+        Role newRole = new Role();
+        newRole.setName(template.getName());
+        newRole.setType(template.getType());
+        newRole.setPriceLimit(template.getPriceLimit());
+        newRole.setValue(template.getValue());
+        newRole.setDescription(template.getDescription());
+        newRole.setEnabled(template.getEnabled());
+        newRole.setSort(template.getSort());
+        newRole.setTenantId(tenantId);
+        newRole.setDeleteFlag(BusinessConstants.DELETE_FLAG_EXISTS);
+        roleMapper.insertSelective(newRole);
+        Long newRoleId = newRole.getId();
+        // 复制模板的 RoleFunctions 到新角色
+        UserBusiness newRF = new UserBusiness();
+        newRF.setType("RoleFunctions");
+        newRF.setKeyId(newRoleId.toString());
+        newRF.setValue(templateRF.getValue());
+        newRF.setBtnStr(templateRF.getBtnStr());
+        newRF.setTenantId(tenantId);
+        newRF.setDeleteFlag(BusinessConstants.DELETE_FLAG_EXISTS);
+        userBusinessMapper.insertSelective(newRF);
+        return newRoleId;
     }
 }

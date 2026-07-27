@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -206,9 +205,14 @@ public class FunctionController extends BaseController {
 
     public JSONArray getMenuByFunction(List<Function> dataList, String fc, String approvalFlag, Map<Long, Long> funIdMap, User userInfo) throws Exception {
         JSONArray dataArray = new JSONArray();
+        boolean isAdmin = "admin".equals(userInfo.getLoginName());
         for (Function function : dataList) {
+            //平台专属菜单：仅admin可见
+            if (!isAdmin && functionService.isPlatformExclusiveFunction(function)) {
+                continue;
+            }
             //如果不是超管也不是租户就需要校验，防止分配下级用户的功能权限，大于租户的权限
-            if("admin".equals(userInfo.getLoginName()) || userInfo.getId().equals(userInfo.getTenantId()) || funIdMap.get(function.getId())!=null) {
+            if(isAdmin || userInfo.getId().equals(userInfo.getTenantId()) || funIdMap.get(function.getId())!=null) {
                 //如果关闭多级审核，遇到任务审核菜单直接跳过
                 if("0".equals(approvalFlag) && "/workflow".equals(function.getUrl())) {
                     continue;
@@ -253,9 +257,10 @@ public class FunctionController extends BaseController {
         JSONArray arr = new JSONArray();
         try {
             User userInfo = userService.getCurrentUser();
+            boolean isAdmin = "admin".equals(userInfo.getLoginName());
             //获取当前用户所拥有的功能id列表
             List<Long> funIdList = functionService.getCurrentUserFunIdList();
-            if("admin".equals(userInfo.getLoginName())) {
+            if(isAdmin) {
                 funIdList = null;
             }
             List<Function> dataListFun = functionService.findRoleFunction("0", null);
@@ -269,21 +274,7 @@ public class FunctionController extends BaseController {
             //存放数据json数组
             JSONArray dataArray = new JSONArray();
             if (null != dataListFun) {
-                //根据条件从列表里面移除"系统管理"
-                List<Function> dataList = new ArrayList<>();
-                for (Function fun : dataListFun) {
-                    String token = request.getHeader("X-Access-Token");
-                    Long tenantId = Tools.getTenantIdByToken(token);
-                    if (tenantId!=0L) {
-                        if(!("系统管理").equals(fun.getName())) {
-                            dataList.add(fun);
-                        }
-                    } else {
-                        //超管
-                        dataList.add(fun);
-                    }
-                }
-                dataArray = getFunctionList(dataList, type, keyId, funIdList);
+                dataArray = getFunctionList(dataListFun, type, keyId, funIdList, isAdmin);
                 outer.put("children", dataArray);
             }
             arr.add(outer);
@@ -293,12 +284,16 @@ public class FunctionController extends BaseController {
         return arr;
     }
 
-    public JSONArray getFunctionList(List<Function> dataList, String type, String keyId, List<Long> funIdList) throws Exception {
+    public JSONArray getFunctionList(List<Function> dataList, String type, String keyId, List<Long> funIdList, boolean isAdmin) throws Exception {
         JSONArray dataArray = new JSONArray();
         //获取权限信息
         String ubValue = userBusinessService.getUBValueByTypeAndKeyId(type, keyId);
         if (null != dataList) {
             for (Function function : dataList) {
+                //非admin过滤平台专属功能
+                if (!isAdmin && functionService.isPlatformExclusiveFunction(function)) {
+                    continue;
+                }
                 JSONObject item = new JSONObject();
                 item.put("id", function.getId());
                 item.put("key", function.getId());
@@ -307,7 +302,7 @@ public class FunctionController extends BaseController {
                 item.put("attributes", function.getName());
                 List<Function> funList = functionService.findRoleFunction(function.getNumber(), funIdList);
                 if(funList.size()>0) {
-                    JSONArray funArr = getFunctionList(funList, type, keyId, funIdList);
+                    JSONArray funArr = getFunctionList(funList, type, keyId, funIdList, isAdmin);
                     item.put("children", funArr);
                     dataArray.add(item);
                 } else {
