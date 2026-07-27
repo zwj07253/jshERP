@@ -48,9 +48,13 @@ public abstract class ComputerInfo {
         List<NetworkInterface> sorted = Collections.list(interfaces);
         // 优先选择非 loopback、非 virtual 的物理网卡
         sorted.sort((a, b) -> {
-            boolean aVirtual = a.isLoopback() || a.isVirtual() || !a.isUp();
-            boolean bVirtual = b.isLoopback() || b.isVirtual() || !b.isUp();
-            if (aVirtual != bVirtual) return aVirtual ? 1 : -1;
+            try {
+                boolean aVirtual = a.isLoopback() || a.isVirtual() || !a.isUp();
+                boolean bVirtual = b.isLoopback() || b.isVirtual() || !b.isUp();
+                if (aVirtual != bVirtual) return aVirtual ? 1 : -1;
+            } catch (SocketException e) {
+                // ignore
+            }
             return 0;
         });
         for (NetworkInterface ni : sorted) {
@@ -89,15 +93,23 @@ public abstract class ComputerInfo {
     /**
      * 获取客户端IP地址
      */
-    public static String getIpAddrAndName() throws Exception {
-        return InetAddress.getLocalHost().toString();
+    public static String getIpAddrAndName() {
+        try {
+            return InetAddress.getLocalHost().toString();
+        } catch (Exception e) {
+            return "unknown";
+        }
     }
 
     /**
      * 获取客户端IP地址
      */
-    public static String getIpAddr() throws Exception {
-        return InetAddress.getLocalHost().getHostAddress();
+    public static String getIpAddr() {
+        try {
+            return InetAddress.getLocalHost().getHostAddress();
+        } catch (Exception e) {
+            return "127.0.0.1";
+        }
     }
 
     private ComputerInfo() {
