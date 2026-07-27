@@ -90,7 +90,17 @@ jshERP/
 ```bash
 psql -U postgres -c "CREATE DATABASE jsh_erp WITH ENCODING 'UTF8';"
 psql -U postgres -d jsh_erp -f jshERP-boot/docs/jsh_erp_pg.sql
+psql -U postgres -d jsh_erp -f jshERP-boot/docs/02_initial_tenant.sql
 ```
+
+`jsh_erp_pg.sql` creates the platform schema, menus, dictionaries, platform
+configuration, and the platform administrator. `02_initial_tenant.sql` then
+creates the first customer tenant and its administrator without adding any
+demo products, customers, warehouses, inventory, or documents. Update the
+tenant name, login name, and password in that script before production use.
+
+Do not run `jsherp_test_data.sql` or `watch_test_data.sql` in production;
+they are development and regression-test fixtures.
 
 ### 2. 启动后端
 

@@ -15,6 +15,7 @@
 docs/
 !jshERP-boot/docs/
 jshERP-boot/docs/*
+!jshERP-boot/docs/02_initial_tenant.sql
 !jshERP-boot/docs/jsh_erp_in_out_item_fix_pg.sql
 !jshERP-boot/docs/jsh_erp_account_fix_pg.sql
 !jshERP-boot/docs/jsh_erp_person_fix_pg.sql
