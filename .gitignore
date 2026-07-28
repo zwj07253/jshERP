@@ -16,11 +16,6 @@ docs/
 !jshERP-boot/docs/
 jshERP-boot/docs/*
 !jshERP-boot/docs/02_initial_tenant.sql
-!jshERP-boot/docs/jsh_erp_in_out_item_fix_pg.sql
-!jshERP-boot/docs/jsh_erp_account_fix_pg.sql
-!jshERP-boot/docs/jsh_erp_person_fix_pg.sql
-!jshERP-boot/docs/jsh_erp_role_fix_pg.sql
-!jshERP-boot/docs/jsh_erp_user_fix_pg.sql
-!jshERP-boot/docs/jsh_erp_log_fix_pg.sql
-!jshERP-boot/docs/jsh_erp_material_data_fix_pg.sql
-!jshERP-boot/docs/jsh_erp_stock_warning_status_pg.sql
+!jshERP-boot/docs/jsh_erp.sql
+!jshERP-boot/docs/jsh_erp_pg.sql
+!jshERP-boot/docs/watch_test_data.sql
