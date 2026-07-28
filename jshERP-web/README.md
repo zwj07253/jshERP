@@ -1,104 +1,106 @@
-jshERP-web Vue
-====
+# YUEWEIERP Web
 
+YUEWEIERP 的前端项目，基于 Vue 2、Vue Router、Vuex 和 Ant Design Vue 构建。后端默认 API 前缀为 `/jshERP-boot`，菜单与按钮权限由登录用户的后端授权数据动态生成。
 
-Overview
-----
+## 技术栈
 
+| 组件 | 当前版本/用途 |
+| --- | --- |
+| Vue | 2.7.16 |
+| Vue Router | 3.x，基础路由与动态业务路由 |
+| Vuex | 3.x，用户、权限和标签页状态 |
+| Ant Design Vue | 1.5.2，界面组件 |
+| Axios | 0.18.x，HTTP 请求 |
+| Vue CLI | 3.x，开发与生产构建 |
+| Node.js | 推荐 20.17.0 |
 
-#### 前端技术
- 
-- 基础框架：[ant-design-vue](https://github.com/vueComponent/ant-design-vue) - Ant Design Of Vue 实现
-- JavaScript框架：Vue
-- Jeecg-boot 的前段UI框架
-- Webpack
-- node
-- yarn
-- eslint
-- @vue/cli 3.2.1
-- [vue-cropper](https://github.com/xyxiao001/vue-cropper) - 头像裁剪组件
-- [@antv/g2](https://antv.alipay.com/zh-cn/index.html) - Alipay AntV 数据可视化图表
-- [Viser-vue](https://viserjs.github.io/docs.html#/viser/guide/installation)  - antv/g2 封装实现
+## 安装与启动
 
-
-
-项目运行
-----
-
-- 安装nodeJS
-```
-建议安装node-v20.17.0-x64版本 教程参考 https://blog.csdn.net/Coin_Collecter/article/details/136484312
+```bash
+cd jshERP-web
+npm install
+npm run serve
 ```
 
-- 安装yarn
-```
-npm install -g yarn
+开发服务器默认地址为 http://localhost:3000。`vue.config.js` 已配置代理：
+
+```text
+/jshERP-boot  ->  http://localhost:9999
 ```
 
-- 配镜像源（速度快）
-```
-yarn config set registry https://registry.npmmirror.com
-```
+因此启动前端前，请确认后端已在本机 `9999` 端口运行。
 
-- 安装依赖
-```
+也可以使用 Yarn：
+
+```bash
 yarn install
-```
-
-- 开发模式运行
-```
 yarn serve
 ```
 
-- 编译发布项目
-```
-yarn build
-```
+## 生产构建
 
-
-其他说明
-----
-
-- 项目使用的 [vue-cli3](https://cli.vuejs.org/guide/), 请更新您的 cli
-
-- 关闭 Eslint (不推荐) 移除 `package.json` 中 `eslintConfig` 整个节点代码
-
-- 修改 Ant Design 配色，在文件 `vue.config.js` 中，其他 less 变量覆盖参考 [ant design](https://ant.design/docs/react/customize-theme-cn) 官方说明
-```ecmascript 6
-  css: {
-    loaderOptions: {
-      less: {
-        modifyVars: {
-          /* less 变量覆盖，用于自定义 ant design 主题 */
-
-          'primary-color': '#F5222D',
-          'link-color': '#F5222D',
-          'border-radius-base': '4px',
-        },
-        javascriptEnabled: true,
-      }
-    }
-  }
+```bash
+npm run build
 ```
 
+产物输出到 `dist/`。生产构建会关闭 source map，并为满足阈值的 JS、CSS、Less 资源生成压缩文件。
 
+项目提供 [Dockerfile](Dockerfile)：构建阶段使用 `node:20.17.0-alpine`，运行阶段使用 `nginx:1.25-alpine`。在仓库根目录执行以下命令可同时启动前端、后端、PostgreSQL 和 Redis：
 
-附属文档
-----
-- [Ant Design Vue](https://vuecomponent.github.io/ant-design-vue/docs/vue/introduce-cn)
+```bash
+docker compose up -d --build
+```
 
-- [报表 viser-vue](https://viserjs.github.io/demo.html#/viser/bar/basic-bar)
+Compose 将前端映射到 `WEB_PORT`；未设置时为 http://localhost（端口 `80`）。项目根目录 `.env` 可以覆盖这个端口。
 
-- [Vue](https://cn.vuejs.org/v2/guide)
+## 目录说明
 
-- [路由/菜单说明](https://github.com/zhangdaiscott/jeecg-boot/tree/master/ant-design-jeecg-vue/src/router/README.md)
+```text
+src/
+├── api/            # 后端接口封装
+├── assets/         # 静态资源
+├── components/     # 公共组件与布局组件
+├── config/         # 基础路由配置
+├── router/         # Vue Router 实例
+├── store/          # Vuex 模块
+├── utils/          # 请求、菜单转换等工具
+└── views/          # 业务页面
+```
 
-- [ANTD 默认配置项](https://github.com/zhangdaiscott/jeecg-boot/tree/master/ant-design-jeecg-vue/src/defaultSettings.js)
+常用别名由 `vue.config.js` 提供：`@` 指向 `src`，另有 `@api`、`@assets`、`@comp` 与 `@views`。
 
-- 其他待补充...
+## 菜单、路由与权限
 
+基础路由定义在 `src/config/router.config.js`，只包含登录、首页和 404 等页面。用户登录后，`src/permission.js` 会请求后端菜单数据并通过 `generateIndexRouter` 转换为业务路由，再调用 `router.addRoutes()` 注册。
 
-备注
-----
+这意味着大多数业务页面不是在 `router.config.js` 中手工静态登记，而是由后端菜单配置决定。新增业务页面通常需要同时完成：
 
-> @vue/cli 升级后，eslint 规则更新了。由于影响到全部 .vue 文件，需要逐个验证。既暂时关闭部分原本不验证的规则，后期维护时，在逐步修正这些 rules
+1. 新建或更新 `src/views` 中的页面组件；
+2. 在后端菜单数据中配置页面 URL、组件路径和角色权限；
+3. 为角色分配菜单和需要的按钮权限；
+4. 退出并重新登录，刷新菜单与按钮权限缓存。
+
+更详细的路由字段说明见 [src/router/README.md](src/router/README.md)。
+
+## 通知
+
+顶部铃铛组件位于 `src/components/tools/HeaderNotice.vue`。它读取当前用户的未读系统消息：
+
+- 首次载入只显示未读数量，不对历史消息重复弹窗；
+- 后续每 20 秒轮询一次；
+- 新产生的未读消息会显示通知弹窗；
+- 用户点击消息后会标记为已读并打开详情。
+
+库存预警消息由后端在强审核模式下创建；前端只负责显示，不负责判断库存阈值。
+
+## 常用命令
+
+```bash
+# 开发服务器
+npm run serve
+
+# 生产构建
+npm run build
+```
+
+如果依赖安装或构建出现版本问题，请先确认 Node.js 为 20.17.0；不要同时混用多个包管理器生成的锁文件。

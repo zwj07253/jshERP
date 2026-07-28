@@ -1,126 +1,68 @@
-路由/菜单说明
-====
+# 路由与菜单说明
 
+本项目采用“基础路由 + 后端动态菜单”的方式，而不是把所有业务页面写死在前端路由文件中。
 
+## 路由入口
 
-配置文件路径
-----
+| 文件 | 职责 |
+| --- | --- |
+| `src/router/index.js` | 创建 Vue Router，启用 `history` 模式，并注册基础路由。 |
+| `src/config/router.config.js` | 定义登录、首页、404 等基础路由，以及动态路由的根布局。 |
+| `src/permission.js` | 登录后的导航守卫；请求菜单、转换路由并动态注册。 |
+| `src/store/modules/permission.js` | 保存动态路由和菜单状态。 |
+| `src/utils/util.js` | `generateIndexRouter` 等菜单到路由的转换工具。 |
 
-`@/config/router.config.js`
+## 路由加载流程
 
-
-
-格式和说明
-----
-
-```javascript
-/**
- * 路由配置说明：
- * 建议：sider menu 请不要超过三级菜单，若超过三级菜单，则应该设计为顶部主菜单 配合左侧次级菜单
- *
- **/
- {
-  redirect: noredirect,
-  name: 'router-name',
-  hidden: true,
-  meta: {
-    title: 'title',
-    icon: 'a-icon',
-    keepAlive: true,
-    hiddenHeaderContent: true,
-  }
-}
+```text
+访问页面
+  -> permission.js 导航守卫检查登录状态
+  -> 请求当前用户的菜单与按钮权限
+  -> generateIndexRouter 将菜单转换为路由对象
+  -> UpdateAppRouter 写入 Vuex
+  -> router.addRoutes 注册动态业务路由
+  -> 进入目标页面
 ```
 
+因此，业务菜单是否显示、页面能否访问，首先取决于后端菜单与角色授权，而不仅是前端是否存在 `.vue` 文件。
 
+## 基础路由
 
-`{ Route }` 对象
+当前基础路由包括：
 
-| 参数     | 说明                                      | 类型    | 默认值 |
-| -------- | ----------------------------------------- | ------- | ------ |
-| hidden   | 控制路由是否显示在 sidebar                | boolean | falase |
-| redirect | 重定向地址, 访问这个路由时,自定进行重定向 | string  | -      |
-| name     | 路由名称, 建议设置,且不能重名             | string  | -      |
-| meta     | 路由元信息（路由附带扩展信息）            | object  | {}     |
+- `/user/login`：登录页；
+- `/user/register`：注册页；
+- `/dashboard/analysis`：首页；
+- `/404`：未找到页面。
 
+业务模块（采购、销售、仓储、财务、报表、系统管理等）在用户登录后由后端菜单数据动态加入。
 
+## 后端菜单字段
 
-`{ Meta }` 路由元信息对象
+后端菜单配置通常需要提供以下信息：
 
-| 参数                | 说明                                                         | 类型    | 默认值 |
-| ------------------- | ------------------------------------------------------------ | ------- | ------ |
-| title               | 路由标题, 用于显示面包屑, 页面标题 *推荐设置                 | string  | -      |
-| icon                | 路由在 menu 上显示的图标                                     | string  | -      |
-| keepAlive           | 缓存该路由                                                   | boolean | false  |
-| hiddenHeaderContent | *特殊 隐藏 [PageHeader](https://github.com/sendya/ant-design-pro-vue/blob/master/src/components/layout/PageHeader.vue#L14) 组件中的页面带的 面包屑和页面标题栏 | boolean | false  |
-| permission          | 与项目提供的权限拦截匹配的权限，如果不匹配，则会被禁止访问该路由页面 | array   | []     |
+| 字段 | 用途 |
+| --- | --- |
+| URL/路径 | 浏览器访问路径，也是前端路由匹配依据。 |
+| 组件路径 | 对应 `src/views` 下的页面组件。 |
+| 菜单名称与图标 | 左侧菜单、标签页和标题显示。 |
+| 父级菜单 | 决定菜单层级。 |
+| 角色授权 | 决定哪些用户能取得该菜单。 |
+| 按钮权限 | 控制新增、编辑、审核、转单等页面操作。 |
 
+不同部署的菜单数据由数据库初始化脚本和系统管理页面维护。新增菜单后，应为目标角色同时分配菜单权限与所需按钮权限。
 
+## 新增页面的建议步骤
 
-路由例子
-----
+1. 在 `src/views` 的合适模块目录中新建页面组件。
+2. 通过后端菜单配置为页面设置 URL 和组件路径。
+3. 为角色分配菜单、按钮以及必要的仓库/数据权限。
+4. 重新登录，确认动态菜单和按钮权限缓存已刷新。
+5. 使用浏览器直接访问路由，验证刷新后仍能正确进入页面。
 
-```ecmascript 6
-const asyncRouterMap = [
-  {
-    path: '/',
-    name: 'index',
-    component: BasicLayout,
-    meta: { title: '首页' },
-    redirect: '/dashboard/analysis',
-    children: [
-      {
-        path: '/dashboard',
-        component: Layout,
-        name: 'dashboard',
-        redirect: '/dashboard/workplace',
-        meta: {title: '仪表盘', icon: 'dashboard', permission: ['dashboard']},
-        children: [
-          {
-            path: '/dashboard/analysis',
-            name: 'Analysis',
-            component: () => import('@/views/dashboard/Analysis'),
-            meta: {title: '分析页', permission: ['dashboard']}
-          }
-        ]
-      },
+## 注意事项
 
-      // result
-      {
-        path: '/result',
-        name: 'result',
-        component: PageView,
-        redirect: '/result/success',
-        meta: { title: '结果页', icon: 'check-circle-o', permission: [ 'result' ] },
-        children: [
-          {
-            path: '/result/success',
-            name: 'ResultSuccess',
-            component: () => import(/* webpackChunkName: "result" */ '@/views/result/Success'),
-            // 该页面隐藏面包屑和页面标题栏
-            meta: { title: '成功', hiddenHeaderContent: true, permission: [ 'result' ] }
-          },
-          {
-            path: '/result/fail',
-            name: 'ResultFail',
-            component: () => import(/* webpackChunkName: "result" */ '@/views/result/Error'),
-            // 该页面隐藏面包屑和页面标题栏
-            meta: { title: '失败', hiddenHeaderContent: true, permission: [ 'result' ] }
-          }
-        ]
-      },
-      ...
-    ]
-  },
-]
-```
-
-> 1. 请注意 `component: () => import('..') ` 方式引入路由的页面组件为 懒加载模式。具体可以看 [Vue 官方文档](https://router.vuejs.org/zh/guide/advanced/lazy-loading.html)
-> 2. 增加新的路由应该增加在 '/' (index) 路由的 `children` 内
-> 3. `permission` 可以进行自定义修改，只需要对这个模块进行自定义修改即可 [src/store/modules/permission.js#L10](https://github.com/sendya/ant-design-pro-vue/blob/master/src/store/modules/permission.js#L10)
-
-
-
-附权限路由结构：
-
-![权限结构](https://static-2.loacg.com/open/static/github/permissions.png)
+- Router 使用 `history` 模式，Nginx 或其他 Web 服务器必须将未知路径回退到 `index.html`；项目的 `nginx.conf` 已处理此需求。
+- `Router.prototype.push` 已在 `src/router/index.js` 中包装，以忽略重复导航产生的 Promise rejection。
+- 基础路由文件中的 `asyncRouterMap` 只提供动态菜单根布局；不要误以为所有业务页面都应在其中静态添加。
+- 修改角色、菜单或按钮授权后，必须重新登录。仅刷新页面不会重新拉取完整的权限缓存。
