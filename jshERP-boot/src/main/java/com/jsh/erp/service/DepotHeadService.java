@@ -100,6 +100,8 @@ public class DepotHeadService {
     private LogService logService;
     @Resource
     private PlatformAccessService platformAccessService;
+    @Resource
+    private StockWarningService stockWarningService;
 
     @Value(value="${file.exportTmp}")
     private String fileExportTmp;
@@ -906,14 +908,28 @@ public class DepotHeadService {
             DepotHeadExample example = new DepotHeadExample();
             example.createCriteria().andIdIn(dhIds);
             result = depotHeadMapper.updateByExampleSelective(depotHead, example);
-            //更新当前库存
-            if(systemConfigService.getForceApprovalFlag()) {
+            if(forceApprovalFlag) {
+                Set<StockWarningKey> affectedStocks = new HashSet<>();
                 for(Long dhId: dhIds) {
                     List<DepotItem> list = depotItemService.getListByHeaderId(dhId);
                     for (DepotItem depotItem : list) {
                         depotItemService.updateCurrentStock(depotItem);
                         depotItemService.updateCurrentUnitPrice(depotItem);
+                        if (depotItem.getMaterialId() != null && depotItem.getDepotId() != null) {
+                            affectedStocks.add(new StockWarningKey(
+                                    depotItem.getMaterialId(), depotItem.getDepotId()));
+                        }
+                        if (depotItem.getMaterialId() != null
+                                && depotItem.getAnotherDepotId() != null) {
+                            affectedStocks.add(new StockWarningKey(
+                                    depotItem.getMaterialId(), depotItem.getAnotherDepotId()));
+                        }
                     }
+                }
+                User currentUser = userService.getCurrentUser();
+                if (currentUser != null && !affectedStocks.isEmpty()) {
+                    stockWarningService.checkAndNotifyStockWarnings(
+                            affectedStocks, currentUser.getTenantId());
                 }
             }
             for (String salesOrderNumber : salesOrderNumbers) {

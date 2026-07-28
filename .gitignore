@@ -23,3 +23,4 @@ jshERP-boot/docs/*
 !jshERP-boot/docs/jsh_erp_user_fix_pg.sql
 !jshERP-boot/docs/jsh_erp_log_fix_pg.sql
 !jshERP-boot/docs/jsh_erp_material_data_fix_pg.sql
+!jshERP-boot/docs/jsh_erp_stock_warning_status_pg.sql

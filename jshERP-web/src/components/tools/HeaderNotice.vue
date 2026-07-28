@@ -64,6 +64,9 @@
         msg1Count:"0",
         msg1Title:"通知(0)",
         stopTimer:false,
+        noticeTimer:null,
+        noticeInitialized:false,
+        knownUnreadMsgIds:[],
         websock: null,
         lockReconnect:false,
         heartCheck:null,
@@ -78,30 +81,47 @@
     },
     mounted() {
       this.loadData();
-      //this.timerFun();
+      this.timerFun();
       //this.initWebSocket(); //注释by jishenghua  2021年1月13日
      // this.heartCheckFun();
     },
     destroyed: function () { // 离开页面生命周期函数
       //this.websocketclose();
     },
+    beforeDestroy: function () {
+      this.stopTimer = true;
+      if (this.noticeTimer) {
+        clearInterval(this.noticeTimer);
+        this.noticeTimer = null;
+      }
+    },
     methods: {
       timerFun() {
         this.stopTimer = false;
-        let myTimer = setInterval(()=>{
+        if (this.noticeTimer) {
+          clearInterval(this.noticeTimer);
+        }
+        this.noticeTimer = setInterval(()=>{
           // 停止定时器
-          if (this.stopTimer == true) {
-            clearInterval(myTimer);
-            return;
-          }
           this.loadData()
-        },6000)
+        },20000)
       },
       loadData (){
         try {
           // 获取系统消息
           getAction(this.url.getMsgByStatus, { status: '1'}).then((res) => {
             if (res && res.code === 200) {
+              const unreadMessages = Array.isArray(res.data) ? res.data : [];
+              if (this.noticeInitialized) {
+                unreadMessages
+                  .filter(item => !this.knownUnreadMsgIds.includes(String(item.id)))
+                  .slice()
+                  .reverse()
+                  .forEach(item => this.openNotification(item));
+              }
+              this.knownUnreadMsgIds = unreadMessages.map(item => String(item.id));
+              this.noticeInitialized = true;
+              res.data = unreadMessages;
               this.announcement1 = res.data;
               if(this.announcement1.length>5) {
                 this.announcement1 = this.announcement1.reverse()
@@ -197,8 +217,8 @@
       },
 
       openNotification (data) {
-        var text = data.msgTxt;
-        const key = `open${Date.now()}`;
+        var text = (data.msgTitle ? data.msgTitle + '\n' : '') + (data.msgContent || '');
+        const key = `open${data.id || Date.now()}`;
         this.$notification.open({
           message: '消息提醒',
           placement:'bottomRight',
@@ -211,7 +231,10 @@
                 size: 'small',
               },
               on: {
-                click: () => this.showDetail(key,data)
+                click: () => {
+                  this.$notification.close(key);
+                  this.showAnnouncement(data);
+                }
               }
             }, '查看详情')
           },

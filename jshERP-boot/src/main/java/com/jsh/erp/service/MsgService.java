@@ -38,9 +38,6 @@ public class MsgService {
     private MsgMapperEx msgMapperEx;
 
     @Resource
-    private DepotHeadService depotHeadService;
-
-    @Resource
     private UserService userService;
 
     @Resource
@@ -123,6 +120,20 @@ public class MsgService {
                     ExceptionConstants.DATA_WRITE_FAIL_MSG);
         }
         return result;
+    }
+
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
+    public int insertSystemMsg(String title, String content, String type, Long userId, Long tenantId) {
+        Msg msg = new Msg();
+        msg.setMsgTitle(title);
+        msg.setMsgContent(content);
+        msg.setType(type);
+        msg.setUserId(userId);
+        msg.setTenantId(tenantId);
+        msg.setStatus("1");
+        msg.setCreateTime(new Date());
+        msg.setDeleteFlag(BusinessConstants.DELETE_FLAG_EXISTS);
+        return msgMapper.insertSelective(msg);
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
