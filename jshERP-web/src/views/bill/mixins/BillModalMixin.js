@@ -3,7 +3,7 @@ import { findBySelectCus, findBySelectRetail, findBySelectSup, findStockByDepotA
   getBatchNumberList, getCurrentSystemConfig, getMaterialByBarCode, getPersonByNumType, getPlatformConfigByKey } from '@/api/api'
 import { getAction } from '@/api/manage'
 import { getCheckFlag, getMpListShort, getNowFormatDateTime } from '@/utils/util'
-import { USER_INFO } from '@/store/mutation-types'
+import { USER_ID, USER_INFO } from '@/store/mutation-types'
 import Vue from 'vue'
 
 export const BillModalMixin = {
@@ -1241,7 +1241,8 @@ export const BillModalMixin = {
     },
     //加载快捷按钮：供应商、客户、会员、结算账户、仓库
     initQuickBtn() {
-      let btnStrList = Vue.ls.get('winBtnStrList') //按钮功能列表 JSON字符串
+      // 登录后按钮权限按用户保存；保留旧键以兼容历史缓存。
+      let btnStrList = Vue.ls.get('winBtnStrList_' + Vue.ls.get(USER_ID)) || Vue.ls.get('winBtnStrList')
       if (btnStrList) {
         for (let i = 0; i < btnStrList.length; i++) {
           if (btnStrList[i].btnStr) {

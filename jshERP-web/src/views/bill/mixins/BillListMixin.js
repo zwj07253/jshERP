@@ -4,6 +4,7 @@ import { FormTypes } from '@/utils/JEditableTableUtil'
 import { findBillDetailByNumber, findBySelectSup, findBySelectCus, findBySelectRetail, getUserList, getAccount,
   waitBillCount, getCurrentSystemConfig, getPlatformConfigByKey, getPersonByNumType } from '@/api/api'
 import { getCheckFlag, getFormatDate, getMpListShort, getPrevMonthFormatDate } from '@/utils/util'
+import { USER_ID } from '@/store/mutation-types'
 import moment from 'moment'
 import pick from 'lodash.pick'
 
@@ -741,7 +742,8 @@ export const BillListMixin = {
     },
     //加载快捷按钮：转入库、转出库等
     initQuickBtn() {
-      let btnStrList = Vue.ls.get('winBtnStrList') //按钮功能列表 JSON字符串
+      // 登录后按钮权限按用户保存；保留旧键以兼容历史缓存。
+      let btnStrList = Vue.ls.get('winBtnStrList_' + Vue.ls.get(USER_ID)) || Vue.ls.get('winBtnStrList')
       if (btnStrList) {
         for (let i = 0; i < btnStrList.length; i++) {
           if (btnStrList[i].btnStr) {
@@ -845,9 +847,18 @@ export const BillListMixin = {
           }
           getAction('/depotItem/getDetailList', param).then((res) => {
             if (res.code === 200) {
+              // 快捷转单不经过 LinkBillList，必须在打开目标单据前排除已全部转完的明细。
+              // 否则目标弹窗会先创建，随后在 linkBillListOk 中因剩余数量为 0 而变为空白。
+              const availableDetails = res.data.rows.filter(item =>
+                Number(item.preNumber || 0) > Number(item.finishNumber || 0)
+              )
+              if (availableDetails.length === 0) {
+                this.$message.warning('原单据明细已全部转换完成，无可转单明细')
+                return
+              }
               let deposit = info.changeAmount - info.finishDeposit
               let transferParam = {
-                list: res.data.rows,
+                list: availableDetails,
                 number: info.number,
                 organId: info.organId,
                 discount: info.discount,

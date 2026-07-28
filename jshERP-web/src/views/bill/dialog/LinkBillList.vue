@@ -379,15 +379,13 @@
                 if(info.finishNumber < info.preNumber) {
                   //去掉已经全部转换的明细，只加载未转换完的明细
                   listEx.push(info)
-                } else {
-                  if(this.queryParam.subType === '采购' || this.queryParam.subType === '销售' || this.queryParam.subType === '零售') {
-                    //针对退货单，不过滤明细
-                    listEx.push(info)
-                  }
                 }
               }
               this.dataSourceDetail = listEx
-              this.ipagination.total = res.data.total;
+              this.ipagination.total = listEx.length
+              if(listEx.length === 0) {
+                this.$message.warning('该单据的明细已全部转换完成，无可操作明细')
+              }
             }
             if(res.code===510){
               this.$message.warning(res.data)

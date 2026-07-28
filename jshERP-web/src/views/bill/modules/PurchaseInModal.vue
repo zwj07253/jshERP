@@ -489,47 +489,78 @@
             info.linkId = info.id
             allTaxLastMoney += info.taxLastMoney
             if(info.operNumber>0) {
+              //直接给每行设置默认仓库，避免后续 batchSetDepotModalFormOk 读到空行
+              if(depotId) {
+                info.depotId = depotId
+              }
               listEx.push(info)
               this.changeColumnShow(info)
             }
           }
-          this.materialTable.dataSource = listEx
-          ///给优惠后金额重新赋值
-          allTaxLastMoney = allTaxLastMoney?allTaxLastMoney:0
-          let discountMoney = 0
-          if(allTaxLastMoney!==0) {
-            discountMoney = (discount/100*allTaxLastMoney).toFixed(2)-0
-          }
-          let discountLastMoney = (allTaxLastMoney - discountMoney).toFixed(2)-0
-          let changeAmount = discountLastMoney
-          if(deposit) {
-            this.depositStatus = true
-            changeAmount = (discountLastMoney - deposit).toFixed(2)-0
-          }
-          this.$nextTick(() => {
-            this.form.setFieldsValue({
-              'organId': organId,
-              'linkNumber': linkNumber,
-              'discount': discount,
-              'discountMoney': discountMoney,
-              'discountLastMoney': discountLastMoney,
-              'deposit': deposit,
-              'changeAmount': changeAmount,
-              'accountId': accountId,
-              'remark': remark
-            })
-            findBySelectSup({organId: organId, limit:1}).then((res)=> {
-              this.supList = res && Array.isArray(res) ? res : [];
-            })
-            if(this.zeroChangeAmountFlag) {
-              //切换收付款的金额为0
-              let oldChangeAmount = this.form.getFieldValue('changeAmount')-0
-              this.form.setFieldsValue({'changeAmount':0, 'debt':oldChangeAmount})
+          //获取库存信息后再赋值，避免 batchSetDepotModalFormOk 读到空行覆盖明细
+          let afterStockLoaded = () => {
+            this.materialTable.dataSource = listEx
+            ///给优惠后金额重新赋值
+            allTaxLastMoney = allTaxLastMoney?allTaxLastMoney:0
+            let discountMoney = 0
+            if(allTaxLastMoney!==0) {
+              discountMoney = (discount/100*allTaxLastMoney).toFixed(2)-0
             }
-            if(depotId) {
-              this.batchSetDepotModalFormOk(depotId)
+            let discountLastMoney = (allTaxLastMoney - discountMoney).toFixed(2)-0
+            let changeAmount = discountLastMoney
+            if(deposit) {
+              this.depositStatus = true
+              changeAmount = (discountLastMoney - deposit).toFixed(2)-0
             }
-          })
+            this.$nextTick(() => {
+              this.form.setFieldsValue({
+                'organId': organId,
+                'linkNumber': linkNumber,
+                'discount': discount,
+                'discountMoney': discountMoney,
+                'discountLastMoney': discountLastMoney,
+                'deposit': deposit,
+                'changeAmount': changeAmount,
+                'accountId': accountId,
+                'remark': remark
+              })
+              findBySelectSup({organId: organId, limit:1}).then((res)=> {
+                this.supList = res && Array.isArray(res) ? res : [];
+              })
+              if(this.zeroChangeAmountFlag) {
+                //切换收付款的金额为0
+                let oldChangeAmount = this.form.getFieldValue('changeAmount')-0
+                this.form.setFieldsValue({'changeAmount':0, 'debt':oldChangeAmount})
+              }
+            })
+          }
+          if(depotId && listEx.length > 0) {
+            //先获取库存，再赋值，避免时序覆盖
+            let barCodes = listEx.map(item => item.barCode).filter(Boolean).join(',')
+            let param = {
+              barCode: barCodes,
+              organId: organId,
+              depotId: depotId,
+              mpList: getMpListShort(Vue.ls.get('materialPropertyList')),
+              prefixNo: this.prefixNo
+            }
+            getMaterialByBarCode(param).then((res) => {
+              if (res && res.code === 200 && res.data) {
+                for (let item of listEx) {
+                  for (let m of res.data) {
+                    if(m.mBarCode === item.barCode) {
+                      item.stock = m.stock
+                    }
+                  }
+                }
+              }
+              afterStockLoaded()
+            }).catch(() => {
+              afterStockLoaded()
+            })
+          } else {
+            afterStockLoaded()
+          }
         }
       },
     }
