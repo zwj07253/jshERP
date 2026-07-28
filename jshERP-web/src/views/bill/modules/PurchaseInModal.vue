@@ -497,42 +497,41 @@
               this.changeColumnShow(info)
             }
           }
-          //获取库存信息后再赋值，避免 batchSetDepotModalFormOk 读到空行覆盖明细
+          //表头字段立即回填，不等待库存接口
+          allTaxLastMoney = allTaxLastMoney?allTaxLastMoney:0
+          let discountMoney = 0
+          if(allTaxLastMoney!==0) {
+            discountMoney = (discount/100*allTaxLastMoney).toFixed(2)-0
+          }
+          let discountLastMoney = (allTaxLastMoney - discountMoney).toFixed(2)-0
+          let changeAmount = discountLastMoney
+          if(deposit) {
+            this.depositStatus = true
+            changeAmount = (discountLastMoney - deposit).toFixed(2)-0
+          }
+          this.$nextTick(() => {
+            this.form.setFieldsValue({
+              'organId': organId,
+              'linkNumber': linkNumber,
+              'discount': discount,
+              'discountMoney': discountMoney,
+              'discountLastMoney': discountLastMoney,
+              'deposit': deposit,
+              'changeAmount': changeAmount,
+              'accountId': accountId,
+              'remark': remark
+            })
+            findBySelectSup({organId: organId, limit:1}).then((res)=> {
+              this.supList = res && Array.isArray(res) ? res : [];
+            })
+            if(this.zeroChangeAmountFlag) {
+              let oldChangeAmount = this.form.getFieldValue('changeAmount')-0
+              this.form.setFieldsValue({'changeAmount':0, 'debt':oldChangeAmount})
+            }
+          })
+          //库存接口只负责补充明细行的 stock 信息
           let afterStockLoaded = () => {
             this.materialTable.dataSource = listEx
-            ///给优惠后金额重新赋值
-            allTaxLastMoney = allTaxLastMoney?allTaxLastMoney:0
-            let discountMoney = 0
-            if(allTaxLastMoney!==0) {
-              discountMoney = (discount/100*allTaxLastMoney).toFixed(2)-0
-            }
-            let discountLastMoney = (allTaxLastMoney - discountMoney).toFixed(2)-0
-            let changeAmount = discountLastMoney
-            if(deposit) {
-              this.depositStatus = true
-              changeAmount = (discountLastMoney - deposit).toFixed(2)-0
-            }
-            this.$nextTick(() => {
-              this.form.setFieldsValue({
-                'organId': organId,
-                'linkNumber': linkNumber,
-                'discount': discount,
-                'discountMoney': discountMoney,
-                'discountLastMoney': discountLastMoney,
-                'deposit': deposit,
-                'changeAmount': changeAmount,
-                'accountId': accountId,
-                'remark': remark
-              })
-              findBySelectSup({organId: organId, limit:1}).then((res)=> {
-                this.supList = res && Array.isArray(res) ? res : [];
-              })
-              if(this.zeroChangeAmountFlag) {
-                //切换收付款的金额为0
-                let oldChangeAmount = this.form.getFieldValue('changeAmount')-0
-                this.form.setFieldsValue({'changeAmount':0, 'debt':oldChangeAmount})
-              }
-            })
           }
           if(depotId && listEx.length > 0) {
             //先获取库存，再赋值，避免时序覆盖
