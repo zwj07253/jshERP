@@ -70,9 +70,11 @@ export const FinancialModalMixin = {
       }
     },
     addInit(amountNum) {
-      getAction('/sequence/buildNumber').then((res) => {
+      getAction('/sequence/buildNumber', {prefixNo: amountNum}).then((res) => {
         if (res && res.code === 200) {
-          this.form.setFieldsValue({'billNo':amountNum + res.data.defaultNumber})
+          this.form.setFieldsValue({'billNo':res.data.defaultNumber})
+        } else if(res) {
+          this.$message.warning(res.data || '获取单据编号失败')
         }
       })
       this.$nextTick(() => {

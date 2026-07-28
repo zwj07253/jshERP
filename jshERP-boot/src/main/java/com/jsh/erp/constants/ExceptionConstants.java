@@ -1108,6 +1108,9 @@ public class ExceptionConstants {
     //获取唯一单据编号操作被中断
     public static final int SEQUENCE_ONLY_BREAK_CODE = 12000002;
     public static final String SEQUENCE_ONLY_BREAK_MSG = "获取唯一单据编号操作被中断";
+    //模块当日六位流水号已用完
+    public static final int SEQUENCE_DAILY_LIMIT_CODE = 12000003;
+    public static final String SEQUENCE_DAILY_LIMIT_MSG = "该模块今日单据编号已达到999999，请次日再试或调整编号规则";
 
     /**
      * 字典

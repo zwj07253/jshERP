@@ -97,10 +97,12 @@ export const BillModalMixin = {
       }
     },
     addInit(amountNum) {
-      getAction('/sequence/buildNumber').then((res) => {
+      getAction('/sequence/buildNumber', {prefixNo: amountNum}).then((res) => {
         if (res && res.code === 200) {
-          this.model.defaultNumber = amountNum + res.data.defaultNumber
-          this.form.setFieldsValue({'number':amountNum + res.data.defaultNumber})
+          this.model.defaultNumber = res.data.defaultNumber
+          this.form.setFieldsValue({'number':res.data.defaultNumber})
+        } else if(res) {
+          this.$message.warning(res.data || '获取单据编号失败')
         }
       })
       this.$nextTick(() => {
@@ -127,9 +129,11 @@ export const BillModalMixin = {
       this.manyAccountBtnStatus = false
     },
     copyAddInit(amountNum) {
-      getAction('/sequence/buildNumber').then((res) => {
+      getAction('/sequence/buildNumber', {prefixNo: amountNum}).then((res) => {
         if (res && res.code === 200) {
-          this.form.setFieldsValue({'number':amountNum + res.data.defaultNumber})
+          this.form.setFieldsValue({'number':res.data.defaultNumber})
+        } else if(res) {
+          this.$message.warning(res.data || '获取单据编号失败')
         }
       })
       this.$nextTick(() => {
@@ -389,52 +393,58 @@ export const BillModalMixin = {
     memberModalFormOk() {
       this.initRetail(1)
     },
-    batchSetDepotModalFormOk(depotId) {
+    batchSetDepotModalFormOk(depotId, sourceDetails) {
+      if(Array.isArray(sourceDetails)) {
+        this.fillDepotAndStock(depotId, sourceDetails)
+        return
+      }
       this.getAllTable().then(tables => {
         return getListData(this.form, tables)
       }).then(allValues => {
         //获取单据明细列表信息
         let detailArr = allValues.tablesValue[0].values
-        let barCodes = ''
-        for(let detail of detailArr){
+        this.fillDepotAndStock(depotId, detailArr)
+      })
+    },
+    fillDepotAndStock(depotId, detailArr) {
+      let barCodes = ''
+      for(let detail of detailArr){
+        if(detail.barCode) {
           barCodes += detail.barCode + ','
         }
-        if(barCodes) {
-          barCodes = barCodes.substring(0, barCodes.length-1)
-        }
-        let param = {
-          barCode: barCodes,
-          organId: this.form.getFieldValue('organId'),
-          depotId: depotId,
-          mpList: getMpListShort(Vue.ls.get('materialPropertyList')),  //扩展属性
-          prefixNo: this.prefixNo
-        }
-        getMaterialByBarCode(param).then((res) => {
-          if (res && res.code === 200) {
-            let mList = res.data
-            //构造新的列表数组，用于存放单据明细信息
-            let newDetailArr = []
-            if(mList && mList.length) {
-              for (let i = 0; i < detailArr.length; i++) {
-                let item = detailArr[i]
-                item.depotId = depotId
-                for (let j = 0; j < mList.length; j++) {
-                  if(mList[j].mBarCode === item.barCode) {
-                    item.stock = mList[j].stock
-                  }
-                }
-                newDetailArr.push(item)
-              }
-            } else {
-              for (let i = 0; i < detailArr.length; i++) {
-                let item = detailArr[i]
-                item.depotId = depotId
-                newDetailArr.push(item)
+      }
+      if(barCodes) {
+        barCodes = barCodes.substring(0, barCodes.length-1)
+      }
+      // 仓库先立即回填，库存接口只负责异步补充 stock，不能阻塞或清空转单明细。
+      let newDetailArr = detailArr.map(item => {
+        item.depotId = depotId
+        return item
+      })
+      this.materialTable.dataSource = [...newDetailArr]
+      if(!barCodes) {
+        return
+      }
+      let param = {
+        barCode: barCodes,
+        organId: this.form.getFieldValue('organId'),
+        depotId: depotId,
+        mpList: getMpListShort(Vue.ls.get('materialPropertyList')),  //扩展属性
+        prefixNo: this.prefixNo
+      }
+      getMaterialByBarCode(param).then((res) => {
+        if (res && res.code === 200 && Array.isArray(res.data)) {
+          let mList = res.data
+          for (let item of newDetailArr) {
+            for (let material of mList) {
+              if(material.mBarCode === item.barCode) {
+                item.stock = material.stock
+                break
               }
             }
-            this.materialTable.dataSource = newDetailArr
           }
-        })
+          this.materialTable.dataSource = [...newDetailArr]
+        }
       })
     },
     depotModalFormOk() {

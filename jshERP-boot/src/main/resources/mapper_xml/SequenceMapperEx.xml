@@ -2,12 +2,15 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.jsh.erp.datasource.mappers.SequenceMapperEx">
 
-    <update id="updateBuildOnlyNumber">
-        update jsh_sequence set current_val = current_val + 1 where seq_name = 'depot_number_seq'
-    </update>
-
-    <select id="getBuildOnlyNumber" resultType="java.lang.Long">
-      select current_val from jsh_sequence where seq_name = 'depot_number_seq'
+    <select id="nextDailyNumber" resultType="java.lang.Long">
+        insert into jsh_sequence
+            (seq_name, min_value, max_value, current_val, increment_val, remark)
+        values
+            (#{seqName}, 1, 999999, 1, 1, '每日单据编号')
+        on conflict (seq_name) do update
+        set current_val = jsh_sequence.current_val + jsh_sequence.increment_val
+        where jsh_sequence.current_val &lt; jsh_sequence.max_value
+        returning current_val
     </select>
 
 </mapper>
