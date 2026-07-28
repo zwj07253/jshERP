@@ -350,8 +350,8 @@
     methods: {
       //调用完edit()方法之后会自动调用此方法
       editAfter() {
-        const systemConfigReady = this.initSystemConfig().catch(() => null)
-        const depotReady = this.initDepot().catch(() => null)
+        this.initSystemConfig().catch(() => null)
+        this.initDepot().catch(() => null)
         this.billStatus = '0'
         this.currentSelectDepotId = ''
         this.rowCanEdit = true
@@ -370,9 +370,12 @@
             handleIntroJs(this.prefixNo, 1)
             if(this.transferParam && this.transferParam.number) {
               let tp = this.transferParam
-              Promise.all([systemConfigReady, depotReady]).then(() => {
-                this.linkBillListOk(tp.list, tp.number, tp.organId, tp.discount, tp.deposit, tp.remark, this.defaultDepotId, tp.accountId)
-              })
+              // 关联单号不能等待配置或仓库请求。任一请求变慢时，原来的 Promise.all
+              // 会让快捷转单完全不回填，用户只能重新手工选择关联订单。
+              // defaultDepotId 和 materialPriceTaxFlag 已由列表页在打开弹窗前传入，
+              // 仓库下拉选项可在后台请求结束后自行刷新。
+              this.linkBillListOk(tp.list, tp.number, tp.organId, tp.discount, tp.deposit, tp.remark,
+                this.defaultDepotId, tp.accountId)
             }
           })
         } else {
@@ -464,6 +467,16 @@
         this.$refs.linkBillList.title = "请选择采购订单"
       },
       linkBillListOk(selectBillDetailRows, linkNumber, organId, discount, deposit, remark, depotId, accountId) {
+        // 快捷转单的关联关系属于表头信息，不能依赖明细是否成功回填。
+        // 即使后续库存查询或明细筛选没有结果，也必须保留来源采购订单。
+        if(linkNumber) {
+          this.form.setFieldsValue({
+            'organId': organId,
+            'linkNumber': linkNumber,
+            'accountId': accountId,
+            'remark': remark
+          })
+        }
         this.rowCanEdit = false
         this.materialTable.columns[1].type = FormTypes.normal
         this.changeFormTypes(this.materialTable.columns, 'preNumber', 1)
@@ -473,8 +486,12 @@
           let allTaxLastMoney = 0
           for(let j=0; j<selectBillDetailRows.length; j++) {
             let info = selectBillDetailRows[j];
-            if(info.finishNumber>0) {
-              info.operNumber = info.preNumber - info.finishNumber
+            //始终计算剩余数量，避免 finishNumber=0 时漏掉明细
+            const preNumber = Number(info.preNumber || 0)
+            const finishNumber = Number(info.finishNumber || 0)
+            info.operNumber = preNumber - finishNumber
+            info.linkId = info.id
+            if(info.operNumber>0) {
               info.allPrice = info.operNumber * info.unitPrice-0
               let taxRate = info.taxRate-0
               if(this.materialPriceTaxFlag) {
@@ -486,7 +503,6 @@
                 info.taxLastMoney = (info.allPrice + info.taxMoney).toFixed(2)-0
               }
             }
-            info.linkId = info.id
             allTaxLastMoney += info.taxLastMoney
             if(info.operNumber>0) {
               //直接给每行设置默认仓库，避免后续 batchSetDepotModalFormOk 读到空行
@@ -529,36 +545,31 @@
               this.form.setFieldsValue({'changeAmount':0, 'debt':oldChangeAmount})
             }
           })
-          //库存接口只负责补充明细行的 stock 信息
-          let afterStockLoaded = () => {
-            this.materialTable.dataSource = listEx
-          }
+          //先立即显示订单明细，库存异步补充
+          this.materialTable.dataSource = listEx
           if(depotId && listEx.length > 0) {
-            //先获取库存，再赋值，避免时序覆盖
             let barCodes = listEx.map(item => item.barCode).filter(Boolean).join(',')
-            let param = {
-              barCode: barCodes,
-              organId: organId,
-              depotId: depotId,
-              mpList: getMpListShort(Vue.ls.get('materialPropertyList')),
-              prefixNo: this.prefixNo
-            }
-            getMaterialByBarCode(param).then((res) => {
-              if (res && res.code === 200 && res.data) {
-                for (let item of listEx) {
-                  for (let m of res.data) {
-                    if(m.mBarCode === item.barCode) {
-                      item.stock = m.stock
-                    }
-                  }
-                }
+            if(barCodes) {
+              let param = {
+                barCode: barCodes,
+                organId: organId,
+                depotId: depotId,
+                mpList: getMpListShort(Vue.ls.get('materialPropertyList')),
+                prefixNo: this.prefixNo
               }
-              afterStockLoaded()
-            }).catch(() => {
-              afterStockLoaded()
-            })
-          } else {
-            afterStockLoaded()
+              getMaterialByBarCode(param).then((res) => {
+                if (res && res.code === 200 && Array.isArray(res.data)) {
+                  listEx.forEach(item => {
+                    const material = res.data.find(m => m.mBarCode === item.barCode)
+                    if(material) {
+                      item.stock = material.stock
+                    }
+                  })
+                  //生成新数组，触发表格刷新
+                  this.materialTable.dataSource = [...listEx]
+                }
+              })
+            }
           }
         }
       },
