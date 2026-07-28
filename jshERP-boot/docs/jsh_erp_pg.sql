@@ -984,7 +984,7 @@ SELECT v.id, v.platform_key, v.platform_key_info, v.platform_value
 FROM (VALUES
     (1::BIGINT, 'platform_name', '平台名称', 'YUEWEIERP'),
     (2::BIGINT, 'activation_code', '激活码', ''),
-    (3::BIGINT, 'platform_url', '官方网站', 'http://www.gyjerp.com/'),
+    (3::BIGINT, 'platform_url', '官方网站', ''),
     (4::BIGINT, 'bill_print_flag', '三联打印启用标记', '0'),
     (5::BIGINT, 'bill_print_url', '三联打印地址', ''),
     (6::BIGINT, 'pay_fee_url', '租户续费地址', ''),
