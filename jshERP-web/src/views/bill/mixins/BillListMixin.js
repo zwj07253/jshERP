@@ -436,6 +436,14 @@ export const BillListMixin = {
     this.initColumnsSetting()
     this.isShowExcel = Vue.ls.get('isShowExcel');
   },
+  activated() {
+    // 转单弹窗挂在来源列表中，保存成功时只能直接刷新来源列表。
+    // 目标单据列表使用 keep-alive 缓存，重新切回标签时统一刷新，避免必须手动刷新页面。
+    if(this._hasActivated) {
+      this.loadData(1)
+    }
+    this._hasActivated = true
+  },
   methods: {
     loadData(arg) {
       // 重置展开状态

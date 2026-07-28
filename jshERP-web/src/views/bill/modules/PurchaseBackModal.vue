@@ -481,7 +481,7 @@
             }
             let targetDepotId = depotId || this.defaultDepotId
             if(targetDepotId) {
-              this.batchSetDepotModalFormOk(targetDepotId)
+              this.batchSetDepotModalFormOk(targetDepotId, listEx)
             }
           })
         }

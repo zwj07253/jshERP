@@ -558,7 +558,7 @@
           //判断后进行仓库的切换
           if(depotId) {
             this.$nextTick(function () {
-              that.batchSetDepotModalFormOk(depotId)
+              that.batchSetDepotModalFormOk(depotId, listEx)
             })
           }
         }

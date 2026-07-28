@@ -327,12 +327,6 @@
       this.initQuickBtn()
       this.getDepotByCurrentUser()
     },
-    activated() {
-      if(this._hasActivated) {
-        this.loadData(1)
-      }
-      this._hasActivated = true
-    },
     computed: {
     },
     methods: {
