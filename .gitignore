@@ -18,4 +18,3 @@ jshERP-boot/docs/*
 !jshERP-boot/docs/02_initial_tenant.sql
 !jshERP-boot/docs/jsh_erp.sql
 !jshERP-boot/docs/jsh_erp_pg.sql
-!jshERP-boot/docs/watch_test_data.sql
