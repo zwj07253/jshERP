@@ -10,7 +10,7 @@
             <a-select-option value="ANTHROPIC">Anthropic 兼容</a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item label="API 地址" prop="apiUrl"><a-input v-model.trim="form.apiUrl" :placeholder="form.apiFormat==='ANTHROPIC' ? 'https://.../anthropic/v1/messages' : 'https://.../v1/chat/completions'" /></a-form-model-item>
+        <a-form-model-item label="API 地址" prop="apiUrl" :extra="form.apiFormat==='ANTHROPIC' ? '可填基础地址；保存时会自动补全 /v1/messages。' : '可填基础地址；保存时会自动补全 /chat/completions。'"><a-input v-model.trim="form.apiUrl" :placeholder="form.apiFormat==='ANTHROPIC' ? '例如 https://.../anthropic' : '例如 https://.../v1'" /></a-form-model-item>
         <a-form-model-item label="模型名称" prop="modelName"><a-input v-model.trim="form.modelName" placeholder="例如 gpt-4.1-mini" /></a-form-model-item>
         <a-form-model-item label="API Token" prop="apiToken"><a-input-password v-model.trim="form.apiToken" :placeholder="form.apiTokenConfigured ? '已配置，留空不修改' : '请输入 API Token'" /></a-form-model-item>
         <a-form-model-item label="支持图片识别"><a-switch v-model="form.visionEnabled" /></a-form-model-item>

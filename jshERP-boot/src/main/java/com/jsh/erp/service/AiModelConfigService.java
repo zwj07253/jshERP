@@ -48,7 +48,7 @@ public class AiModelConfigService {
         boolean enabled = Boolean.TRUE.equals(input.getBoolean("enabled"));
         String apiFormat = trim(input.getString("apiFormat")).toUpperCase();
         if (!"OPENAI".equals(apiFormat) && !"ANTHROPIC".equals(apiFormat)) apiFormat = "OPENAI";
-        String apiUrl = trim(input.getString("apiUrl"));
+        String apiUrl = normalizeApiUrl(apiFormat, trim(input.getString("apiUrl")));
         String modelName = trim(input.getString("modelName"));
         int timeout = range(input.getInteger("timeoutSeconds"), 15, 180, 60);
         int maxFileMb = range(input.getInteger("maxFileMb"), 1, 20, 10);
@@ -66,6 +66,7 @@ public class AiModelConfigService {
     public Config getRuntimeConfig() throws Exception {
         userService.getCurrentUser();
         Config c = load();
+        c.apiUrl = normalizeApiUrl(c.apiFormat, c.apiUrl);
         if (!c.enabled) throw new IllegalStateException("AI 导入尚未启用，请联系系统管理员完成配置");
         if (blank(c.apiUrl) || blank(c.modelName) || blank(c.encryptedToken)) throw new IllegalStateException("AI 模型配置不完整");
         c.apiToken = decrypt(c.encryptedToken); return c;
@@ -97,6 +98,19 @@ public class AiModelConfigService {
     private int range(Integer v,int min,int max,int d) { return Math.max(min,Math.min(max,v == null ? d : v)); }
     private String str(Object v) { return v == null ? "" : String.valueOf(v); }
     private String trim(String v) { return v == null ? "" : v.trim(); }
+    /**
+     * Accept either a provider base URL or its full request URL.  The configured
+     * value is normalized once at save time, so every subsequent request uses a
+     * complete protocol endpoint.
+     */
+    private String normalizeApiUrl(String apiFormat, String apiUrl) {
+        if (blank(apiUrl)) return "";
+        String normalized = apiUrl.replaceAll("/+$", "");
+        if ("ANTHROPIC".equals(apiFormat)) {
+            return normalized.endsWith("/v1/messages") ? normalized : normalized + "/v1/messages";
+        }
+        return normalized.endsWith("/chat/completions") ? normalized : normalized + "/chat/completions";
+    }
     private boolean blank(String v) { return v == null || v.trim().isEmpty(); }
     public static class Config { public boolean enabled; public String apiFormat="OPENAI", apiUrl="", modelName="", apiToken="", encryptedToken="", customPrompt=""; public int timeoutSeconds=60,maxFileMb=10; public boolean visionEnabled; }
 }
