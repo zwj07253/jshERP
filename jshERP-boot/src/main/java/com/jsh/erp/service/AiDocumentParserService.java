@@ -118,10 +118,32 @@ public class AiDocumentParserService {
             try (CloseableHttpResponse response = client.execute(post)) {
                 int status = response.getStatusLine().getStatusCode();
                 String payload = response.getEntity() == null ? "" : EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
-                if (status < 200 || status >= 300) throw new IllegalStateException("AI 服务调用失败（HTTP " + status + "）：" + safe(payload));
+                if (status < 200 || status >= 300) throw apiFailure(status, anthropic, payload);
                 return payload;
             }
         }
+    }
+
+    private IllegalStateException apiFailure(int status, boolean anthropic, String payload) {
+        String protocol = anthropic ? "Anthropic 兼容" : "OpenAI 兼容";
+        String endpoint = anthropic ? "/anthropic/v1/messages" : "/v1/chat/completions";
+        if (status == 404) {
+            return new IllegalStateException("AI 接口地址不存在（HTTP 404）。当前选择的是" + protocol
+                    + "，系统将请求以 " + endpoint + " 结尾的地址；请检查 API 格式和服务商地址。");
+        }
+        if (status == 401 || status == 403) {
+            return new IllegalStateException("AI 认证失败（HTTP " + status + "）。请检查 API Token 是否正确、未过期，并确认该 Token 有权使用当前模型。");
+        }
+        if (status == 400) {
+            return new IllegalStateException("AI 请求不被服务商接受（HTTP 400）。请检查 API 格式、模型名称和该模型是否支持当前请求内容。服务商说明：" + safe(payload));
+        }
+        if (status == 429) {
+            return new IllegalStateException("AI 服务当前限流（HTTP 429）。请稍后重试，或检查 Token 套餐的请求/额度限制。");
+        }
+        if (status >= 500) {
+            return new IllegalStateException("AI 服务端暂时异常（HTTP " + status + "）。请稍后重试；若持续出现，请联系服务商。");
+        }
+        return new IllegalStateException("AI 服务调用失败（HTTP " + status + "）：" + safe(payload));
     }
 
     /** Extract text content from API response according to format. */

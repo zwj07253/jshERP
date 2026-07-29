@@ -105,11 +105,29 @@ public class AiModelConfigService {
      */
     private String normalizeApiUrl(String apiFormat, String apiUrl) {
         if (blank(apiUrl)) return "";
-        String normalized = apiUrl.replaceAll("/+$", "");
+        String normalized = stripProtocolEndpoint(apiUrl.replaceAll("/+$", ""));
         if ("ANTHROPIC".equals(apiFormat)) {
-            return normalized.endsWith("/v1/messages") ? normalized : normalized + "/v1/messages";
+            if (normalized.endsWith("/v1")) normalized = normalized.substring(0, normalized.length() - 3);
+            return normalized + "/anthropic/v1/messages";
         }
-        return normalized.endsWith("/chat/completions") ? normalized : normalized + "/chat/completions";
+        return normalized + "/v1/chat/completions";
+    }
+    /** Remove a previously generated endpoint before switching API protocols. */
+    private String stripProtocolEndpoint(String apiUrl) {
+        String normalized = apiUrl;
+        boolean changed;
+        do {
+            changed = false;
+            String[] suffixes = {"/anthropic/v1/messages", "/v1/chat/completions", "/v1/messages", "/chat/completions", "/anthropic"};
+            for (String suffix : suffixes) {
+                if (normalized.endsWith(suffix)) {
+                    normalized = normalized.substring(0, normalized.length() - suffix.length());
+                    changed = true;
+                    break;
+                }
+            }
+        } while (changed);
+        return normalized.replaceAll("/+$", "");
     }
     private boolean blank(String v) { return v == null || v.trim().isEmpty(); }
     public static class Config { public boolean enabled; public String apiFormat="OPENAI", apiUrl="", modelName="", apiToken="", encryptedToken="", customPrompt=""; public int timeoutSeconds=60,maxFileMb=10; public boolean visionEnabled; }
