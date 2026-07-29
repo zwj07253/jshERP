@@ -1537,3 +1537,19 @@ SELECT setval('jsh_user_business_id_seq', COALESCE((SELECT MAX(id) FROM jsh_user
 -- 完成：更新统计信息
 -- ============================================================
 ANALYZE;
+-- AI 智能导入配置（执行一次）
+CREATE TABLE IF NOT EXISTS jsh_ai_config (
+    id BIGINT PRIMARY KEY,
+    enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    api_url VARCHAR(500),
+    model_name VARCHAR(200),
+    encrypted_token TEXT,
+    timeout_seconds INTEGER NOT NULL DEFAULT 60,
+    max_file_mb INTEGER NOT NULL DEFAULT 10,
+    vision_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    custom_prompt TEXT,
+    updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+INSERT INTO jsh_ai_config (id, enabled, timeout_seconds, max_file_mb, vision_enabled, updated_time)
+SELECT 1, FALSE, 60, 10, FALSE, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM jsh_ai_config WHERE id = 1);

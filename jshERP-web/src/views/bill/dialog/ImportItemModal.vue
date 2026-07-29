@@ -25,6 +25,13 @@
             <a-button type="primary" icon="import">导入</a-button>
           </a-upload>
         </a-form-item>
+        <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="AI 智能识别">
+          <a-upload name="file" :showUploadList="false" :multiple="false" :headers="tokenHeader"
+                    :data="setAiFileData" :action="aiImportUrl" @change="handleAiImport">
+            <a-button type="dashed" icon="robot">上传文件并识别</a-button>
+          </a-upload>
+          <div style="color:#999;margin-top:6px">支持 Excel、CSV、TXT、PDF 和图片，识别后会按条码校验并回填单据。</div>
+        </a-form-item>
       </a-form>
     </a-spin>
   </a-modal>
@@ -58,6 +65,7 @@
         form: this.$form.createForm(this),
         url: {
           importExcelUrl: "/depotItem/importItemExcel",
+          aiImportUrl: "/ai/import/parse",
         }
       }
     },
@@ -66,6 +74,9 @@
     computed: {
       importExcelUrl: function () {
         return `${window._CONFIG['domianURL']}${this.url.importExcelUrl}`;
+      },
+      aiImportUrl: function () {
+        return `${window._CONFIG['domianURL']}${this.url.aiImportUrl}`;
       }
     },
     methods: {
@@ -115,6 +126,24 @@
       setFileData() {
         return {
           'prefixNo': this.prefixNo
+        }
+      },
+      setAiFileData() {
+        return { 'type': 'BILL_ITEM', 'prefixNo': this.prefixNo }
+      },
+      handleAiImport(info) {
+        if (info.file.status === 'done') {
+          const response = info.file.response
+          if (response && response.code === 200) {
+            const rows = response.data && response.data.rows ? response.data.rows : []
+            this.$message.success('AI 识别并校验成功 ' + rows.length + ' 条')
+            this.$emit('ok', rows)
+            this.close()
+          } else {
+            this.$message.warn(response && response.data ? response.data.message : 'AI 识别失败')
+          }
+        } else if (info.file.status === 'error') {
+          this.$message.error('AI 文件识别失败')
         }
       }
     }

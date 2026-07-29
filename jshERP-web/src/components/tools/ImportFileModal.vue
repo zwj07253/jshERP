@@ -30,6 +30,10 @@
               <a-upload name="file" :showUploadList="false" :multiple="false" :headers="tokenHeader" :action="importExcelUrl" @change="handleImportExcel">
                 <a-button type="primary" icon="import">导入</a-button>
               </a-upload>
+              <a-upload name="file" :showUploadList="false" :multiple="false" :headers="tokenHeader" :data="aiFileData" :action="aiImportUrl" @change="handleAiImport" style="margin-left:10px">
+                <a-button type="dashed" icon="robot">AI 智能识别</a-button>
+              </a-upload>
+              <p style="margin:8px 0 0;color:#999">支持 Excel、CSV、TXT、PDF 和图片；识别结果会先校验，再由你确认导入。</p>
             </a-form-item>
           </a-col>
         </a-row>
@@ -40,6 +44,7 @@
 
 <script>
   import { JeecgListMixin } from '@/mixins/JeecgListMixin'
+  import { postAction } from '@/api/manage'
   import {mixinDevice} from '@/utils/mixin'
   export default {
     name: 'ImportFileModal',
@@ -71,6 +76,16 @@
     computed: {
       importExcelUrl: function () {
         return `${window._CONFIG['domianURL']}${this.url.importExcelUrl}`;
+      },
+      aiImportUrl: function () {
+        return `${window._CONFIG['domianURL']}/ai/import/parse`;
+      },
+      aiType: function () {
+        if (this.url.importExcelUrl === '/material/importExcel') return 'MATERIAL'
+        if (this.url.importExcelUrl === '/supplier/importVendor') return 'VENDOR'
+        if (this.url.importExcelUrl === '/supplier/importCustomer') return 'CUSTOMER'
+        if (this.url.importExcelUrl === '/supplier/importMember') return 'MEMBER'
+        return ''
       }
     },
     methods: {
@@ -86,6 +101,34 @@
       },
       handleCancel () {
         this.close()
+      },
+      aiFileData () {
+        return { type: this.aiType }
+      },
+      handleAiImport (info) {
+        if (info.file.status === 'done') {
+          const response = info.file.response
+          if (!response || response.code !== 200) {
+            this.$message.error(response && response.data ? response.data.message : 'AI 识别失败')
+            return
+          }
+          const rows = response.data && response.data.rows ? response.data.rows : []
+          const invalid = rows.filter(row => row.valid === false)
+          if (invalid.length) {
+            this.$message.error('有 ' + invalid.length + ' 条数据缺少必填字段，请补全文件后重试')
+            return
+          }
+          this.$confirm({
+            title: '确认 AI 导入',
+            content: '已识别并初步校验 ' + rows.length + ' 条数据，确认后将写入系统。',
+            onOk: () => postAction('/ai/import/confirm', { type: this.aiType, rows: rows }).then(res => {
+              if (res && res.code === 200) { this.$message.success('导入成功 ' + res.data.count + ' 条'); this.close(); this.$emit('ok') }
+              else this.$message.error(res && res.data ? res.data.message : '导入失败')
+            })
+          })
+        } else if (info.file.status === 'error') {
+          this.$message.error('AI 文件识别失败')
+        }
       }
     }
   }
