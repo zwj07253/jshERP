@@ -330,6 +330,15 @@ public class ExceptionConstants {
     public static final int SUPPLIER_IN_USE_CODE = 7000006;
     public static final String SUPPLIER_IN_USE_MSG = "往来单位已被业务使用，不允许修改或删除";
     public static final String SUPPLIER_EDIT_FAILED_MSG = "修改供应商信息失败";
+    //通用权限不足
+    public static final int PERMISSION_DENIED_CODE = 7000099;
+    public static final String PERMISSION_DENIED_MSG = "当前用户没有该功能的操作权限";
+    //通用参数/状态非法
+    public static final int INVALID_ARGUMENT_CODE = 7000098;
+    public static final String INVALID_ARGUMENT_MSG = "请求参数或状态不合法：%s";
+    //操作过于频繁
+    public static final int RATE_LIMIT_CODE = 7000097;
+    public static final String RATE_LIMIT_MSG = "操作过于频繁，请稍后重试";
     /**
      * 商品类别信息
      * type = 75

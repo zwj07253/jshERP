@@ -468,13 +468,13 @@ public class RoleService {
     }
 
     private BusinessRunTimeException invalidRole(String detail) {
-        return new BusinessRunTimeException(ExceptionConstants.SUPPLIER_INVALID_CODE,
-                String.format(ExceptionConstants.SUPPLIER_INVALID_MSG, detail));
+        return new BusinessRunTimeException(ExceptionConstants.INVALID_ARGUMENT_CODE,
+                String.format(ExceptionConstants.INVALID_ARGUMENT_MSG, detail));
     }
 
     private BusinessRunTimeException permissionDenied() {
-        return new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
-                ExceptionConstants.SUPPLIER_PERMISSION_MSG);
+        return new BusinessRunTimeException(ExceptionConstants.PERMISSION_DENIED_CODE,
+                ExceptionConstants.PERMISSION_DENIED_MSG);
     }
 
     /**

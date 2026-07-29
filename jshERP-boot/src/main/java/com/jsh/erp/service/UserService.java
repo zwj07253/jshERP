@@ -831,8 +831,8 @@ public class UserService {
             boolean localRole = Objects.equals(selectedRole.getTenantId(), currentTenantId);
             boolean tenantTemplateRole = targetIsTenantManager && selectedRole.getTenantId() == null;
             if(!localRole && !tenantTemplateRole) {
-                throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
-                        ExceptionConstants.SUPPLIER_PERMISSION_MSG);
+                throw new BusinessRunTimeException(ExceptionConstants.PERMISSION_DENIED_CODE,
+                        ExceptionConstants.PERMISSION_DENIED_MSG);
             }
         }
         validateAssignableRole(selectedRole, currentUser);
@@ -984,15 +984,15 @@ public class UserService {
     public Role getRoleTypeByUserId(long userId) throws Exception {
         List<UserBusiness> list = userBusinessService.getBasicData(String.valueOf(userId), "UserRole");
         if(list == null || list.isEmpty() || StringUtil.isEmpty(list.get(0).getValue())) {
-            throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
-                    ExceptionConstants.SUPPLIER_PERMISSION_MSG);
+            throw new BusinessRunTimeException(ExceptionConstants.PERMISSION_DENIED_CODE,
+                    ExceptionConstants.PERMISSION_DENIED_MSG);
         }
         String roleId = list.get(0).getValue().replace("[", "").replace("]", "");
         try {
             return roleService.requireActiveRole(Long.parseLong(roleId));
         } catch(NumberFormatException e) {
-            throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
-                    ExceptionConstants.SUPPLIER_PERMISSION_MSG);
+            throw new BusinessRunTimeException(ExceptionConstants.PERMISSION_DENIED_CODE,
+                    ExceptionConstants.PERMISSION_DENIED_MSG);
         }
     }
 
@@ -1092,6 +1092,8 @@ public class UserService {
         }
         return url.startsWith("/system/tenant")
                 || url.startsWith("/system/function")
+                || url.startsWith("/system/role")
+                || url.startsWith("/system/user")
                 || url.startsWith("/system/plugin")
                 || url.startsWith("/system/platform_config")
                 || url.startsWith("/system/dict");
@@ -1172,7 +1174,7 @@ public class UserService {
         String source = Tools.getLocalIp(request);
         String key = "security:rate:" + action + ":" + (source == null ? "unknown" : source);
         if (redisService.incrementWithExpire(key, seconds) > maximum) {
-            throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_INVALID_CODE, "操作过于频繁，请稍后重试");
+            throw new BusinessRunTimeException(ExceptionConstants.RATE_LIMIT_CODE, ExceptionConstants.RATE_LIMIT_MSG);
         }
     }
 
@@ -1243,12 +1245,12 @@ public class UserService {
     }
 
     private BusinessRunTimeException permissionDenied() {
-        return new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
-                ExceptionConstants.SUPPLIER_PERMISSION_MSG);
+        return new BusinessRunTimeException(ExceptionConstants.PERMISSION_DENIED_CODE,
+                ExceptionConstants.PERMISSION_DENIED_MSG);
     }
 
     private BusinessRunTimeException invalidUser(String message) {
-        return new BusinessRunTimeException(ExceptionConstants.SUPPLIER_INVALID_CODE, message);
+        return new BusinessRunTimeException(ExceptionConstants.INVALID_ARGUMENT_CODE, message);
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
