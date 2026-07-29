@@ -40,6 +40,7 @@
 <script>
   import { ACCESS_TOKEN } from '@/store/mutation-types'
   import Vue from 'vue'
+  import { postAction } from '@/api/manage'
 
   export default {
     name: "ImportItemModal",
@@ -136,9 +137,17 @@
           const response = info.file.response
           if (response && response.code === 200) {
             const rows = response.data && response.data.rows ? response.data.rows : []
-            this.$message.success('AI 识别并校验成功 ' + rows.length + ' 条')
-            this.$emit('ok', rows)
-            this.close()
+            this.$confirm({
+              title: '确认 AI 回填',
+              content: '已识别并校验 ' + rows.length + ' 条明细，确认后回填到当前单据（不会直接保存单据）。',
+              onOk: () => postAction('/ai/import/confirm', { type: 'BILL_ITEM', prefixNo: this.prefixNo, taskId: response.data.taskId, rows: rows }).then(res => {
+                if (res && res.code === 200) {
+                  this.$message.success('已回填 ' + res.data.count + ' 条明细')
+                  this.$emit('ok', res.data.rows)
+                  this.close()
+                } else this.$message.error(res && res.data ? res.data.message : 'AI 回填失败')
+              })
+            })
           } else {
             this.$message.warn(response && response.data ? response.data.message : 'AI 识别失败')
           }

@@ -121,7 +121,7 @@
           this.$confirm({
             title: '确认 AI 导入',
             content: '已识别并初步校验 ' + rows.length + ' 条数据，确认后将写入系统。',
-            onOk: () => postAction('/ai/import/confirm', { type: this.aiType, rows: rows }).then(res => {
+            onOk: () => postAction('/ai/import/confirm', { type: this.aiType, prefixNo: '', taskId: response.data.taskId, rows: rows }).then(res => {
               if (res && res.code === 200) { this.$message.success('导入成功 ' + res.data.count + ' 条'); this.close(); this.$emit('ok') }
               else this.$message.error(res && res.data ? res.data.message : '导入失败')
             })

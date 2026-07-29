@@ -1,10 +1,12 @@
 package com.jsh.erp.controller;
 
 import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.base.BaseController;
 import com.jsh.erp.service.AiDocumentParserService;
 import com.jsh.erp.service.AiModelConfigService;
+import com.jsh.erp.service.AiImportTaskService;
 import com.jsh.erp.service.DepotItemService;
 import com.jsh.erp.service.MaterialService;
 import com.jsh.erp.service.SupplierService;
@@ -42,6 +44,7 @@ public class AiImportController extends BaseController {
     @Resource private UserService userService;
     @Resource private SupplierService supplierService;
     @Resource private MaterialService materialService;
+    @Resource private AiImportTaskService taskService;
 
     @PostMapping("/parse")
     public BaseResponseInfo parse(@RequestParam("file") MultipartFile file, @RequestParam("type") String type,
@@ -53,8 +56,9 @@ public class AiImportController extends BaseController {
             JSONObject result=parserService.parse(file,type,configService.getRuntimeConfig());
             Map<String,Object> data=new LinkedHashMap<>();
             data.put("warnings",result.getJSONArray("warnings"));
-            if ("BILL_ITEM".equals(type)) data.put("rows", previewBillItems(result.getJSONArray("rows"),prefixNo));
-            else data.put("rows", previewMasterData(result.getJSONArray("rows"),type));
+            JSONArray rows = "BILL_ITEM".equals(type) ? previewBillItems(result.getJSONArray("rows"),prefixNo).getJSONArray("rows") : JSONArray.parseArray(JSON.toJSONString(previewMasterData(result.getJSONArray("rows"),type)));
+            data.put("rows", rows);
+            data.put("taskId", taskService.create(type, prefixNo, rows, result.getJSONArray("warnings")));
             res.code=200; res.data=data;
         } catch(Exception e) { logger.error("AI import parse failed",e); res.code=500; Map<String,Object> data=new HashMap<>(); data.put("message",e.getMessage()==null?"AI 识别失败":e.getMessage()); res.data=data; }
         return res;
@@ -64,16 +68,26 @@ public class AiImportController extends BaseController {
     public BaseResponseInfo confirm(@org.springframework.web.bind.annotation.RequestBody JSONObject input, HttpServletRequest request) {
         BaseResponseInfo res = new BaseResponseInfo();
         try {
-            String type=input.getString("type"); JSONArray rows=input.getJSONArray("rows");
-            if ("BILL_ITEM".equals(type)) throw new IllegalArgumentException("单据明细请在原单据中保存，不能通过此接口直接写入");
+            String type=input.getString("type"); JSONArray rows=input.getJSONArray("rows"); String prefixNo=input.getString("prefixNo"); if(prefixNo==null) prefixNo="";
+            taskService.require(input.getString("taskId"), type, prefixNo);
             if (!supported(type) || rows==null || rows.isEmpty()) throw new IllegalArgumentException("没有可确认的导入数据");
             if(rows.size()>1000) throw new IllegalArgumentException("单次导入不能超过1000条");
+            String taskId=input.getString("taskId");
+            if(!taskService.lock(taskId)) throw new IllegalStateException("该 AI 导入任务正在处理或已完成，请勿重复提交");
+            try {
+            if ("BILL_ITEM".equals(type)) {
+                JSONObject preview=previewBillItems(rows,prefixNo);
+                Map<String,Object> data=new LinkedHashMap<>(); data.put("count",preview.getJSONArray("rows").size()); data.put("rows",preview.getJSONArray("rows")); res.code=200;res.data=data;return res;
+            }
+            List<Map<String,Object>> checked=previewMasterData(rows,type);
+            for(Map<String,Object> row:checked) if(!Boolean.TRUE.equals(row.get("valid"))) throw new IllegalArgumentException("存在校验失败的数据，请修正后再确认导入");
             MultipartFile file=new BytesFile("ai-import.xls", buildXls(type,rows));
             if("MATERIAL".equals(type)) materialService.importExcel(file,request);
             else if("VENDOR".equals(type)) supplierService.importVendor(file,request);
             else if("CUSTOMER".equals(type)) supplierService.importCustomer(file,request);
             else supplierService.importMember(file,request);
             Map<String,Object> data=new LinkedHashMap<>(); data.put("count",rows.size()); data.put("message","导入成功"); res.code=200;res.data=data;
+            } catch(Exception e) { taskService.unlock(taskId); throw e; }
         } catch(Exception e){logger.error("AI import confirm failed",e);res.code=500;Map<String,Object>d=new HashMap<>();d.put("message",e.getMessage());res.data=d;} return res;
     }
 
@@ -98,5 +112,5 @@ public class AiImportController extends BaseController {
     private String[] keys(String type){if("MATERIAL".equals(type))return new String[]{"name","standard","model","color","brand","categoryName","weight","expiryNum","unit","manyUnit","barCode","manyBarCode","ratio","sku","purchaseDecimal","commodityDecimal","wholesaleDecimal","lowDecimal","enabled","enableSerialNumber","enableBatchNumber","position","mfrs","otherField1","otherField2","otherField3","remark"};if("MEMBER".equals(type))return new String[]{"supplier","contacts","telephone","phoneNum","email","description","sort","enabled"};return new String[]{"supplier","contacts","telephone","phoneNum","email","fax","beginNeed","taxNum","taxRate","bankName","accountNumber","address","description","sort","enabled"};}
     private String value(JSONObject row,String key,String type){Object v=row.get(key);if("beginNeed".equals(key)){v="VENDOR".equals(type)?row.get("beginNeedPay"):row.get("beginNeedGet");if(v==null)v=row.get("beginNeed");}return v==null?"":String.valueOf(v);}
     private static class BytesFile implements MultipartFile { private final String name;private final byte[] bytes;BytesFile(String name,byte[] bytes){this.name=name;this.bytes=bytes;}public String getName(){return "file";}public String getOriginalFilename(){return name;}public String getContentType(){return "application/vnd.ms-excel";}public boolean isEmpty(){return bytes.length==0;}public long getSize(){return bytes.length;}public byte[] getBytes(){return bytes.clone();}public InputStream getInputStream(){return new ByteArrayInputStream(bytes);}public void transferTo(java.io.File dest)throws IOException{java.nio.file.Files.write(dest.toPath(),bytes);} }
-    private boolean supported(String t){return "BILL_ITEM".equals(t)||"MATERIAL".equals(t)||"VENDOR".equals(t)||"CUSTOMER".equals(t)||"MEMBER".equals(t);} private String trim(String v){return v==null?"":v.trim();} private String number(JSONObject row,String key){Object v=row.get(key);return v==null?"":String.valueOf(v).replace(",","").trim();}
+    private boolean supported(String t){return "BILL_ITEM".equals(t)||"MATERIAL".equals(t)||"VENDOR".equals(t)||"CUSTOMER".equals(t)||"MEMBER".equals(t);} private String trim(String v){return v==null?"":v.trim();} private String number(JSONObject row,String key){Object v=row.get(key);if(v==null&&"quantity".equals(key))v=row.get("operNumber");return v==null?"":String.valueOf(v).replace(",","").trim();}
 }
