@@ -114,7 +114,8 @@
       #{enabled,jdbcType=BOOLEAN}, #{sort,jdbcType=VARCHAR}, #{tenantId,jdbcType=BIGINT}, 
       #{deleteFlag,jdbcType=VARCHAR})
   </insert>
-  <insert id="insertSelective" parameterType="com.jsh.erp.datasource.entities.Role">
+  <insert id="insertSelective" parameterType="com.jsh.erp.datasource.entities.Role"
+          useGeneratedKeys="true" keyProperty="id">
     insert into jsh_role
     <trim prefix="(" suffix=")" suffixOverrides=",">
       <if test="id != null">

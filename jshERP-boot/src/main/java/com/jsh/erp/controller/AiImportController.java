@@ -77,6 +77,7 @@ public class AiImportController extends BaseController {
             try {
             if ("BILL_ITEM".equals(type)) {
                 JSONObject preview=previewBillItems(rows,prefixNo);
+                for (Object item : preview.getJSONArray("rows")) { JSONObject row=item instanceof JSONObject?(JSONObject)item:JSONObject.parseObject(JSON.toJSONString(item)); if (!Boolean.TRUE.equals(row.getBoolean("valid"))) throw new IllegalArgumentException("仍存在未修正的错误行，请补充条码或修正数据后再回填"); }
                 Map<String,Object> data=new LinkedHashMap<>(); data.put("count",preview.getJSONArray("rows").size()); data.put("rows",preview.getJSONArray("rows")); res.code=200;res.data=data;return res;
             }
             List<Map<String,Object>> checked=previewMasterData(rows,type);
@@ -95,15 +96,28 @@ public class AiImportController extends BaseController {
         if (source==null||source.isEmpty()) throw new IllegalArgumentException("AI 未识别到任何明细行");
         if (!("QGD".equals(prefixNo)||"CGDD".equals(prefixNo)||"XSDD".equals(prefixNo)||"CGRK".equals(prefixNo)||"XSCK".equals(prefixNo)||"QTRK".equals(prefixNo)||"QTCK".equals(prefixNo))) throw new IllegalArgumentException("当前单据不支持 AI 导入");
         if(source.size()>1000) throw new IllegalArgumentException("明细不能超过1000条");
-        List<String> barCodes=new ArrayList<>(); List<Map<String,String>> details=new ArrayList<>();
-        for(Object item:source){ JSONObject row=item instanceof JSONObject?(JSONObject)item:JSONObject.parseObject(String.valueOf(item)); String code=trim(row.getString("barCode")); if(code.isEmpty()) throw new IllegalArgumentException("存在未识别到条码的明细行，请补全后重试"); Map<String,String> detail=new HashMap<>(); detail.put("barCode",code); detail.put("depotName",trim(row.getString("depotName"))); detail.put("num",number(row,"quantity")); detail.put("unitPrice",number(row,"unitPrice")); detail.put("taxRate",number(row,"taxRate")); detail.put("remark",trim(row.getString("remark"))); details.add(detail);barCodes.add(code); }
-        JSONObject preview=depotItemService.parseMapByExcelData(barCodes,details,prefixNo);
-        if(preview==null) throw new IllegalArgumentException("无法匹配导入的商品条码"); return preview;
+        JSONArray rows=new JSONArray();
+        for(Object item:source){
+            JSONObject row=item instanceof JSONObject?(JSONObject)item:JSONObject.parseObject(JSON.toJSONString(item));
+            String code=trim(row.getString("barCode"));
+            // Excel exports often append a totals row. It has no item identity or quantity and must not become an import line.
+            if (code.isEmpty() && trim(row.getString("name")).isEmpty() && number(row,"quantity").isEmpty()) continue;
+            if(code.isEmpty()) { rows.add(invalidBillRow(row,"未识别到条码，请手动补充系统商品条码")); continue; }
+            try {
+                Map<String,String> detail=new HashMap<>(); detail.put("barCode",code); detail.put("depotName",trim(row.getString("depotName"))); detail.put("num",number(row,"quantity")); detail.put("unitPrice",number(row,"unitPrice")); detail.put("taxRate",number(row,"taxRate")); detail.put("remark",trim(row.getString("remark")));
+                JSONObject preview=depotItemService.parseMapByExcelData(java.util.Collections.singletonList(code),java.util.Collections.singletonList(detail),prefixNo);
+                if(preview==null||preview.getJSONArray("rows").isEmpty()) rows.add(invalidBillRow(row,"未匹配到系统商品，请检查条码"));
+                else { JSONObject valid=preview.getJSONArray("rows").getJSONObject(0); valid.put("valid",true); valid.put("errors",new JSONArray()); rows.add(valid); }
+            } catch(Exception e) { rows.add(invalidBillRow(row,e.getMessage()==null?"商品匹配失败":e.getMessage())); }
+        }
+        JSONObject result=new JSONObject(); result.put("rows",rows); return result;
     }
+
+    private JSONObject invalidBillRow(JSONObject source,String error) { JSONObject row=JSONObject.parseObject(source.toJSONString()); JSONArray errors=new JSONArray();errors.add(error);row.put("errors",errors);row.put("valid",false);return row; }
 
     private List<Map<String,Object>> previewMasterData(JSONArray source,String type){
         List<Map<String,Object>> rows=new ArrayList<>(); if(source==null)return rows;
-        for(Object item:source){ JSONObject row=item instanceof JSONObject?(JSONObject)item:JSONObject.parseObject(String.valueOf(item)); Map<String,Object> copy=new LinkedHashMap<>(); for(String key:row.keySet()) copy.put(key,row.get(key)); List<String> errors=new ArrayList<>(); if("MATERIAL".equals(type)){if(trim(row.getString("name")).isEmpty())errors.add("商品名称不能为空");if(trim(row.getString("unit")).isEmpty())errors.add("基本单位不能为空");if(trim(row.getString("barCode")).isEmpty())errors.add("条码不能为空");}else if(trim(row.getString("supplier")).isEmpty())errors.add("名称不能为空");copy.put("errors",errors);copy.put("valid",errors.isEmpty());rows.add(copy);}
+        for(Object item:source){ JSONObject row=item instanceof JSONObject?(JSONObject)item:JSONObject.parseObject(JSON.toJSONString(item)); Map<String,Object> copy=new LinkedHashMap<>(); for(String key:row.keySet()) copy.put(key,row.get(key)); List<String> errors=new ArrayList<>(); if("MATERIAL".equals(type)){if(trim(row.getString("name")).isEmpty())errors.add("商品名称不能为空");if(trim(row.getString("unit")).isEmpty())errors.add("基本单位不能为空");if(trim(row.getString("barCode")).isEmpty())errors.add("条码不能为空");}else if(trim(row.getString("supplier")).isEmpty())errors.add("名称不能为空");copy.put("errors",errors);copy.put("valid",errors.isEmpty());rows.add(copy);}
         return rows;
     }
     private byte[] buildXls(String type, JSONArray rows) throws Exception {

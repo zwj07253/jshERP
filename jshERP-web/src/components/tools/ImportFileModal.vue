@@ -15,7 +15,7 @@
       <template slot="footer">
         <a-button key="back" @click="handleCancel">取消</a-button>
       </template>
-      <a-spin :spinning="confirmLoading">
+      <a-spin :spinning="confirmLoading" tip="AI 正在识别并校验文件，请勿关闭窗口…">
         <a-row class="form-row" :gutter="24">
           <a-col :md="24" :sm="24">
             <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="第一步：">
@@ -106,7 +106,10 @@
         return { type: this.aiType }
       },
       handleAiImport (info) {
-        if (info.file.status === 'done') {
+        if (info.file.status === 'uploading') {
+          this.confirmLoading = true
+        } else if (info.file.status === 'done') {
+          this.confirmLoading = false
           const response = info.file.response
           if (!response || response.code !== 200) {
             this.$message.error(response && response.data ? response.data.message : 'AI 识别失败')
@@ -127,6 +130,7 @@
             })
           })
         } else if (info.file.status === 'error') {
+          this.confirmLoading = false
           this.$message.error('AI 文件识别失败')
         }
       }
