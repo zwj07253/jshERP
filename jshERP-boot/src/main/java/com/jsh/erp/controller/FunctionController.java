@@ -7,6 +7,7 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.base.BaseController;
 import com.jsh.erp.base.TableDataInfo;
+import com.jsh.erp.constants.BusinessConstants;
 import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.*;
 import com.jsh.erp.service.FunctionService;
@@ -285,6 +286,48 @@ public class FunctionController extends BaseController {
             logger.error(e.getMessage(), e);
         }
         return arr;
+    }
+
+    /**
+     * Menu tree used when maintaining menu definitions. This must not reuse the
+     * role-permission tree: a new menu has no role id yet.
+     */
+    @GetMapping(value = "/tree")
+    @Operation(summary = "菜单树")
+    public JSONArray getFunctionTree(HttpServletRequest request) throws Exception {
+        JSONArray result = new JSONArray();
+        User user = userService.getCurrentUser();
+        if (user == null || !BusinessConstants.DEFAULT_MANAGER.equals(user.getLoginName())) {
+            return result;
+        }
+        JSONObject root = new JSONObject();
+        root.put("id", 0);
+        root.put("key", 0);
+        root.put("value", 0);
+        root.put("title", "功能列表");
+        root.put("attributes", "功能列表");
+        root.put("children", buildFunctionTree("0"));
+        result.add(root);
+        return result;
+    }
+
+    private JSONArray buildFunctionTree(String parentNumber) throws Exception {
+        JSONArray nodes = new JSONArray();
+        List<Function> functions = functionService.findRoleFunction(parentNumber, null);
+        for (Function function : functions) {
+            JSONObject node = new JSONObject();
+            node.put("id", function.getId());
+            node.put("key", function.getId());
+            node.put("value", function.getId());
+            node.put("title", function.getName());
+            node.put("attributes", function.getName());
+            JSONArray children = buildFunctionTree(function.getNumber());
+            if (!children.isEmpty()) {
+                node.put("children", children);
+            }
+            nodes.add(node);
+        }
+        return nodes;
     }
 
     public JSONArray getFunctionList(List<Function> dataList, String type, String keyId, List<Long> funIdList, boolean isAdmin) throws Exception {

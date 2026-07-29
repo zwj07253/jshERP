@@ -94,9 +94,8 @@
         let that = this
         that.treeData = []
         that.roleFunctionTree = []
-        let params = {};
-        params.id='';
-        getAction('/function/findRoleFunction?UBType=RoleFunctions&UBKeyId='+id).then((res) => {
+        that.iExpandedKeys = []
+        getAction('/function/tree').then((res) => {
           if (res) {
             //部门全选后，再添加部门，选中数量增多
             this.allTreeKeys = [];
