@@ -1541,6 +1541,7 @@ ANALYZE;
 CREATE TABLE IF NOT EXISTS jsh_ai_config (
     id BIGINT PRIMARY KEY,
     enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    api_format VARCHAR(20) NOT NULL DEFAULT 'OPENAI',
     api_url VARCHAR(500),
     model_name VARCHAR(200),
     encrypted_token TEXT,

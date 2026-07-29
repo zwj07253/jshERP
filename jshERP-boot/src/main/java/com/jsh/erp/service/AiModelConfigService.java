@@ -32,7 +32,7 @@ public class AiModelConfigService {
         assertAdministrator();
         Config c = load();
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("enabled", c.enabled); result.put("apiUrl", c.apiUrl); result.put("modelName", c.modelName);
+        result.put("enabled", c.enabled); result.put("apiFormat", c.apiFormat); result.put("apiUrl", c.apiUrl); result.put("modelName", c.modelName);
         result.put("timeoutSeconds", c.timeoutSeconds); result.put("maxFileMb", c.maxFileMb);
         result.put("visionEnabled", c.visionEnabled); result.put("customPrompt", c.customPrompt);
         result.put("apiTokenConfigured", !blank(c.encryptedToken));
@@ -46,6 +46,8 @@ public class AiModelConfigService {
         String token = input.getString("apiToken");
         String encrypted = blank(token) ? old.encryptedToken : encrypt(token.trim());
         boolean enabled = Boolean.TRUE.equals(input.getBoolean("enabled"));
+        String apiFormat = trim(input.getString("apiFormat")).toUpperCase();
+        if (!"OPENAI".equals(apiFormat) && !"ANTHROPIC".equals(apiFormat)) apiFormat = "OPENAI";
         String apiUrl = trim(input.getString("apiUrl"));
         String modelName = trim(input.getString("modelName"));
         int timeout = range(input.getInteger("timeoutSeconds"), 15, 180, 60);
@@ -56,8 +58,8 @@ public class AiModelConfigService {
         if (enabled && (blank(apiUrl) || blank(modelName) || blank(encrypted))) {
             throw new IllegalArgumentException("启用 AI 导入前，请填写 API 地址、模型名称和 API Token");
         }
-        int updated = jdbcTemplate.update("update jsh_ai_config set enabled=?,api_url=?,model_name=?,encrypted_token=?,timeout_seconds=?,max_file_mb=?,vision_enabled=?,custom_prompt=?,updated_time=current_timestamp where id=1", enabled, apiUrl, modelName, encrypted, timeout, maxFileMb, vision, prompt);
-        if (updated == 0) jdbcTemplate.update("insert into jsh_ai_config(id,enabled,api_url,model_name,encrypted_token,timeout_seconds,max_file_mb,vision_enabled,custom_prompt,updated_time) values(1,?,?,?,?,?,?,?,?,current_timestamp)", enabled, apiUrl, modelName, encrypted, timeout, maxFileMb, vision, prompt);
+        int updated = jdbcTemplate.update("update jsh_ai_config set enabled=?,api_format=?,api_url=?,model_name=?,encrypted_token=?,timeout_seconds=?,max_file_mb=?,vision_enabled=?,custom_prompt=?,updated_time=current_timestamp where id=1", enabled, apiFormat, apiUrl, modelName, encrypted, timeout, maxFileMb, vision, prompt);
+        if (updated == 0) jdbcTemplate.update("insert into jsh_ai_config(id,enabled,api_format,api_url,model_name,encrypted_token,timeout_seconds,max_file_mb,vision_enabled,custom_prompt,updated_time) values(1,?,?,?,?,?,?,?,?,?,current_timestamp)", enabled, apiFormat, apiUrl, modelName, encrypted, timeout, maxFileMb, vision, prompt);
         return getMaskedConfig();
     }
 
@@ -81,9 +83,9 @@ public class AiModelConfigService {
 
     private Config load() {
         try {
-            List<Map<String,Object>> rows = jdbcTemplate.queryForList("select enabled,api_url,model_name,encrypted_token,timeout_seconds,max_file_mb,vision_enabled,custom_prompt from jsh_ai_config where id=1");
+            List<Map<String,Object>> rows = jdbcTemplate.queryForList("select enabled,api_format,api_url,model_name,encrypted_token,timeout_seconds,max_file_mb,vision_enabled,custom_prompt from jsh_ai_config where id=1");
             if (rows.isEmpty()) return new Config(); Map<String,Object> r = rows.get(0); Config c = new Config();
-            c.enabled = bool(r.get("enabled")); c.apiUrl = str(r.get("api_url")); c.modelName = str(r.get("model_name")); c.encryptedToken = str(r.get("encrypted_token"));
+            c.enabled = bool(r.get("enabled")); c.apiFormat = str(r.get("api_format")); if (blank(c.apiFormat)) c.apiFormat = "OPENAI"; c.apiUrl = str(r.get("api_url")); c.modelName = str(r.get("model_name")); c.encryptedToken = str(r.get("encrypted_token"));
             c.timeoutSeconds = integer(r.get("timeout_seconds"), 60); c.maxFileMb = integer(r.get("max_file_mb"), 10); c.visionEnabled = bool(r.get("vision_enabled")); c.customPrompt = str(r.get("custom_prompt")); return c;
         } catch (Exception e) { throw new IllegalStateException("AI 配置表不存在，请执行 docs/ai_import.sql", e); }
     }
@@ -96,5 +98,5 @@ public class AiModelConfigService {
     private String str(Object v) { return v == null ? "" : String.valueOf(v); }
     private String trim(String v) { return v == null ? "" : v.trim(); }
     private boolean blank(String v) { return v == null || v.trim().isEmpty(); }
-    public static class Config { public boolean enabled; public String apiUrl="", modelName="", apiToken="", encryptedToken="", customPrompt=""; public int timeoutSeconds=60,maxFileMb=10; public boolean visionEnabled; }
+    public static class Config { public boolean enabled; public String apiFormat="OPENAI", apiUrl="", modelName="", apiToken="", encryptedToken="", customPrompt=""; public int timeoutSeconds=60,maxFileMb=10; public boolean visionEnabled; }
 }
