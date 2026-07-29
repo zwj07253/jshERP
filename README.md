@@ -66,6 +66,37 @@ Compose 可通过根目录 `.env` 覆盖端口、数据库用户和密码。默�
 
 > `jsh_erp_pg.sql` 会先删除并重建表，仅用于新库初始化。已有业务库升级时不要直接执行该文件；应按版本逐项执行新增表/字段迁移，并先完成备份。
 
+## 自动备份与恢复
+
+Docker Compose 会启动独立的 `backup` 服务。默认按 `Asia/Shanghai` 时区每天 `02:30` 执行一次全量逻辑备份，并保留最近 30 天的备份目录。
+
+- 数据库：`pg_dump` 自定义格式，文件为 `database.dump`；
+- 文件：上传附件和已安装插件，文件为 `files.tar.gz`；
+- 校验：每份备份都有 `SHA256SUMS` 和 `MANIFEST.txt`；
+- 位置：项目根目录 `backups/<YYYYMMDD_HHMMSS>/`。该目录不提交到 Git，应定期复制到另一块磁盘、NAS 或对象存储。
+
+可在根目录 `.env` 中调整：
+
+```dotenv
+BACKUP_TIME=02:30
+BACKUP_RETENTION_DAYS=30
+TZ=Asia/Shanghai
+```
+
+需要立刻创建一份备份时执行：
+
+```bash
+docker compose run --rm backup /usr/local/bin/backup.sh
+```
+
+恢复前必须先停止业务写入并确认目标数据库允许被覆盖。数据库归档可用以下命令恢复（将目录名替换为实际备份目录）：
+
+```bash
+docker compose run --rm backup sh -c 'pg_restore --host=postgres --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --clean --if-exists /backup/20260101_023000/database.dump'
+```
+
+附件和插件恢复应在停止 `app` 服务后进行，并以同一份备份中的 `files.tar.gz` 覆盖对应 Docker 数据卷；恢复完成后再启动 `app`。建议至少每月在非生产环境做一次完整恢复演练。
+
 ## 本地开发
 
 ### 1. 准备依赖

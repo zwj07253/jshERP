@@ -12,6 +12,11 @@
 
 ## env
 .env
+
+## local backup archives
+/backups/*
+!/backups/.gitkeep
+
 docs/
 !jshERP-boot/docs/
 jshERP-boot/docs/*

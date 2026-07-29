@@ -73,6 +73,29 @@ services:
       - app
     restart: unless-stopped
 
+  backup:
+    build:
+      context: ./docker/backup
+      dockerfile: Dockerfile
+    container_name: jsherp-backup
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: jsh_erp
+      POSTGRES_USER: ${DB_USER:-postgres}
+      PGPASSWORD: ${DB_PASSWORD:-Postgres@123}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+      BACKUP_TIME: ${BACKUP_TIME:-02:30}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      # The host directory makes backup archives easy to copy off this machine.
+      - ./backups:/backup
+      - upload_data:/source/upload:ro
+      - plugin_data:/source/plugins:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   pgdata:
   redisdata:
