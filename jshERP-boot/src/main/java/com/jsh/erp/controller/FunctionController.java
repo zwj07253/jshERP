@@ -247,13 +247,16 @@ public class FunctionController extends BaseController {
      */
     @GetMapping(value = "/findRoleFunction")
     @Operation(summary = "角色对应功能显示")
-    public JSONArray findRoleFunction(@RequestParam("UBType") String type, @RequestParam("UBKeyId") String keyId,
+    public JSONArray findRoleFunction(@RequestParam("UBType") String type,
+                                      @RequestParam(value = "UBKeyId", required = false, defaultValue = "") String keyId,
                                  HttpServletRequest request)throws Exception {
         roleService.checkReadPermission();
         if(!"RoleFunctions".equals(type)) {
             return new JSONArray();
         }
-        roleService.requireManagedRole(Long.valueOf(keyId));
+        if(keyId != null && !keyId.trim().isEmpty()) {
+            roleService.requireManagedRole(Long.valueOf(keyId));
+        }
         JSONArray arr = new JSONArray();
         try {
             User userInfo = userService.getCurrentUser();
