@@ -455,11 +455,8 @@ public class UserController extends BaseController {
         try {
             Map<String, Object> data = new HashMap<>();
             Long userId = userService.getUserId(request);
-            String loginName = userService.getUser(userId).getLoginName();
             JSONArray btnStrArr = userService.getBtnStrArrById(userId);
-            if(!"admin".equals(loginName)) {
-                data.put("userBtn", btnStrArr);
-            }
+            data.put("userBtn", btnStrArr);
             res.code = 200;
             res.data = data;
         } catch(Exception e){
