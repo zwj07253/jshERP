@@ -88,7 +88,7 @@
               <a-row>
                 <a-col>
                   <a href="/">
-                    <span class="title">{{systemTitle}}</span>
+                    <span class="title ignore">{{systemTitle}}</span>
                     <small class="desc">V1.0</small>
                   </a>
                 </a-col>
