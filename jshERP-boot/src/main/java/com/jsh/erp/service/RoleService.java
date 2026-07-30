@@ -1,9 +1,11 @@
 package com.jsh.erp.service;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.JSONArray;
 import com.jsh.erp.constants.BusinessConstants;
 import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.*;
+import com.jsh.erp.datasource.mappers.FunctionMapper;
 import com.jsh.erp.datasource.mappers.RoleMapper;
 import com.jsh.erp.datasource.mappers.RoleMapperEx;
 import com.jsh.erp.datasource.mappers.UserBusinessMapper;
@@ -27,7 +29,11 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,6 +53,8 @@ public class RoleService {
 
     @Resource
     private UserBusinessMapper userBusinessMapper;
+    @Resource
+    private FunctionMapper functionMapper;
 
     //超管的专用角色
     private static final Long MANAGE_ROLE_ID = 4L;
@@ -601,6 +609,7 @@ public class RoleService {
                     "模板角色(ID=" + templateRoleId + ")没有菜单权限配置(RoleFunctions)，无法创建租户角色");
         }
         UserBusiness templateRF = templateRFList.get(0);
+        TemplateRoleFunctions resolvedFunctions = resolveTemplateRoleFunctions(templateRF);
         // 创建新角色（复制模板属性，绑定到新租户）
         Role newRole = new Role();
         newRole.setName(template.getName());
@@ -618,11 +627,82 @@ public class RoleService {
         UserBusiness newRF = new UserBusiness();
         newRF.setType("RoleFunctions");
         newRF.setKeyId(newRoleId.toString());
-        newRF.setValue(templateRF.getValue());
-        newRF.setBtnStr(templateRF.getBtnStr());
+        newRF.setValue(resolvedFunctions.value);
+        newRF.setBtnStr(resolvedFunctions.btnStr);
         newRF.setTenantId(tenantId);
         newRF.setDeleteFlag(BusinessConstants.DELETE_FLAG_EXISTS);
         userBusinessMapper.insertSelective(newRF);
         return newRoleId;
+    }
+
+    /**
+     * 模板角色可以用菜单编号保存权限，例如 [n:0001][n:010101]。
+     * 创建租户时再按当前数据库中的菜单编号解析为菜单主键，避免初始化脚本依赖菜单 ID。
+     */
+    private TemplateRoleFunctions resolveTemplateRoleFunctions(UserBusiness templateRF) {
+        String value = templateRF.getValue();
+        if (value == null || !value.contains("[n:")) {
+            return new TemplateRoleFunctions(value, templateRF.getBtnStr());
+        }
+        Matcher matcher = TEMPLATE_NUMBER_PATTERN.matcher(value);
+        List<String> numbers = new ArrayList<>();
+        while (matcher.find()) {
+            numbers.add(matcher.group(1));
+        }
+        if (numbers.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADD_FAILED_CODE,
+                    "模板角色菜单编号配置不能为空");
+        }
+        FunctionExample example = new FunctionExample();
+        example.createCriteria().andNumberIn(numbers)
+                .andEnabledEqualTo(true)
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        Map<String, Function> functionsByNumber = new LinkedHashMap<>();
+        for (Function function : functionMapper.selectByExample(example)) {
+            functionsByNumber.put(function.getNumber(), function);
+        }
+        if (functionsByNumber.size() != numbers.size()) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADD_FAILED_CODE,
+                    "模板角色包含不存在、已停用或已删除的菜单编号");
+        }
+        StringBuilder resolvedValue = new StringBuilder();
+        Map<String, Long> idsByNumber = new LinkedHashMap<>();
+        for (String number : numbers) {
+            Function function = functionsByNumber.get(number);
+            resolvedValue.append('[').append(function.getId()).append(']');
+            idsByNumber.put(number, function.getId());
+        }
+        return new TemplateRoleFunctions(resolvedValue.toString(),
+                resolveTemplateButtonPermissions(templateRF.getBtnStr(), idsByNumber));
+    }
+
+    private String resolveTemplateButtonPermissions(String btnStr, Map<String, Long> idsByNumber) {
+        if (StringUtil.isEmpty(btnStr) || !btnStr.contains("funNumber")) {
+            return btnStr;
+        }
+        JSONArray resolved = new JSONArray();
+        for (Object item : JSONArray.parseArray(btnStr)) {
+            JSONObject button = (JSONObject) item;
+            Long functionId = idsByNumber.get(button.getString("funNumber"));
+            if (functionId != null) {
+                JSONObject resolvedButton = new JSONObject();
+                resolvedButton.put("funId", functionId);
+                resolvedButton.put("btnStr", button.getString("btnStr"));
+                resolved.add(resolvedButton);
+            }
+        }
+        return resolved.toJSONString();
+    }
+
+    private static final Pattern TEMPLATE_NUMBER_PATTERN = Pattern.compile("\\[n:([^\\]]+)]");
+
+    private static class TemplateRoleFunctions {
+        private final String value;
+        private final String btnStr;
+
+        private TemplateRoleFunctions(String value, String btnStr) {
+            this.value = value;
+            this.btnStr = btnStr;
+        }
     }
 }

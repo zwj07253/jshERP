@@ -135,6 +135,7 @@ ON CONFLICT (COALESCE(tenant_id, 0), type, key_id) WHERE COALESCE(delete_flag, '
 DO UPDATE SET value = EXCLUDED.value, btn_str = EXCLUDED.btn_str, delete_flag = EXCLUDED.delete_flag;
 
 -- 租户管理员模板（角色 10）- 菜单权限：与角色 1 相同的租户业务功能（全局模板，tenant_id=NULL）
+-- 注意：下面先 INSERT ID 格式确保行存在，紧接着的 CTE UPDATE 会将其转为编号格式 [n:xxxx]。
 INSERT INTO jsh_user_business (type, key_id, value, btn_str, tenant_id, delete_flag)
 VALUES
     ('RoleFunctions', '10',
@@ -143,6 +144,53 @@ VALUES
      NULL, '0')
 ON CONFLICT (COALESCE(tenant_id, 0), type, key_id) WHERE COALESCE(delete_flag, '0') != '1'
 DO UPDATE SET value = EXCLUDED.value, btn_str = EXCLUDED.btn_str, delete_flag = EXCLUDED.delete_flag;
+
+-- The global new-tenant role template uses stable menu numbers instead of menu IDs.
+-- RoleService resolves these n: tokens to the current jsh_function IDs when a tenant is created.
+-- The DO block validates that every configured number resolves to an active menu before writing.
+DO $$
+DECLARE
+    expected_numbers varchar[] := ARRAY[
+        '0001', '000102', '000103', '000104', '0101', '010101', '010102', '0102',
+        '01020101', '010202', '010206', '0502', '050201', '0603', '080107', '060303',
+        '0704', '030101', '010204', '010205', '070402', '0301', '050204', '060305',
+        '080103', '080105', '070403', '070404', '070405', '070406', '030102', '030103',
+        '030104', '040102', '040104', '070407', '01020102', '01020103', '010103',
+        '0401', '030106', '030107', '030108', '030109', '080109', '080111', '000105',
+        '030110', '000106', '030111', '0801', '050202', '060301', '000108', '030112',
+        '030113', '010105', '030150', '030105', '050203'
+    ];
+    resolved_count int;
+    missing_numbers text;
+BEGIN
+    -- Check for numbers that don't resolve to active, non-deleted menus
+    SELECT string_agg(n.number, ', ' ORDER BY n.number), COUNT(*)
+    INTO missing_numbers, resolved_count
+    FROM unnest(expected_numbers) AS n(number)
+    LEFT JOIN jsh_function f ON f.number = n.number
+                             AND f.enabled = TRUE
+                             AND f.delete_flag = '0'
+    WHERE f.id IS NULL;
+
+    IF resolved_count > 0 THEN
+        RAISE EXCEPTION '模板菜单编号不存在或已禁用/删除（共 % 项: %），初始化终止', resolved_count, missing_numbers;
+    END IF;
+
+    -- All numbers validated — write the number-based template
+    WITH resolved_menus AS (
+        SELECT f.number, f.push_btn, menu.ordinality
+        FROM unnest(expected_numbers) WITH ORDINALITY AS menu(number, ordinality)
+        JOIN jsh_function f ON f.number = menu.number
+        WHERE f.enabled = TRUE AND f.delete_flag = '0'
+    )
+    UPDATE jsh_user_business ub
+    SET value = (SELECT string_agg('[n:' || number || ']', '' ORDER BY ordinality) FROM resolved_menus),
+        btn_str = (SELECT jsonb_agg(jsonb_build_object('funNumber', number, 'btnStr', push_btn)
+                                    ORDER BY ordinality)::text
+                   FROM resolved_menus
+                   WHERE COALESCE(push_btn, '') <> '')
+    WHERE ub.type = 'RoleFunctions' AND ub.key_id = '10' AND ub.tenant_id IS NULL;
+END $$;
 
 -- ========================================
 -- 租户系统配置表 jsh_system_config

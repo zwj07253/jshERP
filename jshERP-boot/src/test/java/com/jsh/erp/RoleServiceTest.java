@@ -4,8 +4,12 @@ import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.constants.BusinessConstants;
 import com.jsh.erp.datasource.entities.Role;
 import com.jsh.erp.datasource.entities.User;
+import com.jsh.erp.datasource.entities.UserBusiness;
+import com.jsh.erp.datasource.entities.Function;
+import com.jsh.erp.datasource.mappers.FunctionMapper;
 import com.jsh.erp.datasource.mappers.RoleMapper;
 import com.jsh.erp.datasource.mappers.RoleMapperEx;
+import com.jsh.erp.datasource.mappers.UserBusinessMapper;
 import com.jsh.erp.datasource.mappers.UserBusinessMapperEx;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.service.LogService;
@@ -30,6 +34,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doAnswer;
 
 @ExtendWith(MockitoExtension.class)
 class RoleServiceTest {
@@ -37,6 +42,8 @@ class RoleServiceTest {
     @Mock private RoleMapper roleMapper;
     @Mock private RoleMapperEx roleMapperEx;
     @Mock private UserBusinessMapperEx userBusinessMapperEx;
+    @Mock private UserBusinessMapper userBusinessMapper;
+    @Mock private FunctionMapper functionMapper;
     @Mock private LogService logService;
     @Mock private UserService userService;
 
@@ -114,6 +121,32 @@ class RoleServiceTest {
         verify(roleMapper, never()).selectByExample(any());
     }
 
+    @Test
+    void copiesNumberBasedTemplatePermissionsUsingCurrentMenuIds() throws Exception {
+        Role template = activeRole(10L);
+        template.setTenantId(null);
+        UserBusiness templateFunctions = new UserBusiness();
+        templateFunctions.setValue("[n:0001][n:010101]");
+        templateFunctions.setBtnStr("[{\"funNumber\":\"010101\",\"btnStr\":\"1,3\"}]");
+        Function root = function(101L, "0001");
+        Function page = function(305L, "010101");
+        when(roleMapper.selectByPrimaryKey(10L)).thenReturn(template);
+        when(userBusinessMapperEx.getBasicDataByKeyIdAndType("10", "RoleFunctions"))
+                .thenReturn(Collections.singletonList(templateFunctions));
+        when(functionMapper.selectByExample(any())).thenReturn(java.util.Arrays.asList(root, page));
+        doAnswer(invocation -> {
+            ((Role) invocation.getArgument(0)).setId(88L);
+            return 1;
+        }).when(roleMapper).insertSelective(any());
+
+        roleService.copyTemplateRoleForTenant(10, 20L);
+
+        ArgumentCaptor<UserBusiness> captor = ArgumentCaptor.forClass(UserBusiness.class);
+        verify(userBusinessMapper).insertSelective(captor.capture());
+        assertEquals("[101][305]", captor.getValue().getValue());
+        assertEquals("[{\"funId\":305,\"btnStr\":\"1,3\"}]", captor.getValue().getBtnStr());
+    }
+
     private void stubCurrentUser(boolean canEdit) throws Exception {
         User user = new User();
         user.setId(101L);
@@ -139,5 +172,14 @@ class RoleServiceTest {
         role.setEnabled(true);
         role.setDeleteFlag(BusinessConstants.DELETE_FLAG_EXISTS);
         return role;
+    }
+
+    private Function function(Long id, String number) {
+        Function function = new Function();
+        function.setId(id);
+        function.setNumber(number);
+        function.setEnabled(true);
+        function.setDeleteFlag(BusinessConstants.DELETE_FLAG_EXISTS);
+        return function;
     }
 }
