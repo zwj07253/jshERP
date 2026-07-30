@@ -323,8 +323,12 @@
             }
             this.requestFailed(err)
             this.Logout();
-          } else if(res.data.msgTip === 'tenant is expire'){
+          } else if(res.data.msgTip === 'trial tenant is expire' || res.data.msgTip === 'tenant is expire'){
             err.message = '试用期已结束，请联系客服续费';
+            this.requestFailed(err)
+            this.Logout();
+          } else if(res.data.msgTip === 'paid tenant is expire'){
+            err.message = '服务已到期，请联系客服续费';
             this.requestFailed(err)
             this.Logout();
           } else if(res.data.msgTip === 'access service error'){

@@ -373,7 +373,11 @@ public class UserService {
                 msgTip = "tenant is black";
                 break;
             case ExceptionCodeConstants.UserExceptionCode.EXPIRE_TENANT:
-                msgTip = "tenant is expire";
+                User expiredUser = getUserByLoginName(loginName);
+                Tenant expiredTenant = expiredUser == null ? null
+                        : tenantService.getTenantByTenantId(expiredUser.getTenantId());
+                msgTip = expiredTenant != null && "1".equals(expiredTenant.getType())
+                        ? "paid tenant is expire" : "trial tenant is expire";
                 break;
             case ExceptionCodeConstants.UserExceptionCode.USER_CONDITION_FIT:
                 msgTip = "user can login";
