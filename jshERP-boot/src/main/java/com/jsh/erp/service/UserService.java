@@ -696,6 +696,8 @@ public class UserService {
             updateUserTenant(user);
             //从模板角色复制一个新角色给新租户
             Long newRoleId = roleService.copyTemplateRoleForTenant(manageRoleId, ue.getId());
+            //创建采购、销售、仓管、财务和查看等默认业务角色
+            roleService.createDefaultRolesForTenant(ue.getId());
             //新增用户与角色的关系（使用内部方法，跳过平台管理员写入守卫）
             UserBusiness ub = new UserBusiness();
             ub.setType("UserRole");

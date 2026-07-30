@@ -635,6 +635,83 @@ public class RoleService {
         return newRoleId;
     }
 
+    /** 创建新租户预置的业务角色，所有角色均使用全部数据范围。 */
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
+    public void createDefaultRolesForTenant(Long tenantId) {
+        createDefaultRole(tenantId, "采购员", "2,3,5,6,7", false,
+                "0101", "010101", "010102", "010103", "010105", "0102", "01020101",
+                "0502", "050201", "050202", "050203", "050204", "0301", "030101", "030113");
+        createDefaultRole(tenantId, "销售员", "1,4,7", false,
+                "0101", "010101", "010102", "010103", "010105", "0102", "01020102",
+                "0603", "060301", "060303", "060305", "0301", "030101", "030113");
+        createDefaultRole(tenantId, "仓管员", "1,2,3,4,5,6", false,
+                "0101", "010101", "010102", "010103", "010105", "0801", "080103", "080105",
+                "080107", "080109", "080111", "0301", "030101", "030113");
+        createDefaultRole(tenantId, "财务人员", null, false,
+                "0704", "070402", "070403", "070404", "070405", "070406", "070407",
+                "0301", "030110", "030111");
+        createDefaultRole(tenantId, "查看者", "1,2,3,4,5,6,7", true,
+                "0101", "010101", "010102", "010103", "010105", "0102", "01020101", "01020102",
+                "01020103", "010202", "010204", "010205", "010206", "0301", "030101", "030102",
+                "030103", "030104", "030105", "030106", "030107", "030108", "030109", "030110",
+                "030111", "030112", "030113", "030150", "0401", "040102", "040104", "0502", "050201",
+                "050202", "050203", "050204", "0603", "060301", "060303", "060305", "0704", "070402",
+                "070403", "070404", "070405", "070406", "070407", "0801", "080103", "080105", "080107",
+                "080109", "080111");
+    }
+
+    private void createDefaultRole(Long tenantId, String name, String priceLimit, boolean readOnly,
+                                   String... menuNumbers) {
+        List<String> numbers = Arrays.asList(menuNumbers);
+        Map<String, Function> functionsByNumber = findActiveFunctionsByNumber(numbers);
+        Role role = new Role();
+        role.setName(name);
+        role.setType(BusinessConstants.ROLE_TYPE_PUBLIC);
+        role.setPriceLimit(priceLimit);
+        role.setEnabled(true);
+        role.setSort("0");
+        role.setTenantId(tenantId);
+        role.setDeleteFlag(BusinessConstants.DELETE_FLAG_EXISTS);
+        roleMapper.insertSelective(role);
+
+        UserBusiness permissions = new UserBusiness();
+        permissions.setType("RoleFunctions");
+        permissions.setKeyId(role.getId().toString());
+        StringBuilder value = new StringBuilder();
+        JSONArray buttons = new JSONArray();
+        for (String number : numbers) {
+            Function function = functionsByNumber.get(number);
+            value.append('[').append(function.getId()).append(']');
+            if (!readOnly && StringUtil.isNotEmpty(function.getPushBtn())) {
+                JSONObject button = new JSONObject();
+                button.put("funId", function.getId());
+                button.put("btnStr", function.getPushBtn());
+                buttons.add(button);
+            }
+        }
+        permissions.setValue(value.toString());
+        permissions.setBtnStr(readOnly ? null : buttons.toJSONString());
+        permissions.setTenantId(tenantId);
+        permissions.setDeleteFlag(BusinessConstants.DELETE_FLAG_EXISTS);
+        userBusinessMapper.insertSelective(permissions);
+    }
+
+    private Map<String, Function> findActiveFunctionsByNumber(List<String> numbers) {
+        FunctionExample example = new FunctionExample();
+        example.createCriteria().andNumberIn(numbers)
+                .andEnabledEqualTo(true)
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        Map<String, Function> functionsByNumber = new LinkedHashMap<>();
+        for (Function function : functionMapper.selectByExample(example)) {
+            functionsByNumber.put(function.getNumber(), function);
+        }
+        if (functionsByNumber.size() != numbers.size()) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADD_FAILED_CODE,
+                    "默认角色包含不存在、已停用或已删除的菜单编号");
+        }
+        return functionsByNumber;
+    }
+
     /**
      * 模板角色可以用菜单编号保存权限，例如 [n:0001][n:010101]。
      * 创建租户时再按当前数据库中的菜单编号解析为菜单主键，避免初始化脚本依赖菜单 ID。
@@ -653,18 +730,7 @@ public class RoleService {
             throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADD_FAILED_CODE,
                     "模板角色菜单编号配置不能为空");
         }
-        FunctionExample example = new FunctionExample();
-        example.createCriteria().andNumberIn(numbers)
-                .andEnabledEqualTo(true)
-                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
-        Map<String, Function> functionsByNumber = new LinkedHashMap<>();
-        for (Function function : functionMapper.selectByExample(example)) {
-            functionsByNumber.put(function.getNumber(), function);
-        }
-        if (functionsByNumber.size() != numbers.size()) {
-            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADD_FAILED_CODE,
-                    "模板角色包含不存在、已停用或已删除的菜单编号");
-        }
+        Map<String, Function> functionsByNumber = findActiveFunctionsByNumber(numbers);
         StringBuilder resolvedValue = new StringBuilder();
         Map<String, Long> idsByNumber = new LinkedHashMap<>();
         for (String number : numbers) {
