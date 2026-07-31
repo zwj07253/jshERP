@@ -12,26 +12,26 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:15%;height: 60%;">
       <a-spin :spinning="confirmLoading">
         <a-form :form="form">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="字典名称">
-            <a-input placeholder="请输入字典名称" v-decorator.trim="[ 'dictName', validatorRules.dictName]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.dictNameLabel')">
+            <a-input :placeholder="$t('system.enterDictName')" v-decorator.trim="[ 'dictName', validatorRules.dictName]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="字典类型">
-            <a-input placeholder="请输入字典类型" v-decorator.trim="[ 'dictType', validatorRules.dictType]" :disabled="!!model.dictId" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.dictTypeLabel')">
+            <a-input :placeholder="$t('system.enterDictType')" v-decorator.trim="[ 'dictType', validatorRules.dictType]" :disabled="!!model.dictId" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="状态">
-            <a-select style="width:100%" placeholder="请选择状态" v-decorator.trim="[ 'status' ]">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.status')">
+            <a-select style="width:100%" :placeholder="$t('common.selectStatus')" v-decorator.trim="[ 'status' ]">
               <a-select-option v-for="dict in dict.type.sys_normal_disable" :key="dict.value" :value="dict.value">
                 {{ dict.label }}
               </a-select-option>
             </a-select>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="备注">
-            <a-textarea :rows="2" placeholder="请输入备注" v-decorator.trim="[ 'remark' ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.remark')">
+            <a-textarea :rows="2" :placeholder="$t('common.enterRemark')" v-decorator.trim="[ 'remark' ]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -48,7 +48,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         model: {},
         labelCol: {
@@ -64,12 +64,12 @@
         validatorRules:{
           dictName:{
             rules: [
-              { required: true, message: '请输入字典名称!' }
+              { required: true, message: this.$t('system.dictNameRequired') }
             ]
           },
           dictType:{
             rules: [
-              { required: true, message: '请输入字典类型!' }
+              { required: true, message: this.$t('system.dictTypeRequired') }
             ]
           }
         },

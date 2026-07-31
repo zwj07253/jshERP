@@ -4,7 +4,7 @@
       <slot name="left">
         <a-select
           mode="multiple"
-          :placeholder="placeholder"
+          :placeholder="placeholder || $t('common.pleaseSelect')"
           v-model="selectValue"
           :options="selectOptions"
           allowClear
@@ -18,7 +18,7 @@
     </a-col>
 
     <a-col v-if="buttons" class="right">
-      <a-button type="primary" icon="search" :disabled="disabled" @click="visible=true">{{selectButtonText}}</a-button>
+      <a-button type="primary" icon="search" :disabled="disabled" @click="visible=true">{{selectButtonText || $t('common.select')}}</a-button>
     </a-col>
 
     <j-select-biz-component-modal
@@ -48,7 +48,7 @@
       },
       placeholder: {
         type: String,
-        default: '请选择'
+        default: ''
       },
       disabled: {
         type: Boolean,
@@ -77,7 +77,7 @@
       // 选择按钮文字
       selectButtonText: {
         type: String,
-        default: '选择'
+        default: ''
       },
 
     },

@@ -78,14 +78,14 @@ export const FinancialListMixin = {
           }
         })
       } else {
-        this.$message.warning("抱歉，只有未审核的单据才能编辑，请先进行反审核！")
+        this.$message.warning(this.$t('common.onlyPendingCanEdit'))
       }
     },
     myHandleDelete(record) {
       if(record.status === '0') {
         this.handleDelete(record.id)
       } else {
-        this.$message.warning("抱歉，只有未审核的单据才能删除，请先进行反审核！")
+        this.$message.warning(this.$t('common.onlyPendingCanDelete'))
       }
     },
     myHandleDetail(record, type, prefixNo) {
@@ -97,7 +97,7 @@ export const FinancialListMixin = {
     handleApprove(record) {
       this.$refs.modalForm.action = "approve";
       this.$refs.modalForm.edit(record);
-      this.$refs.modalForm.title = "审核";
+      this.$refs.modalForm.title = this.$t('common.audit');
     },
     searchReset() {
       this.queryParam = {
@@ -258,7 +258,7 @@ export const FinancialListMixin = {
     handleExport() {
       let search = this.getQueryParams().search
       this.$refs.billExcelIframe.show(this.model, this.billExcelUrl + '?search=' + search + '&type=2', 150)
-      this.$refs.billExcelIframe.title = "确认导出"
+      this.$refs.billExcelIframe.title = this.$t('common.export')
     }
   }
 }

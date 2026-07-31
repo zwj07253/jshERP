@@ -12,22 +12,22 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:5%;height: 95%;">
       <a-spin :spinning="confirmLoading">
         <div class="drawer-bootom-button">
           <a-dropdown :trigger="['click']" placement="topCenter">
             <a-menu slot="overlay">
-              <a-menu-item key="1" @click="switchCheckStrictly(1)">父子关联</a-menu-item>
-              <a-menu-item key="2" @click="switchCheckStrictly(2)">取消关联</a-menu-item>
-              <a-menu-item key="3" @click="checkALL">全部勾选</a-menu-item>
-              <a-menu-item key="4" @click="cancelCheckALL">取消全选</a-menu-item>
-              <a-menu-item key="5" @click="expandAll">展开所有</a-menu-item>
-              <a-menu-item key="6" @click="closeAll">合并所有</a-menu-item>
+              <a-menu-item key="1" @click="switchCheckStrictly(1)">{{ $t('system.parentChildLinked') }}</a-menu-item>
+              <a-menu-item key="2" @click="switchCheckStrictly(2)">{{ $t('system.unlink') }}</a-menu-item>
+              <a-menu-item key="3" @click="checkALL">{{ $t('system.selectAll') }}</a-menu-item>
+              <a-menu-item key="4" @click="cancelCheckALL">{{ $t('system.deselectAll') }}</a-menu-item>
+              <a-menu-item key="5" @click="expandAll">{{ $t('system.expandAll') }}</a-menu-item>
+              <a-menu-item key="6" @click="closeAll">{{ $t('system.collapseAll') }}</a-menu-item>
             </a-menu>
             <a-button>
-              树操作 <a-icon type="up" />
+              {{ $t('system.treeOperation') }} <a-icon type="up" />
             </a-button>
           </a-dropdown>
         </div>
@@ -60,7 +60,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         width: '800px',
         visible: false,
         model: {},

@@ -10,10 +10,10 @@
       :mask="isDesktop()"
       :maskClosable="false"
       @cancel="handleCancel"
-      cancelText="关闭"
+      :cancelText="$t('common.close')"
       style="top:100px;height: 80%;">
       <template slot="footer">
-        <a-button key="back" @click="handleCancel">取消(ESC)</a-button>
+        <a-button key="back" @click="handleCancel">{{ $t('common.cancel') }}(ESC)</a-button>
       </template>
       <!-- table区域-begin -->
       <a-table
@@ -45,7 +45,7 @@
     },
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         disableMixinCreated: true,
         toFromType: '',
@@ -74,10 +74,10 @@
               return parseInt(index)+1;
             }
           },
-          { title: '仓库名称', dataIndex: 'depotName', width: 200},
-          { title: '库存数量', dataIndex: 'currentNumber', width: 100},
-          { title: '成本价', dataIndex: 'unitPrice', width: 100},
-          { title: '库存金额', dataIndex: 'allPrice', width: 100}
+          { title: this.$t('common.depotName'), dataIndex: 'depotName', width: 200},
+          { title: this.$t('report.stockQty'), dataIndex: 'currentNumber', width: 100},
+          { title: this.$t('report.costPrice'), dataIndex: 'unitPrice', width: 100},
+          { title: this.$t('report.stockAmount'), dataIndex: 'allPrice', width: 100}
         ],
         labelCol: {
           xs: { span: 1 },

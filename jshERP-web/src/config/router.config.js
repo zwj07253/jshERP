@@ -10,7 +10,7 @@ export const asyncRouterMap = [
     path: '/',
     name: 'dashboard',
     component: TabLayout,
-    meta: { title: '首页' },
+    meta: { title: 'Home' },
     redirect: '/dashboard/analysis',
     children: [
 
@@ -52,7 +52,7 @@ export const constantRouterMap = [
       {
         path: 'analysis',
         name: 'analysis',
-        meta: { title: '首页' },
+        meta: { title: 'Home' },
         component: () => import(/* webpackChunkName: "dashboard" */ '@/views/dashboard/Analysis')
       }
     ]

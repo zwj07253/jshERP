@@ -8,16 +8,16 @@
           <a-form layout="inline" @keyup.enter.native="searchQuery">
             <a-row :gutter="24">
               <a-col :md="6" :sm="24">
-                <a-form-item label="名称" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入名称查询" v-model="queryParam.name"></a-input>
+                <a-form-item :label="$t('common.name')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('common.enterName')" v-model="queryParam.name"></a-input>
                 </a-form-item>
               </a-col>
               <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
                 <a-col :md="6" :sm="24">
-                  <a-button type="primary" @click="searchQuery">查询</a-button>
-                  <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
-                  <a-button type="primary" style="margin-left: 8px" @click="writeCode">填写插件激活码</a-button>
-                  <a-button type="primary" style="margin-left: 8px" @click="writeAppCode">填写手机端激活码</a-button>
+                  <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="searchReset">{{ $t('common.reset') }}</a-button>
+                  <a-button type="primary" style="margin-left: 8px" @click="writeCode">{{ $t('system.writePluginActivationCode') }}</a-button>
+                  <a-button type="primary" style="margin-left: 8px" @click="writeAppCode">{{ $t('system.writeAppActivationCode') }}</a-button>
                 </a-col>
               </span>
             </a-row>
@@ -26,11 +26,11 @@
         <!-- 操作按钮区域 -->
         <div class="table-operator"  style="margin-top: 5px">
           <a-upload name="file" :showUploadList="false" :multiple="false" :headers="tokenHeader" :action="importUrl" @change="handleImportJar">
-            <a-popover title="导入注意点">
+            <a-popover :title="$t('system.importNote')">
               <template slot="content">
-                <p>请选择需要导入的插件jar包</p>
+                <p>{{ $t('system.selectPluginJar') }}</p>
               </template>
-              <a-button type="primary" icon="import">上传插件包</a-button>
+              <a-button type="primary" icon="import">{{ $t('system.uploadPlugin') }}</a-button>
             </a-popover>
           </a-upload>
         </div>
@@ -48,26 +48,26 @@
             :loading="loading"
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
-              <a @click="uploadTemplate(record)" >上传页面</a>
+              <a @click="uploadTemplate(record)" >{{ $t('system.uploadPage') }}</a>
               <a-divider type="vertical" />
-              <a-popconfirm title="确定要开启该插件吗?" @confirm="() => startPlugin(record.pluginDescriptor.pluginId)">
-                <a>开启</a>
+              <a-popconfirm :title="$t('system.confirmStartPlugin')" @confirm="() => startPlugin(record.pluginDescriptor.pluginId)">
+                <a>{{ $t('system.startPlugin') }}</a>
               </a-popconfirm>
               <a-divider type="vertical" />
-              <a-popconfirm title="确定要停止该插件吗?" @confirm="() => stopPlugin(record.pluginDescriptor.pluginId)">
-                <a>停止</a>
+              <a-popconfirm :title="$t('system.confirmStopPlugin')" @confirm="() => stopPlugin(record.pluginDescriptor.pluginId)">
+                <a>{{ $t('system.stopPlugin') }}</a>
               </a-popconfirm>
               <a-divider type="vertical" />
-              <a-popconfirm title="确定要卸载该插件吗?" @confirm="() => uninstallPlugin(record.pluginDescriptor.pluginId)">
-                <a>卸载</a>
+              <a-popconfirm :title="$t('system.confirmUninstallPlugin')" @confirm="() => uninstallPlugin(record.pluginDescriptor.pluginId)">
+                <a>{{ $t('system.uninstallPlugin') }}</a>
               </a-popconfirm>
             </span>
             <span slot="linkInfo" slot-scope="text, record">
               <a :href="linkUrl(record)" target='_blank' :title="linkUrl(record)">{{linkUrl(record)}}</a>
             </span>
             <template slot="customRenderFlag" slot-scope="pluginState">
-              <a-tag v-if="pluginState=='STARTED'" color="green">启用</a-tag>
-              <a-tag v-if="pluginState=='STOPPED'" color="orange">停止</a-tag>
+              <a-tag v-if="pluginState=='STARTED'" color="green">{{ $t('common.enable') }}</a-tag>
+              <a-tag v-if="pluginState=='STOPPED'" color="orange">{{ $t('system.stopped') }}</a-tag>
             </template>
           </a-table>
         </div>
@@ -119,13 +119,13 @@
             }
           },
           {
-            title: '操作',
+            title: this.$t('common.action'),
             dataIndex: 'action',
             width: 200,
             align:"center",
             scopedSlots: { customRender: 'action' },
           },
-          {title: '名称', dataIndex: '', width: 120,
+          {title: this.$t('common.name'), dataIndex: '', width: 120,
             customRender:function (t,r,index) {
               if (r) {
                 var desc = r.pluginDescriptor.pluginDescription;
@@ -136,31 +136,31 @@
               }
             }
           },
-          {title: '标识', dataIndex: '', width: 180,
+          {title: this.$t('system.pluginId'), dataIndex: '', width: 180,
             customRender:function (t,r,index) {
               if (r) {
                 return r.pluginDescriptor.pluginId;
               }
             }
           },
-          {title: '版本', dataIndex: '', width: 120,
+          {title: this.$t('system.pluginVersion'), dataIndex: '', width: 120,
             customRender:function (t,r,index) {
               if (r) {
                 return r.pluginDescriptor.version;
               }
             }
           },
-          {title: '作者', dataIndex: '', width: 100,
+          {title: this.$t('system.pluginAuthor'), dataIndex: '', width: 100,
             customRender:function (t,r,index) {
               if (r) {
                 return r.pluginDescriptor.provider;
               }
             }
           },
-          {title: '页面链接', dataIndex: '', width: 250, ellipsis:true,
+          {title: this.$t('system.pageLink'), dataIndex: '', width: 250, ellipsis:true,
             scopedSlots: { customRender: 'linkInfo' }
           },
-          {title: '状态', dataIndex: 'pluginState', width: 60, align: "center",
+          {title: this.$t('common.status'), dataIndex: 'pluginState', width: 60, align: "center",
             scopedSlots: { customRender: 'customRenderFlag' }
           }
         ],
@@ -193,12 +193,12 @@
       },
       writeCode() {
         this.$refs.modalForm.edit();
-        this.$refs.modalForm.title = "填写插件激活码";
+        this.$refs.modalForm.title = this.$t('system.writePluginActivationCode');
         this.$refs.modalForm.disableSubmit = false;
       },
       writeAppCode() {
         this.$refs.appModalForm.edit();
-        this.$refs.appModalForm.title = "填写手机端激活码";
+        this.$refs.appModalForm.title = this.$t('system.writeAppActivationCode');
         this.$refs.appModalForm.disableSubmit = false;
       },
       linkUrl(record) {
@@ -212,7 +212,7 @@
       },
       uploadTemplate(record) {
         var rootPath = record.path.substring(0, record.path.indexOf("plugins"));
-        this.$message.info('请将页面上传到服务器目录：' + " /前端根目录/plugins/");
+        this.$message.info(this.$t('system.uploadPageToServer') + " /前端根目录/plugins/");
       },
       startPlugin(pluginId) {
         postAction('/plugin/start/' + pluginId).then((res)=>{
@@ -251,7 +251,7 @@
             this.$message.error(info.file.response.data);
           }
         } else if (info.file.status === 'error') {
-          this.$message.error(`文件上传失败: ${info.file.msg} `);
+          this.$message.error(this.$t('common.uploadFailed') + ': ' + info.file.msg);
         }
       }
     }

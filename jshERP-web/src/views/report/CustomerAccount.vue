@@ -8,13 +8,13 @@
           <a-form layout="inline" @keyup.enter.native="searchQuery">
             <a-row :gutter="24">
               <a-col :md="6" :sm="24">
-                <a-form-item label="客户" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-select placeholder="请选择客户" v-model="queryParam.organId"
+                <a-form-item :label="$t('common.customer')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-select :placeholder="$t('common.selectCustomer')" v-model="queryParam.organId"
                     :dropdownMatchSelectWidth="false" showSearch allow-clear optionFilterProp="children" @search="handleSearchCustomer">
                     <div slot="dropdownRender" slot-scope="menu">
                       <v-nodes :vnodes="menu" />
                       <a-divider style="margin: 4px 0;" />
-                      <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initCustomer"><a-icon type="reload" /> 刷新列表</div>
+                      <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initCustomer"><a-icon type="reload" /> {{ $t('common.refreshList') }}</div>
                     </div>
                     <a-select-option v-for="(item,index) in cusList" :key="index" :value="item.id">
                       {{ item.supplier }}
@@ -23,23 +23,23 @@
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item label="账单周期" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                <a-form-item :label="$t('report.billCycle')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                   <a-range-picker
                     style="width: 100%"
                     v-model="queryParam.createTimeRange"
                     format="YYYY-MM-DD"
-                    :placeholder="['开始时间', '结束时间']"
+                    :placeholder="[$t('common.startDate'), $t('common.endDate')]"
                     @change="onDateChange"
                   />
                 </a-form-item>
               </a-col>
               <a-col :md="12" :sm="24">
                 <span class="table-page-search-submitButtons">
-                  <a-button type="primary" @click="searchQuery">查询</a-button>
-                  <a-button style="margin-left: 8px" v-print="'#reportPrint'" icon="printer">打印</a-button>
-                  <a-button style="margin-left: 8px" @click="exportExcel" icon="download">导出</a-button>
+                  <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                  <a-button style="margin-left: 8px" v-print="'#reportPrint'" icon="printer">{{ $t('common.print') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="exportExcel" icon="download">{{ $t('common.export') }}</a-button>
                   <a @click="handleToggleSearch" style="margin-left: 8px">
-                    {{ toggleSearchStatus ? '收起' : '展开' }}
+                    {{ toggleSearchStatus ? $t('common.collapse') : $t('common.expand') }}
                     <a-icon :type="toggleSearchStatus ? 'up' : 'down'"/>
                   </a>
                 </span>
@@ -53,10 +53,10 @@
             <template v-if="toggleSearchStatus">
               <a-row :gutter="24">
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="欠款情况" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-form-item :label="$t('report.debtDetail')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                     <a-select v-model="queryParam.hasDebt">
-                      <a-select-option value="1">有欠款</a-select-option>
-                      <a-select-option value="0">无欠款</a-select-option>
+                      <a-select-option value="1">{{ $t('common.hasDebtOpt') }}</a-select-option>
+                      <a-select-option value="0">{{ $t('common.noDebtOpt') }}</a-select-option>
                     </a-select>
                   </a-form-item>
                 </a-col>
@@ -89,7 +89,7 @@
                             <a-checkbox :value="item.dataIndex" v-if="item.dataIndex==='rowIndex'" disabled></a-checkbox>
                             <a-checkbox :value="item.dataIndex" v-if="item.dataIndex!=='rowIndex'">
                               <j-ellipsis :value="item.title" v-if="item.dataIndex!=='allNeed'" :length="10"></j-ellipsis>
-                              <j-ellipsis value="期末应收" v-if="item.dataIndex==='allNeed'" :length="10"></j-ellipsis>
+                              <j-ellipsis :value="$t('report.finalReceivable')" v-if="item.dataIndex==='allNeed'" :length="10"></j-ellipsis>
                             </a-checkbox>
                           </a-col>
                         </template>
@@ -97,7 +97,7 @@
                     </a-row>
                     <a-row style="padding-top: 10px;">
                       <a-col>
-                        恢复默认列配置：<a-button @click="handleRestDefault" type="link" size="small">恢复默认</a-button>
+                        {{ $t('common.restoreColumns') }}<a-button @click="handleRestDefault" type="link" size="small">{{ $t('common.restoreDefault') }}</a-button>
                       </a-col>
                     </a-row>
                   </a-checkbox-group>
@@ -106,11 +106,11 @@
               </a-popover>
             </span>
             <span slot="action" slot-scope="text, record">
-              <a v-if="record.rowIndex !== '合计'" @click="showDebtAccountList(record)">详情</a>
+              <a v-if="record.rowIndex !== $t('common.total')" @click="showDebtAccountList(record)">{{ $t('common.detail') }}</a>
             </span>
             <span slot="allNeedTitle">
-              期末应收
-              <a-tooltip title="期末应收=期初应收+本期欠款-本期收款">
+              {{ $t('report.finalReceivable') }}
+              <a-tooltip :title="$t('report.finalReceivable') + '=' + $t('report.preReceivable') + '+' + $t('report.periodDebt') + '-' + $t('report.periodPayment')">
                 <a-icon type="question-circle" />
               </a-tooltip>
             </span>
@@ -125,9 +125,9 @@
                 :page-size="ipagination.pageSize"
                 :page-size-options="ipagination.pageSizeOptions"
                 :total="ipagination.total"
-                :show-total="total => `共 ${total} 条`">
+                :show-total="total => $t('common.totalItems', { total })">
                 <template slot="buildOptionText" slot-scope="props">
-                  <span>{{ props.value }}条/页</span>
+                  <span>{{ props.value }}{{ $t('report.itemsPerPage') }}</span>
                 </template>
               </a-pagination>
             </a-col>
@@ -194,21 +194,21 @@
         defColumns: [
           {
             dataIndex: 'rowIndex', width:40, align:"center", slots: { title: 'customTitle' },
-            customRender:function (t,r,index) {
-              return (t !== '合计') ? (parseInt(index) + 1) : t
+            customRender:(t,r,index) => {
+              return (t !== this.$t('common.total')) ? (parseInt(index) + 1) : t
             }
           },
-          {title: '欠款详情', dataIndex: 'action', align:"center", width: 80,
+          {title: this.$t('report.debtDetail'), dataIndex: 'action', align:"center", width: 80,
             scopedSlots: { customRender: 'action' }
           },
-          {title: '客户', dataIndex: 'supplier', width: 150, ellipsis:true},
-          {title: '联系人', dataIndex: 'contacts', width: 100, ellipsis:true},
-          {title: '手机号码', dataIndex: 'telephone', width: 100},
-          {title: '联系电话', dataIndex: 'phoneNum', width: 100},
-          {title: '电子邮箱', dataIndex: 'email', width: 100},
-          {title: '期初应收', dataIndex: 'preNeed', sorter: true, width: 80},
-          {title: '本期欠款', dataIndex: 'debtMoney', sorter: true, width: 80},
-          {title: '本期收款', dataIndex: 'backMoney', sorter: true, width: 80},
+          {title: this.$t('common.customer'), dataIndex: 'supplier', width: 150, ellipsis:true},
+          {title: this.$t('system.contact'), dataIndex: 'contacts', width: 100, ellipsis:true},
+          {title: this.$t('common.phoneNo'), dataIndex: 'telephone', width: 100},
+          {title: this.$t('system.phone'), dataIndex: 'phoneNum', width: 100},
+          {title: this.$t('common.email'), dataIndex: 'email', width: 100},
+          {title: this.$t('report.preReceivable'), dataIndex: 'preNeed', sorter: true, width: 80},
+          {title: this.$t('report.periodDebt'), dataIndex: 'debtMoney', sorter: true, width: 80},
+          {title: this.$t('report.periodPayment'), dataIndex: 'backMoney', sorter: true, width: 80},
           {dataIndex: 'allNeed', sorter: true, width: 80,
             scopedSlots: { title: 'allNeedTitle' }
           }
@@ -230,7 +230,7 @@
         }
         const totalRow = {
           id: `customer-account-total-${this.ipagination.current}`,
-          rowIndex: '合计'
+          rowIndex: this.$t('common.total')
         }
         const numericFields = ['preNeed', 'debtMoney', 'backMoney', 'allNeed']
         numericFields.forEach(field => {
@@ -289,8 +289,8 @@
           if (res.code===200) {
             this.dataSource = res.data.rows;
             this.ipagination.total = res.data.total;
-            this.firstTotal = '期初应收：' + this.formatNumber(res.data.firstMoney) + "，"
-            this.lastTotal = '期末应收：' + this.formatNumber(res.data.lastMoney)
+            this.firstTotal = this.$t('report.preReceivable') + '：' + this.formatNumber(res.data.firstMoney) + "，"
+            this.lastTotal = this.$t('report.finalReceivable') + '：' + this.formatNumber(res.data.lastMoney)
             this.canViewFinancialHistory = res.data.canViewFinancialHistory === true
           } else if(res.code===510){
             this.$message.warning(res.data)
@@ -302,14 +302,14 @@
       },
       searchQuery() {
         if(this.queryParam.beginTime === '' || this.queryParam.endTime === ''){
-          this.$message.warning('请选择单据日期！')
+          this.$message.warning(this.$t('report.selectBillDate'))
         } else {
           this.loadData(1);
         }
       },
       exportExcel() {
         if ((this.ipagination.total || 0) > 10000) {
-          this.$message.warning('单次导出不能超过10000条，请缩小查询范围')
+          this.$message.warning(this.$t('report.exportLimit'))
           return
         }
         let params = this.getQueryParams()
@@ -321,7 +321,7 @@
             this.exportExcelRows(res.data.rows || [])
           } else {
             const message = typeof res.data === 'string' ? res.data : res.data && res.data.message
-            this.$message.warning(message || '导出数据获取失败')
+            this.$message.warning(message || this.$t('report.exportFailed'))
           }
         }).finally(() => {
           this.loading = false
@@ -329,20 +329,20 @@
       },
       exportExcelRows(dataSource) {
         let list = []
-        let head = '客户,联系人,手机号码,联系电话,电子邮箱,期初应收,本期欠款,本期收款,期末应收'
+        let head = this.$t('common.customer') + ',' + this.$t('report.contacts') + ',' + this.$t('report.phoneNum') + ',' + this.$t('report.telephone') + ',' + this.$t('report.email') + ',' + this.$t('report.preReceivable') + ',' + this.$t('report.periodDebt') + ',' + this.$t('report.periodPayment') + ',' + this.$t('report.finalReceivable')
         for (let i = 0; i < dataSource.length; i++) {
           let item = []
           let ds = dataSource[i]
           item.push(ds.supplier, ds.contacts, ds.telephone, ds.phoneNum, ds.email, ds.preNeed, ds.debtMoney, ds.backMoney, ds.allNeed)
           list.push(item)
         }
-        let tip = '单据日期：' + this.queryParam.beginTime + '~' + this.queryParam.endTime
-        this.handleExportXlsPost('客户对账', '客户对账', head, tip, list)
+        let tip = this.$t('common.billDate') + '：' + this.queryParam.beginTime + '~' + this.queryParam.endTime
+        this.handleExportXlsPost(this.$t('report.customerReconciliation'), this.$t('report.customerReconciliation'), head, tip, list)
       },
       showDebtAccountList(record) {
-        this.$refs.debtAccountList.show(record.id, '出库', '销售', '客户', "", this.queryParam.beginTime,
+        this.$refs.debtAccountList.show(record.id, '出库', '销售', this.$t('common.customer'), "", this.queryParam.beginTime,
           this.queryParam.endTime, this.canViewFinancialHistory)
-        this.$refs.debtAccountList.title = "欠款详情"
+        this.$refs.debtAccountList.title = this.$t('report.debtDetail')
         this.$refs.debtAccountList.disableSubmit = false
       }
     }

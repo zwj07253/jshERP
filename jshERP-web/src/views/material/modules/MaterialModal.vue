@@ -12,43 +12,42 @@
     :id="prefixNo"
     :style="modalStyle">
     <template slot="footer">
-      <a-button key="back" @click="handleCancel">取消</a-button>
-      <a-button type="primary" v-if="showOkFlag" :loading="confirmLoading" @click="handleOk">保存（Ctrl+S）</a-button>
+      <a-button key="back" @click="handleCancel">{{ $t('common.cancel') }}</a-button>
+      <a-button type="primary" v-if="showOkFlag" :loading="confirmLoading" @click="handleOk">{{ $t('common.save') }}（Ctrl+S）</a-button>
     </template>
     <a-spin :spinning="confirmLoading">
       <a-form :form="form">
         <a-tabs v-model:activeKey="activeKey" size="small">
-          <a-tab-pane key="1" tab="基本信息" id="materialHeadModal" forceRender>
+          <a-tab-pane key="1" :tab="$t('common.basicInfo')" id="materialHeadModal" forceRender>
             <a-row class="form-row" :gutter="24">
               <a-col :md="6" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="名称" data-step="1" data-title="名称" data-intro="名称必填，可以重复">
-                  <a-input placeholder="请输入名称" v-decorator.trim="[ 'name', validatorRules.name ]" @change="handleNameChange" />
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.name')" data-step="1" :data-title="$t('common.name')" :data-intro="$t('material.nameIntro')">
+                  <a-input :placeholder="$t('common.enterName')" v-decorator.trim="[ 'name', validatorRules.name ]" @change="handleNameChange" />
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="规格" data-step="2" data-title="规格" data-intro="规格不必填，比如：10克">
-                  <a-input placeholder="请输入规格" v-decorator.trim="[ 'standard', validatorRules.standard ]"/>
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.specification')" data-step="2" :data-title="$t('common.specification')" :data-intro="$t('material.specIntro')">
+                  <a-input :placeholder="$t('common.specification')" v-decorator.trim="[ 'standard', validatorRules.standard ]"/>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="型号" data-step="3" data-title="型号" data-intro="型号是比规格更小的属性，比如：RX-01">
-                  <a-input placeholder="请输入型号" v-decorator.trim="[ 'model', validatorRules.model ]" />
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.model')" data-step="3" :data-title="$t('common.model')" :data-intro="$t('material.modelIntro')">
+                  <a-input :placeholder="$t('common.model')" v-decorator.trim="[ 'model', validatorRules.model ]" />
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单位"
-                  data-step="4" data-title="单位" data-intro="此处支持单个单位和多单位，勾选多单位就可以切换到多单位的下拉框，多单位需要先在【多单位】页面进行录入。
-                  比如牛奶有瓶和箱两种单位，12瓶=1箱，这就构成了多单位，多单位中有个换算比例">
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.unit')"
+                  data-step="4" :data-title="$t('common.unit')" :data-intro="$t('material.unitIntro')">
                   <a-row class="form-row" :gutter="24">
                     <a-col :lg="15" :md="15" :sm="24" style="padding:0px 0px 0px 12px;">
-                      <a-input placeholder="输入单位" v-if="!unitChecked" v-decorator.trim="[ 'unit', validatorRules.unit ]" @change="onlyUnitOnChange" />
-                      <a-select :value="unitList" placeholder="选择多单位" v-decorator="[ 'unitId', validatorRules.unitId ]" @change="manyUnitOnChange"
+                      <a-input :placeholder="$t('common.unit')" v-if="!unitChecked" v-decorator.trim="[ 'unit', validatorRules.unit ]" @change="onlyUnitOnChange" />
+                      <a-select :value="unitList" :placeholder="$t('material.selectMultiUnit')" v-decorator="[ 'unitId', validatorRules.unitId ]" @change="manyUnitOnChange"
                         showSearch optionFilterProp="children" v-if="unitChecked" :dropdownMatchSelectWidth="false">
                         <div slot="dropdownRender" slot-scope="menu">
                           <v-nodes :vnodes="menu" />
                           <a-divider style="margin: 4px 0;" />
                           <div style="padding: 4px 8px; cursor: pointer;"
-                               @mousedown="e => e.preventDefault()" @click="addUnit"><a-icon type="plus" /> 新增多单位</div>
+                               @mousedown="e => e.preventDefault()" @click="addUnit"><a-icon type="plus" /> {{ $t('common.add') }}</div>
                         </div>
                         <a-select-option v-for="(item,index) in unitList"
                           :key="index" :value="item.id">
@@ -57,7 +56,7 @@
                       </a-select>
                     </a-col>
                     <a-col :lg="9" :md="9" :sm="24" style="padding:0px; text-align:center">
-                      <a-checkbox :checked="unitChecked" @change="unitOnChange">多单位</a-checkbox>
+                      <a-checkbox :checked="unitChecked" @change="unitOnChange">{{ $t('common.unit') }}</a-checkbox>
                     </a-col>
                   </a-row>
                 </a-form-item>
@@ -65,109 +64,109 @@
             </a-row>
             <a-row class="form-row" :gutter="24">
               <a-col :md="6" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="颜色" data-step="5" data-title="颜色"
-                             data-intro="请填写商品的颜色，如果是多属性商品可以不填（下面有多属性开关）">
-                  <a-input placeholder="请输入颜色" v-decorator.trim="[ 'color' ]" />
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('material.color')" data-step="5" :data-title="$t('material.color')"
+                             :data-intro="$t('material.colorIntro')">
+                  <a-input :placeholder="$t('material.color')" v-decorator.trim="[ 'color' ]" />
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="品牌" data-step="6" data-title="品牌"
-                             data-intro="请填写商品的品牌，方便区别不同品牌的商品">
-                  <a-input placeholder="请输入品牌" v-decorator.trim="[ 'brand' ]" />
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.brand')" data-step="6" :data-title="$t('common.brand')"
+                             :data-intro="$t('material.brandIntro')">
+                  <a-input :placeholder="$t('common.brand')" v-decorator.trim="[ 'brand' ]" />
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="助记码" data-step="7" data-title="助记码"
-                             data-intro="助记码自动生成，助记码是商品名称的首字母缩写">
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('material.mnemonic')" data-step="7" :data-title="$t('material.mnemonic')"
+                             :data-intro="$t('material.mnemonicIntro')">
                   <a-input placeholder="" v-decorator.trim="[ 'mnemonic' ]" :readOnly="true" />
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="类别"
-                             data-step="8" data-title="类别" data-intro="类别需要在【商品类别】页面进行录入，录入之后在此处进行调用">
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.category')"
+                             data-step="8" :data-title="$t('common.category')" :data-intro="$t('material.categoryIntro')">
                   <a-tree-select style="width:100%" :dropdownStyle="{maxHeight:'200px',overflow:'auto'}" allow-clear
-                                 :treeData="categoryTree" v-decorator="[ 'categoryId' ]" placeholder="请选择类别">
+                                 :treeData="categoryTree" v-decorator="[ 'categoryId' ]" :placeholder="$t('material.selectCategory')">
                   </a-tree-select>
                 </a-form-item>
               </a-col>
             </a-row>
             <a-row class="form-row" :gutter="24">
               <a-col :md="6" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="基础重量" data-step="9" data-title="基础重量"
-                  data-intro="请填写基本单位对应的重量，用于计算按重量分摊费用时单据中各行商品分摊的费用成本">
-                  <a-input-number style="width: 100%" placeholder="请输入基础重量(kg)" v-decorator.trim="[ 'weight' ]" />
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('material.weight')" data-step="9" :data-title="$t('material.weight')"
+                  :data-intro="$t('material.weightIntro')">
+                  <a-input-number style="width: 100%" :placeholder="$t('material.enterWeight')" v-decorator.trim="[ 'weight' ]" />
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="保质期" data-step="10" data-title="保质期"
-                  data-intro="保质期指的是商品的保质期(天)，主要针对带生产日期的，此类商品一般有批号">
-                  <a-input-number style="width: 100%" placeholder="请输入保质期(天)" v-decorator.trim="[ 'expiryNum' ]" />
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('material.expiryNum')" data-step="10" :data-title="$t('material.expiryNum')"
+                  :data-intro="$t('material.expiryNumIntro')">
+                  <a-input-number style="width: 100%" :placeholder="$t('material.enterExpiry')" v-decorator.trim="[ 'expiryNum' ]" />
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="仓位货架" data-step="11" data-title="仓位货架"
-                             data-intro="仓位货架指的是仓库中的仓位和货架号，主要适用于仓库较大的场景，方便查找商品的准确位置">
-                  <a-input style="width: 100%" placeholder="请输入仓位货架" v-decorator.trim="[ 'position' ]" />
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.position')" data-step="11" :data-title="$t('common.position')"
+                             :data-intro="$t('material.positionIntro')">
+                  <a-input style="width: 100%" :placeholder="$t('common.position')" v-decorator.trim="[ 'position' ]" />
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="制造商" data-step="12" data-title="制造商"
-                             data-intro="请填写商品的制造商，一般适用于制造行业">
-                  <a-input placeholder="请输入制造商" v-decorator.trim="[ 'mfrs' ]" />
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('material.manufacturer')" data-step="12" :data-title="$t('material.manufacturer')"
+                             :data-intro="$t('material.manufacturerIntro')">
+                  <a-input :placeholder="$t('material.manufacturer')" v-decorator.trim="[ 'mfrs' ]" />
                 </a-form-item>
               </a-col>
             </a-row>
             <a-row class="form-row" :gutter="24">
               <a-col :lg="6" :md="6" :sm="6">
                 <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="mpShort.otherField1.name">
-                  <a-input :placeholder="'请输入'+ mpShort.otherField1.name" v-decorator.trim="[ 'otherField1' ]" />
+                  <a-input :placeholder="$t('material.enterFieldValue', {field: mpShort.otherField1.name})" v-decorator.trim="[ 'otherField1' ]" />
                 </a-form-item>
               </a-col>
               <a-col :lg="6" :md="6" :sm="6">
                 <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="mpShort.otherField2.name">
-                  <a-input :placeholder="'请输入'+ mpShort.otherField2.name" v-decorator.trim="[ 'otherField2' ]" />
+                  <a-input :placeholder="$t('material.enterFieldValue', {field: mpShort.otherField2.name})" v-decorator.trim="[ 'otherField2' ]" />
                 </a-form-item>
               </a-col>
               <a-col :lg="6" :md="6" :sm="6">
                 <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="mpShort.otherField3.name">
-                  <a-input :placeholder="'请输入'+ mpShort.otherField3.name" v-decorator.trim="[ 'otherField3' ]" />
+                  <a-input :placeholder="$t('material.enterFieldValue', {field: mpShort.otherField3.name})" v-decorator.trim="[ 'otherField3' ]" />
                 </a-form-item>
               </a-col>
             </a-row>
             <a-row class="form-row" :gutter="24">
               <a-col :md="6" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="序列号" data-step="13" data-title="序列号"
-                  data-intro="此处是商品的序列号开关，如果选择了有，则在采购入库单据需要录入该商品的序列号，在销售出库单据需要选择该商品的序列号进行出库">
-                  <a-tooltip title="如果选择为有，则在采购入库单需要录入该商品的序列号">
-                    <a-select placeholder="有无序列号" v-decorator="[ 'enableSerialNumber' ]">
-                      <a-select-option value="1">有</a-select-option>
-                      <a-select-option value="0">无</a-select-option>
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.columns.serialNumber')" data-step="13" :data-title="$t('purchase.form.columns.serialNumber')"
+                  :data-intro="$t('material.snIntro')">
+                  <a-tooltip :title="$t('material.snTooltip')">
+                    <a-select :placeholder="$t('material.hasOrNotSN')" v-decorator="[ 'enableSerialNumber' ]">
+                      <a-select-option value="1">{{ $t('common.yes') }}</a-select-option>
+                      <a-select-option value="0">{{ $t('common.no') }}</a-select-option>
                     </a-select>
                   </a-tooltip>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="批号" data-step="14" data-title="批号"
-                  data-intro="此处是商品的批号开关，如果选择了有，则在采购入库单据需要录入该商品的批号和有效期，在销售出库单据需要选择该商品的批号进行出库">
-                  <a-tooltip title="如果选择为有，则在采购入库单需要录入该商品的批号和有效期">
-                    <a-select placeholder="有无批号" v-decorator="[ 'enableBatchNumber' ]">
-                      <a-select-option value="1">有</a-select-option>
-                      <a-select-option value="0">无</a-select-option>
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.columns.batchNumber')" data-step="14" :data-title="$t('purchase.form.columns.batchNumber')"
+                  :data-intro="$t('material.batchNumIntro')">
+                  <a-tooltip :title="$t('material.batchNumTooltip')">
+                    <a-select :placeholder="$t('material.hasOrNotBatch')" v-decorator="[ 'enableBatchNumber' ]">
+                      <a-select-option value="1">{{ $t('common.yes') }}</a-select-option>
+                      <a-select-option value="0">{{ $t('common.no') }}</a-select-option>
                     </a-select>
                   </a-tooltip>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="多属性" data-step="15" data-title="多属性"
-                  data-intro="多属性是针对的sku商品（比如服装、鞋帽、家纺行业），此处开关如果启用就可以在下方进行多sku的配置，配置具体的颜色、尺码之类的组合">
-                  <a-tooltip title="多属性针对服装、鞋帽、家纺等行业（注意不要勾选多单位，因为多属性商品不支持多单位，只支持单个的单位）">
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.property')" data-step="15" :data-title="$t('purchase.form.columns.sku')"
+                  :data-intro="$t('material.skuIntro')">
+                  <a-tooltip :title="$t('material.skuTooltip')">
                     <a-select mode="multiple" v-decorator="[ 'manySku' ]" showSearch optionFilterProp="children"
-                      placeholder="请选择多属性（可多选）" @change="onManySkuChange" :disabled="attributeStatus">
+                      :placeholder="$t('common.property')" @change="onManySkuChange" :disabled="attributeStatus">
                       <div slot="dropdownRender" slot-scope="menu">
                         <v-nodes :vnodes="menu" />
                         <a-divider style="margin: 4px 0;" />
                         <div style="padding: 4px 8px; cursor: pointer;"
-                             @mousedown="e => e.preventDefault()" @click="initMaterialAttribute">没找到？点此刷新列表 <a-icon type="reload" /></div>
+                             @mousedown="e => e.preventDefault()" @click="initMaterialAttribute">{{ $t('common.refreshList') }} <a-icon type="reload" /></div>
                       </div>
                       <a-select-option v-for="(item,index) in materialAttributeList" :key="index" :value="item.value" :disabled="item.disabled">
                         {{ item.name }}
@@ -181,7 +180,7 @@
               <a-col :md="12" :sm="24" v-if="manySkuSelected>=1">
                 <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 4 }}" :wrapperCol="{xs: { span: 24 },sm: { span: 20 }}" :label="skuOneTitle">
                   <a-select mode="multiple" v-decorator="[ 'skuOne' ]" showSearch optionFilterProp="children"
-                            placeholder="请选择（可多选）" @select="onSkuChange" @deselect="onSkuOneDeSelect">
+                            :placeholder="$t('common.property')" @select="onSkuChange" @deselect="onSkuOneDeSelect">
                     <a-select-option v-for="(item,index) in skuOneList" :key="index" :value="item.value">
                       {{ item.name }}
                     </a-select-option>
@@ -191,7 +190,7 @@
               <a-col :md="12" :sm="24" v-if="manySkuSelected>=2">
                 <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 4 }}" :wrapperCol="{xs: { span: 24 },sm: { span: 20 }}" :label="skuTwoTitle">
                   <a-select mode="multiple" v-decorator="[ 'skuTwo' ]" showSearch optionFilterProp="children"
-                            placeholder="请选择（可多选）" @select="onSkuChange" @deselect="onSkuTwoDeSelect">
+                            :placeholder="$t('common.property')" @select="onSkuChange" @deselect="onSkuTwoDeSelect">
                     <a-select-option v-for="(item,index) in skuTwoList" :key="index" :value="item.value">
                       {{ item.name }}
                     </a-select-option>
@@ -201,7 +200,7 @@
               <a-col :md="12" :sm="24" v-if="manySkuSelected>=3">
                 <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 4 }}" :wrapperCol="{xs: { span: 24 },sm: { span: 20 }}" :label="skuThreeTitle">
                   <a-select mode="multiple" v-decorator="[ 'skuThree' ]" showSearch optionFilterProp="children"
-                            placeholder="请选择（可多选）" @select="onSkuChange" @deselect="onSkuThreeDeSelect">
+                            :placeholder="$t('common.property')" @select="onSkuChange" @deselect="onSkuThreeDeSelect">
                     <a-select-option v-for="(item,index) in skuThreeList" :key="index" :value="item.value">
                       {{ item.name }}
                     </a-select-option>
@@ -225,10 +224,10 @@
                 @added="onAdded"
                 @deleted="onDeleted">
                 <template #buttonAfter>
-                  <a-button @click="batchSetPrice('purchase')">采购价-批量</a-button>
-                  <a-button style="margin-left: 8px" @click="batchSetPrice('commodity')">零售价-批量</a-button>
-                  <a-button style="margin-left: 8px" @click="batchSetPrice('wholesale')">销售价-批量</a-button>
-                  <a-button style="margin-left: 8px" @click="batchSetPrice('low')">最低售价-批量</a-button>
+                  <a-button @click="batchSetPrice('purchase')">{{ $t('material.batchSetPrice') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="batchSetPrice('commodity')">{{ $t('material.batchSetPrice') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="batchSetPrice('wholesale')">{{ $t('material.batchSetPrice') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="batchSetPrice('low')">{{ $t('material.batchSetPrice') }}</a-button>
                 </template>
               </j-editable-table>
               <!-- 表单区域 -->
@@ -237,12 +236,12 @@
             <a-row class="form-row" :gutter="24">
               <a-col :lg="24" :md="24" :sm="24">
                 <a-form-item :labelCol="labelCol" :wrapperCol="{xs: { span: 24 },sm: { span: 24 }}" label="">
-                  <a-textarea :rows="1" placeholder="请输入备注" v-decorator="[ 'remark' ]" style="margin-top:8px;"/>
+                  <a-textarea :rows="1" :placeholder="$t('common.enterRemark')" v-decorator="[ 'remark' ]" style="margin-top:8px;"/>
                 </a-form-item>
               </a-col>
             </a-row>
           </a-tab-pane>
-          <a-tab-pane key="2" tab="库存数量" forceRender>
+          <a-tab-pane key="2" :tab="$t('common.quantity')" forceRender>
             <j-editable-table
               ref="editableDepotTable"
               :loading="depotTable.loading"
@@ -254,27 +253,27 @@
               :rowSelection="false"
               :actionButton="false">
               <template #buttonAfter>
-                <a-button style="margin: 0px 0px 8px 0px" @click="batchSetStock('initStock')">期初库存-批量</a-button>
-                <a-button style="margin-left: 8px" @click="batchSetStock('lowSafeStock')">最低安全库存-批量</a-button>
-                <a-button style="margin-left: 8px" @click="batchSetStock('highSafeStock')">最高安全库存-批量</a-button>
+                <a-button style="margin: 0px 0px 8px 0px" @click="batchSetStock('initStock')">{{ $t('material.batchSetStock') }}</a-button>
+                <a-button style="margin-left: 8px" @click="batchSetStock('lowSafeStock')">{{ $t('material.batchSetStock') }}</a-button>
+                <a-button style="margin-left: 8px" @click="batchSetStock('highSafeStock')">{{ $t('material.batchSetStock') }}</a-button>
               </template>
             </j-editable-table>
             <!-- 表单区域 -->
             <batch-set-stock-modal ref="stockModalForm" @ok="batchSetStockModalFormOk"></batch-set-stock-modal>
           </a-tab-pane>
-          <a-tab-pane key="3" tab="图片信息" forceRender>
+          <a-tab-pane key="3" :tab="$t('common.uploadImage')" forceRender>
             <a-row class="form-row" :gutter="24" style="padding-top:20px">
               <a-col :lg="18" :md="18" :sm="24">
-                <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 3 }}" :wrapperCol="{xs: { span: 24 },sm: { span: 20 }}" label="图片信息">
-                  <j-image-upload v-model="fileList" bizPath="material" text="上传" isMultiple></j-image-upload>
+                <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 3 }}" :wrapperCol="{xs: { span: 24 },sm: { span: 20 }}" :label="$t('common.uploadImage')">
+                  <j-image-upload v-model="fileList" bizPath="material" :text="$t('common.clickToUpload')" isMultiple></j-image-upload>
                 </a-form-item>
               </a-col>
               <a-col :lg="6" :md="6" :sm="24"></a-col>
             </a-row>
             <a-row class="form-row" :gutter="24">
               <a-col :lg="18" :md="18" :sm="24">
-                <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 3 }}" :wrapperCol="{xs: { span: 24 },sm: { span: 20 }}" label="上传提示">
-                  图片最多4张，且单张大小不超过1M
+                <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 3 }}" :wrapperCol="{xs: { span: 24 },sm: { span: 20 }}" :label="$t('common.uploadImage')">
+                  {{ $t('common.fileSizeExceeds', {size: 1}) }}
                 </a-form-item>
               </a-col>
               <a-col :lg="6" :md="6" :sm="24"></a-col>
@@ -316,7 +315,7 @@
     },
     data () {
       return {
-        title:"操作",
+        title: this.$t('common.action'),
         width: '1300px',
         visible: false,
         modalStyle: '',
@@ -336,9 +335,9 @@
         prefixNo: 'material',
         attributeStatus: false,
         materialAttributeList: [],
-        skuOneTitle: '属性1',
-        skuTwoTitle: '属性2',
-        skuThreeTitle: '属性3',
+        skuOneTitle: this.$t('common.property') + '1',
+        skuTwoTitle: this.$t('common.property') + '2',
+        skuThreeTitle: this.$t('common.property') + '3',
         skuOneList: [],
         skuTwoList: [],
         skuThreeList: [],
@@ -357,38 +356,38 @@
         },
         mpShort: {
           mfrs: {},
-          otherField1: { name: '扩展1' },
-          otherField2: { name: '扩展2' },
-          otherField3: { name: '扩展3' }
+          otherField1: { name: this.$t('common.property') },
+          otherField2: { name: this.$t('common.property') },
+          otherField3: { name: this.$t('common.property') }
         },
         meTable: {
           loading: false,
           dataSource: [],
           columns: [
             {
-              title: '条码', key: 'barCode', width: '15%', type: FormTypes.input, defaultValue: '', placeholder: '请输入${title}',
-              validateRules: [{ required: true, message: '${title}不能为空' },
-                { pattern: /^.{4,40}$/, message: '长度为4到40位' },
+              title: this.$t('common.barcode'), key: 'barCode', width: '15%', type: FormTypes.input, defaultValue: '', placeholder: this.$t('common.pleaseEnter') + '${title}',
+              validateRules: [{ required: true, message: '${title}' + this.$t('material.cannotBeEmpty') },
+                { pattern: /^.{4,40}$/, message: this.$t('material.lengthBetween4And40') },
                 { handler: this.validateBarCode}]
             },
             {
-              title: '单位', key: 'commodityUnit', width: '8%', type: FormTypes.input, defaultValue: '', placeholder: '请输入${title}',
-              validateRules: [{ required: true, message: '${title}不能为空' }]
+              title: this.$t('common.unit'), key: 'commodityUnit', width: '8%', type: FormTypes.input, defaultValue: '', placeholder: this.$t('common.pleaseEnter') + '${title}',
+              validateRules: [{ required: true, message: '${title}' + this.$t('material.cannotBeEmpty') }]
             },
             {
-              title: '多属性', key: 'sku', width: '25%', type: FormTypes.input, defaultValue: '', readonly:true, placeholder: '请输入${title}'
+              title: this.$t('common.property'), key: 'sku', width: '25%', type: FormTypes.input, defaultValue: '', readonly:true, placeholder: this.$t('common.pleaseEnter') + '${title}'
             },
             {
-              title: '采购价', key: 'purchaseDecimal', width: '9%', type: FormTypes.inputNumber, defaultValue: '', placeholder: '请输入${title}'
+              title: this.$t('common.amount'), key: 'purchaseDecimal', width: '9%', type: FormTypes.inputNumber, defaultValue: '', placeholder: this.$t('common.pleaseEnter') + '${title}'
             },
             {
-              title: '零售价', key: 'commodityDecimal', width: '9%', type: FormTypes.inputNumber, defaultValue: '', placeholder: '请输入${title}'
+              title: this.$t('common.amount'), key: 'commodityDecimal', width: '9%', type: FormTypes.inputNumber, defaultValue: '', placeholder: this.$t('common.pleaseEnter') + '${title}'
             },
             {
-              title: '销售价', key: 'wholesaleDecimal', width: '9%', type: FormTypes.inputNumber, defaultValue: '', placeholder: '请输入${title}'
+              title: this.$t('common.amount'), key: 'wholesaleDecimal', width: '9%', type: FormTypes.inputNumber, defaultValue: '', placeholder: this.$t('common.pleaseEnter') + '${title}'
             },
             {
-              title: '最低售价', key: 'lowDecimal', width: '9%', type: FormTypes.inputNumber, defaultValue: '', placeholder: '请输入${title}'
+              title: this.$t('common.amount'), key: 'lowDecimal', width: '9%', type: FormTypes.inputNumber, defaultValue: '', placeholder: this.$t('common.pleaseEnter') + '${title}'
             }
           ]
         },
@@ -397,16 +396,16 @@
           dataSource: [],
           columns: [
             {
-              title: '仓库', key: 'name', width: '15%', type: FormTypes.normal
+              title: this.$t('common.warehouse'), key: 'name', width: '15%', type: FormTypes.normal
             },
             {
-              title: '期初库存数量', key: 'initStock', width: '15%', type: FormTypes.inputNumber, defaultValue: '', placeholder: '请输入${title}'
+              title: this.$t('common.quantity'), key: 'initStock', width: '15%', type: FormTypes.inputNumber, defaultValue: '', placeholder: this.$t('common.pleaseEnter') + '${title}'
             },
             {
-              title: '最低安全库存数量', key: 'lowSafeStock', width: '15%', type: FormTypes.inputNumber, defaultValue: '', placeholder: '请输入${title}'
+              title: this.$t('common.safetyStock'), key: 'lowSafeStock', width: '15%', type: FormTypes.inputNumber, defaultValue: '', placeholder: this.$t('common.pleaseEnter') + '${title}'
             },
             {
-              title: '最高安全库存数量', key: 'highSafeStock', width: '15%', type: FormTypes.inputNumber, defaultValue: '', placeholder: '请输入${title}'
+              title: this.$t('common.safetyStock'), key: 'highSafeStock', width: '15%', type: FormTypes.inputNumber, defaultValue: '', placeholder: this.$t('common.pleaseEnter') + '${title}'
             }
           ]
         },
@@ -415,28 +414,28 @@
         validatorRules:{
           name:{
             rules: [
-              { required: true, message: '请输入名称!' },
-              { max: 100, message: '长度请小于100个字符', trigger: 'blur' }
+              { required: true, message: this.$t('common.enterName') },
+              { max: 100, message: this.$t('common.aliasLength'), trigger: 'blur' }
             ]
           },
           standard:{
             rules: [
-              { max: 100, message: '长度请小于100个字符', trigger: 'blur' }
+              { max: 100, message: this.$t('common.aliasLength'), trigger: 'blur' }
             ]
           },
           model:{
             rules: [
-              { max: 100, message: '长度请小于100个字符', trigger: 'blur' }
+              { max: 100, message: this.$t('common.aliasLength'), trigger: 'blur' }
             ]
           },
           unit:{
             rules: [
-              { required: true, message: '请输入单位!' }
+              { required: true, message: this.$t('common.unit') }
             ]
           },
           unitId:{
             rules: [
-              { required: true, message: '请选择多单位!' }
+              { required: true, message: this.$t('common.unit') }
             ]
           }
         },
@@ -664,15 +663,15 @@
           formData.tenantId = ''
         }
         if(formData.meList.length === 0) {
-          this.$message.warning('抱歉，请输入条码信息！');
+          this.$message.warning(this.$t('common.barcode'));
           return;
         }
         if(formData.enableSerialNumber === '1' && formData.enableBatchNumber === '1') {
-          this.$message.warning('抱歉，序列号和批号只能选择一项！');
+          this.$message.warning(this.$t('material.snAndBatchOnlyOne'));
           return;
         }
         if(formData.manySku && formData.unitId) {
-          this.$message.warning('抱歉，多属性商品不能勾选多单位，请切换为单个单位！');
+          this.$message.warning(this.$t('material.skuNoMultiUnit'));
           return;
         }
         //校验商品是否存在，通过校验商品的名称、型号、规格、颜色、单位、制造商等
@@ -692,7 +691,7 @@
         checkMaterial(param).then((res)=>{
           if(res && res.code===200) {
             if(res.data.status){
-              this.$message.warning('抱歉，该商品已存在！');
+              this.$message.warning(this.$t('material.materialAlreadyExists'));
               return;
             } else {
               //进一步校验单位
@@ -715,17 +714,15 @@
               if(!formData.unit) {
                 //此时为多单位
                 if (formData.meList.length<2){
-                  this.$message.warning('多单位的商品条码行数至少要有两行，请再新增一行条码信息！');
+                  this.$message.warning(this.$t('material.multiUnitMinTwoRows'));
                   return;
                 }
                 if(formData.meList[0].commodityUnit != basicUnit) {
-                  this.$message.warning('条码之后的单位填写有误，单位【' + formData.meList[0].commodityUnit
-                    + '】请修改为【' + basicUnit + '】！');
+                  this.$message.warning(this.$t('material.unitMismatch', {unit: formData.meList[0].commodityUnit, correct: basicUnit}));
                   return;
                 }
                 if(formData.meList[1].commodityUnit != otherUnit) {
-                  this.$message.warning('条码之后的单位填写有误，单位【' + formData.meList[1].commodityUnit
-                    + '】请修改为【' + otherUnit + '】！');
+                  this.$message.warning(this.$t('material.unitMismatch', {unit: formData.meList[1].commodityUnit, correct: otherUnit}));
                   return;
                 }
               }
@@ -734,21 +731,19 @@
                 let commodityUnit = formData.meList[i].commodityUnit;
                 if(formData.unit) {
                   if(commodityUnit != formData.unit) {
-                    this.$message.warning('条码之后的单位填写有误，单位【' + commodityUnit + '】请修改为【'
-                      + formData.unit + '】！');
+                    this.$message.warning(this.$t('material.unitMismatch', {unit: commodityUnit, correct: formData.unit}));
                     return;
                   }
                 } else if(formData.unitId) {
                   if(commodityUnit != basicUnit && commodityUnit != otherUnit && commodityUnit != otherUnitTwo && commodityUnit != otherUnitThree) {
-                    let warnInfo = '条码之后的单位填写有误，单位【' + commodityUnit + '】请修改为【' + basicUnit+ '】或【' + otherUnit+ '】'
+                    let correctUnits = basicUnit + '】或【' + otherUnit
                     if(otherUnitTwo) {
-                      warnInfo += '或【' + otherUnitTwo+ '】'
+                      correctUnits += '】或【' + otherUnitTwo
                     }
                     if(otherUnitThree) {
-                      warnInfo += '或【' + otherUnitThree+ '】'
+                      correctUnits += '】或【' + otherUnitThree
                     }
-                    warnInfo += '！'
-                    this.$message.warning(warnInfo);
+                    this.$message.warning(this.$t('material.unitMismatch', {unit: commodityUnit, correct: correctUnits}));
                     return;
                   }
                 }
@@ -760,20 +755,20 @@
               for (let i = 0; i < formData.stock.length; i++) {
                 let depotStockObj = formData.stock[i]
                 if(skuCount && depotStockObj.initStock && depotStockObj.initStock-0) {
-                  this.$message.warning('抱歉，多属性商品不能录入期初库存，建议进行盘点录入！')
+                  this.$message.warning(this.$t('material.skuNoInitStock'))
                   return
                 }
                 if(formData.enableSerialNumber === '1' && depotStockObj.initStock && depotStockObj.initStock-0) {
-                  this.$message.warning('抱歉，序列号商品不能录入期初库存，建议进行入库单据录入！')
+                  this.$message.warning(this.$t('material.snNoInitStock'))
                   return
                 }
                 if(formData.enableBatchNumber === '1' && depotStockObj.initStock && depotStockObj.initStock-0) {
-                  this.$message.warning('抱歉，批号商品不能录入期初库存，建议进行入库单据录入！')
+                  this.$message.warning(this.$t('material.batchNoInitStock'))
                   return
                 }
                 if(depotStockObj.lowSafeStock && depotStockObj.highSafeStock) {
                   if(depotStockObj.lowSafeStock-0 > depotStockObj.highSafeStock-0) {
-                    this.$message.warning('抱歉，' + depotStockObj.name + '的最低安全库存大于最高安全库存！')
+                    this.$message.warning(this.$t('material.safetyStockError', {name: depotStockObj.name}))
                     return
                   }
                 }
@@ -783,7 +778,7 @@
                 formData.imgName = this.fileList
                 let fileArr = this.fileList.split(',')
                 if(fileArr.length > 4) {
-                  this.$message.warning('抱歉，商品图片不能超过4张！');
+                  this.$message.warning(this.$t('material.imageLimitExceeded'));
                   return
                 }
               } else {
@@ -812,7 +807,7 @@
             }
           }
         }).catch(() => {
-          this.$message.error('商品校验失败，请稍后重试')
+          this.$message.error(this.$t('material.checkFailed'))
         })
       },
       parseParam(param) {
@@ -828,7 +823,7 @@
             if(!res.data.status){
               callback(true);
             } else {
-              callback(false, '该条码已经存在');
+              callback(false, this.$t('common.error'));
             }
           } else {
             callback(false, res.data);
@@ -1160,7 +1155,7 @@
           this.$refs.priceModalForm.add(type);
           this.$refs.priceModalForm.disableSubmit = false;
         } else {
-          this.$message.warning('抱歉，只有开启多属性才能进行批量操作！');
+          this.$message.warning(this.$t('material.skuRequiredForBatch'));
         }
       },
       batchSetStock(type) {
@@ -1170,7 +1165,7 @@
       batchSetPriceModalFormOk(price, batchType) {
         let arr = this.meTable.dataSource
         if(arr.length === 0) {
-          this.$message.warning('请先录入条码、单位等信息！');
+          this.$message.warning(this.$t('material.enterBarcodeFirst'));
         } else {
           let meTableData = []
           for (let i = 0; i < arr.length; i++) {
@@ -1332,7 +1327,7 @@
       },
       addUnit() {
         this.$refs.unitModalForm.add();
-        this.$refs.unitModalForm.title = "新增多单位";
+        this.$refs.unitModalForm.title = this.$t('common.add');
         this.$refs.unitModalForm.disableSubmit = false;
       },
       unitModalFormOk() {

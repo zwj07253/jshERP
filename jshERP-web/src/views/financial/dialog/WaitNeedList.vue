@@ -10,10 +10,10 @@
       :mask="isDesktop()"
       :maskClosable="false"
       @cancel="handleCancel"
-      cancelText="关闭"
+      :cancelText="$t('common.close')"
       style="top:20px;height: 95%;">
       <template slot="footer">
-        <a-button key="back" @click="handleCancel">取消(ESC)</a-button>
+        <a-button key="back" @click="handleCancel">{{ $t('financial.cancelEsc') }}</a-button>
       </template>
       <!-- 查询区域 -->
       <div class="table-page-search-wrapper">
@@ -22,12 +22,12 @@
           <a-row :gutter="24">
             <a-col :md="12" :sm="24">
               <a-form-item :label="organType" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                <a-select :placeholder="'请选择'+ organType" v-model="queryParam.organId"
+                <a-select :placeholder="$t('common.pleaseSelect') + (organType === '客户' ? $t('common.customer') : $t('common.supplier'))" v-model="queryParam.organId"
                           :dropdownMatchSelectWidth="false" showSearch allow-clear optionFilterProp="children" @search="handleSearchSupplier">
                   <div slot="dropdownRender" slot-scope="menu">
                     <v-nodes :vnodes="menu" />
                     <a-divider style="margin: 4px 0;" />
-                    <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initSupplier"><a-icon type="reload" /> 刷新列表</div>
+                    <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initSupplier"><a-icon type="reload" /> {{ $t('common.refreshList') }}</div>
                   </div>
                   <a-select-option v-for="(item,index) in supList" :key="index" :value="item.id">
                     {{ item.supplier }}
@@ -37,8 +37,8 @@
             </a-col>
             <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
               <a-col :md="12" :sm="24">
-                <a-button type="primary" @click="searchQuery">查询</a-button>
-                <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
+                <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                <a-button style="margin-left: 8px" @click="searchReset">{{ $t('common.reset') }}</a-button>
               </a-col>
             </span>
           </a-row>
@@ -60,7 +60,7 @@
         </span>
       </a-table>
       <!-- table区域-end -->
-      <div>注意：具体欠款详情，请到<b>报表查询</b>中的<b>{{organType}}对账</b>查看</div>
+      <div>{{ $t('financial.debtDetailNote', [$t('menu.reportQuery'), organType === $t('common.customer') ? $t('report.customerReconciliation') : $t('report.supplierReconciliation')]) }}</div>
     </a-modal>
   </div>
 </template>
@@ -81,7 +81,7 @@
     },
     data () {
       return {
-        title: "操作",
+        title: this.$t('common.action'),
         visible: false,
         disableMixinCreated: true,
         organType: '',
@@ -107,14 +107,14 @@
         // 表头
         columns: [
           {
-            title: '操作',
+            title: this.$t('common.action'),
             dataIndex: 'action',
             width:100,
             align:"center",
             scopedSlots: { customRender: 'action' },
           },
           { title: '', dataIndex: 'supplier',width:400, ellipsis:true},
-          { title: '欠款金额', dataIndex: 'allNeed',width:150 }
+          { title: this.$t('purchase.form.debtPlaceholder'), dataIndex: 'allNeed',width:150 }
         ],
         url: {
           list: "/depotHead/getStatementAccount"
@@ -137,13 +137,13 @@
         this.model = Object.assign({}, {});
         this.visible = true
         if(organType === '客户') {
-          this.title = '待收款客户'
+          this.title = this.$t('financial.waitReceiptCustomer')
           this.queryParam.supplierType = '客户'
-          this.actionType = '收款'
+          this.actionType = this.$t('financial.receipt')
         } else if(organType === '供应商') {
-          this.title = '待付款供应商'
+          this.title = this.$t('financial.waitPaymentSupplier')
           this.queryParam.supplierType = '供应商'
-          this.actionType = '付款'
+          this.actionType = this.$t('financial.payment')
         }
         this.loadData(1)
         this.initSupplier()

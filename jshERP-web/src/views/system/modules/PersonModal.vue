@@ -12,28 +12,28 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:20%;height: 45%;">
       <template slot="footer">
         <a-button key="back" v-if="isReadOnly" @click="handleCancel">
-          取消
+          {{ $t('common.cancel') }}
         </a-button>
       </template>
       <a-spin :spinning="confirmLoading">
         <a-form :form="form" id="personModal">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="姓名">
-            <a-input placeholder="请输入姓名" :disabled="isReadOnly" v-decorator.trim="[ 'name', validatorRules.name]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.personName')">
+            <a-input :placeholder="$t('system.enterPersonName')" :disabled="isReadOnly" v-decorator.trim="[ 'name', validatorRules.name]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="类型">
-            <a-select placeholder="请选择类型" :disabled="isReadOnly" v-decorator="[ 'type', validatorRules.type]">
-              <a-select-option value="销售员">销售员</a-select-option>
-              <a-select-option value="仓管员">仓管员</a-select-option>
-              <a-select-option value="财务员">财务员</a-select-option>
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.type')">
+            <a-select :placeholder="$t('common.selectType')" :disabled="isReadOnly" v-decorator="[ 'type', validatorRules.type]">
+              <a-select-option value="销售员">{{ $t('system.salesPerson') }}</a-select-option>
+              <a-select-option value="仓管员">{{ $t('system.warehouseKeeper') }}</a-select-option>
+              <a-select-option value="财务员">{{ $t('system.financeStaff') }}</a-select-option>
             </a-select>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="排序">
-            <a-input placeholder="请输入排序" :disabled="isReadOnly" v-decorator.trim="[ 'sort', validatorRules.sort ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.sort')">
+            <a-input :placeholder="$t('common.sort')" :disabled="isReadOnly" v-decorator.trim="[ 'sort', validatorRules.sort ]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -50,7 +50,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         model: {},
         isReadOnly: false,
@@ -67,18 +67,18 @@
         validatorRules:{
           name:{
             rules: [
-              { required: true, message: '请输入姓名!' },
-              { max: 50, message: '长度不能超过 50 个字符', trigger: 'blur' },
+              { required: true, message: this.$t('system.personNameRequired') },
+              { max: 50, message: this.$t('system.nameLength50'), trigger: 'blur' },
               { validator: this.validatePersonName}
             ]},
           type:{
             rules: [
-              { required: true, message: '请选择类型!' }
+              { required: true, message: this.$t('system.selectTypeRequired') }
             ]
           },
           sort:{
             rules: [
-              { pattern: /^\d{1,10}$/, message: '排序只能填写不超过10位的非负整数', trigger: 'blur' }
+              { pattern: /^\d{1,10}$/, message: this.$t('system.sortNonNegativeInt10'), trigger: 'blur' }
             ]
           }
         },
@@ -146,12 +146,12 @@
             if(!res.data.status){
               callback();
             } else {
-              callback("名称已经存在");
+              callback(this.$t('common.nameExists'));
             }
           } else {
-            callback("名称校验失败，请稍后重试");
+            callback(this.$t('system.nameCheckFailed'));
           }
-        }).catch(() => callback("名称校验失败，请稍后重试"));
+        }).catch(() => callback(this.$t('system.nameCheckFailed')));
       }
     }
   }

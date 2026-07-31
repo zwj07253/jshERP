@@ -9,19 +9,19 @@
           <a-form layout="inline" @keyup.enter.native="searchQuery">
             <a-row :gutter="24">
               <a-col :md="6" :sm="8">
-                <a-form-item label="属性名" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
-                  <a-input placeholder="请输入属性名查询" v-model="queryParam.attributeName"></a-input>
+                <a-form-item :label="$t('material.attributeName')" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
+                  <a-input :placeholder="$t('material.enterAttributeNameQuery')" v-model="queryParam.attributeName"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="8">
-                <a-form-item label="属性值" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
-                  <a-input placeholder="请输入属性值查询" v-model="queryParam.attributeValue"></a-input>
+                <a-form-item :label="$t('material.attributeValue')" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
+                  <a-input :placeholder="$t('material.enterAttributeValueQuery')" v-model="queryParam.attributeValue"></a-input>
                 </a-form-item>
               </a-col>
               <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
                 <a-col :md="6" :sm="24">
-                  <a-button type="primary" @click="searchQuery">查询</a-button>
-                  <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
+                  <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="searchReset">{{ $t('common.reset') }}</a-button>
                 </a-col>
               </span>
             </a-row>
@@ -29,8 +29,8 @@
         </div>
         <!-- 操作按钮区域 -->
         <div class="table-operator"  style="margin-top: 5px">
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd" type="primary" icon="plus">新增</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchDel" icon="delete">删除</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd" type="primary" icon="plus">{{ $t('common.add') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchDel" icon="delete">{{ $t('common.delete') }}</a-button>
         </div>
         <!-- table区域-begin -->
         <div>
@@ -46,10 +46,10 @@
             :rowSelection="{selectedRowKeys: selectedRowKeys, onChange: onSelectChange}"
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
-              <a @click="handleEdit(record)">编辑</a>
+              <a @click="handleEdit(record)">{{ $t('common.edit') }}</a>
               <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
-              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定删除吗?" @confirm="() => handleDelete(record.id)">
-                <a>删除</a>
+              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" :title="$t('common.confirmDelete')" @confirm="() => handleDelete(record.id)">
+                <a>{{ $t('common.delete') }}</a>
               </a-popconfirm>
             </span>
             <template slot="customRenderAttributeValue" slot-scope="attributeValue">
@@ -103,14 +103,14 @@
             }
           },
           {
-            title: '操作',
+            title: this.$t('common.action'),
             dataIndex: 'action',
             width: 100,
             align:"center",
             scopedSlots: { customRender: 'action' },
           },
-          {title: '属性名', dataIndex: 'attributeName', width: 150},
-          {title: '属性值', dataIndex: 'attributeValue', width: 750,
+          {title: this.$t('material.attributeName'), dataIndex: 'attributeName', width: 150},
+          {title: this.$t('material.attributeValue'), dataIndex: 'attributeValue', width: 750,
             scopedSlots: { customRender: 'customRenderAttributeValue' }
           }
         ],
@@ -130,7 +130,7 @@
       },
       handleEdit: function (record) {
         this.$refs.modalForm.edit(record);
-        this.$refs.modalForm.title = "编辑";
+        this.$refs.modalForm.title = this.$t('common.edit');
         this.$refs.modalForm.disableSubmit = false;
         if(this.btnEnableList.indexOf(1)===-1) {
           this.$refs.modalForm.isReadOnly = true

@@ -19,18 +19,18 @@
     <a-spin :spinning="stepLoading">
       <a-form layout="vertical" :auto-form-create="(form)=>{this.form = form}">
         <div class="step-form-wrapper">
-          <p style="text-align: center" v-if="!stepLoading">请在手机中打开 Google Authenticator 或两步验证 APP<br />输入 6 位动态码</p>
-          <p style="text-align: center" v-else>正在验证..<br/>请稍后</p>
+          <p style="text-align: center" v-if="!stepLoading">{{ $t('common.twoStepAuthHint') }}</p>
+          <p style="text-align: center" v-else>{{ $t('common.verifying') }}</p>
           <a-form-item
             :style="{ textAlign: 'center' }"
             hasFeedback
             fieldDecoratorId="stepCode"
-            :fieldDecoratorOptions="{rules: [{ required: true, message: '请输入 6 位动态码!', pattern: /^\d{6}$/, len: 6 }]}"
+            :fieldDecoratorOptions="{rules: [{ required: true, message: $t('common.enterDynamicCode'), pattern: /^\d{6}$/, len: 6 }]}"
           >
             <a-input :style="{ textAlign: 'center' }" @keyup.enter.native="handleStepOk" placeholder="000000" />
           </a-form-item>
           <p style="text-align: center">
-            <a @click="onForgeStepCode">遗失手机?</a>
+            <a @click="onForgeStepCode">{{ $t('common.lostPhone') }}</a>
           </p>
         </div>
       </a-form>

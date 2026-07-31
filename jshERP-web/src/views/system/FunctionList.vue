@@ -9,14 +9,14 @@
           <a-form layout="inline" @keyup.enter.native="searchQuery">
             <a-row :gutter="24">
               <a-col :md="6" :sm="24">
-                <a-form-item label="名称" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入名称查询" v-model="queryParam.name"></a-input>
+                <a-form-item :label="$t('common.name')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('common.enterName')" v-model="queryParam.name"></a-input>
                 </a-form-item>
               </a-col>
               <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
                 <a-col :md="6" :sm="24">
-                  <a-button type="primary" @click="searchQuery">查询</a-button>
-                  <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
+                  <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="searchReset">{{ $t('common.reset') }}</a-button>
                 </a-col>
               </span>
             </a-row>
@@ -24,8 +24,8 @@
         </div>
         <!-- 操作按钮区域 -->
         <div class="table-operator"  style="margin-top: 5px">
-          <a-button @click="handleAdd" type="primary" icon="plus">新增</a-button>
-          <a-button @click="batchDel" icon="delete">删除</a-button>
+          <a-button @click="handleAdd" type="primary" icon="plus">{{ $t('common.add') }}</a-button>
+          <a-button @click="batchDel" icon="delete">{{ $t('common.delete') }}</a-button>
         </div>
         <!-- table区域-begin -->
         <div>
@@ -42,16 +42,16 @@
             :rowSelection="{selectedRowKeys: selectedRowKeys, onChange: onSelectChange}"
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
-              <a @click="handleEdit(record)">编辑</a>
+              <a @click="handleEdit(record)">{{ $t('common.edit') }}</a>
               <a-divider type="vertical" />
-              <a-popconfirm title="确定删除吗?" @confirm="() => handleDelete(record.id)">
-                <a>删除</a>
+              <a-popconfirm :title="$t('common.confirmDelete')" @confirm="() => handleDelete(record.id)">
+                <a>{{ $t('common.delete') }}</a>
               </a-popconfirm>
             </span>
             <!-- 状态渲染模板 -->
             <template slot="customRenderFlag" slot-scope="enabled">
-              <a-tag v-if="enabled==1" color="green">启用</a-tag>
-              <a-tag v-if="enabled==0" color="orange">禁用</a-tag>
+              <a-tag v-if="enabled==1" color="green">{{ $t('common.enable') }}</a-tag>
+              <a-tag v-if="enabled==0" color="orange">{{ $t('common.disable') }}</a-tag>
             </template>
           </a-table>
         </div>
@@ -97,24 +97,24 @@
             }
           },
           {
-            title: '操作',
+            title: this.$t('common.action'),
             dataIndex: 'action',
             width: 150,
             align:"center",
             scopedSlots: { customRender: 'action' },
           },
-          {title: '编号 ', dataIndex: 'number', width: 80},
-          {title: '名称', dataIndex: 'name', width: 120, ellipsis:true},
-          {title: '上级编号', dataIndex: 'parentNumber', width: 80},
-          {title: '上级名称', dataIndex: 'parentName', width: 120, ellipsis:true},
-          {title: '链接', dataIndex: 'url', width: 250, ellipsis:true},
-          {title: '组件', dataIndex: 'component', width: 250, ellipsis:true},
-          {title: '排序', dataIndex: 'sort', width: 60},
+          {title: this.$t('system.numberCol'), dataIndex: 'number', width: 80},
+          {title: this.$t('common.name'), dataIndex: 'name', width: 120, ellipsis:true},
+          {title: this.$t('system.parentNumberCol'), dataIndex: 'parentNumber', width: 80},
+          {title: this.$t('system.parentNameCol'), dataIndex: 'parentName', width: 120, ellipsis:true},
+          {title: this.$t('system.linkCol'), dataIndex: 'url', width: 250, ellipsis:true},
+          {title: this.$t('system.componentCol'), dataIndex: 'component', width: 250, ellipsis:true},
+          {title: this.$t('common.sort'), dataIndex: 'sort', width: 60},
           {
-            title: '是否启用', dataIndex: 'enabled', width: 80, align: "center",
+            title: this.$t('system.isEnabledCol'), dataIndex: 'enabled', width: 80, align: "center",
             scopedSlots: { customRender: 'customRenderFlag' }
           },
-          {title: '图标', dataIndex: 'icon', width: 120}
+          {title: this.$t('system.iconCol'), dataIndex: 'icon', width: 120}
         ],
         url: {
           list: "/function/list",

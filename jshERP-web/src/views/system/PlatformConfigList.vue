@@ -16,7 +16,7 @@
             :loading="loading"
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
-              <a @click="handleEdit(record)">编辑</a>
+              <a @click="handleEdit(record)">{{ $t('common.edit') }}</a>
             </span>
           </a-table>
         </div>
@@ -62,19 +62,19 @@
             }
           },
           {
-            title: '操作',
+            title: this.$t('common.action'),
             dataIndex: 'action',
             align:"center",
             width: 100,
             scopedSlots: { customRender: 'action' },
           },
           {
-            title: '配置名称',
+            title: this.$t('common.configName'),
             dataIndex: 'platformKeyInfo',
             width: 100
           },
           {
-            title: '配置值',
+            title: this.$t('common.configValue'),
             dataIndex: 'platformValue',
             width: 500
           }
@@ -89,7 +89,7 @@
     methods: {
       handleEdit: function (record) {
         this.$refs.modalForm.edit(record);
-        this.$refs.modalForm.title = "编辑";
+        this.$refs.modalForm.title = this.$t('common.edit');
         this.$refs.modalForm.disableSubmit = false;
         if(this.btnEnableList.indexOf(1)===-1) {
           this.$refs.modalForm.isReadOnly = true

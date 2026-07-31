@@ -1,6 +1,6 @@
 <template>
   <a-modal
-    title="导入EXCEL"
+    :title="$t('common.import')"
     :width="600"
     :visible="visible"
     :confirmLoading="uploading"
@@ -15,18 +15,18 @@
       :beforeUpload="beforeUpload">
       <a-button>
         <a-icon type="upload" />
-        选择导入文件
+        {{ $t('common.selectFileToImport') }}
       </a-button>
     </a-upload>
 
     <template slot="footer">
-      <a-button @click="handleClose">关闭</a-button>
+      <a-button @click="handleClose">{{ $t('common.close') }}</a-button>
       <a-button
         type="primary"
         @click="handleImport"
         :disabled="fileList.length === 0"
         :loading="uploading">
-        {{ uploading ? '上传中...' : '开始上传' }}
+        {{ uploading ? $t('common.uploadingEllipsis') : $t('common.startUpload') }}
       </a-button>
     </template>
 

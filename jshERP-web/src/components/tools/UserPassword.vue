@@ -9,18 +9,18 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="关闭"
+      :cancelText="$t('common.close')"
       style="top:20%;height: 50%;">
       <a-spin :spinning="confirmLoading">
         <a-form :form="form">
-          <a-form-item label="旧密码" :labelCol="labelCol" :wrapperCol="wrapperCol">
-            <a-input-password type="password" placeholder="请输入旧密码" v-decorator="[ 'oldpassword', validatorRules.oldpassword]" />
+          <a-form-item :label="$t('login.oldPassword')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+            <a-input-password type="password" :placeholder="$t('login.enterOldPassword')" v-decorator="[ 'oldpassword', validatorRules.oldpassword]" />
           </a-form-item>
-          <a-form-item label="新密码" :labelCol="labelCol" :wrapperCol="wrapperCol">
-            <a-input-password type="password" placeholder="新密码至少6位，区分大小写" v-decorator="[ 'password', validatorRules.password]" />
+          <a-form-item :label="$t('login.newPassword')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+            <a-input-password type="password" :placeholder="$t('login.passwordMinLength')" v-decorator="[ 'password', validatorRules.password]" />
           </a-form-item>
-          <a-form-item label="确认新密码" :labelCol="labelCol" :wrapperCol="wrapperCol">
-            <a-input-password type="password"  placeholder="请确认新密码" v-decorator="[ 'confirmPassword', validatorRules.confirmPassword]"/>
+          <a-form-item :label="$t('login.confirmPassword')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+            <a-input-password type="password"  :placeholder="$t('login.enterConfirmPassword')" v-decorator="[ 'confirmPassword', validatorRules.confirmPassword]"/>
           </a-form-item>
         </a-form>
       </a-spin>
@@ -37,19 +37,19 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"修改密码",
+        title: this.$t('login.changePasswordTitle'),
         modalWidth:800,
         visible: false,
         confirmLoading: false,
         validatorRules:{
           oldpassword:{
             rules: [{
-              required: true, message: '请输入旧密码!',
+              required: true, message: this.$t('login.enterOldPasswordRequired'),
             }],
           },
           password:{
             rules: [
-              { required: true, message: '请输入新密码!'},
+              { required: true, message: this.$t('login.enterNewPasswordRequired')},
               { validator: this.handlePassword }
             ],
             validateTrigger: ['change', 'blur'],
@@ -57,7 +57,7 @@
           },
           confirmPassword:{
             rules: [
-              { required: true, message: '请确认新密码!' },
+              { required: true, message: this.$t('login.enterConfirmPasswordRequired') },
               { validator: this.handleConfirmPassword }
             ],
             validateTrigger: ['change', 'blur'],
@@ -81,7 +81,7 @@
     methods: {
       show(userId){
         if(!userId){
-          this.$message.warning("当前系统无登陆用户!");
+          this.$message.warning(this.$t('common.noLoginUser'));
         }else{
           this.userId = userId
           this.form.resetFields();
@@ -125,21 +125,21 @@
       handlePassword(rule, value, callback) {
         let oldpassword = this.form.getFieldValue('oldpassword')
         if(oldpassword === value) {
-          callback(new Error('新密码和旧密码不能相同!'))
+          callback(new Error(this.$t('login.passwordSameAsOld')))
         }
         let reg = /^(?=.*[a-z])(?=.*\d).{6,}$/;
         if (!reg.test(value)) {
-          callback(new Error('用户密码至少要有数字和小写字母，并且长度至少6位!'))
+          callback(new Error(this.$t('login.passwordFormatError')))
         }
         callback()
       },
       handleConfirmPassword(rule, value, callback) {
         let password = this.form.getFieldValue('password')
         if (value === undefined) {
-          callback(new Error('请输入密码!'))
+          callback(new Error(this.$t('login.enterPassword')))
         }
         if (value && password && value.trim() !== password.trim()) {
-          callback(new Error('两次密码不一致!'))
+          callback(new Error(this.$t('login.passwordMismatch')))
         }
         callback()
       }

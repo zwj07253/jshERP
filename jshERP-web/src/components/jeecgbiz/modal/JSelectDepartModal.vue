@@ -6,9 +6,9 @@
     :confirmLoading="confirmLoading"
     @ok="handleSubmit"
     @cancel="handleCancel"
-    cancelText="关闭">
+    :cancelText="$t('common.close')">
     <a-spin tip="Loading..." :spinning="false">
-      <a-input-search style="margin-bottom: 1px" placeholder="请输入部门名称按回车进行搜索" @search="onSearch" />
+      <a-input-search style="margin-bottom: 1px" :placeholder="$t('common.searchDepartment')" @search="onSearch" />
       <a-tree
         checkable
         :treeData="treeData"

@@ -10,10 +10,10 @@
       :mask="isDesktop()"
       :maskClosable="false"
       @cancel="handleCancel"
-      cancelText="关闭"
+      :cancelText="$t('common.close')"
       style="top:40px;height: 90%;">
       <template slot="footer">
-        <a-button @click="handleCancel">关闭</a-button>
+        <a-button @click="handleCancel">{{ $t('common.close') }}</a-button>
       </template>
       <!-- 查询区域 -->
       <div class="table-page-search-wrapper">
@@ -21,8 +21,8 @@
         <a-form layout="inline" @keyup.enter.native="searchQuery">
           <a-row :gutter="24">
             <a-col :md="6" :sm="24">
-              <a-form-item label="字典名称" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                <a-select placeholder="请选择字典名称" showSearch allow-clear optionFilterProp="children" v-model="queryParam.dictType">
+              <a-form-item :label="$t('system.dictNameLabel')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                <a-select :placeholder="$t('system.selectDictName')" showSearch allow-clear optionFilterProp="children" v-model="queryParam.dictType">
                   <a-select-option v-for="(item,index) in typeOptions" :key="index" :value="item.dictType">
                     {{ item.dictName }}
                   </a-select-option>
@@ -30,13 +30,13 @@
               </a-form-item>
             </a-col>
             <a-col :md="6" :sm="24">
-              <a-form-item label="字典标签" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                <a-input placeholder="请输入字典标签" v-model="queryParam.dictLabel"></a-input>
+              <a-form-item :label="$t('system.dictLabel')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                <a-input :placeholder="$t('system.enterDictLabel')" v-model="queryParam.dictLabel"></a-input>
               </a-form-item>
             </a-col>
             <a-col :md="6" :sm="24">
-              <a-form-item label="状态" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                <a-select v-model="queryParam.status" placeholder="请选择状态">
+              <a-form-item :label="$t('common.status')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                <a-select v-model="queryParam.status" :placeholder="$t('common.selectStatus')">
                   <a-select-option v-for="dict in dict.type.sys_normal_disable" :key="dict.value" :value="dict.value">
                     {{ dict.label }}
                   </a-select-option>
@@ -45,8 +45,8 @@
             </a-col>
             <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
               <a-col :md="4" :sm="24">
-                <a-button type="primary" @click="searchQuery">查询</a-button>
-                <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
+                <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                <a-button style="margin-left: 8px" @click="searchReset">{{ $t('common.reset') }}</a-button>
               </a-col>
             </span>
           </a-row>
@@ -54,8 +54,8 @@
       </div>
       <!-- 操作按钮区域 -->
       <div class="table-operator" style="border-top: 5px">
-        <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAddWithData" type="primary" icon="plus">新增</a-button>
-        <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchDel" icon="delete">删除</a-button>
+        <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAddWithData" type="primary" icon="plus">{{ $t('common.add') }}</a-button>
+        <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchDel" icon="delete">{{ $t('common.delete') }}</a-button>
       </div>
       <!-- table区域-begin -->
       <a-table
@@ -71,10 +71,10 @@
         :rowSelection="{selectedRowKeys: selectedRowKeys, onChange: onSelectChange}"
         @change="handleTableChange">
         <span slot="action" slot-scope="text, record">
-          <a v-if="btnEnableList.indexOf(1)>-1" @click="handleEdit(record)">编辑</a>
+          <a v-if="btnEnableList.indexOf(1)>-1" @click="handleEdit(record)">{{ $t('common.edit') }}</a>
           <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
-          <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定删除吗?" @confirm="() => handleDelete(record.dictCode)">
-            <a>删除</a>
+          <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" :title="$t('common.confirmDelete')" @confirm="() => handleDelete(record.dictCode)">
+            <a>{{ $t('common.delete') }}</a>
           </a-popconfirm>
         </span>
         <template slot="customRenderDictLabel" slot-scope="text, record">
@@ -104,7 +104,7 @@
     mixins:[JeecgListMixin, mixinDevice],
     data () {
       return {
-        title:"字典数据",
+        title: this.$t('system.dictData'),
         visible: false,
         disableMixinCreated: true,
         // 类型数据字典
@@ -125,23 +125,23 @@
         // 表头
         columns: [
           {
-            title: '操作',
+            title: this.$t('common.action'),
             dataIndex: 'action',
             scopedSlots: {customRender: 'action'},
             align: "center",
             width: 80
           },
-          { title: '字典编码', dataIndex: 'dictCode',width:100, align:"center"},
-          { title: '字典标签',dataIndex: 'dictLabel',width: 100,align:"center",
+          { title: this.$t('system.dictCode'), dataIndex: 'dictCode',width:100, align:"center"},
+          { title: this.$t('system.dictLabel'),dataIndex: 'dictLabel',width: 100,align:"center",
             scopedSlots: { customRender: 'customRenderDictLabel' }
           },
-          { title: '字典键值', dataIndex: 'dictValue',width:100, align:"center"},
-          { title: '字典排序', dataIndex: 'dictSort',width:100, align:"center"},
-          { title: '状态', dataIndex: 'status',width:100, align:"center",
+          { title: this.$t('system.dictValue'), dataIndex: 'dictValue',width:100, align:"center"},
+          { title: this.$t('system.dictSort'), dataIndex: 'dictSort',width:100, align:"center"},
+          { title: this.$t('common.status'), dataIndex: 'status',width:100, align:"center",
             scopedSlots: { customRender: 'customRenderStatus' }
           },
-          { title: '备注', dataIndex: 'remark',width:100},
-          { title: '创建时间', dataIndex: 'createTime',width:100}
+          { title: this.$t('common.remark'), dataIndex: 'remark',width:100},
+          { title: this.$t('common.createTime'), dataIndex: 'createTime',width:100}
         ],
         dataSource:[],
         url: {
@@ -170,7 +170,7 @@
       },
       handleAddWithData() {
         this.$refs.modalForm.add(this.queryParam.dictType)
-        this.$refs.modalForm.title = "新增";
+        this.$refs.modalForm.title = this.$t('common.add');
         this.$refs.modalForm.disableSubmit = false;
       },
       close () {

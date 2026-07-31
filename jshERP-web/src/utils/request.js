@@ -4,6 +4,7 @@ import store from '@/store'
 import { VueAxios } from './axios'
 import {Modal, notification} from 'ant-design-vue'
 import { ACCESS_TOKEN } from "@/store/mutation-types"
+import { i18n } from '@/locales'
 
 /**
  * 【指定 axios的 baseURL】
@@ -25,14 +26,14 @@ const err = (error) => {
     const token = Vue.ls.get(ACCESS_TOKEN)
     switch (error.response.status) {
       case 403:
-        notification.error({ message: '系统提示', description: '拒绝访问',duration: 4})
+        notification.error({ message: i18n.t('common.systemPrompt'), description: i18n.t('common.accessDenied'),duration: 4})
         break
       case 500:
         if(token && data==="loginOut"){
           Modal.error({
-            title: '登录已过期',
-            content: '很抱歉，登录已过期，请重新登录',
-            okText: '重新登录',
+            title: i18n.t('common.sessionExpired'),
+            content: i18n.t('common.sessionExpiredMsg'),
+            okText: i18n.t('common.relogin'),
             mask: false,
             onOk: () => {
               Vue.ls.remove(ACCESS_TOKEN)
@@ -42,13 +43,13 @@ const err = (error) => {
         }
         break
       case 404:
-          notification.error({ message: '系统提示', description:'很抱歉，资源未找到!',duration: 4})
+          notification.error({ message: i18n.t('common.systemPrompt'), description: i18n.t('common.resourceNotFound'),duration: 4})
         break
       case 504:
-        notification.error({ message: '系统提示', description: '网络超时'})
+        notification.error({ message: i18n.t('common.systemPrompt'), description: i18n.t('common.networkTimeout')})
         break
       case 401:
-        notification.error({ message: '系统提示', description:'未授权，请重新登录',duration: 4})
+        notification.error({ message: i18n.t('common.systemPrompt'), description: i18n.t('common.unauthorized'),duration: 4})
         if (token) {
           store.dispatch('Logout').then(() => {
             setTimeout(() => {
@@ -59,7 +60,7 @@ const err = (error) => {
         break
       default:
         notification.error({
-          message: '系统提示',
+          message: i18n.t('common.systemPrompt'),
           description: data.message,
           duration: 4
         })

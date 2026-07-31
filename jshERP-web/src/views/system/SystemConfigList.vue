@@ -4,149 +4,149 @@
       <a-form :form="form">
         <div class="tabs-header">
           <a-tabs :active-key="activeKey" @change="handleTabChange">
-            <a-tab-pane key="sec1" tab="基本资料" />
-            <a-tab-pane key="sec2" tab="配置信息" />
+            <a-tab-pane key="sec1" :tab="$t('system.basicInfo')" />
+            <a-tab-pane key="sec2" :tab="$t('system.configInfo')" />
           </a-tabs>
         </div>
         <div class="content-container" :style="contentStyle" ref="container">
           <div id="sec1" class="section" ref="sec1">
-            <h2>基本资料</h2>
+            <h2>{{ $t('system.basicInfoTitle') }}</h2>
             <a-row class="form-row" :gutter="24">
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="baseWrapperCol" label="公司名称">
-                  <a-input placeholder="请输入公司名称" v-decorator.trim="[ 'companyName' ]" @change="handleCompanyName" />
+                <a-form-item :labelCol="labelCol" :wrapperCol="baseWrapperCol" :label="$t('system.companyName')">
+                  <a-input :placeholder="$t('system.companyName')" v-decorator.trim="[ 'companyName' ]" @change="handleCompanyName" />
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="baseWrapperCol" label="联系人">
-                  <a-input placeholder="请输入联系人" v-decorator.trim="[ 'companyContacts' ]" @change="handleCompanyContacts" />
+                <a-form-item :labelCol="labelCol" :wrapperCol="baseWrapperCol" :label="$t('system.contact')">
+                  <a-input :placeholder="$t('system.contact')" v-decorator.trim="[ 'companyContacts' ]" @change="handleCompanyContacts" />
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="baseWrapperCol" label="公司地址">
-                  <a-input placeholder="请输入公司地址" v-decorator.trim="[ 'companyAddress' ]" @change="handleCompanyAddress" />
+                <a-form-item :labelCol="labelCol" :wrapperCol="baseWrapperCol" :label="$t('system.companyAddress')">
+                  <a-input :placeholder="$t('system.companyAddress')" v-decorator.trim="[ 'companyAddress' ]" @change="handleCompanyAddress" />
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="baseWrapperCol" label="公司电话">
-                  <a-input placeholder="请输入公司电话" v-decorator.trim="[ 'companyTel' ]" @change="handleCompanyTel" />
+                <a-form-item :labelCol="labelCol" :wrapperCol="baseWrapperCol" :label="$t('system.companyTel')">
+                  <a-input :placeholder="$t('system.companyTel')" v-decorator.trim="[ 'companyTel' ]" @change="handleCompanyTel" />
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="baseWrapperCol" label="公司传真">
-                  <a-input placeholder="请输入公司传真" v-decorator.trim="[ 'companyFax' ]" @change="handleCompanyFax" />
+                <a-form-item :labelCol="labelCol" :wrapperCol="baseWrapperCol" :label="$t('system.companyFax')">
+                  <a-input :placeholder="$t('system.companyFax')" v-decorator.trim="[ 'companyFax' ]" @change="handleCompanyFax" />
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="baseWrapperCol" label="公司邮编">
-                  <a-input placeholder="请输入公司邮编" v-decorator.trim="[ 'companyPostCode' ]" @change="handleCompanyPostCode" />
+                <a-form-item :labelCol="labelCol" :wrapperCol="baseWrapperCol" :label="$t('system.companyPostCode')">
+                  <a-input :placeholder="$t('system.companyPostCode')" v-decorator.trim="[ 'companyPostCode' ]" @change="handleCompanyPostCode" />
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="baseWrapperCol" label="销售协议">
-                  <a-input placeholder="请输入销售协议" v-decorator.trim="[ 'saleAgreement' ]" @change="handleSaleAgreement" />
+                <a-form-item :labelCol="labelCol" :wrapperCol="baseWrapperCol" :label="$t('system.saleAgreement')">
+                  <a-input :placeholder="$t('system.saleAgreement')" v-decorator.trim="[ 'saleAgreement' ]" @change="handleSaleAgreement" />
                 </a-form-item>
               </a-col>
             </a-row>
           </div>
           <div id="sec2" class="section" ref="sec2">
-            <h2>配置信息</h2>
+            <h2>{{ $t('system.configInfoTitle') }}</h2>
             <a-row class="form-row" :gutter="24">
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="分配仓库权限">
-                  <a-switch checked-children="启用" un-checked-children="关闭" v-model="depotFlagSwitch" @change="onDepotChange"></a-switch>
-                  （启用后，需要到<b>用户管理</b>进行<b>分配仓库</b>，针对专人管理仓库的场景）
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.depotPerm')">
+                  <a-switch :checked-children="$t('common.enable')" :un-checked-children="$t('common.disable')" v-model="depotFlagSwitch" @change="onDepotChange"></a-switch>
+                  （{{ $t('system.depotPermTip') }}）
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="分配客户权限">
-                  <a-switch checked-children="启用" un-checked-children="关闭" v-model="customerFlagSwitch" @change="onCustomerChange"></a-switch>
-                  （启用后，需要到<b>用户管理</b>进行<b>分配客户</b>，针对销售员只能看自己客户的场景）
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.customerPerm')">
+                  <a-switch :checked-children="$t('common.enable')" :un-checked-children="$t('common.disable')" v-model="customerFlagSwitch" @change="onCustomerChange"></a-switch>
+                  （{{ $t('system.customerPermTip') }}）
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="支持负库存">
-                  <a-switch checked-children="启用" un-checked-children="关闭" v-model="minusStockFlagSwitch" @change="onMinusStockChange"></a-switch>
-                  （启用后，单据<b>支持负库存</b>录入，不会再提示库存不足）
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.minusStock')">
+                  <a-switch :checked-children="$t('common.enable')" :un-checked-children="$t('common.disable')" v-model="minusStockFlagSwitch" @change="onMinusStockChange"></a-switch>
+                  （{{ $t('system.minusStockTip') }}）
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="以销定购">
-                  <a-switch checked-children="启用" un-checked-children="关闭" v-model="purchaseBySaleFlagSwitch" @change="onPurchaseBySaleChange"></a-switch>
-                  （启用后，根据<b>销售订单</b>来定制<b>采购订单</b>，进货后再发给客户）
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.purchaseBySale')">
+                  <a-switch :checked-children="$t('common.enable')" :un-checked-children="$t('common.disable')" v-model="purchaseBySaleFlagSwitch" @change="onPurchaseBySaleChange"></a-switch>
+                  （{{ $t('system.purchaseBySaleTip') }}）
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="超出关联单据">
-                  <a-switch checked-children="启用" un-checked-children="关闭" v-model="overLinkBillFlagSwitch" @change="onOverLinkBillChange"></a-switch>
-                  （启用后，允许当前单据<b>超出关联单据</b>的商品数量进行出入库）
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.overLinkBill')">
+                  <a-switch :checked-children="$t('common.enable')" :un-checked-children="$t('common.disable')" v-model="overLinkBillFlagSwitch" @change="onOverLinkBillChange"></a-switch>
+                  （{{ $t('system.overLinkBillTip') }}）
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="更新单价">
-                  <a-switch checked-children="启用" un-checked-children="关闭" v-model="updateUnitPriceFlagSwitch" @change="onUpdateUnitPriceChange"></a-switch>
-                  （启用后，会根据单据录入自动更新商品单价，默认是启用状态）
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.updateUnitPrice')">
+                  <a-switch :checked-children="$t('common.enable')" :un-checked-children="$t('common.disable')" v-model="updateUnitPriceFlagSwitch" @change="onUpdateUnitPriceChange"></a-switch>
+                  （{{ $t('system.updateUnitPriceTip') }}）
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="强审核">
-                  <a-switch checked-children="启用" un-checked-children="关闭" v-model="forceApprovalFlagSwitch" @change="onForceApprovalChange"></a-switch>
-                  （启用后，只有<b>已审核</b>的单据才能产生库存，涉及库存查询的相关报表。启用或关闭后需到<b>商品管理</b>批量<b>修正库存</b>，请按实际业务谨慎操作）
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.forceApproval')">
+                  <a-switch :checked-children="$t('common.enable')" :un-checked-children="$t('common.disable')" v-model="forceApprovalFlagSwitch" @change="onForceApprovalChange"></a-switch>
+                  （{{ $t('system.forceApprovalTip') }}）
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="出入库管理">
-                  <a-switch checked-children="启用" un-checked-children="关闭" v-model="inOutManageFlagSwitch" @change="onInOutManageChange"></a-switch>
-                  （启用后，采购销售相关单据都需经过<b>其它出入库</b>单据，才能产生库存。启用或关闭后需到<b>商品管理</b>批量<b>修正库存</b>，请按实际业务谨慎操作）
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.inOutManage')">
+                  <a-switch :checked-children="$t('common.enable')" :un-checked-children="$t('common.disable')" v-model="inOutManageFlagSwitch" @change="onInOutManageChange"></a-switch>
+                  （{{ $t('system.inOutManageTip') }}）
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="多账户">
-                  <a-switch checked-children="启用" un-checked-children="关闭" v-model="multiAccountFlagSwitch" @change="onMultiAccountChange"></a-switch>
-                  （启用后，采购订单、采购入库、采购退货、销售订单、销售出库、销售退货等单据的结算账户可以进行多账户选择）
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.multiAccount')">
+                  <a-switch :checked-children="$t('common.enable')" :un-checked-children="$t('common.disable')" v-model="multiAccountFlagSwitch" @change="onMultiAccountChange"></a-switch>
+                  （{{ $t('system.multiAccountTip') }}）
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="移动平均价">
-                  <a-switch checked-children="启用" un-checked-children="关闭" v-model="moveAvgPriceFlagSwitch" @change="onMoveAvgPriceChange"></a-switch>
-                  （默认为关闭状态，代表成本价等于商品信息页面录入的采购价。开启之后将通过移动平均来计算成本价，需到<b>商品管理</b>批量<b>修正成本</b>，请按实际业务谨慎操作）
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.moveAvgPrice')">
+                  <a-switch :checked-children="$t('common.enable')" :un-checked-children="$t('common.disable')" v-model="moveAvgPriceFlagSwitch" @change="onMoveAvgPriceChange"></a-switch>
+                  （{{ $t('system.moveAvgPriceTip') }}）
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="先审核后打印">
-                  <a-switch checked-children="启用" un-checked-children="关闭" v-model="auditPrintFlagSwitch" @change="onAuditPrintChange"></a-switch>
-                  （启用后，零售管理、采购管理、销售管理和仓库管理下的单据，都需要先审核之后才能进行打印）
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.auditPrint')">
+                  <a-switch :checked-children="$t('common.enable')" :un-checked-children="$t('common.disable')" v-model="auditPrintFlagSwitch" @change="onAuditPrintChange"></a-switch>
+                  （{{ $t('system.auditPrintTip') }}）
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="零收付款">
-                  <a-switch checked-children="启用" un-checked-children="关闭" v-model="zeroChangeAmountFlagSwitch" @change="onZeroChangeAmountChange"></a-switch>
-                  （启用后，销售出库单据新建时默认<b>本次收款</b>为0，采购入库单据同理）
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.zeroChangeAmount')">
+                  <a-switch :checked-children="$t('common.enable')" :un-checked-children="$t('common.disable')" v-model="zeroChangeAmountFlagSwitch" @change="onZeroChangeAmountChange"></a-switch>
+                  （{{ $t('system.zeroChangeAmountTip') }}）
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="客户静态单价">
-                  <a-switch checked-children="启用" un-checked-children="关闭" v-model="customerStaticPriceFlagSwitch" @change="onCustomerStaticPriceChange"></a-switch>
-                  （启用后，客户的销售出库的单价不会从该客户历史单据的单价获取，而是只从商品信息获取）
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.customerStaticPrice')">
+                  <a-switch :checked-children="$t('common.enable')" :un-checked-children="$t('common.disable')" v-model="customerStaticPriceFlagSwitch" @change="onCustomerStaticPriceChange"></a-switch>
+                  （{{ $t('system.customerStaticPriceTip') }}）
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="商品价格含税">
-                  <a-switch checked-children="启用" un-checked-children="关闭" v-model="materialPriceTaxFlagSwitch" @change="onMaterialPriceTaxChange"></a-switch>
-                  （启用后，商品中录入的价格变成含税价格，在单据录入中包含了税额）
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.materialPriceTax')">
+                  <a-switch :checked-children="$t('common.enable')" :un-checked-children="$t('common.disable')" v-model="materialPriceTaxFlagSwitch" @change="onMaterialPriceTaxChange"></a-switch>
+                  （{{ $t('system.materialPriceTaxTip') }}）
                 </a-form-item>
               </a-col>
               <a-col :lg="24" :md="24" :sm="24" v-if="isShowApproval">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="多级审核">
-                  <a-switch checked-children="启用" un-checked-children="关闭" v-model="multiLevelApprovalFlagSwitch" @change="onMultiLevelApprovalChange"></a-switch>
-                  <a-select placeholder="请选择流程类型" v-model="multiBillTypeSelect" style="width:400px;padding-left:10px"
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.multiLevelApproval')">
+                  <a-switch :checked-children="$t('common.enable')" :un-checked-children="$t('common.disable')" v-model="multiLevelApprovalFlagSwitch" @change="onMultiLevelApprovalChange"></a-switch>
+                  <a-select :placeholder="$t('system.selectFlowType')" v-model="multiBillTypeSelect" style="width:400px;padding-left:10px"
                             mode="multiple" :maxTagCount="6" :dropdownMatchSelectWidth="false"
                             showSearch allow-clear optionFilterProp="children" @change="onMultiBillTypeChange">
                     <a-select-option v-for="(item,index) in billTypeList" :key="index" :value="item.key">
                       {{ item.value }}
                     </a-select-option>
                   </a-select>
-                  （启用后，多级审核需配置流程，开启后需刷新浏览器才能看到效果）<a-button type="link" @click="handleReload">点此刷新</a-button>
+                  （{{ $t('system.multiLevelApprovalTip') }}）<a-button type="link" @click="handleReload">{{ $t('system.clickToRefresh') }}</a-button>
                 </a-form-item>
               </a-col>
             </a-row>
@@ -174,7 +174,7 @@
     },
     data () {
       return {
-        title:"操作",
+        title: this.$t('common.action'),
         cardStyle: '',
         contentStyle: '',
         activeKey: 'sec1',
@@ -214,26 +214,26 @@
         confirmLoading: false,
         form: this.$form.createForm(this),
         billTypeList: [
-          { 'key': 'LSCK', 'value': '零售出库' },
-          { 'key': 'LSTH', 'value': '零售退货' },
-          { 'key': 'QGD', 'value': '请购单' },
-          { 'key': 'CGDD', 'value': '采购订单' },
-          { 'key': 'CGRK', 'value': '采购入库' },
-          { 'key': 'CGTH', 'value': '采购退货' },
-          { 'key': 'XSDD', 'value': '销售订单' },
-          { 'key': 'XSCK', 'value': '销售出库' },
-          { 'key': 'XSTH', 'value': '销售退货' },
-          { 'key': 'QTRK', 'value': '其它入库单' },
-          { 'key': 'QTCK', 'value': '其它出库单' },
-          { 'key': 'DBCK', 'value': '调拨出库' },
-          { 'key': 'ZZD', 'value': '组装单' },
-          { 'key': 'CXD', 'value': '拆卸单' },
-          { 'key': 'SR', 'value': '收入单' },
-          { 'key': 'ZC', 'value': '支出单' },
-          { 'key': 'SK', 'value': '收款单' },
-          { 'key': 'FK', 'value': '付款单' },
-          { 'key': 'ZZ', 'value': '转账单' },
-          { 'key': 'SYF', 'value': '收预付款单' },
+          { 'key': 'LSCK', 'value': this.$t('system.billTypeLSCK') },
+          { 'key': 'LSTH', 'value': this.$t('system.billTypeLSTH') },
+          { 'key': 'QGD', 'value': this.$t('system.billTypeQGD') },
+          { 'key': 'CGDD', 'value': this.$t('system.billTypeCGDD') },
+          { 'key': 'CGRK', 'value': this.$t('system.billTypeCGRK') },
+          { 'key': 'CGTH', 'value': this.$t('system.billTypeCGTH') },
+          { 'key': 'XSDD', 'value': this.$t('system.billTypeXSDD') },
+          { 'key': 'XSCK', 'value': this.$t('system.billTypeXSCK') },
+          { 'key': 'XSTH', 'value': this.$t('system.billTypeXSTH') },
+          { 'key': 'QTRK', 'value': this.$t('system.billTypeQTRK') },
+          { 'key': 'QTCK', 'value': this.$t('system.billTypeQTCK') },
+          { 'key': 'DBCK', 'value': this.$t('system.billTypeDBCK') },
+          { 'key': 'ZZD', 'value': this.$t('system.billTypeZZD') },
+          { 'key': 'CXD', 'value': this.$t('system.billTypeCXD') },
+          { 'key': 'SR', 'value': this.$t('system.billTypeSR') },
+          { 'key': 'ZC', 'value': this.$t('system.billTypeZC') },
+          { 'key': 'SK', 'value': this.$t('system.billTypeSK') },
+          { 'key': 'FK', 'value': this.$t('system.billTypeFK') },
+          { 'key': 'ZZ', 'value': this.$t('system.billTypeZZ') },
+          { 'key': 'SYF', 'value': this.$t('system.billTypeSYF') },
         ]
       }
     },
@@ -349,13 +349,13 @@
           if (res.code === 200 && res.data) {
             let info = res.data['stock-check']
             if(info && info.installed && info.started) {
-              this.billTypeList.push({ 'key': 'PDLR', 'value': '盘点录入' }, { 'key': 'PDFP', 'value': '盘点复盘' })
+              this.billTypeList.push({ 'key': 'PDLR', 'value': this.$t('system.billTypePDLR') }, { 'key': 'PDFP', 'value': this.$t('system.billTypePDFP') })
               //校验是否存在生产插件
               getAction('/plugin/checkByPluginId', { pluginIds: 'produce' }).then((res)=> {
                 if (res.code === 200 && res.data) {
                   let pInfo = res.data['produce']
                   if(pInfo && pInfo.installed && pInfo.started) {
-                    this.billTypeList.push({ 'key': 'SC', 'value': '生产任务' }, { 'key': 'WW', 'value': '委外任务' })
+                    this.billTypeList.push({ 'key': 'SC', 'value': this.$t('system.billTypeSC') }, { 'key': 'WW', 'value': this.$t('system.billTypeWW') })
                   }
                 }
               })
@@ -366,7 +366,7 @@
       handleCompanyName(event) {
         this.model.companyName = event.target.value
         if(this.model.companyName && this.model.companyName.length>30) {
-          this.$message.warning('公司名称长度超过30个字符')
+          this.$message.warning(this.$t('system.companyNameLength'))
         } else {
           this.handleChange()
         }
@@ -394,7 +394,7 @@
       handleSaleAgreement(event) {
         this.model.saleAgreement = event.target.value
         if(this.model.saleAgreement && this.model.saleAgreement.length>400) {
-          this.$message.warning('销售协议长度超过400个字符')
+          this.$message.warning(this.$t('system.saleAgreementLength'))
         } else {
           this.handleChange()
         }

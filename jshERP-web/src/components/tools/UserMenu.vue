@@ -12,12 +12,12 @@
       <a-icon type="search"></a-icon>
     </span>
     <!-- update-begin author:sunjianlei date:20200219 for: 菜单搜索改为动态组件，在手机端呈现出弹出框 -->
-    <component :is="searchMenuComp" v-show="searchMenuVisible || isMobile()" class="borders" :visible="searchMenuVisible" title="搜索菜单" :footer="null" @cancel="searchMenuVisible=false">
+    <component :is="searchMenuComp" v-show="searchMenuVisible || isMobile()" class="borders" :visible="searchMenuVisible" :title="$t('common.searchMenu')" :footer="null" @cancel="searchMenuVisible=false">
       <a-select
         class="search-input"
         showSearch
         :showArrow="false"
-        placeholder="搜索菜单"
+        :placeholder="$t('common.searchMenu')"
         optionFilterProp="children"
         :filterOption="filterOption"
         :open="isMobile()?true:null"
@@ -36,28 +36,28 @@
     <a-dropdown v-if="isDesktop()">
       <div class="action ant-dropdown-link user-dropdown-menu">
         <a-icon type="down-circle"/>
-        <span style="margin-left:4px">欢迎您，{{ nickname() }}</span>
+        <span style="margin-left:4px">{{ $t('common.welcomeUser') }}，{{ nickname() }}</span>
       </div>
       <a-menu slot="overlay" class="user-dropdown-menu-wrapper">
         <a-menu-item key="3"  @click="systemSetting">
            <a-icon type="tool"/>
-           <span>界面设置</span>
+           <span>{{ $t('login.uiSettings') }}</span>
         </a-menu-item>
         <a-menu-item key="4" @click="updatePassword">
           <a-icon type="setting"/>
-          <span>密码修改</span>
+          <span>{{ $t('login.changePassword') }}</span>
         </a-menu-item>
       </a-menu>
     </a-dropdown>
     <span class="action">
       <a class="logout_title" href="javascript:;" @click="handleLogout">
         <a-icon type="logout"/>
-        <span>&nbsp;退出登录</span>
+        <span>&nbsp;{{ $t('common.logout') }}</span>
       </a>
     </span>
     <user-password ref="userPassword"></user-password>
-    <depart-select ref="departSelect" :closable="true" title="部门切换"></depart-select>
-    <setting-drawer ref="settingDrawer" :closable="true" title="系统设置"></setting-drawer>
+    <depart-select ref="departSelect" :closable="true" :title="$t('common.departSwitch')"></depart-select>
+    <setting-drawer ref="settingDrawer" :closable="true" :title="$t('common.systemSettings')"></setting-drawer>
   </div>
 </template>
 
@@ -142,15 +142,15 @@
         const that = this
 
         this.$confirm({
-          title: '提示',
-          content: '真的要退出登录吗 ?',
+          title: this.$t('common.logoutConfirm'),
+          content: this.$t('common.logoutConfirmMsg'),
           onOk() {
             return that.Logout({}).then(() => {
                 window.location.href="/";
               //window.location.reload()
             }).catch(err => {
               that.$message.error({
-                title: '错误',
+                title: that.$t('common.error'),
                 description: err.message
               })
             })

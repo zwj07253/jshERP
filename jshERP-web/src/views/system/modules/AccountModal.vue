@@ -12,30 +12,30 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:15%;height: 55%;">
       <template slot="footer">
         <a-button key="back" v-if="isReadOnly" @click="handleCancel">
-          取消
+          {{ $t('common.cancel') }}
         </a-button>
       </template>
       <a-spin :spinning="confirmLoading">
         <a-form :form="form" id="accountModal">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="名称">
-            <a-input placeholder="请输入名称" v-decorator.trim="[ 'name', validatorRules.name]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.name')">
+            <a-input :placeholder="$t('common.enterName')" v-decorator.trim="[ 'name', validatorRules.name]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="编号">
-            <a-input placeholder="请输入编号" v-decorator.trim="[ 'serialNo', validatorRules.serialNo ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.serialNo')">
+            <a-input :placeholder="$t('common.enterNumber')" v-decorator.trim="[ 'serialNo', validatorRules.serialNo ]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="期初金额">
-            <a-input placeholder="请输入期初金额" v-decorator.trim="[ 'initialAmount', validatorRules.initialAmount ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.initialAmountLabel')">
+            <a-input :placeholder="$t('system.enterInitialAmount')" v-decorator.trim="[ 'initialAmount', validatorRules.initialAmount ]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="排序">
-            <a-input placeholder="请输入排序" v-decorator.trim="[ 'sort', validatorRules.sort ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.sort')">
+            <a-input :placeholder="$t('common.sort')" v-decorator.trim="[ 'sort', validatorRules.sort ]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="备注">
-            <a-textarea :rows="2" placeholder="请输入备注" v-decorator="[ 'remark', validatorRules.remark ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.remark')">
+            <a-textarea :rows="2" :placeholder="$t('common.enterRemark')" v-decorator="[ 'remark', validatorRules.remark ]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -52,7 +52,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         model: {},
         isReadOnly: false,
@@ -69,18 +69,18 @@
         validatorRules:{
           name:{
             rules: [
-              { required: true, message: '请输入名称!' },
-              { max: 50, message: '长度不能超过 50 个字符', trigger: 'blur' },
+              { required: true, message: this.$t('common.enterName') },
+              { max: 50, message: this.$t('system.nameLength50'), trigger: 'blur' },
               { validator: this.validateAccountName}
             ]
           },
-          serialNo: { rules: [{ max: 50, message: '编号不能超过 50 个字符', trigger: 'blur' }] },
+          serialNo: { rules: [{ max: 50, message: this.$t('system.serialNoLength50'), trigger: 'blur' }] },
           initialAmount: { rules: [{ validator: this.validateInitialAmount }] },
           sort: { rules: [
-              { max: 10, message: '排序不能超过 10 个字符', trigger: 'blur' },
-              { pattern: /^\d*$/, message: '排序必须为非负整数', trigger: 'blur' }
+              { max: 10, message: this.$t('system.sortLength10'), trigger: 'blur' },
+              { pattern: /^\d*$/, message: this.$t('system.sortNonNegativeInt'), trigger: 'blur' }
             ] },
-          remark: { rules: [{ max: 100, message: '备注不能超过 100 个字符', trigger: 'blur' }] }
+          remark: { rules: [{ max: 100, message: this.$t('system.remarkLength100'), trigger: 'blur' }] }
         },
       }
     },
@@ -123,7 +123,7 @@
                 that.$emit('ok');
                 that.close();
               }else{
-                that.$message.warning((res.data && res.data.message) || res.data || '保存失败');
+                that.$message.warning((res.data && res.data.message) || res.data || this.$t('system.saveFailed'));
               }
             }).finally(() => {
               that.confirmLoading = false;
@@ -144,12 +144,12 @@
             if(!res.data.status){
               callback();
             } else {
-              callback("名称已经存在");
+              callback(this.$t('common.nameExists'));
             }
           } else {
             callback(res.data);
           }
-        }).catch(() => callback('名称校验失败，请稍后重试'));
+        }).catch(() => callback(this.$t('system.nameCheckFailed')));
       },
       validateInitialAmount(rule, value, callback) {
         if(value === undefined || value === null || value === '') {
@@ -157,7 +157,7 @@
           return;
         }
         if(!/^-?\d{1,18}(\.\d{1,6})?$/.test(String(value))) {
-          callback('期初金额最多18位整数、6位小数');
+          callback(this.$t('system.initialAmountFormat'));
           return;
         }
         callback();

@@ -5,16 +5,16 @@
 
         <!-- 按钮操作区域 -->
         <a-row style="margin-left: 14px">
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd()" type="primary">添加部门</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" title="删除多条数据" @click="batchDel" type="default">批量删除</a-button>
-          <a-button @click="refresh" type="default" icon="reload">刷新</a-button>
-          <a-button type="dashed">提示：部门可录入公司部门或门店</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd()" type="primary">{{ $t('system.addDepartment') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" :title="$t('system.deleteMultipleData')" @click="batchDel" type="default">{{ $t('system.batchDelete') }}</a-button>
+          <a-button @click="refresh" type="default" icon="reload">{{ $t('common.refresh') }}</a-button>
+          <a-button type="dashed">{{ $t('system.deptTip') }}</a-button>
         </a-row>
         <div style="background: #fff;padding-left:16px;height: 100%; margin-top: 5px">
           <a-alert type="info" :showIcon="true">
             <div slot="message">
-              当前选择：<span v-if="this.currSelected.title">{{ getCurrSelectedTitle() }}</span>
-              <a v-if="this.currSelected.title" style="margin-left: 10px" @click="onClearSelected">取消选择</a>
+              {{ $t('system.currentSelection') }}<span v-if="this.currSelected.title">{{ getCurrSelectedTitle() }}</span>
+              <a v-if="this.currSelected.title" style="margin-left: 10px" @click="onClearSelected">{{ $t('system.cancelSelection') }}</a>
             </div>
           </a-alert>
           <!-- 树-->
@@ -45,15 +45,15 @@
       <div class="drawer-bootom-button">
         <a-dropdown :trigger="['click']" placement="topCenter">
           <a-menu slot="overlay">
-            <a-menu-item key="1" @click="switchCheckStrictly(1)">父子关联</a-menu-item>
-            <a-menu-item key="2" @click="switchCheckStrictly(2)">取消关联</a-menu-item>
-            <a-menu-item key="3" @click="checkALL">全部勾选</a-menu-item>
-            <a-menu-item key="4" @click="cancelCheckALL">取消全选</a-menu-item>
-            <a-menu-item key="5" @click="expandAll">展开所有</a-menu-item>
-            <a-menu-item key="6" @click="closeAll">合并所有</a-menu-item>
+            <a-menu-item key="1" @click="switchCheckStrictly(1)">{{ $t('system.parentChildLinked') }}</a-menu-item>
+            <a-menu-item key="2" @click="switchCheckStrictly(2)">{{ $t('system.unlink') }}</a-menu-item>
+            <a-menu-item key="3" @click="checkALL">{{ $t('system.selectAll') }}</a-menu-item>
+            <a-menu-item key="4" @click="cancelCheckALL">{{ $t('system.deselectAll') }}</a-menu-item>
+            <a-menu-item key="5" @click="expandAll">{{ $t('system.expandAll') }}</a-menu-item>
+            <a-menu-item key="6" @click="closeAll">{{ $t('system.collapseAll') }}</a-menu-item>
           </a-menu>
           <a-button>
-            树操作 <a-icon type="up" />
+            {{ $t('system.treeOperation') }} <a-icon type="up" />
           </a-button>
         </a-dropdown>
       </div>
@@ -62,33 +62,33 @@
     <a-col :md="12" :sm="24">
       <a-card :bordered="false" v-if="selectedKeys.length>0">
         <a-form :form="form">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="名称">
-            <a-input :disabled="isReadOnly" placeholder="请输入名称" v-decorator="['orgAbr', validatorRules.orgAbr ]"/>
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.name')">
+            <a-input :disabled="isReadOnly" :placeholder="$t('common.enterName')" v-decorator="['orgAbr', validatorRules.orgAbr ]"/>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="编号">
-            <a-input :disabled="isReadOnly" placeholder="请输入编号" v-decorator="['orgNo', validatorRules.orgNo ]"/>
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.serialNo')">
+            <a-input :disabled="isReadOnly" :placeholder="$t('common.enterNumber')" v-decorator="['orgNo', validatorRules.orgNo ]"/>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="上级部门">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.parentDept')">
             <a-tree-select style="width:100%" :dropdownStyle="{maxHeight:'200px',overflow:'auto'}"
                            :disabled="isReadOnly" allow-clear :treeDefaultExpandAll="true"
-                           :treeData="treeData" v-decorator="[ 'parentId' ]" placeholder="请选择上级部门">
+                           :treeData="treeData" v-decorator="[ 'parentId' ]" :placeholder="$t('system.selectParentDept')">
             </a-tree-select>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="排序">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.sort')">
             <a-input :disabled="isReadOnly" v-decorator="[ 'sort' ]"/>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="备注">
-            <a-textarea :disabled="isReadOnly" placeholder="请输入备注" :rows="2" v-decorator.trim="[ 'remark' ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.remark')">
+            <a-textarea :disabled="isReadOnly" :placeholder="$t('common.enterRemark')" :rows="2" v-decorator.trim="[ 'remark' ]" />
           </a-form-item>
         </a-form>
         <div class="anty-form-btn">
-          <a-button v-if="!isReadOnly" @click="emptyCurrForm" type="default" htmlType="button" icon="sync">重置</a-button>
-          <a-button v-if="!isReadOnly" @click="submitCurrForm" type="primary" htmlType="button" icon="form">保存</a-button>
+          <a-button v-if="!isReadOnly" @click="emptyCurrForm" type="default" htmlType="button" icon="sync">{{ $t('common.reset') }}</a-button>
+          <a-button v-if="!isReadOnly" @click="submitCurrForm" type="primary" htmlType="button" icon="form">{{ $t('common.save') }}</a-button>
         </div>
       </a-card>
       <a-card v-else >
         <a-empty>
-          <span slot="description"> 请先选择一个部门! </span>
+          <span slot="description"> {{ $t('system.selectDeptFirst') }} </span>
         </a-empty>
       </a-card>
     </a-col>
@@ -148,11 +148,11 @@ export default {
       validatorRules: {
         orgAbr: {
           rules: [
-            { required: true, message: '请输入名称!'},
+            { required: true, message: this.$t('common.enterName')},
             { validator: this.validateName}
           ]
         },
-        orgNo: {rules: [{required: true, message: '请输入编码!'}]}
+        orgNo: {rules: [{required: true, message: this.$t('system.codeRequired')}]}
       },
       url: {
         delete: '/organization/delete',
@@ -238,7 +238,7 @@ export default {
     batchDel: function () {
       console.log(this.checkedKeys)
       if (this.checkedKeys.length <= 0) {
-        this.$message.warning('请选择一条记录！')
+        this.$message.warning(this.$t('common.selectRecord'))
       } else {
         var ids = ''
         for (var a = 0; a < this.checkedKeys.length; a++) {
@@ -246,8 +246,8 @@ export default {
         }
         var that = this
         this.$confirm({
-          title: '确认删除',
-          content: '确定要删除所选中的 ' + this.checkedKeys.length + ' 条数据?',
+          title: this.$t('common.confirmDelete'),
+          content: this.$t('common.confirmDeleteSelected'),
           onOk: function () {
             deleteAction(that.url.deleteBatch, {ids: ids}).then((res) => {
               if (res.code == 200) {
@@ -346,20 +346,20 @@ export default {
     },
     submitCurrForm() {
       if (this.isReadOnly) {
-        this.$message.warning('当前用户没有部门编辑权限')
+        this.$message.warning(this.$t('system.noDeptEditPermission'))
         return
       }
       this.form.validateFields((err, values) => {
         if (!err) {
           if (!this.currSelected.id) {
-            this.$message.warning('请点击选择要修改部门!')
+            this.$message.warning(this.$t('system.selectDeptToModify'))
             return
           }
           let formData = Object.assign(this.currSelected, values)
           console.log('Received values of form: ', formData)
           httpAction(this.url.edit, formData, 'put').then((res) => {
             if (res.code == 200) {
-              this.$message.success('保存成功!')
+              this.$message.success(this.$t('common.saveSuccess'))
               this.loadTree()
               let params = {}
               params.id = formData.id
@@ -394,7 +394,7 @@ export default {
           if(!res.data.status){
             callback();
           } else {
-            callback("名称已经存在");
+            callback(this.$t('common.nameExists'));
           }
         } else {
           callback(res.data);
@@ -403,11 +403,11 @@ export default {
     },
     handleAdd() {
       if (this.isReadOnly) {
-        this.$message.warning('当前用户没有部门编辑权限')
+        this.$message.warning(this.$t('system.noDeptEditPermission'))
         return
       }
       this.$refs.organizationModal.add()
-      this.$refs.organizationModal.title = '新增'
+      this.$refs.organizationModal.title = this.$t('common.add')
     },
     selectDirectiveOk(record) {
       console.log('选中指令数据', record)

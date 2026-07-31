@@ -5,7 +5,7 @@
     :title="title"
     @ok="handleSubmit"
     @cancel="close"
-    cancelText="关闭"
+    :cancelText="$t('common.close')"
     style="margin-top: -70px"
     wrapClassName="ant-modal-cust-warp"
   >
@@ -26,14 +26,14 @@
       </a-col>
       <a-col :md="18" :sm="24">
         <a-card :bordered="false">
-          用户账号:
+          {{ $t('common.username') }}:
           <a-input-search
             :style="{width:'150px',marginBottom:'15px'}"
-            placeholder="请输入账号"
+            :placeholder="$t('common.enterUsername')"
             v-model="queryParam.username"
             @search="onSearch"
           ></a-input-search>
-          <a-button @click="searchReset(1)" style="margin-left: 20px" icon="redo">重置</a-button>
+          <a-button @click="searchReset(1)" style="margin-left: 20px" icon="redo">{{ $t('common.reset') }}</a-button>
           <!--用户列表-->
           <a-table
             ref="table"
@@ -68,36 +68,36 @@
         },
         columns: [
           {
-            title: '用户账号',
+            title: this.$t('common.username'),
             align: 'center',
             dataIndex: 'username'
           },
           {
-            title: '用户姓名',
+            title: this.$t('common.realname'),
             align: 'center',
             dataIndex: 'realname'
           },
           {
-            title: '性别',
+            title: this.$t('common.sex'),
             align: 'center',
             dataIndex: 'sex',
-            customRender: function (text) {
+            customRender: (text) => {
               if (text === 1) {
-                return '男'
+                return this.$t('common.male')
               } else if (text === 2) {
-                return '女'
+                return this.$t('common.female')
               } else {
                 return text
               }
             }
           },
           {
-            title: '手机',
+            title: this.$t('common.phone'),
             align: 'center',
             dataIndex: 'phone'
           },
           {
-            title: '部门',
+            title: this.$t('common.department'),
             align: 'center',
             dataIndex: 'orgCode'
           }
@@ -107,13 +107,13 @@
         selectedRowKeys: [],
         selectUserRows: [],
         selectUserIds: [],
-        title: '根据部门选择用户',
+        title: this.$t('common.selectUserByDept'),
         ipagination: {
           current: 1,
           pageSize: 10,
           pageSizeOptions: ['10', '20', '30'],
           showTotal: (total, range) => {
-            return range[0] + '-' + range[1] + ' 共' + total + '条'
+            return this.$t('common.pagedTotal', { range0: range[0], range1: range[1], total: total })
           },
           showQuickJumper: true,
           showSizeChanger: true,

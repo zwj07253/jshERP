@@ -7,22 +7,22 @@
           <a-form layout="inline" @keyup.enter.native="searchQuery">
             <a-row :gutter="24">
               <a-col :md="6" :sm="24">
-                <a-form-item label="操作模块" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入操作模块" v-model="queryParam.operation"></a-input>
+                <a-form-item :label="$t('system.operationModule')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('system.operationModule')" v-model="queryParam.operation"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item label="操作详情" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入操作详情" v-model="queryParam.content"></a-input>
+                <a-form-item :label="$t('system.operationDetail')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('system.operationDetail')" v-model="queryParam.content"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item label="创建时间" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                <a-form-item :label="$t('common.createTime')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                   <a-range-picker
                     style="width: 100%"
                     v-model="queryParam.createTimeRange"
                     format="YYYY-MM-DD"
-                    :placeholder="['开始时间', '结束时间']"
+                    :placeholder="[$t('common.startDate'), $t('common.endDate')]"
                     @change="onDateChange"
                     @ok="onDateOk"
                   />
@@ -30,10 +30,10 @@
               </a-col>
               <a-col :md="6" :sm="24" >
                 <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
-                  <a-button type="primary" @click="searchQuery">查询</a-button>
-                  <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
+                  <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="searchReset">{{ $t('common.reset') }}</a-button>
                   <a @click="handleToggleSearch" style="margin-left: 8px">
-                    {{ toggleSearchStatus ? '收起' : '展开' }}
+                    {{ toggleSearchStatus ? $t('common.collapse') : $t('common.expand') }}
                     <a-icon :type="toggleSearchStatus ? 'up' : 'down'"/>
                   </a>
                 </span>
@@ -42,26 +42,26 @@
             <template v-if="toggleSearchStatus">
               <a-row :gutter="24">
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="操作员" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-input placeholder="请输入操作员账号或姓名" v-model="queryParam.userInfo"></a-input>
+                  <a-form-item :label="$t('common.operator')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-input :placeholder="$t('system.operatorPlaceholder')" v-model="queryParam.userInfo"></a-input>
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="操作IP" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-input placeholder="请输入操作IP" v-model="queryParam.clientIp"></a-input>
+                  <a-form-item :label="$t('common.ipAddress')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-input :placeholder="$t('common.ipAddress')" v-model="queryParam.clientIp"></a-input>
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24" v-if="isManage">
-                  <a-form-item label="租户账号" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-input placeholder="请输入租户账号" v-model="queryParam.tenantLoginName"></a-input>
+                  <a-form-item :label="$t('system.tenantAccount')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-input :placeholder="$t('system.tenantAccount')" v-model="queryParam.tenantLoginName"></a-input>
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24" v-if="isManage">
-                  <a-form-item label="租户类型" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-select v-model="queryParam.tenantType" placeholder="请选择租户类型">
-                      <a-select-option value="">请选择</a-select-option>
-                      <a-select-option value="0">试用租户</a-select-option>
-                      <a-select-option value="1">付费租户</a-select-option>
+                  <a-form-item :label="$t('system.tenantType')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-select v-model="queryParam.tenantType" :placeholder="$t('system.tenantType')">
+                      <a-select-option value="">{{ $t('common.selectType') }}</a-select-option>
+                      <a-select-option value="0">{{ $t('system.trialTenant') }}</a-select-option>
+                      <a-select-option value="1">{{ $t('system.paidTenant') }}</a-select-option>
                     </a-select>
                   </a-form-item>
                 </a-col>
@@ -133,23 +133,23 @@
               return parseInt(index)+1;
             }
           },
-          {title: '操作模块', dataIndex: 'operation', width: 120, align: "left"},
-          {title: '操作详情', dataIndex: 'content', scopedSlots: { customRender: 'content' }, width: 360, align:"left" },
+          {title: this.$t('system.operationModule'), dataIndex: 'operation', width: 120, align: "left"},
+          {title: this.$t('system.operationDetail'), dataIndex: 'content', scopedSlots: { customRender: 'content' }, width: 360, align:"left" },
           {
-            title: '结果',
+            title: this.$t('common.result'),
             dataIndex: 'status',
             width: 60,
             align: "center",
-            customRender: status => status === 0 || status === '0' ? '成功' : '失败'
+            customRender: status => status === 0 || status === '0' ? this.$t('common.success') : this.$t('common.failed')
           },
-          {title: '操作员账号', dataIndex: 'loginName', width: 80, align: "left"},
-          {title: '操作员姓名', dataIndex: 'userName', width: 80, align: "left"},
-          {title: '操作IP', dataIndex: 'clientIp', width: 100, align: "left"},
-          {title: '操作时间', dataIndex: 'createTimeStr', width: 110, align: "left"}
+          {title: this.$t('system.operatorAccount'), dataIndex: 'loginName', width: 80, align: "left"},
+          {title: this.$t('system.operatorName'), dataIndex: 'userName', width: 80, align: "left"},
+          {title: this.$t('common.ipAddress'), dataIndex: 'clientIp', width: 100, align: "left"},
+          {title: this.$t('common.operateTime'), dataIndex: 'createTimeStr', width: 110, align: "left"}
         ],
         operateColumn:
         {
-          title: '操作类型',
+          title: this.$t('system.operationType'),
           dataIndex: 'operateType_dictText',
           align:"center",
         },

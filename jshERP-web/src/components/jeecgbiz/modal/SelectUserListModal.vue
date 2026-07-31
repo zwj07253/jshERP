@@ -1,6 +1,6 @@
 <template>
   <a-modal
-    title="用户列表"
+    :title="$t('menu.userList')"
     :width="1000"
     :visible="visible"
     :confirmLoading="confirmLoading"
@@ -29,7 +29,7 @@
     mixins: [JeecgListMixin],
     data() {
       return {
-        title: "操作",
+        title: this.$t('common.action'),
         visible: false,
         model: {},
         confirmLoading: false,
@@ -39,34 +39,34 @@
         },
         columns: [
           {
-            title: '用户账号',
+            title: this.$t('common.username'),
             align: "center",
             dataIndex: 'username',
             fixed: 'left',
             width: 200
           },
           {
-            title: '用户姓名',
+            title: this.$t('common.realname'),
             align: "center",
             dataIndex: 'realname',
           },
           {
-            title: '性别',
+            title: this.$t('common.sex'),
             align: "center",
             dataIndex: 'sex_dictText'
           },
           {
-            title: '手机号码',
+            title: this.$t('common.phoneNo'),
             align: "center",
             dataIndex: 'phone'
           },
           {
-            title: '邮箱',
+            title: this.$t('system.email'),
             align: "center",
             dataIndex: 'email'
           },
           {
-            title: '状态',
+            title: this.$t('common.status'),
             align: "center",
             dataIndex: 'status_dictText'
           }

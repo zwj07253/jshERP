@@ -1,7 +1,7 @@
 <template>
   <div>
     <a-input-group v-if="kind === 'material'" compact style="width:100%;top:0px;display:flex;">
-      <a-select placeholder="输入条码或名称" :dropdownMatchSelectWidth="false" showSearch :showArrow="false"
+      <a-select :placeholder="$t('common.enterBarcodeOrName')" :dropdownMatchSelectWidth="false" showSearch :showArrow="false"
                 v-model="names" optionFilterProp="children" style="flex:1; min-width:0;" notFoundContent="需在商品管理先新增才能使用"
                 @search="handleSearch" @change="handleChange" @keyup.enter.native="handleEnter">
         <div slot="dropdownRender" slot-scope="menu">
@@ -16,7 +16,7 @@
       </a-select>
       <a-button icon="search" @click="onSearch" />
     </a-input-group>
-    <a-input-search v-if="kind === 'batch'||kind === 'sn'||kind === 'snAdd'" v-model="names" placeholder="请点开弹窗" readOnly @search="onSearch"></a-input-search>
+    <a-input-search v-if="kind === 'batch'||kind === 'sn'||kind === 'snAdd'" v-model="names" :placeholder="$t('common.clickToOpen')" readOnly @search="onSearch"></a-input-search>
     <j-select-material-modal v-if="kind === 'material'" ref="selectModal" :rows="rows" :multi="multi" :bar-code="value" @ok="selectOK" @initComp="initComp"/>
     <j-select-batch-modal v-if="kind === 'batch'" ref="selectModal" :rows="rows" :multi="multi" :bar-code="value" @ok="selectOK" @initComp="initComp"/>
     <j-select-sn-modal v-if="kind === 'sn'" ref="selectModal" :rows="rows" :multi="multi" :bar-code="value" @ok="selectOK" @initComp="initComp"/>

@@ -9,22 +9,22 @@
           <a-form layout="inline" @keyup.enter.native="searchQuery">
             <a-row :gutter="24">
               <a-col :md="6" :sm="24">
-                <a-form-item label="单据编号" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入单据编号" v-model="queryParam.number"></a-input>
+                <a-form-item :label="$t('common.billNo')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('common.enterBillNo')" v-model="queryParam.number"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item label="商品信息" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入条码、名称、助记码、规格、型号等信息" v-model="queryParam.materialParam"></a-input>
+                <a-form-item :label="$t('common.materialInfo')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('common.enterMaterial')" v-model="queryParam.materialParam"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item label="单据日期" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                <a-form-item :label="$t('common.billDate')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                   <a-range-picker
                     style="width:100%"
                     v-model="queryParam.createTimeRange"
                     format="YYYY-MM-DD"
-                    :placeholder="['开始时间', '结束时间']"
+                    :placeholder="[$t('common.startDate'), $t('common.endDate')]"
                     @change="onDateChange"
                     @ok="onDateOk"
                   />
@@ -32,10 +32,10 @@
               </a-col>
               <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
                 <a-col :md="6" :sm="24">
-                  <a-button type="primary" @click="searchQuery">查询</a-button>
-                  <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
+                  <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="searchReset">{{ $t('common.reset') }}</a-button>
                   <a @click="handleToggleSearch" style="margin-left: 8px">
-                    {{ toggleSearchStatus ? '收起' : '展开' }}
+                    {{ toggleSearchStatus ? $t('common.collapse') : $t('common.expand') }}
                     <a-icon :type="toggleSearchStatus ? 'up' : 'down'"/>
                   </a>
                 </a-col>
@@ -44,12 +44,12 @@
             <template v-if="toggleSearchStatus">
               <a-row :gutter="24">
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="客户" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-select placeholder="请选择客户" showSearch allow-clear optionFilterProp="children" v-model="queryParam.organId" @search="handleSearchCustomer">
+                  <a-form-item :label="$t('common.customer')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-select :placeholder="$t('common.selectCustomer')" showSearch allow-clear optionFilterProp="children" v-model="queryParam.organId" @search="handleSearchCustomer">
                       <div slot="dropdownRender" slot-scope="menu">
                         <v-nodes :vnodes="menu" />
                         <a-divider style="margin: 4px 0;" />
-                        <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initCustomer(0)"><a-icon type="reload" /> 刷新列表</div>
+                        <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initCustomer(0)"><a-icon type="reload" /> {{ $t('common.refreshList') }}</div>
                       </div>
                       <a-select-option v-for="(item,index) in cusList" :key="index" :value="item.id">
                         {{ item.supplier }}
@@ -58,8 +58,8 @@
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="仓库名称" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-select placeholder="请选择仓库" showSearch allow-clear optionFilterProp="children" v-model="queryParam.depotId">
+                  <a-form-item :label="$t('common.depotName')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-select :placeholder="$t('common.selectWarehouse')" showSearch allow-clear optionFilterProp="children" v-model="queryParam.depotId">
                       <a-select-option v-for="(depot,index) in depotList" :key="index" :value="depot.id">
                         {{ depot.depotName }}
                       </a-select-option>
@@ -67,8 +67,8 @@
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="操作员" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-select placeholder="请选择操作员" showSearch allow-clear optionFilterProp="children" v-model="queryParam.creator">
+                  <a-form-item :label="$t('common.operator')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-select :placeholder="$t('common.selectOperator')" showSearch allow-clear optionFilterProp="children" v-model="queryParam.creator">
                       <a-select-option v-for="(item,index) in userList" :key="index" :value="item.id">
                         {{ item.userName }}
                       </a-select-option>
@@ -76,13 +76,13 @@
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="关联订单" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-input placeholder="请输入关联订单" v-model="queryParam.linkNumber"></a-input>
+                  <a-form-item :label="$t('common.linkedBill')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-input :placeholder="$t('common.enterLinkedBill')" v-model="queryParam.linkNumber"></a-input>
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="结算账户" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-select placeholder="请选择结算账户" showSearch allow-clear optionFilterProp="children" v-model="queryParam.accountId">
+                  <a-form-item :label="$t('common.settleAccount')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-select :placeholder="$t('common.selectSettleAccount')" showSearch allow-clear optionFilterProp="children" v-model="queryParam.accountId">
                       <a-select-option v-for="(item,index) in accountList" :key="index" :value="item.id">
                         {{ item.name }}
                       </a-select-option>
@@ -90,35 +90,35 @@
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="本次欠款" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-select placeholder="请选择有无本次欠款" allow-clear v-model="queryParam.hasDebt">
-                      <a-select-option value="1">有欠款</a-select-option>
-                      <a-select-option value="0">无欠款</a-select-option>
+                  <a-form-item :label="$t('common.currentDebt')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-select :placeholder="$t('common.selectDebt')" allow-clear v-model="queryParam.hasDebt">
+                      <a-select-option value="1">{{ $t('common.hasDebtOpt') }}</a-select-option>
+                      <a-select-option value="0">{{ $t('common.noDebtOpt') }}</a-select-option>
                     </a-select>
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="最终欠款" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-select placeholder="请选择有无最终欠款" allow-clear v-model="queryParam.hasLastDebt">
-                      <a-select-option value="1">有欠款</a-select-option>
-                      <a-select-option value="0">无欠款</a-select-option>
+                  <a-form-item :label="$t('common.finalDebt')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-select :placeholder="$t('common.selectDebt')" allow-clear v-model="queryParam.hasLastDebt">
+                      <a-select-option value="1">{{ $t('common.hasDebtOpt') }}</a-select-option>
+                      <a-select-option value="0">{{ $t('common.noDebtOpt') }}</a-select-option>
                     </a-select>
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="单据状态" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-select placeholder="请选择单据状态" allow-clear v-model="queryParam.status">
-                      <a-select-option value="0">未审核</a-select-option>
-                      <a-select-option value="9" v-if="!checkFlag">审核中</a-select-option>
-                      <a-select-option value="1">已审核</a-select-option>
-                      <a-select-option value="3">部分出库</a-select-option>
-                      <a-select-option value="2">完成出库</a-select-option>
+                  <a-form-item :label="$t('common.billStatus')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-select :placeholder="$t('common.selectStatus')" allow-clear v-model="queryParam.status">
+                      <a-select-option value="0">{{ $t('common.pending') }}</a-select-option>
+                      <a-select-option value="9" v-if="!checkFlag">{{ $t('common.auditing') }}</a-select-option>
+                      <a-select-option value="1">{{ $t('common.approved') }}</a-select-option>
+                      <a-select-option value="3">{{ $t('common.partialOut') }}</a-select-option>
+                      <a-select-option value="2">{{ $t('common.completeOut') }}</a-select-option>
                     </a-select>
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="销售人员" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-select placeholder="请选择销售人员" showSearch allow-clear optionFilterProp="children" v-model="queryParam.salesMan">
+                  <a-form-item :label="$t('common.salesMan')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-select :placeholder="$t('common.selectSalesMan')" showSearch allow-clear optionFilterProp="children" v-model="queryParam.salesMan">
                       <a-select-option v-for="(item,index) in salesManList" :key="index" :value="item.value">
                         {{ item.text }}
                       </a-select-option>
@@ -126,8 +126,8 @@
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="单据备注" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-input placeholder="请输入单据备注" v-model="queryParam.remark"></a-input>
+                  <a-form-item :label="$t('common.billRemark')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-input :placeholder="$t('common.enterRemark')" v-model="queryParam.remark"></a-input>
                   </a-form-item>
                 </a-col>
               </a-row>
@@ -136,18 +136,18 @@
         </div>
         <!-- 操作按钮区域 -->
         <div class="table-operator"  style="margin-top: 5px">
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="myHandleAdd" type="primary" icon="plus">新增</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" icon="delete" @click="batchDel">删除</a-button>
-          <a-button v-if="quickBtn.saleBack.indexOf(1)>-1 && btnEnableList.indexOf(1)>-1" icon="share-alt" @click="transferBill('转销售退货', quickBtn.saleBack)">转销售退货</a-button>
-          <a-tooltip title="可将状态是部分出库的单据强制完成">
-            <a-button v-if="inOutManageFlag && btnEnableList.indexOf(1)>-1" icon="issues-close" @click="batchForceClose">强制结单</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="myHandleAdd" type="primary" icon="plus">{{ $t('common.add') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" icon="delete" @click="batchDel">{{ $t('common.delete') }}</a-button>
+          <a-button v-if="quickBtn.saleBack.indexOf(1)>-1 && btnEnableList.indexOf(1)>-1" icon="share-alt" @click="transferBill($t('sales.transferToReturn'), quickBtn.saleBack)">{{ $t('sales.transferToReturn') }}</a-button>
+          <a-tooltip :title="$t('sales.forceCloseOutboundTip')">
+            <a-button v-if="inOutManageFlag && btnEnableList.indexOf(1)>-1" icon="issues-close" @click="batchForceClose">{{ $t('common.forceClose') }}</a-button>
           </a-tooltip>
-          <a-button v-if="checkFlag && btnEnableList.indexOf(2)>-1" icon="check" @click="batchSetStatus(1)">审核</a-button>
-          <a-button v-if="checkFlag && btnEnableList.indexOf(7)>-1" icon="stop" @click="batchSetStatus(0)">反审核</a-button>
-          <a-tooltip title="可对最终欠款的值进行修正">
-            <a-button v-if="btnEnableList.indexOf(1)>-1" icon="fund" @click="batchSetLastDebt">修正欠款</a-button>
+          <a-button v-if="checkFlag && btnEnableList.indexOf(2)>-1" icon="check" @click="batchSetStatus(1)">{{ $t('common.audit') }}</a-button>
+          <a-button v-if="checkFlag && btnEnableList.indexOf(7)>-1" icon="stop" @click="batchSetStatus(0)">{{ $t('common.unaudit') }}</a-button>
+          <a-tooltip :title="$t('purchase.correctDebtTip')">
+            <a-button v-if="btnEnableList.indexOf(1)>-1" icon="fund" @click="batchSetLastDebt">{{ $t('sales.correctDebt') }}</a-button>
           </a-tooltip>
-          <a-button v-if="isShowExcel && btnEnableList.indexOf(3)>-1" icon="download" @click="handleExport">导出</a-button>
+          <a-button v-if="isShowExcel && btnEnableList.indexOf(3)>-1" icon="download" @click="handleExport">{{ $t('common.export') }}</a-button>
           <a-popover trigger="click" placement="right">
             <template slot="content">
               <a-checkbox-group @change="onColChange" v-model="settingDataIndex" :defaultValue="settingDataIndex">
@@ -164,16 +164,14 @@
                 </a-row>
                 <a-row style="padding-top: 10px;">
                   <a-col>
-                    恢复默认列配置：<a-button @click="handleRestDefault" type="link" size="small">恢复默认</a-button>
+                    {{ $t('common.restoreColumns') }}<a-button @click="handleRestDefault" type="link" size="small">{{ $t('common.restoreDefault') }}</a-button>
                   </a-col>
                 </a-row>
               </a-checkbox-group>
             </template>
-            <a-button icon="setting">列设置</a-button>
+            <a-button icon="setting">{{ $t('common.columnSettings') }}</a-button>
           </a-popover>
-          <a-tooltip placement="left" title="销售出库单可以由销售订单转过来，也可以单独创建。
-          销售出库单据中的仓库列表只显示当前用户有权限的仓库。销售出库单可以使用多账户收款。
-          勾选单据之后可以进行批量操作（删除、审核、反审核）" slot="action">
+          <a-tooltip placement="left" :title="$t('sales.outboundTip')" slot="action">
             <a-icon v-if="btnEnableList.indexOf(1)>-1" type="question-circle" style="font-size:20px;float:right;" />
           </a-tooltip>
         </div>
@@ -195,31 +193,31 @@
             @expand="onExpand"
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
-              <a @click="myHandleDetail(record, '销售出库', prefixNo)">查看</a>
+              <a @click="myHandleDetail(record, '销售出库', prefixNo)">{{ $t('common.view') }}</a>
               <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
-              <a v-if="btnEnableList.indexOf(1)>-1" @click="myHandleEdit(record)">编辑</a>
+              <a v-if="btnEnableList.indexOf(1)>-1" @click="myHandleEdit(record)">{{ $t('common.edit') }}</a>
               <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
-              <a v-if="btnEnableList.indexOf(1)>-1" @click="myHandleCopyAdd(record)">复制</a>
+              <a v-if="btnEnableList.indexOf(1)>-1" @click="myHandleCopyAdd(record)">{{ $t('common.copy') }}</a>
               <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
-              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定删除吗?" @confirm="() => myHandleDelete(record)">
-                <a>删除</a>
+              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" :title="$t('common.confirmDelete')" @confirm="() => myHandleDelete(record)">
+                <a>{{ $t('common.delete') }}</a>
               </a-popconfirm>
             </span>
             <template slot="customRenderDebt" slot-scope="value, record">
-              <a-tooltip title="有收款单">
+              <a-tooltip :title="$t('sales.hasReceiptBill')">
                 <span style="color:green" v-if="value>0 && value>record.lastDebt">{{value}}</span>
               </a-tooltip>
-              <a-tooltip title="暂未收款">
+              <a-tooltip :title="$t('sales.noReceipt')">
                 <span style="color:red" v-if="value>0 && value===record.lastDebt">{{value}}</span>
               </a-tooltip>
               <span v-if="value===0">{{value}}</span>
             </template>
             <template slot="customRenderStatus" slot-scope="status">
-              <a-tag v-if="status == '0'" color="red">未审核</a-tag>
-              <a-tag v-if="status == '1'" color="green">已审核</a-tag>
-              <a-tag v-if="status == '2'" color="cyan">完成出库</a-tag>
-              <a-tag v-if="status == '3'" color="blue">部分出库</a-tag>
-              <a-tag v-if="status == '9'" color="orange">审核中</a-tag>
+              <a-tag v-if="status == '0'" color="red">{{ $t('common.pending') }}</a-tag>
+              <a-tag v-if="status == '1'" color="green">{{ $t('common.approved') }}</a-tag>
+              <a-tag v-if="status == '2'" color="cyan">{{ $t('common.completeOut') }}</a-tag>
+              <a-tag v-if="status == '3'" color="blue">{{ $t('common.partialOut') }}</a-tag>
+              <a-tag v-if="status == '9'" color="orange">{{ $t('common.auditing') }}</a-tag>
             </template>
             <a-table
               bordered
@@ -305,53 +303,53 @@
         // 默认列
         defColumns: [
           {
-            title: '操作',
+            title: this.$t('common.action'),
             dataIndex: 'action',
             align:"center", width: 180,
             scopedSlots: { customRender: 'action' },
           },
-          { title: '客户', dataIndex: 'organName',width:120, ellipsis:true},
-          { title: '单据编号', dataIndex: 'number',width:160,
+          { title: this.$t('common.customer'), dataIndex: 'organName',width:120, ellipsis:true},
+          { title: this.$t('common.billNo'), dataIndex: 'number',width:160,
             customRender:function (text,record,index) {
               text = record.linkNumber?text+"[订]":text
               text = record.hasBackFlag?text+"[退]":text
               return text
             }
           },
-          { title: '关联订单', dataIndex: 'linkNumber',width:140},
-          { title: '商品信息', dataIndex: 'materialsList',width:220, ellipsis:true},
-          { title: '单据日期', dataIndex: 'operTimeStr',width:145},
-          { title: '操作员', dataIndex: 'userName',width:80, ellipsis:true},
-          { title: '数量', dataIndex: 'materialCount',width:60},
-          { title: '金额合计', dataIndex: 'totalPrice',width:80},
-          { title: '含税合计', dataIndex: 'totalTaxLastMoney',width:80,
+          { title: this.$t('common.linkedBill'), dataIndex: 'linkNumber',width:140},
+          { title: this.$t('common.materialInfo'), dataIndex: 'materialsList',width:220, ellipsis:true},
+          { title: this.$t('common.billDate'), dataIndex: 'operTimeStr',width:145},
+          { title: this.$t('common.operator'), dataIndex: 'userName',width:80, ellipsis:true},
+          { title: this.$t('common.quantity'), dataIndex: 'materialCount',width:60},
+          { title: this.$t('common.totalAmount'), dataIndex: 'totalPrice',width:80},
+          { title: this.$t('purchase.taxInclusiveTotal'), dataIndex: 'totalTaxLastMoney',width:80,
             customRender:function (text,record,index) {
               return (record.discountMoney + record.discountLastMoney).toFixed(2);
             }
           },
-          { title: '优惠率', dataIndex: 'discount',width:60,
+          { title: this.$t('sales.form.discount'), dataIndex: 'discount',width:60,
             customRender:function (text,record,index) {
               return text? text + '%':''
             }
           },
-          { title: '收款优惠', dataIndex: 'discountMoney',width:80},
-          { title: '其它费用', dataIndex: 'otherMoney',width:80},
-          { title: '待收金额', dataIndex: 'needOutMoney',width:80,
+          { title: this.$t('sales.form.discountMoney'), dataIndex: 'discountMoney',width:80},
+          { title: this.$t('purchase.form.otherMoney'), dataIndex: 'otherMoney',width:80},
+          { title: this.$t('common.pendingReceive'), dataIndex: 'needOutMoney',width:80,
             customRender:function (text,record,index) {
               let needOutMoney = record.discountLastMoney + record.otherMoney - record.deposit
               return needOutMoney? needOutMoney.toFixed(2):0
             }
           },
-          { title: '结算账户', dataIndex: 'accountName',width:80},
-          { title: '扣除订金', dataIndex: 'deposit',width:80},
-          { title: '本次收款', dataIndex: 'changeAmount',width:80},
-          { title: '本次欠款', dataIndex: 'debt',width:80,
+          { title: this.$t('common.settleAccount'), dataIndex: 'accountName',width:80},
+          { title: this.$t('purchase.form.deposit'), dataIndex: 'deposit',width:80},
+          { title: this.$t('sales.form.changeAmount'), dataIndex: 'changeAmount',width:80},
+          { title: this.$t('sales.currentDebt'), dataIndex: 'debt',width:80,
             scopedSlots: { customRender: 'customRenderDebt' }
           },
-          { title: '最终欠款', dataIndex: 'lastDebt',width:80},
-          { title: '销售人员', dataIndex: 'salesManStr',width:120},
-          { title: '备注', dataIndex: 'remark',width:200},
-          { title: '状态', dataIndex: 'status', width: 80, align: "center",
+          { title: this.$t('sales.finalDebt'), dataIndex: 'lastDebt',width:80},
+          { title: this.$t('sales.salesMan'), dataIndex: 'salesManStr',width:120},
+          { title: this.$t('common.remark'), dataIndex: 'remark',width:200},
+          { title: this.$t('common.status'), dataIndex: 'status', width: 80, align: "center",
             scopedSlots: { customRender: 'customRenderStatus' }
           }
         ],

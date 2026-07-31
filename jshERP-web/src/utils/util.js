@@ -2,15 +2,17 @@ import { isURL } from '@/utils/validate'
 import { downFilePost} from '@/api/manage'
 import Vue from 'vue'
 import introJs from 'intro.js'
+import { i18n } from '@/locales'
 
-export function timeFix() {
+export function timeFix(t) {
   const time = new Date()
   const hour = time.getHours()
-  return hour < 9 ? '早上好' : (hour <= 11 ? '上午好' : (hour <= 13 ? '中午好' : (hour < 20 ? '下午好' : '晚上好')))
+  const fn = t || (k => k)
+  return hour < 9 ? fn('login.goodMorning') : (hour <= 11 ? fn('login.goodForenoon') : (hour <= 13 ? fn('login.goodNoon') : (hour < 20 ? fn('login.goodAfternoon') : fn('login.goodEvening'))))
 }
 
 export function welcome() {
-  const arr = ['休息一会儿吧', '准备吃什么呢?', '要不要打一把 DOTA', '我猜你可能累了']
+  const arr = [i18n.t('common.takeABreak'), i18n.t('common.whatToEat'), i18n.t('common.playDota'), i18n.t('common.maybeTired')]
   let index = Math.floor((Math.random()*arr.length))
   return arr[index]
 }
@@ -85,10 +87,10 @@ export function generateIndexRouter(data) {
   let indexRouter = generateChildRouters(data)
   indexRouter.splice(0,0, {
     path: '/',
-    name: '首页',
+    name: 'Home',
     component: () => import('@/components/layouts/TabLayout'),
     meta: {
-      title: '首页',
+      title: 'Home',
       icon: 'icon-present',
       url: '/dashboard/analysis'
     },
@@ -702,13 +704,13 @@ export function mergeRecursive(source, target) {
 //通过post方式导出Excel
 export function exportXlsPost(fileName, title, head, tip, list) {
   if(!fileName || typeof fileName != "string"){
-    fileName = "导出文件"
+    fileName = "Export"
   }
   let paramObj = {'title': title, 'head': head, 'tip': tip, 'list': list}
   console.log("导出参数", paramObj)
   downFilePost(paramObj).then((data)=>{
     if (!data) {
-      this.$message.warning("文件下载失败")
+      this.$message.warning(this.$t('common.downloadFailed'))
       return
     }
     if (typeof window.navigator.msSaveBlob !== 'undefined') {
@@ -744,9 +746,9 @@ export function handleIntroJs(module, cur_version) {
     return;
   }
   introJsObj.setOptions({
-    prevLabel: '&larr; 上一步',
-    nextLabel: '下一步 &rarr;',
-    doneLabel: '知道了',
+    prevLabel: '&larr; ' + i18n.t('common.prevStep'),
+    nextLabel: i18n.t('common.nextStep') + ' &rarr;',
+    doneLabel: i18n.t('common.gotIt'),
     exitOnOverlayClick: false //点击空白区域是否关闭提示组件
   }).oncomplete(function(){
     //点击跳过按钮后执行的事件(这里保存对应的版本号到缓存,并且设置有效期为100天）

@@ -12,8 +12,8 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:5%;height: 95%;">
       <a-spin :spinning="confirmLoading">
         <a-col :md="10" :sm="24">
@@ -45,7 +45,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         model: {},
         depotId: 0,
@@ -94,11 +94,11 @@
             formData.oneValue = this.depotId
             updateOneValueByKeyIdAndType(formData).then((res)=>{
               if(res.code === 200){
-                that.$message.info('保存成功');
+                that.$message.info(this.$t('common.saveSuccess'));
                 that.$emit('ok');
                 that.close();
               }else{
-                that.$message.warning((res.data && res.data.message) || res.data || '保存失败');
+                that.$message.warning((res.data && res.data.message) || res.data || this.$t('system.saveFailed'));
               }
             }).finally(() => {
               that.confirmLoading = false;

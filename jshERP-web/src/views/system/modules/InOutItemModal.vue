@@ -12,30 +12,30 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:20%;height: 50%;">
       <template slot="footer">
         <a-button key="back" v-if="isReadOnly" @click="handleCancel">
-          取消
+          {{ $t('common.cancel') }}
         </a-button>
       </template>
       <a-spin :spinning="confirmLoading">
         <a-form :form="form" id="inOutItemModal">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="名称">
-            <a-input placeholder="请输入名称" :disabled="isReadOnly" v-decorator.trim="[ 'name', validatorRules.name]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.name')">
+            <a-input :placeholder="$t('common.enterName')" :disabled="isReadOnly" v-decorator.trim="[ 'name', validatorRules.name]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="类型">
-            <a-select placeholder="请选择类型" v-decorator="[ 'type', validatorRules.type]" :disabled="typeDisabled || isReadOnly">
-              <a-select-option value="收入">收入</a-select-option>
-              <a-select-option value="支出">支出</a-select-option>
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.type')">
+            <a-select :placeholder="$t('common.selectType')" v-decorator="[ 'type', validatorRules.type]" :disabled="typeDisabled || isReadOnly">
+              <a-select-option value="收入">{{ $t('financial.itemIncome') }}</a-select-option>
+              <a-select-option value="支出">{{ $t('financial.itemExpense') }}</a-select-option>
             </a-select>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="排序">
-            <a-input placeholder="请输入排序" :disabled="isReadOnly" v-decorator.trim="[ 'sort', validatorRules.sort ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.sort')">
+            <a-input :placeholder="$t('common.sort')" :disabled="isReadOnly" v-decorator.trim="[ 'sort', validatorRules.sort ]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="备注">
-            <a-textarea :rows="2" placeholder="请输入备注" :disabled="isReadOnly" v-decorator="[ 'remark', validatorRules.remark ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.remark')">
+            <a-textarea :rows="2" :placeholder="$t('common.enterRemark')" :disabled="isReadOnly" v-decorator="[ 'remark', validatorRules.remark ]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -52,7 +52,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         model: {},
         typeParam: '',
@@ -71,22 +71,22 @@
         validatorRules:{
           name:{
             rules: [
-              { required: true, message: '请输入名称!' },
-              { max: 50, message: '长度不能超过 50 个字符', trigger: 'blur' }
+              { required: true, message: this.$t('common.enterName') },
+              { max: 50, message: this.$t('system.nameLength50'), trigger: 'blur' }
             ]},
           type:{
             rules: [
-              { required: true, message: '请选择类型!' }
+              { required: true, message: this.$t('system.selectTypeRequired') }
             ]
           },
           sort:{
             rules: [
-              { pattern: /^\d{1,10}$/, message: '排序只能填写不超过10位的非负整数', trigger: 'blur' }
+              { pattern: /^\d{1,10}$/, message: this.$t('system.sortNonNegativeInt10'), trigger: 'blur' }
             ]
           },
           remark:{
             rules: [
-              { max: 100, message: '备注长度不能超过100个字符', trigger: 'blur' }
+              { max: 100, message: this.$t('system.remarkLength100'), trigger: 'blur' }
             ]
           }
         },

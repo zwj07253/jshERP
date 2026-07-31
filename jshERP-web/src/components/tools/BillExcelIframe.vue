@@ -11,9 +11,9 @@
       :maskClosable="false"
       :style="modalStyle"
       @cancel="handleCancel"
-      cancelText="关闭">
+      :cancelText="$t('common.close')">
       <template slot="footer">
-        <a-button key="back" @click="handleCancel">取消</a-button>
+        <a-button key="back" @click="handleCancel">{{ $t('common.cancel') }}</a-button>
       </template>
       <a-form :form="form">
         <template>
@@ -41,7 +41,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title: "单据导出",
+        title: this.$t('common.billExport'),
         width: '500px',
         visible: false,
         modalStyle: '',

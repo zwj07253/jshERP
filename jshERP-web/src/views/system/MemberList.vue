@@ -8,26 +8,26 @@
           <a-form layout="inline" @keyup.enter.native="searchQuery">
             <a-row :gutter="24">
               <a-col :md="6" :sm="24">
-                <a-form-item label="会员卡号" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入会员卡号查询" v-model="queryParam.supplier"></a-input>
+                <a-form-item :label="$t('common.memberCard')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('system.enterMemberCardQuery')" v-model="queryParam.supplier"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item label="联系人" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入联系人查询" v-model="queryParam.contacts"></a-input>
+                <a-form-item :label="$t('system.contact')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('system.contact')" v-model="queryParam.contacts"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item label="手机号码" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入手机号码查询" v-model="queryParam.telephone"></a-input>
+                <a-form-item :label="$t('common.phoneNo')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('common.phoneNo')" v-model="queryParam.telephone"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
                 <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
-                  <a-button type="primary" @click="searchQuery">查询</a-button>
-                  <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
+                  <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="searchReset">{{ $t('common.reset') }}</a-button>
                   <a @click="handleToggleSearch" style="margin-left: 8px">
-                    {{ toggleSearchStatus ? '收起' : '展开' }}
+                    {{ toggleSearchStatus ? $t('common.collapse') : $t('common.expand') }}
                     <a-icon :type="toggleSearchStatus ? 'up' : 'down'"/>
                   </a>
                 </span>
@@ -36,8 +36,8 @@
             <template v-if="toggleSearchStatus">
               <a-row :gutter="24">
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="联系电话" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-input placeholder="请输入联系电话查询" v-model="queryParam.phonenum"></a-input>
+                  <a-form-item :label="$t('system.phone')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-input :placeholder="$t('system.phone')" v-model="queryParam.phonenum"></a-input>
                   </a-form-item>
                 </a-col>
               </a-row>
@@ -46,13 +46,13 @@
         </div>
         <!-- 操作按钮区域 -->
         <div class="table-operator"  style="margin-top: 5px">
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd" type="primary" icon="plus">新增</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchDel" icon="delete">删除</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(true)" icon="check-square">启用</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(false)" icon="close-square">禁用</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleImportXls()" icon="import">导入</a-button>
-          <a-button v-if="btnEnableList.indexOf(3)>-1" @click="handleExportXls('会员信息')" icon="download">导出</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetAdvanceIn()" icon="stock">修正预付款</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd" type="primary" icon="plus">{{ $t('common.add') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchDel" icon="delete">{{ $t('common.delete') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(true)" icon="check-square">{{ $t('common.enable') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(false)" icon="close-square">{{ $t('common.disable') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleImportXls()" icon="import">{{ $t('common.import') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(3)>-1" @click="handleExportXls('会员信息')" icon="download">{{ $t('common.export') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetAdvanceIn()" icon="stock">{{ $t('financial.correctPrepaid') }}</a-button>
         </div>
         <!-- table区域-begin -->
         <div>
@@ -69,16 +69,16 @@
             :rowSelection="{selectedRowKeys: selectedRowKeys, onChange: onSelectChange}"
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
-              <a v-if="btnEnableList.indexOf(1)>-1" @click="handleEdit(record)">编辑</a>
+              <a v-if="btnEnableList.indexOf(1)>-1" @click="handleEdit(record)">{{ $t('common.edit') }}</a>
               <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
-              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定删除吗?" @confirm="() => handleDelete(record.id)">
-                <a>删除</a>
+              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" :title="$t('common.confirmDelete')" @confirm="() => handleDelete(record.id)">
+                <a>{{ $t('common.delete') }}</a>
               </a-popconfirm>
             </span>
             <!-- 状态渲染模板 -->
             <template slot="customRenderFlag" slot-scope="enabled">
-              <a-tag v-if="enabled" color="green">启用</a-tag>
-              <a-tag v-if="!enabled" color="orange">禁用</a-tag>
+              <a-tag v-if="enabled" color="green">{{ $t('common.enable') }}</a-tag>
+              <a-tag v-if="!enabled" color="orange">{{ $t('common.disable') }}</a-tag>
             </template>
           </a-table>
         </div>
@@ -139,20 +139,20 @@
             }
           },
           {
-            title: '操作',
+            title: this.$t('common.action'),
             dataIndex: 'action',
             width: 130,
             align:"center",
             scopedSlots: { customRender: 'action' },
           },
-          { title: '会员卡号',dataIndex: 'supplier',width:150,align:"left"},
-          { title: '联系人', dataIndex: 'contacts',width:70,align:"left"},
-          { title: '手机号码', dataIndex: 'telephone',width:100,align:"left"},
-          { title: '联系电话', dataIndex: 'phoneNum',width:100,align:"left"},
-          { title: '电子邮箱', dataIndex: 'email',width:150,align:"left"},
-          { title: '预付款',dataIndex: 'advanceIn',width:70,align:"left"},
-          { title: '排序', dataIndex: 'sort', width: 60,align:"left"},
-          { title: '状态',dataIndex: 'enabled',width:60,align:"center",
+          { title: this.$t('common.memberCard'),dataIndex: 'supplier',width:150,align:"left"},
+          { title: this.$t('system.contact'), dataIndex: 'contacts',width:70,align:"left"},
+          { title: this.$t('common.phoneNo'), dataIndex: 'telephone',width:100,align:"left"},
+          { title: this.$t('system.phone'), dataIndex: 'phoneNum',width:100,align:"left"},
+          { title: this.$t('common.email'), dataIndex: 'email',width:150,align:"left"},
+          { title: this.$t('common.prepaidAmount'),dataIndex: 'advanceIn',width:70,align:"left"},
+          { title: this.$t('common.sort'), dataIndex: 'sort', width: 60,align:"left"},
+          { title: this.$t('common.status'),dataIndex: 'enabled',width:60,align:"center",
             scopedSlots: { customRender: 'customRenderFlag' }
           }
         ],
@@ -182,13 +182,13 @@
       handleImportXls() {
         let importExcelUrl = this.url.importExcelUrl
         let templateUrl = '/doc/member_template.xls'
-        let templateName = '会员Excel模板[下载]'
+        let templateName = this.$t('common.detailExcelTemplate')
         this.$refs.modalImportForm.initModal(importExcelUrl, templateUrl, templateName);
-        this.$refs.modalImportForm.title = "会员导入";
+        this.$refs.modalImportForm.title = this.$t('system.member');
       },
       handleEdit: function (record) {
         this.$refs.modalForm.edit(record);
-        this.$refs.modalForm.title = "编辑";
+        this.$refs.modalForm.title = this.$t('common.edit');
         this.$refs.modalForm.disableSubmit = false;
         if(this.btnEnableList.indexOf(1)===-1) {
           this.$refs.modalForm.isReadOnly = true
@@ -196,7 +196,7 @@
       },
       batchSetAdvanceIn() {
         if (this.selectedRowKeys.length <= 0) {
-          this.$message.warning('请选择一条记录！');
+          this.$message.warning(this.$t('common.selectRecord'));
         } else {
           let ids = "";
           for (let a = 0; a < this.selectedRowKeys.length; a++) {
@@ -204,13 +204,13 @@
           }
           let that = this;
           this.$confirm({
-            title: "确认操作",
-            content: "是否操作选中数据?",
+            title: this.$t('common.confirmAction'),
+            content: this.$t('common.confirmOperateSelected'),
             onOk: function () {
               that.loading = true;
               postAction(that.url.batchSetAdvanceInUrl, {ids: ids}).then((res) => {
                 if(res.code === 200){
-                  that.$message.info('修正预付款成功！');
+                  that.$message.info(this.$t('common.operateSuccess'));
                   that.loadData();
                   that.onClearSelected();
               } else {

@@ -10,10 +10,10 @@
       :mask="isDesktop()"
       :maskClosable="false"
       @cancel="handleCancel"
-      cancelText="关闭"
+      :cancelText="$t('common.close')"
       style="top:20px;height: 95%;">
       <template slot="footer">
-        <a-button key="back" @click="handleCancel">取消</a-button>
+        <a-button key="back" @click="handleCancel">{{ $t('common.cancel') }}</a-button>
       </template>
       <!-- 查询区域 -->
       <div class="table-page-search-wrapper">
@@ -21,26 +21,26 @@
         <a-form layout="inline" @keyup.enter.native="searchQuery">
           <a-row :gutter="24">
             <a-col :md="8" :sm="24">
-              <a-form-item label="单据编号" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                <a-input placeholder="请输入单据编号" v-model="queryParam.number"></a-input>
+              <a-form-item :label="$t('common.billNo')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                <a-input :placeholder="$t('common.enterBillNo')" v-model="queryParam.number"></a-input>
               </a-form-item>
             </a-col>
             <a-col :md="8" :sm="24">
-              <a-form-item label="单据日期" :labelCol="labelCol" :wrapperCol="wrapperCol">
+              <a-form-item :label="$t('common.billDate')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                 <a-range-picker
                   style="width:100%"
                   v-model="queryParam.createTimeRange"
                   format="YYYY-MM-DD"
-                  :placeholder="['开始时间', '结束时间']"
+                  :placeholder="[$t('common.startDate'), $t('common.endDate')]"
                   @change="onDateChange"
                   @ok="onDateOk"
                 />
               </a-form-item>
             </a-col>
             <a-col :md="8" :sm="24">
-              <a-button type="primary" @click="searchQuery">查询</a-button>
-              <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
-              <a-button style="margin-left: 8px" @click="exportExcel" icon="download">导出</a-button>
+              <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+              <a-button style="margin-left: 8px" @click="searchReset">{{ $t('common.reset') }}</a-button>
+              <a-button style="margin-left: 8px" @click="exportExcel" icon="download">{{ $t('common.export') }}</a-button>
             </a-col>
           </a-row>
         </a-form>
@@ -83,7 +83,7 @@
     },
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         disableMixinCreated: true,
         toFromType: '',
@@ -113,17 +113,17 @@
             }
           },
           {
-            title: '单据编号', dataIndex: 'number', width: 120,
+            title: this.$t('common.billNo'), dataIndex: 'number', width: 120,
             scopedSlots: { customRender: 'numberCustomRender' },
           },
-          { title: '类型', dataIndex: 'type', width: 80},
-          { title: '条码', dataIndex: 'barCode', width: 100},
-          { title: '名称', dataIndex: 'materialName', width: 200},
-          { title: '仓库名称', dataIndex: 'depotName', width: 80},
-          { title: '数量', dataIndex: 'basicNumber', width: 70},
-          { title: '单价', dataIndex: 'unitPrice', width: 70},
-          { title: '金额', dataIndex: 'allPrice', width: 70},
-          { title: '日期', dataIndex: 'operTime', width: 110}
+          { title: this.$t('common.type'), dataIndex: 'type', width: 80},
+          { title: this.$t('common.barcode'), dataIndex: 'barCode', width: 100},
+          { title: this.$t('common.name'), dataIndex: 'materialName', width: 200},
+          { title: this.$t('common.depotName'), dataIndex: 'depotName', width: 80},
+          { title: this.$t('common.quantity'), dataIndex: 'basicNumber', width: 70},
+          { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice', width: 70},
+          { title: this.$t('common.amount'), dataIndex: 'allPrice', width: 70},
+          { title: this.$t('common.date'), dataIndex: 'operTime', width: 110}
         ],
         labelCol: {
           xs: { span: 1 },
@@ -151,7 +151,7 @@
       },
       show(record, depotIds) {
         if(!record || !record.id) {
-          this.$message.warning('商品ID为空，无法查询库存流水')
+          this.$message.warning(this.$t('common.error'))
           return
         }
         this.model = Object.assign({}, record);
@@ -182,21 +182,21 @@
           if (res && res.code === 200) {
             this.$refs.billDetail.isCanBackCheck = false
             that.$refs.billDetail.show(res.data, record.type);
-            that.$refs.billDetail.title="详情";
+            that.$refs.billDetail.title=this.$t('common.detail');
           }
         })
       },
       exportExcel() {
         let list = []
-        let head = '单据编号,类型,条码,名称,仓库名称,数量,单价,金额,日期'
+        let head = this.$t('common.billNo') + ',' + this.$t('common.type') + ',' + this.$t('common.barCode') + ',' + this.$t('common.name') + ',' + this.$t('common.depotName') + ',' + this.$t('common.number') + ',' + this.$t('common.unitPrice') + ',' + this.$t('common.amount') + ',' + this.$t('common.date')
         for (let i = 0; i < this.dataSource.length; i++) {
           let item = []
           let ds = this.dataSource[i]
           item.push(ds.number, ds.type, ds.barCode, ds.materialName, ds.depotName, ds.basicNumber, ds.unitPrice, ds.allPrice, ds.operTime)
           list.push(item)
         }
-        let tip = '商品库存流水查询'
-        this.handleExportXlsPost('商品库存流水', '商品库存流水', head, tip, list)
+        let tip = this.$t('report.productStockFlowQuery')
+        this.handleExportXlsPost(this.$t('report.productStockFlow'), this.$t('report.productStockFlow'), head, tip, list)
       }
     }
   }

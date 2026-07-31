@@ -2,14 +2,15 @@
   <a-breadcrumb class="breadcrumb">
     <a-breadcrumb-item v-for="(item, index) in breadList" :key="index">
       <router-link v-if="item.name != name" :to="{ path: item.path }">
-        {{ item.meta.title }}
+        {{ translateTitle(item.meta.title) }}
       </router-link>
-      <span v-else>{{ item.meta.title }}</span>
+      <span v-else>{{ translateTitle(item.meta.title) }}</span>
     </a-breadcrumb-item>
   </a-breadcrumb>
 </template>
 
 <script>
+import { menuNameMap } from '@/components/menu'
 export default {
     data() {
       return {
@@ -21,12 +22,16 @@ export default {
     this.getBreadcrumb()
   },
   methods: {
+    translateTitle(title) {
+      const key = menuNameMap[title]
+      return key ? this.$t(key) : title
+    },
     getBreadcrumb() {
 
       console.log('this.$route.matched', this.$route.matched)
 
       this.breadList = []
-      this.breadList.push({ name: '首页', path: '/dashboard/analysis', meta: { title: '首页' } })
+      this.breadList.push({ name: this.$t('common.home'), path: '/dashboard/analysis', meta: { title: this.$t('common.home') } })
 
       this.name = this.$route.name
       this.$route.matched.forEach((item) => {

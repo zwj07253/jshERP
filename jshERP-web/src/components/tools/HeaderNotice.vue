@@ -19,7 +19,7 @@
                 </div>
               </a-list-item>
               <div style="margin-top: 5px;text-align: center">
-                <a-button @click="toMyAnnouncement()" type="dashed" block>查看更多</a-button>
+                <a-button @click="toMyAnnouncement()" type="dashed" block>{{ $t('common.viewMore') }}</a-button>
               </div>
             </a-list>
           </a-tab-pane>
@@ -62,7 +62,7 @@
         hovered: false,
         announcement1:[],
         msg1Count:"0",
-        msg1Title:"通知(0)",
+        msg1Title: "",
         stopTimer:false,
         noticeTimer:null,
         noticeInitialized:false,
@@ -128,7 +128,7 @@
                 this.announcement1 = this.announcement1.slice(0,5)
               }
               this.msg1Count = res.data.length;
-              this.msg1Title = "通知(" + res.data.length + ")";
+              this.msg1Title = this.$t('common.notification') + "(" + res.data.length + ")";
             }
           }).catch(error => {
             console.log("系统消息通知异常",error);//这行打印permissionName is undefined
@@ -220,7 +220,7 @@
         var text = (data.msgTitle ? data.msgTitle + '\n' : '') + (data.msgContent || '');
         const key = `open${data.id || Date.now()}`;
         this.$notification.open({
-          message: '消息提醒',
+          message: this.$t('common.messageReminder'),
           placement:'bottomRight',
           description: text,
           key,
@@ -236,7 +236,7 @@
                   this.showAnnouncement(data);
                 }
               }
-            }, '查看详情')
+            }, this.$t('common.viewDetail'))
           },
         });
       },

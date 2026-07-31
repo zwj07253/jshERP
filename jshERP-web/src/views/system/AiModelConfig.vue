@@ -1,23 +1,23 @@
 <template>
-  <a-card title="AI 模型配置" :bordered="false">
-    <a-alert message="AI 导入会把上传文件中的业务内容发送到此处配置的模型。Token 只会在后端加密保存。" type="info" show-icon style="margin-bottom:24px" />
+  <a-card :title="$t('system.aiModelConfig')" :bordered="false">
+    <a-alert :message="$t('system.aiImportTip')" type="info" show-icon style="margin-bottom:24px" />
     <a-spin :spinning="loading">
       <a-form-model ref="form" :model="form" :rules="rules" :label-col="{span:5}" :wrapper-col="{span:14}">
-        <a-form-model-item label="启用 AI 导入"><a-switch v-model="form.enabled" /></a-form-model-item>
-        <a-form-model-item label="API 格式" prop="apiFormat">
+        <a-form-model-item :label="$t('system.enableAiImport')"><a-switch v-model="form.enabled" /></a-form-model-item>
+        <a-form-model-item :label="$t('system.apiFormat')" prop="apiFormat">
           <a-select v-model="form.apiFormat" @change="handleApiFormatChange">
-            <a-select-option value="OPENAI">OpenAI 兼容</a-select-option>
-            <a-select-option value="ANTHROPIC">Anthropic 兼容</a-select-option>
+            <a-select-option value="OPENAI">{{ $t('system.openaiCompatible') }}</a-select-option>
+            <a-select-option value="ANTHROPIC">{{ $t('system.anthropicCompatible') }}</a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item label="API 地址" prop="apiUrl" :extra="form.apiFormat==='ANTHROPIC' ? '切换格式时会自动转换为 /anthropic/v1/messages。' : '切换格式时会自动转换为 /v1/chat/completions。'"><a-input v-model.trim="form.apiUrl" :placeholder="form.apiFormat==='ANTHROPIC' ? '例如 https://.../anthropic' : '例如 https://.../v1'" /></a-form-model-item>
-        <a-form-model-item label="模型名称" prop="modelName"><a-input v-model.trim="form.modelName" placeholder="例如 gpt-4.1-mini" /></a-form-model-item>
-        <a-form-model-item label="API Token" prop="apiToken"><a-input-password v-model.trim="form.apiToken" :placeholder="form.apiTokenConfigured ? '已配置，留空不修改' : '请输入 API Token'" /></a-form-model-item>
-        <a-form-model-item label="支持图片识别"><a-switch v-model="form.visionEnabled" /></a-form-model-item>
-        <a-form-model-item label="请求超时"><a-input-number v-model="form.timeoutSeconds" :min="15" :max="180" /> 秒</a-form-model-item>
-        <a-form-model-item label="文件大小上限"><a-input-number v-model="form.maxFileMb" :min="1" :max="20" /> MB</a-form-model-item>
-        <a-form-model-item label="补充规则"><a-textarea v-model="form.customPrompt" :rows="4" :max-length="4000" /></a-form-model-item>
-        <a-form-model-item :wrapper-col="{span:14,offset:5}"><a-button type="primary" :loading="saving" @click="save">保存</a-button><a-button style="margin-left:10px" :loading="testing" @click="test">测试连接</a-button></a-form-model-item>
+        <a-form-model-item :label="$t('system.apiUrl')" prop="apiUrl" :extra="form.apiFormat==='ANTHROPIC' ? $t('system.anthropicSwitchTip') : $t('system.openaiSwitchTip')"><a-input v-model.trim="form.apiUrl" :placeholder="form.apiFormat==='ANTHROPIC' ? $t('system.anthropicPlaceholder') : $t('system.openaiPlaceholder')" /></a-form-model-item>
+        <a-form-model-item :label="$t('system.modelName')" prop="modelName"><a-input v-model.trim="form.modelName" :placeholder="$t('system.modelNamePlaceholder')" /></a-form-model-item>
+        <a-form-model-item :label="$t('system.apiToken')" prop="apiToken"><a-input-password v-model.trim="form.apiToken" :placeholder="form.apiTokenConfigured ? $t('system.apiTokenConfigured') : $t('system.enterApiToken')" /></a-form-model-item>
+        <a-form-model-item :label="$t('system.visionEnabled')"><a-switch v-model="form.visionEnabled" /></a-form-model-item>
+        <a-form-model-item :label="$t('system.requestTimeout')"><a-input-number v-model="form.timeoutSeconds" :min="15" :max="180" /> {{ $t('system.seconds') }}</a-form-model-item>
+        <a-form-model-item :label="$t('system.maxFileSize')"><a-input-number v-model="form.maxFileMb" :min="1" :max="20" /> MB</a-form-model-item>
+        <a-form-model-item :label="$t('system.customPrompt')"><a-textarea v-model="form.customPrompt" :rows="4" :max-length="4000" /></a-form-model-item>
+        <a-form-model-item :wrapper-col="{span:14,offset:5}"><a-button type="primary" :loading="saving" @click="save">{{ $t('common.save') }}</a-button><a-button style="margin-left:10px" :loading="testing" @click="test">{{ $t('system.testConnection') }}</a-button></a-form-model-item>
       </a-form-model>
     </a-spin>
   </a-card>
@@ -33,8 +33,8 @@ export default {
       testing: false,
       form: this.empty(),
       rules: {
-        apiUrl: [{ required: true, message: '请输入 API 地址', trigger: 'blur' }],
-        modelName: [{ required: true, message: '请输入模型名称', trigger: 'blur' }]
+        apiUrl: [{ required: true, message: this.$t('system.apiUrlRequired'), trigger: 'blur' }],
+        modelName: [{ required: true, message: this.$t('system.modelNameRequired'), trigger: 'blur' }]
       }
     }
   },
@@ -76,7 +76,7 @@ export default {
         this.form = Object.assign(this.empty(), r.data, { apiToken: '' })
         this.form.apiUrl = this.normalizedApiUrl(this.form.apiFormat, this.form.apiUrl)
       } catch (e) {
-        this.$message.error(e.message || '读取配置失败')
+        this.$message.error(e.message || this.$t('system.readConfigFailed'))
       } finally {
         this.loading = false
       }
@@ -85,7 +85,7 @@ export default {
       this.$refs.form.validate(async valid => {
         if (!valid) return
         if (!this.form.apiTokenConfigured && !this.form.apiToken) {
-          this.$message.warning('首次配置必须填写 API Token')
+          this.$message.warning(this.$t('system.firstConfigTokenRequired'))
           return
         }
         this.form.apiUrl = this.normalizedApiUrl(this.form.apiFormat, this.form.apiUrl)
@@ -94,9 +94,9 @@ export default {
           const r = await putAction('/ai/config', this.form)
           if (r.code !== 200) throw new Error(r.data && r.data.message)
           this.form = Object.assign(this.empty(), r.data, { apiToken: '' })
-          this.$message.success('已保存')
+          this.$message.success(this.$t('system.saved'))
         } catch (e) {
-          this.$message.error(e.message || '保存失败')
+          this.$message.error(e.message || this.$t('system.saveFailed'))
         } finally {
           this.saving = false
         }
@@ -107,9 +107,9 @@ export default {
       try {
         const r = await getAction('/ai/config/test')
         if (r.code !== 200) throw new Error(r.data && r.data.message)
-        this.$message.success('连接成功：' + (r.data.reply || 'OK'))
+        this.$message.success(this.$t('system.connectionSuccess') + (r.data.reply || 'OK'))
       } catch (e) {
-        this.$message.error(e.message || '连接失败')
+        this.$message.error(e.message || this.$t('system.connectionFailed'))
       } finally {
         this.testing = false
       }

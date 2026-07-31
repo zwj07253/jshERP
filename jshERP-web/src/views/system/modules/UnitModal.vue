@@ -12,39 +12,39 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:100px; height:55%;">
       <template slot="footer">
         <a-button key="back" v-if="isReadOnly" @click="handleCancel">
-          取消
+          {{ $t('common.cancel') }}
         </a-button>
       </template>
       <a-spin :spinning="confirmLoading">
         <a-form :form="form" id="unitModal">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="基本单位">
-            <a-input placeholder="请输入基本单位(小单位)" v-decorator.trim="[ 'basicUnit', validatorRules.basicUnit]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.basicUnit')">
+            <a-input :placeholder="$t('system.enterBasicUnit')" v-decorator.trim="[ 'basicUnit', validatorRules.basicUnit]" />
           </a-form-item>
         </a-form>
         <a-form :form="form">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="副单位">
-            <a-input placeholder="请输入副单位(大单位)" style="width:48%" v-decorator.trim="[ 'otherUnit' ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.otherUnit')">
+            <a-input :placeholder="$t('system.enterOtherUnit')" style="width:48%" v-decorator.trim="[ 'otherUnit' ]" />
             =
-            <a-input suffix="基本单位" placeholder="请输入比例" style="width:48%" v-decorator.trim="[ 'ratio' ]" />
+            <a-input :suffix="$t('system.basicUnit')" :placeholder="$t('system.enterRatio')" style="width:48%" v-decorator.trim="[ 'ratio' ]" />
           </a-form-item>
         </a-form>
         <a-form :form="form">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="副单位2">
-            <a-input placeholder="请输入副单位2(大单位)" style="width:48%" v-decorator.trim="[ 'otherUnitTwo' ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.otherUnit2')">
+            <a-input :placeholder="$t('system.enterOtherUnit2')" style="width:48%" v-decorator.trim="[ 'otherUnitTwo' ]" />
             =
-            <a-input suffix="基本单位" placeholder="请输入比例2" style="width:48%" v-decorator.trim="[ 'ratioTwo' ]" />
+            <a-input :suffix="$t('system.basicUnit')" :placeholder="$t('system.enterRatio2')" style="width:48%" v-decorator.trim="[ 'ratioTwo' ]" />
           </a-form-item>
         </a-form>
         <a-form :form="form">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="副单位3">
-            <a-input placeholder="请输入副单位3(大单位)" style="width:48%" v-decorator.trim="[ 'otherUnitThree' ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.otherUnit3')">
+            <a-input :placeholder="$t('system.enterOtherUnit3')" style="width:48%" v-decorator.trim="[ 'otherUnitThree' ]" />
             =
-            <a-input suffix="基本单位" placeholder="请输入比例3" style="width:48%" v-decorator.trim="[ 'ratioThree' ]" />
+            <a-input :suffix="$t('system.basicUnit')" :placeholder="$t('system.enterRatio3')" style="width:48%" v-decorator.trim="[ 'ratioThree' ]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -62,7 +62,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         model: {},
         isReadOnly: false,
@@ -79,17 +79,17 @@
         validatorRules:{
           basicUnit:{
             rules: [
-              { required: true, message: '请输入基本单位!' },
-              { min: 1, max: 10, message: '长度在 1 到 10 个字符', trigger: 'blur' }
+              { required: true, message: this.$t('system.basicUnitRequired') },
+              { min: 1, max: 10, message: this.$t('system.basicUnitLength'), trigger: 'blur' }
             ]},
           otherUnit:{
             rules: [
-              { required: true, message: '请输入副单位!' },
-              { min: 1, max: 10, message: '长度在 1 到 10 个字符', trigger: 'blur' }
+              { required: true, message: this.$t('system.otherUnitRequired') },
+              { min: 1, max: 10, message: this.$t('system.otherUnitLength'), trigger: 'blur' }
             ]},
           ratio:{
             rules: [
-              { required: true, message: '请输入比例!' },
+              { required: true, message: this.$t('system.ratioRequired') },
               { validator: this.validateRatio}
             ]}
         },
@@ -122,84 +122,84 @@
             that.confirmLoading = true;
             let formData = Object.assign(this.model, values);
             if(!formData.otherUnit) {
-              that.$message.warning('抱歉，副单位不能为空！');
+              that.$message.warning(this.$t('system.otherUnitEmpty'));
               that.confirmLoading = false;
               return;
             }
             if(formData.otherUnit) {
               if(!formData.ratio) {
-                that.$message.warning('抱歉，比例不能为空！');
+                that.$message.warning(this.$t('system.ratioEmpty'));
                 that.confirmLoading = false;
                 return;
               }
               if(!isDecimalThree(formData.ratio)) {
-                that.$message.warning('抱歉，比例只能为数字，最多三位小数！')
+                that.$message.warning(this.$t('system.ratioFormat'))
                 that.confirmLoading = false
                 return
               }
               if(Number(formData.ratio) <= 1) {
-                that.$message.warning('抱歉，比例必须大于1！')
+                that.$message.warning(this.$t('system.ratioGreaterThan1'))
                 that.confirmLoading = false
                 return
               }
             }
             if(formData.otherUnitTwo) {
               if(!formData.ratioTwo) {
-                that.$message.warning('抱歉，比例2不能为空！');
+                that.$message.warning(this.$t('system.ratio2Empty'));
                 that.confirmLoading = false;
                 return;
               }
               if(!isDecimalThree(formData.ratioTwo)) {
-                that.$message.warning('抱歉，比例2只能为数字，最多三位小数！')
+                that.$message.warning(this.$t('system.ratio2Format'))
                 that.confirmLoading = false
                 return
               }
               if(Number(formData.ratioTwo) <= 1) {
-                that.$message.warning('抱歉，比例2必须大于1！')
+                that.$message.warning(this.$t('system.ratio2GreaterThan1'))
                 that.confirmLoading = false
                 return
               }
             }
             if(formData.otherUnitThree) {
               if(!formData.ratioThree) {
-                that.$message.warning('抱歉，比例3不能为空！');
+                that.$message.warning(this.$t('system.ratio3Empty'));
                 that.confirmLoading = false;
                 return;
               }
               if(!isDecimalThree(formData.ratioThree)) {
-                that.$message.warning('抱歉，比例3只能为数字，最多三位小数！')
+                that.$message.warning(this.$t('system.ratio3Format'))
                 that.confirmLoading = false
                 return
               }
               if(Number(formData.ratioThree) <= 1) {
-                that.$message.warning('抱歉，比例3必须大于1！')
+                that.$message.warning(this.$t('system.ratio3GreaterThan1'))
                 that.confirmLoading = false
                 return
               }
             }
             if(!formData.otherUnitTwo && formData.otherUnitThree) {
-              that.$message.warning('抱歉，需要先输入副单位2再输入副单位3！');
+              that.$message.warning(this.$t('system.otherUnit2Before3'));
               that.confirmLoading = false;
               return;
             }
             if(formData.basicUnit === formData.otherUnit) {
-              that.$message.warning('抱歉，基本单位与副单位不能相同！');
+              that.$message.warning(this.$t('system.basicOtherUnitSame'));
               that.confirmLoading = false;
               return;
             }
             if(formData.basicUnit === formData.otherUnitTwo) {
-              that.$message.warning('抱歉，基本单位与副单位2不能相同！');
+              that.$message.warning(this.$t('system.basicOtherUnit2Same'));
               that.confirmLoading = false;
               return;
             }
             if(formData.basicUnit === formData.otherUnitThree) {
-              that.$message.warning('抱歉，基本单位与副单位3不能相同！');
+              that.$message.warning(this.$t('system.basicOtherUnit3Same'));
               that.confirmLoading = false;
               return;
             }
             const unitNames = [formData.basicUnit, formData.otherUnit, formData.otherUnitTwo, formData.otherUnitThree].filter(Boolean)
             if(new Set(unitNames).size !== unitNames.length) {
-              that.$message.warning('抱歉，单位名称不能重复！')
+              that.$message.warning(this.$t('system.unitNameDuplicate'))
               that.confirmLoading = false
               return
             }
@@ -229,7 +229,7 @@
         if (value > 1) {
           callback();
         } else {
-          callback("比例必须大于1");
+          callback(this.$t('system.ratioGreaterThan1Validator'));
         }
       }
     }

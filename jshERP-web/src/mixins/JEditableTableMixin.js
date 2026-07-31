@@ -8,7 +8,7 @@ export const JEditableTableMixin = {
   },
   data() {
     return {
-      title: '操作',
+      title: this.$t('common.action'),
       visible: false,
       form: this.$form.createForm(this),
       confirmLoading: false,
@@ -142,7 +142,7 @@ export const JEditableTableMixin = {
         if (e.error === VALIDATE_NO_PASSED) {
           // 如果有未通过表单验证的子表，就自动跳转到它所在的tab
           this.activeKey = e.index == null ? this.activeKey : this.refKeys[e.index]
-          this.$message.warning('请检查表单必填项和明细是否完整')
+          this.$message.warning(this.$t('common.pleaseCheckForm'))
         } else {
           console.error(e)
         }
@@ -153,12 +153,12 @@ export const JEditableTableMixin = {
 
     /** not a function */
     throwNotFunction(name) {
-      return `${name} 未定义或不是一个函数`
+      return `${name} ${this.$t('common.undefinedOrNotFunction')}`
     },
 
     /** not a array */
     throwNotArray(name) {
-      return `${name} 未定义或不是一个数组`
+      return `${name} ${this.$t('common.undefinedOrNotArray')}`
     }
 
   }

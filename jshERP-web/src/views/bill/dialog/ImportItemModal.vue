@@ -6,43 +6,43 @@
     :confirmLoading="confirmLoading"
     :maskStyle="{'top':'93px','left':'154px'}"
     @cancel="handleCancel"
-    cancelText="关闭"
+    :cancelText="$t('common.close')"
     wrapClassName="ant-modal-cust-warp"
     style="top:20%;height: 55%;overflow-y: hidden">
     <template slot="footer">
       <a-button key="back" @click="handleCancel">
-        关闭
+        {{ $t('common.close') }}
       </a-button>
     </template>
-    <a-spin :spinning="confirmLoading" tip="AI 正在识别并校验文件，请勿关闭窗口…">
+    <a-spin :spinning="confirmLoading" :tip="$t('common.aiRecognizing')">
       <a-form :form="form">
-        <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="模板">
-          <span><a :href="tmpUrl" target="_blank"><b>明细Excel模板[下载]</b></a></span>
+        <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.template')">
+          <span><a :href="tmpUrl" target="_blank"><b>{{ $t('common.detailExcelTemplate') }}</b></a></span>
         </a-form-item>
-        <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="文件">
+        <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.file')">
           <a-upload name="file" :showUploadList="false" :multiple="false" :headers="tokenHeader"
                     :data="setFileData" :action="importExcelUrl" @change="handleImportExcel">
-            <a-button type="primary" icon="import">导入</a-button>
+            <a-button type="primary" icon="import">{{ $t('common.importBtn') }}</a-button>
           </a-upload>
         </a-form-item>
-        <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="AI 智能识别">
+        <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.aiRecognition')">
           <a-upload name="file" :showUploadList="false" :multiple="false" :headers="tokenHeader"
                     :data="setAiFileData" :action="aiImportUrl" @change="handleAiImport">
-            <a-button type="dashed" icon="robot">上传文件并识别</a-button>
+            <a-button type="dashed" icon="robot">{{ $t('common.uploadAndRecognize') }}</a-button>
           </a-upload>
-          <div style="color:#999;margin-top:6px">支持 Excel、CSV、TXT、PDF 和图片，识别后会按条码校验并回填单据。</div>
+          <div style="color:#999;margin-top:6px">{{ $t('common.aiRecognitionHint') }}</div>
         </a-form-item>
       </a-form>
     </a-spin>
-    <a-modal v-model="aiPreviewVisible" title="AI 识别结果（可修改后回填）" :width="1050" :maskClosable="false" @ok="confirmAiRows">
-      <a-alert :type="invalidAiRows ? 'warning' : 'success'" :message="invalidAiRows ? '存在错误行：请补充条码或修正数据后再确认。' : '全部行已通过初步校验。'" show-icon style="margin-bottom:12px" />
+    <a-modal v-model="aiPreviewVisible" :title="$t('common.aiResult')" :width="1050" :maskClosable="false" @ok="confirmAiRows">
+      <a-alert :type="invalidAiRows ? 'warning' : 'success'" :message="invalidAiRows ? $t('common.errorRowsExist') : $t('common.allRowsValid')" show-icon style="margin-bottom:12px" />
       <a-table :dataSource="aiRows" :pagination="false" rowKey="_rowId" size="small" :rowClassName="row => row.valid === false ? 'ai-invalid-row' : ''">
-        <a-table-column title="状态" :width="100"><template slot-scope="text,row"><a-tag :color="row.valid === false ? 'red' : 'green'">{{ row.valid === false ? '需修正' : '可回填' }}</a-tag></template></a-table-column>
-        <a-table-column title="条码" :width="150"><template slot-scope="text,row"><a-input v-model="row.barCode" /></template></a-table-column>
-        <a-table-column title="名称" dataIndex="name" :width="150" />
-        <a-table-column title="数量" :width="110"><template slot-scope="text,row"><a-input v-model="row.operNumber" /></template></a-table-column>
-        <a-table-column title="单价" :width="110"><template slot-scope="text,row"><a-input v-model="row.unitPrice" /></template></a-table-column>
-        <a-table-column title="错误说明"><template slot-scope="text,row"><span style="color:#f5222d">{{ (row.errors || []).join('；') }}</span></template></a-table-column>
+        <a-table-column :title="$t('common.status')" :width="100"><template slot-scope="text,row"><a-tag :color="row.valid === false ? 'red' : 'green'">{{ row.valid === false ? $t('common.needFix') : $t('common.canFillBack') }}</a-tag></template></a-table-column>
+        <a-table-column :title="$t('common.barcode')" :width="150"><template slot-scope="text,row"><a-input v-model="row.barCode" /></template></a-table-column>
+        <a-table-column :title="$t('common.name')" dataIndex="name" :width="150" />
+        <a-table-column :title="$t('common.quantity')" :width="110"><template slot-scope="text,row"><a-input v-model="row.operNumber" /></template></a-table-column>
+        <a-table-column :title="$t('common.amount')" :width="110"><template slot-scope="text,row"><a-input v-model="row.unitPrice" /></template></a-table-column>
+        <a-table-column :title="$t('common.errorDesc')"><template slot-scope="text,row"><span style="color:#f5222d">{{ (row.errors || []).join('；') }}</span></template></a-table-column>
       </a-table>
     </a-modal>
   </a-modal>
@@ -59,7 +59,7 @@
     },
     data () {
       return {
-        title:"导入明细",
+        title: this.$t('common.importDetail'),
         visible: false,
         prefixNo: '',
         tmpUrl: '',
@@ -128,7 +128,7 @@
         if (info.file.status === 'done') {
           if (info.file.response) {
             if (info.file.response.code === 200) {
-              this.$message.success('导入成功' + info.file.response.data.rows.length + '条')
+              this.$message.success(this.$t('common.importSuccess', { count: info.file.response.data.rows.length }))
               this.$emit('ok', info.file.response.data.rows);
               this.close()
             } else if (info.file.response.code === 500) {
@@ -138,7 +138,7 @@
             this.$message.error(`${info.file.name} ${info.file.response.data}.`);
           }
         } else if (info.file.status === 'error') {
-          this.$message.error(`文件导入失败: ${info.file.msg} `);
+          this.$message.error(this.$t('common.fileImportFailed') + ': ' + info.file.msg);
         }
       },
       setFileData() {
@@ -161,22 +161,22 @@
             this.aiTaskId = response.data.taskId
             this.aiPreviewVisible = true
           } else {
-            this.$message.error(response && response.data && response.data.message ? response.data.message : 'AI 识别失败，请检查文件内容后重试')
+            this.$message.error(response && response.data && response.data.message ? response.data.message : this.$t('common.aiRecognitionFailed'))
           }
         } else if (info.file.status === 'error') {
           this.confirmLoading = false
-          this.$message.error('AI 文件识别失败')
+          this.$message.error(this.$t('common.aiFileRecognitionFailed'))
         }
       },
       confirmAiRows () {
         this.confirmLoading = true
         postAction('/ai/import/confirm', { type: 'BILL_ITEM', prefixNo: this.prefixNo, taskId: this.aiTaskId, rows: this.aiRows }).then(res => {
           if (res && res.code === 200) {
-            this.$message.success('已回填 ' + res.data.count + ' 条明细')
+            this.$message.success(this.$t('common.filledBack', { count: res.data.count }))
             this.aiPreviewVisible = false
             this.$emit('ok', res.data.rows)
             this.close()
-          } else this.$message.error(res && res.data && res.data.message ? res.data.message : 'AI 回填失败')
+          } else this.$message.error(res && res.data && res.data.message ? res.data.message : this.$t('common.aiFillBackFailed'))
         }).finally(() => { this.confirmLoading = false })
       }
     }

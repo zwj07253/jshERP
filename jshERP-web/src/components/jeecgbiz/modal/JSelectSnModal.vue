@@ -5,7 +5,7 @@
     :title="title"
     @ok="handleSubmit"
     @cancel="close"
-    cancelText="关闭"
+    :cancelText="$t('common.close')"
     style="top:12%;height: 90%;overflow-y: hidden"
     wrapClassName="ant-modal-cust-warp">
     <a-row :gutter="10" style="padding: 10px; margin: -10px">
@@ -16,15 +16,15 @@
           <a-form layout="inline" @keyup.enter.native="onSearch">
             <a-row :gutter="24">
               <a-col :md="12" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="序列号">
-                  <a-input ref="name" placeholder="多个序列号用逗号隔开" v-model="queryParam.name"></a-input>
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.columns.serialNumber')">
+                  <a-input ref="name" :placeholder="$t('common.multiSnPlaceholder')" v-model="queryParam.name"></a-input>
                 </a-form-item>
               </a-col>
               <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
                 <a-col :md="12" :sm="24">
-                  <a-button type="primary" @click="onSearch">查询</a-button>
+                  <a-button type="primary" @click="onSearch">{{ $t('common.search') }}</a-button>
                   <a-button style="margin-left: 8px" type="primary" @click="checkAll">全选</a-button>
-                  <a-button style="margin-left: 8px" @click="searchReset(1)">重置</a-button>
+                  <a-button style="margin-left: 8px" @click="searchReset(1)">{{ $t('common.reset') }}</a-button>
                 </a-col>
               </span>
             </a-row>
@@ -104,14 +104,14 @@
         },
         categoryTree:[],
         leftColumns: [
-          {dataIndex: 'serialNumber', title: '序列号', width: 100, align: 'left'},
-          {dataIndex: 'inBillNo', title: '入库单号', width: 100, align: 'left'},
-          {dataIndex: 'createTimeStr', title: '创建时间', width: 100, align: 'left'},
-          {dataIndex: 'action', title: '操作', align:"center", width: 50, scopedSlots: { customRender: 'action' }}
+          {dataIndex: 'serialNumber', title: this.$t('purchase.form.columns.serialNumber'), width: 100, align: 'left'},
+          {dataIndex: 'inBillNo', title: this.$t('common.inboundBillNo'), width: 100, align: 'left'},
+          {dataIndex: 'createTimeStr', title: this.$t('common.createTime'), width: 100, align: 'left'},
+          {dataIndex: 'action', title: this.$t('common.action'), align:"center", width: 50, scopedSlots: { customRender: 'action' }}
         ],
         rightColumns: [
-          {dataIndex: 'serialNumber', title: '序列号', width: 100, align: 'left'},
-          {tdataIndex: 'action', title: '操作', align:"center", width: 50, scopedSlots: { customRender: 'action' }}
+          {dataIndex: 'serialNumber', title: this.$t('purchase.form.columns.serialNumber'), width: 100, align: 'left'},
+          {tdataIndex: 'action', title: this.$t('common.action'), align:"center", width: 50, scopedSlots: { customRender: 'action' }}
         ],
         scrollTrigger: {y: 460},
         dataSource: [],
@@ -119,13 +119,13 @@
         selectedRowKeys: [],
         selectRows: [],
         selectIds: [],
-        title: '选择序列号',
+        title: this.$t('common.selectSerialNumber'),
         ipagination: {
           current: 1,
           pageSize: 10,
           pageSizeOptions: ['10', '20', '30', '100', '200'],
           showTotal: (total, range) => {
-            return range[0] + '-' + range[1] + ' 共' + total + '条'
+            return this.$t('common.pagedTotal', { range0: range[0], range1: range[1], total: total })
           },
           showQuickJumper: true,
           showSizeChanger: true,
@@ -199,7 +199,7 @@
               }
             }
             if(res.data.missInfo) {
-              this.$message.warning("未查询到的序列号：" + res.data.missInfo)
+              this.$message.warning(this.$t('common.snNotFound') + ': ' + res.data.missInfo)
             }
           }
         }).finally(() => {
@@ -303,7 +303,7 @@
           }
         }
         if(isExist) {
-          this.$message.warning('抱歉，此序列号已经选择过！');
+          this.$message.warning(this.$t('common.snAlreadySelected'));
         } else {
           this.checkDataSource.push(checkObj)
         }
@@ -334,7 +334,7 @@
       },
       onSearch() {
         if(this.queryParam.name && this.queryParam.name.length>2000) {
-          this.$message.warning('序列号长度不能超出2000个字符！');
+          this.$message.warning(this.$t('common.snLengthLimit'));
           return
         }
         this.loadData(1);

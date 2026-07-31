@@ -14,28 +14,28 @@
       :okButtonProps="{ props: {disabled: disableSubmit} }"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:50px;height: 80%;">
       <a-spin :spinning="confirmLoading">
         <a-form :form="form" id="organizationModal">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="名称">
-            <a-input placeholder="请输入名称" v-decorator="['orgAbr', validatorRules.orgAbr ]"/>
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.name')">
+            <a-input :placeholder="$t('common.enterName')" v-decorator="['orgAbr', validatorRules.orgAbr ]"/>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="编号">
-            <a-input placeholder="请输入编号" v-decorator="['orgNo', validatorRules.orgNo ]"/>
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.serialNo')">
+            <a-input :placeholder="$t('common.enterNumber')" v-decorator="['orgNo', validatorRules.orgNo ]"/>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="上级部门">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.parentDept')">
             <a-tree-select style="width:100%" :dropdownStyle="{maxHeight:'200px',overflow:'auto'}"
                            allow-clear :treeDefaultExpandAll="true"
-                 :treeData="departTree" v-decorator="[ 'parentId' ]" placeholder="请选择上级部门">
+                 :treeData="departTree" v-decorator="[ 'parentId' ]" :placeholder="$t('system.selectParentDept')">
             </a-tree-select>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="排序">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.sort')">
             <a-input v-decorator="[ 'sort' ]"/>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="备注">
-            <a-textarea placeholder="请输入备注":rows="2" v-decorator.trim="[ 'remark' ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.remark')">
+            <a-textarea :placeholder="$t('common.enterRemark')":rows="2" v-decorator.trim="[ 'remark' ]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -60,7 +60,7 @@
         orgTypeData:[],
         phoneWarning:'',
         departName:"",
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         disableSubmit:false,
         model: {},
@@ -80,11 +80,11 @@
         validatorRules:{
           orgAbr: {
             rules: [
-              { required: true, message: '请输入名称!'},
+              { required: true, message: this.$t('common.enterName')},
               { validator: this.validateName}
             ]
           },
-          orgNo: {rules: [{required: true, message: '请输入编码!'}]}
+          orgNo: {rules: [{required: true, message: this.$t('system.codeRequired')}]}
         },
         url: {
           add: "/organization/add",
@@ -163,7 +163,7 @@
             if(!res.data.status){
               callback();
             } else {
-              callback("名称已经存在");
+              callback(this.$t('common.nameExists'));
             }
           } else {
             callback(res.data);

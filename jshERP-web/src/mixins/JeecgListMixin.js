@@ -9,6 +9,7 @@ import Vue from 'vue'
 import VueDraggableResizable from 'vue-draggable-resizable'
 import { ACCESS_TOKEN, USER_ID } from "@/store/mutation-types"
 import {mixinDevice} from '@/utils/mixin.js'
+import { getBillTypeLabel } from '@/utils/billI18n'
 
 export const JeecgListMixin = {
   mixins: [mixinDevice],
@@ -35,7 +36,7 @@ export const JeecgListMixin = {
         pageSize: 10,
         pageSizeOptions: ['10', '20', '30', '50', '100'],
         showTotal: (total, range) => {
-          return range[0] + "-" + range[1] + " 共" + total + "条"
+          return range[0] + "-" + range[1] + " / " + total
         },
         showQuickJumper: true,
         showSizeChanger: true,
@@ -89,7 +90,7 @@ export const JeecgListMixin = {
   methods:{
     loadData(arg) {
       if(!this.url.list){
-        this.$message.error("请设置url.list属性!")
+        this.$message.error(this.$t('common.setUrlError', { field: 'list' }))
         return
       }
       //加载数据 若传入参数1则加载第一页的内容
@@ -106,7 +107,7 @@ export const JeecgListMixin = {
         } else if(res.code===510){
           this.$message.warning(res.data)
         } else {
-          this.$message.warning((res.data && res.data.message) || res.data || '获取数据失败')
+          this.$message.warning((res.data && res.data.message) || res.data || this.$t('common.getDataFailed'))
         }
         this.loading = false
         this.onClearSelected()
@@ -169,11 +170,11 @@ export const JeecgListMixin = {
     },
     batchSetStatus: function (status) {
       if(!this.url.batchSetStatusUrl){
-        this.$message.error("请设置url.batchSetStatusUrl属性!")
+        this.$message.error(this.$t('common.setUrlError', { field: 'batchSetStatusUrl' }))
         return
       }
       if (this.selectedRowKeys.length <= 0) {
-        this.$message.warning('请选择一条记录！');
+        this.$message.warning(this.$t('common.selectRecord'));
         return;
       } else {
         var ids = "";
@@ -182,8 +183,8 @@ export const JeecgListMixin = {
         }
         var that = this;
         this.$confirm({
-          title: "确认操作",
-          content: "是否操作选中数据?",
+          title: this.$t('common.confirmAction'),
+          content: this.$t('common.confirmOperateSelected'),
           onOk: function () {
             that.loading = true;
             postAction(that.url.batchSetStatusUrl, {status: status, ids: ids}).then((res) => {
@@ -201,11 +202,11 @@ export const JeecgListMixin = {
     },
     batchDel: function () {
       if(!this.url.deleteBatch){
-        this.$message.error("请设置url.deleteBatch属性!")
+        this.$message.error(this.$t('common.setUrlError', { field: 'deleteBatch' }))
         return
       }
       if (this.selectedRowKeys.length <= 0) {
-        this.$message.warning('请选择一条记录！');
+        this.$message.warning(this.$t('common.selectRecord'));
         return;
       } else {
         var ids = "";
@@ -214,8 +215,8 @@ export const JeecgListMixin = {
         }
         var that = this;
         this.$confirm({
-          title: "确认删除",
-          content: "是否删除选中数据?",
+          title: this.$t('common.confirmDelete'),
+          content: this.$t('common.confirmDeleteSelected'),
           onOk: function () {
             that.loading = true;
             deleteAction(that.url.deleteBatch, {ids: ids}).then((res) => {
@@ -233,7 +234,7 @@ export const JeecgListMixin = {
     },
     handleDelete: function (id) {
       if(!this.url.delete){
-        this.$message.error("请设置url.delete属性!")
+        this.$message.error(this.$t('common.setUrlError', { field: 'delete' }))
         return
       }
       var that = this;
@@ -247,12 +248,12 @@ export const JeecgListMixin = {
     },
     handleEdit: function (record) {
       this.$refs.modalForm.edit(record);
-      this.$refs.modalForm.title = "编辑";
+      this.$refs.modalForm.title = this.$t('common.edit');
       this.$refs.modalForm.disableSubmit = false;
     },
     handleAdd: function () {
       this.$refs.modalForm.add();
-      this.$refs.modalForm.title = "新增";
+      this.$refs.modalForm.title = this.$t('common.add');
       this.$refs.modalForm.disableSubmit = false;
     },
     handleTableChange(pagination, filters, sorter) {
@@ -288,7 +289,7 @@ export const JeecgListMixin = {
     },
     handleDetail:function(record, type, prefixNo){
       this.$refs.modalDetail.show(record, type, prefixNo);
-      this.$refs.modalDetail.title=type+"-详情";
+      this.$refs.modalDetail.title = getBillTypeLabel(this, type) + "-" + this.$t('common.view');
     },
     //加载初始化列
     initColumnsSetting(){
@@ -324,7 +325,7 @@ export const JeecgListMixin = {
     //通过get方式导出Excel
     handleExportXls(fileName){
       if(!fileName || typeof fileName != "string"){
-        fileName = "导出文件"
+        fileName = this.$t('common.exportFile')
       }
       let param = {...this.queryParam};
       if(this.selectedRowKeys && this.selectedRowKeys.length>0){
@@ -333,7 +334,7 @@ export const JeecgListMixin = {
       console.log("导出参数",param)
       downFile(this.url.exportXlsUrl,param).then((data)=>{
         if (!data) {
-          this.$message.warning("文件下载失败")
+          this.$message.warning(this.$t('common.downloadFailed'))
           return
         }
         if (typeof window.navigator.msSaveBlob !== 'undefined') {
@@ -354,13 +355,13 @@ export const JeecgListMixin = {
     //通过post方式导出Excel
     handleExportXlsPost(fileName, title, head, tip, list) {
       if(!fileName || typeof fileName != "string"){
-        fileName = "导出文件"
+        fileName = this.$t('common.exportFile')
       }
       let paramObj = {'title': title, 'head': head, 'tip': tip, 'list': list}
       console.log("导出参数", paramObj)
       downFilePost(paramObj).then((data)=>{
         if (!data) {
-          this.$message.warning("文件下载失败")
+          this.$message.warning(this.$t('common.downloadFailed'))
           return
         }
         if (typeof window.navigator.msSaveBlob !== 'undefined') {
@@ -388,7 +389,7 @@ export const JeecgListMixin = {
         if (info.file.response) {
           // this.$message.success(`${info.file.name} 文件上传成功`);
           if (info.file.response.code === 200) {
-            this.$message.success(info.file.response.data || `${info.file.name} 文件上传成功`)
+            this.$message.success(info.file.response.data || (info.file.name + ' ' + 'Upload success'))
           } else {
             this.$message.warning(info.file.response.data, 8)
           }
@@ -400,7 +401,7 @@ export const JeecgListMixin = {
           this.confirmLoading = false
         }
       } else if (info.file.status === 'error') {
-        this.$message.error(`文件上传失败: ${info.file.msg} `)
+        this.$message.error('Upload failed: ' + info.file.msg)
         this.confirmLoading = false
       }
     },
@@ -414,7 +415,7 @@ export const JeecgListMixin = {
     /* 文件下载 */
     uploadFile(text){
       if(!text){
-        this.$message.warning("未知的文件")
+        this.$message.warning("Unknown file")
         return;
       }
       if(text.indexOf(",")>0){
@@ -509,7 +510,7 @@ export const JeecgListMixin = {
       if(dataSource.length>0 && this.ipagination.pageSize%10===1) {
         //分页条数为11、21、31等的时候增加合计行
         let numKey = 'rowIndex'
-        let totalRow = { [numKey]: '合计' }
+        let totalRow = { [numKey]: this.$t('common.statistics') }
         //需要合计的列，记住最后的逗号不要删除
         let parseCols = 'initialStock,currentStock,currentStockPrice,currentWeight,initialAmount,thisMonthAmount,currentAmount,inSum,inSumPrice,' +
           'inOutSumPrice,outSum,outSumPrice,outInSumPrice,operNumber,allPrice,numSum,priceSum,prevSum,thisSum,thisAllPrice,changeAmount,' +

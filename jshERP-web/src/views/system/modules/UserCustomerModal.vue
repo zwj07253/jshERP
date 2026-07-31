@@ -12,8 +12,8 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:5%;height: 95%;">
       <a-spin :spinning="confirmLoading">
         <a-table
@@ -40,13 +40,13 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         model: {},
         roleId: 0,
         // 表头
         columns: [
-          { title: '客户名称', dataIndex: 'supplier', width: 200 }
+          { title: this.$t('system.customerName'), dataIndex: 'supplier', width: 200 }
         ],
         dataSource:[],
         selectedRowKeys: [],

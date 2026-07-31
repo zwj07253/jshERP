@@ -6,18 +6,18 @@
     :confirmLoading="confirmLoading"
     @ok="handleOk"
     @cancel="handleCancel"
-    okText="保存"
-    cancelText="取消">
+    :okText="$t('common.save')"
+    :cancelText="$t('common.cancel')">
     <a-spin :spinning="confirmLoading">
       <a-form :form="form">
-        <a-form-item label="单据编号" :labelCol="{span: 5}" :wrapperCol="{span: 18}">
+        <a-form-item :label="$t('common.billNo')" :labelCol="{span: 5}" :wrapperCol="{span: 18}">
           <a-input v-decorator="['number']" :readOnly="true" />
         </a-form-item>
-        <a-form-item label="备注" :labelCol="{span: 5}" :wrapperCol="{span: 18}">
+        <a-form-item :label="$t('common.remark')" :labelCol="{span: 5}" :wrapperCol="{span: 18}">
           <a-textarea
             v-decorator="['remark']"
             :rows="4"
-            placeholder="请输入备注" />
+            :placeholder="$t('common.enterRemark')" />
         </a-form-item>
       </a-form>
     </a-spin>
@@ -32,7 +32,7 @@ export default {
   name: 'QuickEditModal',
   data() {
     return {
-      title: '快捷编辑备注',
+      title: this.$t('bill.quickEditRemark'),
       visible: false,
       confirmLoading: false,
       form: this.$form.createForm(this),
@@ -54,13 +54,13 @@ export default {
           let params = Object.assign({}, this.model, values)
           quickEditDepotHead(params).then((res) => {
             if (res.code === 200) {
-              this.$message.success('保存成功')
+              this.$message.success(this.$t('common.saveSuccess'))
               this.close()
             } else {
               this.$message.warning(res.message)
             }
           }).catch(() => {
-            this.$message.error('保存失败')
+            this.$message.error(this.$t('common.saveFailed'))
           }).finally(() => {
             this.confirmLoading = false
           })

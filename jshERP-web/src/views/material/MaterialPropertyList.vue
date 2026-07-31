@@ -16,7 +16,7 @@
             :loading="loading"
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
-              <a v-if="btnEnableList.indexOf(1)>-1" @click="handleEdit(record)">编辑</a>
+              <a v-if="btnEnableList.indexOf(1)>-1" @click="handleEdit(record)">{{ $t('common.edit') }}</a>
             </span>
           </a-table>
         </div>
@@ -66,14 +66,14 @@
             }
           },
           {
-            title: '操作',
+            title: this.$t('common.action'),
             dataIndex: 'action',
             width: 100,
             align:"center",
             scopedSlots: { customRender: 'action' },
           },
-          {title: '名称', dataIndex: 'nativeName', width: 100},
-          {title: '别名', dataIndex: 'anotherName', width: 100}
+          {title: this.$t('common.name'), dataIndex: 'nativeName', width: 100},
+          {title: this.$t('common.alias'), dataIndex: 'anotherName', width: 100}
         ],
         url: {
           list: "/materialProperty/list",

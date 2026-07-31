@@ -10,10 +10,10 @@
       :mask="isDesktop()"
       :maskClosable="false"
       @cancel="handleCancel"
-      cancelText="关闭"
+      :cancelText="$t('common.close')"
       style="top:20px;height: 95%;">
       <template slot="footer">
-        <a-button key="back" @click="handleCancel">取消</a-button>
+        <a-button key="back" @click="handleCancel">{{$t('common.cancel')}}</a-button>
       </template>
       <!-- 查询区域 -->
       <div class="table-page-search-wrapper">
@@ -21,26 +21,26 @@
         <a-form layout="inline" @keyup.enter.native="searchQuery">
           <a-row :gutter="24">
             <a-col :md="8" :sm="24">
-              <a-form-item label="单据编号" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                <a-input placeholder="请输入单据编号" v-model="queryParam.number"></a-input>
+              <a-form-item :label="$t('common.billNo')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                <a-input :placeholder="$t('common.enterBillNo')" v-model="queryParam.number"></a-input>
               </a-form-item>
             </a-col>
             <a-col :md="8" :sm="24">
-              <a-form-item label="单据日期" :labelCol="labelCol" :wrapperCol="wrapperCol">
+              <a-form-item :label="$t('common.billDate')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                 <a-range-picker
                   style="width:100%"
                   v-model="queryParam.createTimeRange"
                   format="YYYY-MM-DD"
-                  :placeholder="['开始时间', '结束时间']"
+                  :placeholder="[$t('common.startDate'), $t('common.endDate')]"
                   @change="onDateChange"
                   @ok="onDateOk"
                 />
               </a-form-item>
             </a-col>
             <a-col :md="8" :sm="24">
-              <a-button type="primary" @click="searchQuery">查询</a-button>
-              <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
-              <a-button style="margin-left: 8px" @click="exportExcel" icon="download">导出</a-button>
+              <a-button type="primary" @click="searchQuery">{{$t('common.search')}}</a-button>
+              <a-button style="margin-left: 8px" @click="searchReset">{{$t('common.reset')}}</a-button>
+              <a-button style="margin-left: 8px" @click="exportExcel" icon="download">{{$t('common.export')}}</a-button>
             </a-col>
           </a-row>
         </a-form>
@@ -78,7 +78,7 @@
                 </a-row>
                 <a-row style="padding-top: 10px;">
                   <a-col>
-                    恢复默认列配置：<a-button @click="handleRestDefault" type="link" size="small">恢复默认</a-button>
+                    {{$t('common.restoreColumns')}}<a-button @click="handleRestDefault" type="link" size="small">{{$t('common.restoreDefault')}}</a-button>
                   </a-col>
                 </a-row>
               </a-checkbox-group>
@@ -112,7 +112,7 @@
     },
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.operation'),
         visible: false,
         disableMixinCreated: true,
         toFromType: '',
@@ -140,23 +140,23 @@
             }
           },
           {
-            title: '单据编号', dataIndex: 'number', width: 120,
+            title: this.$t('common.billNo'), dataIndex: 'number', width: 120,
             scopedSlots: { customRender: 'numberCustomRender' },
           },
-          { title: '类型', dataIndex: 'type', width: 100},
-          { title: '单位信息', dataIndex: 'supplierName', width: 180, ellipsis:true},
-          { title: '金额', dataIndex: 'changeAmount', width: 100, ellipsis:true,
-            customRender:function (t,r,index) {
+          { title: this.$t('common.type'), dataIndex: 'type', width: 100},
+          { title: this.$t('common.unitInfo'), dataIndex: 'supplierName', width: 180, ellipsis:true},
+          { title: this.$t('common.amount'), dataIndex: 'changeAmount', width: 100, ellipsis:true,
+            customRender:(t,r,index) => {
               let amount = t
               if(Number(amount) > 0) {
                 amount = '+' + amount
               }
-              return amount + (r.aList ? '[多账户]' : '')
+              return amount + (r.aList ? '[' + this.$t('common.multiAccount') + ']' : '')
             }
           },
-          { title: '余额', dataIndex: 'balance', width: 80},
-          { title: '单据日期', dataIndex: 'operTime', width: 120},
-          { title: '备注', dataIndex: 'remark', width: 150}
+          { title: this.$t('common.balance'), dataIndex: 'balance', width: 80},
+          { title: this.$t('common.billDate'), dataIndex: 'operTime', width: 120},
+          { title: this.$t('common.remark'), dataIndex: 'remark', width: 150}
         ],
         labelCol: {
           xs: { span: 1 },
@@ -212,7 +212,7 @@
             if (res && res.code === 200) {
               this.$refs.billDetail.isCanBackCheck = false
               that.$refs.billDetail.show(res.data, record.type);
-              that.$refs.billDetail.title="详情";
+              that.$refs.billDetail.title=that.$t('common.detail');
             }
           })
         } else if(record.fromType === 'financial') {
@@ -220,7 +220,7 @@
             if (res && res.code === 200) {
               this.$refs.financialDetail.isCanBackCheck = false
               that.$refs.financialDetail.show(res.data, record.type);
-              that.$refs.financialDetail.title="详情";
+              that.$refs.financialDetail.title=that.$t('common.detail');
             }
           })
         }
@@ -231,17 +231,17 @@
         getAction(this.url.list, params).then((res) => {
           if(res && res.code === 200) {
             if(res.data.total > 10000) {
-              this.$message.warning('单次最多导出1万条，请缩小查询范围')
+              this.$message.warning(this.$t('report.exportLimit'))
               return
             }
             const list = (res.data.rows || []).map(ds => [
               ds.number, ds.type, ds.supplierName, this.getRealChangeAmount(ds),
               ds.balance, ds.operTime, ds.remark
             ])
-            this.handleExportXlsPost('账户流水', '账户流水',
-              '单据编号,类型,单位信息,金额,余额,单据日期,备注', '账户流水', list)
+            this.handleExportXlsPost(this.$t('report.accountFlowExport'), this.$t('report.accountFlowExport'),
+              this.$t('common.billNo')+','+this.$t('common.type')+','+this.$t('common.unitInfo')+','+this.$t('common.amount')+','+this.$t('common.balance')+','+this.$t('common.billDate')+','+this.$t('common.remark'), this.$t('report.accountFlowExport'), list)
           } else {
-            this.$message.warning((res && res.data) || '导出数据查询失败')
+            this.$message.warning((res && res.data) || this.$t('report.exportFailed'))
           }
         }).finally(() => {
           this.loading = false
@@ -252,7 +252,7 @@
         if(Number(amount) > 0) {
           amount = '+' + amount
         }
-        return amount + (r.aList ? '[多账户]' : '')
+        return amount + (r.aList ? '[' + this.$t('common.multiAccount') + ']' : '')
       }
     }
   }

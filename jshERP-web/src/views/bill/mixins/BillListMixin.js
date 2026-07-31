@@ -41,368 +41,368 @@ export const BillListMixin = {
       // 列定义
       defDetailColumns: [],
       retailOutColumns: [
-        { title: '仓库名称', dataIndex: 'depotName'},
-        { title: '条码', dataIndex: 'barCode'},
-        { title: '名称', dataIndex: 'name'},
-        { title: '规格', dataIndex: 'standard'},
-        { title: '型号', dataIndex: 'model'},
-        { title: '颜色', dataIndex: 'color'},
-        { title: '品牌', dataIndex: 'brand'},
-        { title: '制造商', dataIndex: 'mfrs'},
-        { title: '扩展1', dataIndex: 'otherField1'},
-        { title: '扩展2', dataIndex: 'otherField2'},
-        { title: '扩展3', dataIndex: 'otherField3'},
-        { title: '库存', dataIndex: 'stock'},
-        { title: '单位', dataIndex: 'unit'},
-        { title: '序列号', dataIndex: 'snList', width:300},
-        { title: '批号', dataIndex: 'batchNumber'},
-        { title: '有效期', dataIndex: 'expirationDate'},
-        { title: '多属性', dataIndex: 'sku'},
-        { title: '数量', dataIndex: 'operNumber'},
-        { title: '单价', dataIndex: 'unitPrice'},
-        { title: '金额', dataIndex: 'allPrice'},
-        { title: '重量', dataIndex: 'weight'},
-        { title: '仓位货架', dataIndex: 'position'},
-        { title: '备注', dataIndex: 'remark'}
+        { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+        { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+        { title: this.$t('common.name'), dataIndex: 'name'},
+        { title: this.$t('common.specification'), dataIndex: 'standard'},
+        { title: this.$t('common.model'), dataIndex: 'model'},
+        { title: this.$t('material.color'), dataIndex: 'color'},
+        { title: this.$t('common.brand'), dataIndex: 'brand'},
+        { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+        { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+        { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+        { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+        { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+        { title: this.$t('common.unit'), dataIndex: 'unit'},
+        { title: this.$t('purchase.form.columns.serialNumber'), dataIndex: 'snList', width:300},
+        { title: this.$t('purchase.form.columns.batchNumber'), dataIndex: 'batchNumber'},
+        { title: this.$t('purchase.form.columns.expirationDate'), dataIndex: 'expirationDate'},
+        { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+        { title: this.$t('common.quantity'), dataIndex: 'operNumber'},
+        { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+        { title: this.$t('common.amount'), dataIndex: 'allPrice'},
+        { title: this.$t('common.weight'), dataIndex: 'weight'},
+        { title: this.$t('common.position'), dataIndex: 'position'},
+        { title: this.$t('common.remark'), dataIndex: 'remark'}
       ],
       retailBackColumns: [
-        { title: '仓库名称', dataIndex: 'depotName'},
-        { title: '条码', dataIndex: 'barCode'},
-        { title: '名称', dataIndex: 'name'},
-        { title: '规格', dataIndex: 'standard'},
-        { title: '型号', dataIndex: 'model'},
-        { title: '颜色', dataIndex: 'color'},
-        { title: '品牌', dataIndex: 'brand'},
-        { title: '制造商', dataIndex: 'mfrs'},
-        { title: '扩展1', dataIndex: 'otherField1'},
-        { title: '扩展2', dataIndex: 'otherField2'},
-        { title: '扩展3', dataIndex: 'otherField3'},
-        { title: '库存', dataIndex: 'stock'},
-        { title: '单位', dataIndex: 'unit'},
-        { title: '序列号', dataIndex: 'snList', width:300},
-        { title: '批号', dataIndex: 'batchNumber'},
-        { title: '有效期', dataIndex: 'expirationDate'},
-        { title: '多属性', dataIndex: 'sku'},
-        { title: '数量', dataIndex: 'operNumber'},
-        { title: '单价', dataIndex: 'unitPrice'},
-        { title: '金额', dataIndex: 'allPrice'},
-        { title: '重量', dataIndex: 'weight'},
-        { title: '仓位货架', dataIndex: 'position'},
-        { title: '备注', dataIndex: 'remark'}
+        { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+        { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+        { title: this.$t('common.name'), dataIndex: 'name'},
+        { title: this.$t('common.specification'), dataIndex: 'standard'},
+        { title: this.$t('common.model'), dataIndex: 'model'},
+        { title: this.$t('material.color'), dataIndex: 'color'},
+        { title: this.$t('common.brand'), dataIndex: 'brand'},
+        { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+        { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+        { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+        { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+        { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+        { title: this.$t('common.unit'), dataIndex: 'unit'},
+        { title: this.$t('purchase.form.columns.serialNumber'), dataIndex: 'snList', width:300},
+        { title: this.$t('purchase.form.columns.batchNumber'), dataIndex: 'batchNumber'},
+        { title: this.$t('purchase.form.columns.expirationDate'), dataIndex: 'expirationDate'},
+        { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+        { title: this.$t('common.quantity'), dataIndex: 'operNumber'},
+        { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+        { title: this.$t('common.amount'), dataIndex: 'allPrice'},
+        { title: this.$t('common.weight'), dataIndex: 'weight'},
+        { title: this.$t('common.position'), dataIndex: 'position'},
+        { title: this.$t('common.remark'), dataIndex: 'remark'}
       ],
       purchaseApplyColumns: [
-        { title: '条码', dataIndex: 'barCode'},
-        { title: '名称', dataIndex: 'name'},
-        { title: '规格', dataIndex: 'standard'},
-        { title: '型号', dataIndex: 'model'},
-        { title: '颜色', dataIndex: 'color'},
-        { title: '品牌', dataIndex: 'brand'},
-        { title: '制造商', dataIndex: 'mfrs'},
-        { title: '扩展1', dataIndex: 'otherField1'},
-        { title: '扩展2', dataIndex: 'otherField2'},
-        { title: '扩展3', dataIndex: 'otherField3'},
-        { title: '单位', dataIndex: 'unit'},
-        { title: '多属性', dataIndex: 'sku'},
-        { title: '数量', dataIndex: 'operNumber'},
-        { title: '已采购', dataIndex: 'finishNumber'},
-        { title: '备注', dataIndex: 'remark'}
+        { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+        { title: this.$t('common.name'), dataIndex: 'name'},
+        { title: this.$t('common.specification'), dataIndex: 'standard'},
+        { title: this.$t('common.model'), dataIndex: 'model'},
+        { title: this.$t('material.color'), dataIndex: 'color'},
+        { title: this.$t('common.brand'), dataIndex: 'brand'},
+        { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+        { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+        { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+        { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+        { title: this.$t('common.unit'), dataIndex: 'unit'},
+        { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+        { title: this.$t('common.quantity'), dataIndex: 'operNumber'},
+        { title: this.$t('purchase.finishPurchased'), dataIndex: 'finishNumber'},
+        { title: this.$t('common.remark'), dataIndex: 'remark'}
       ],
       purchaseOrderColumns: [
-        { title: '条码', dataIndex: 'barCode'},
-        { title: '名称', dataIndex: 'name'},
-        { title: '规格', dataIndex: 'standard'},
-        { title: '型号', dataIndex: 'model'},
-        { title: '颜色', dataIndex: 'color'},
-        { title: '品牌', dataIndex: 'brand'},
-        { title: '制造商', dataIndex: 'mfrs'},
-        { title: '扩展1', dataIndex: 'otherField1'},
-        { title: '扩展2', dataIndex: 'otherField2'},
-        { title: '扩展3', dataIndex: 'otherField3'},
-        { title: '库存', dataIndex: 'stock'},
-        { title: '单位', dataIndex: 'unit'},
-        { title: '多属性', dataIndex: 'sku'},
-        { title: '数量', dataIndex: 'operNumber'},
-        { title: '已采购', dataIndex: 'finishNumber'},
-        { title: '单价', dataIndex: 'unitPrice'},
-        { title: '金额', dataIndex: 'allPrice'},
-        { title: '税率(%)', dataIndex: 'taxRate'},
-        { title: '税额', dataIndex: 'taxMoney'},
-        { title: '价税合计', dataIndex: 'taxLastMoney'},
-        { title: '备注', dataIndex: 'remark'}
+        { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+        { title: this.$t('common.name'), dataIndex: 'name'},
+        { title: this.$t('common.specification'), dataIndex: 'standard'},
+        { title: this.$t('common.model'), dataIndex: 'model'},
+        { title: this.$t('material.color'), dataIndex: 'color'},
+        { title: this.$t('common.brand'), dataIndex: 'brand'},
+        { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+        { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+        { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+        { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+        { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+        { title: this.$t('common.unit'), dataIndex: 'unit'},
+        { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+        { title: this.$t('common.quantity'), dataIndex: 'operNumber'},
+        { title: this.$t('purchase.finishPurchased'), dataIndex: 'finishNumber'},
+        { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+        { title: this.$t('common.amount'), dataIndex: 'allPrice'},
+        { title: this.$t('purchase.form.columns.taxRate') + '(%)', dataIndex: 'taxRate'},
+        { title: this.$t('purchase.form.columns.taxAmount'), dataIndex: 'taxMoney'},
+        { title: this.$t('purchase.form.columns.taxTotal'), dataIndex: 'taxLastMoney'},
+        { title: this.$t('common.remark'), dataIndex: 'remark'}
       ],
       purchaseInColumns: [
-        { title: '仓库名称', dataIndex: 'depotName'},
-        { title: '条码', dataIndex: 'barCode'},
-        { title: '名称', dataIndex: 'name'},
-        { title: '规格', dataIndex: 'standard'},
-        { title: '型号', dataIndex: 'model'},
-        { title: '颜色', dataIndex: 'color'},
-        { title: '品牌', dataIndex: 'brand'},
-        { title: '制造商', dataIndex: 'mfrs'},
-        { title: '扩展1', dataIndex: 'otherField1'},
-        { title: '扩展2', dataIndex: 'otherField2'},
-        { title: '扩展3', dataIndex: 'otherField3'},
-        { title: '库存', dataIndex: 'stock'},
-        { title: '单位', dataIndex: 'unit'},
-        { title: '序列号', dataIndex: 'snList', width:300},
-        { title: '批号', dataIndex: 'batchNumber'},
-        { title: '有效期', dataIndex: 'expirationDate'},
-        { title: '多属性', dataIndex: 'sku'},
-        { title: '数量', dataIndex: 'operNumber'},
-        { title: '已入库', dataIndex: 'finishNumber'},
-        { title: '单价', dataIndex: 'unitPrice'},
-        { title: '金额', dataIndex: 'allPrice'},
-        { title: '税率(%)', dataIndex: 'taxRate'},
-        { title: '税额', dataIndex: 'taxMoney'},
-        { title: '价税合计', dataIndex: 'taxLastMoney'},
-        { title: '重量', dataIndex: 'weight'},
-        { title: '仓位货架', dataIndex: 'position'},
-        { title: '备注', dataIndex: 'remark'}
+        { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+        { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+        { title: this.$t('common.name'), dataIndex: 'name'},
+        { title: this.$t('common.specification'), dataIndex: 'standard'},
+        { title: this.$t('common.model'), dataIndex: 'model'},
+        { title: this.$t('material.color'), dataIndex: 'color'},
+        { title: this.$t('common.brand'), dataIndex: 'brand'},
+        { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+        { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+        { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+        { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+        { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+        { title: this.$t('common.unit'), dataIndex: 'unit'},
+        { title: this.$t('purchase.form.columns.serialNumber'), dataIndex: 'snList', width:300},
+        { title: this.$t('purchase.form.columns.batchNumber'), dataIndex: 'batchNumber'},
+        { title: this.$t('purchase.form.columns.expirationDate'), dataIndex: 'expirationDate'},
+        { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+        { title: this.$t('common.quantity'), dataIndex: 'operNumber'},
+        { title: this.$t('purchase.finishInbound'), dataIndex: 'finishNumber'},
+        { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+        { title: this.$t('common.amount'), dataIndex: 'allPrice'},
+        { title: this.$t('purchase.form.columns.taxRate') + '(%)', dataIndex: 'taxRate'},
+        { title: this.$t('purchase.form.columns.taxAmount'), dataIndex: 'taxMoney'},
+        { title: this.$t('purchase.form.columns.taxTotal'), dataIndex: 'taxLastMoney'},
+        { title: this.$t('common.weight'), dataIndex: 'weight'},
+        { title: this.$t('common.position'), dataIndex: 'position'},
+        { title: this.$t('common.remark'), dataIndex: 'remark'}
       ],
       purchaseBackColumns: [
-        { title: '仓库名称', dataIndex: 'depotName'},
-        { title: '条码', dataIndex: 'barCode'},
-        { title: '名称', dataIndex: 'name'},
-        { title: '规格', dataIndex: 'standard'},
-        { title: '型号', dataIndex: 'model'},
-        { title: '颜色', dataIndex: 'color'},
-        { title: '品牌', dataIndex: 'brand'},
-        { title: '制造商', dataIndex: 'mfrs'},
-        { title: '扩展1', dataIndex: 'otherField1'},
-        { title: '扩展2', dataIndex: 'otherField2'},
-        { title: '扩展3', dataIndex: 'otherField3'},
-        { title: '库存', dataIndex: 'stock'},
-        { title: '单位', dataIndex: 'unit'},
-        { title: '序列号', dataIndex: 'snList', width:300},
-        { title: '批号', dataIndex: 'batchNumber'},
-        { title: '有效期', dataIndex: 'expirationDate'},
-        { title: '多属性', dataIndex: 'sku'},
-        { title: '数量', dataIndex: 'operNumber'},
-        { title: '已出库', dataIndex: 'finishNumber'},
-        { title: '单价', dataIndex: 'unitPrice'},
-        { title: '金额', dataIndex: 'allPrice'},
-        { title: '税率(%)', dataIndex: 'taxRate'},
-        { title: '税额', dataIndex: 'taxMoney'},
-        { title: '价税合计', dataIndex: 'taxLastMoney'},
-        { title: '重量', dataIndex: 'weight'},
-        { title: '仓位货架', dataIndex: 'position'},
-        { title: '备注', dataIndex: 'remark'}
+        { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+        { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+        { title: this.$t('common.name'), dataIndex: 'name'},
+        { title: this.$t('common.specification'), dataIndex: 'standard'},
+        { title: this.$t('common.model'), dataIndex: 'model'},
+        { title: this.$t('material.color'), dataIndex: 'color'},
+        { title: this.$t('common.brand'), dataIndex: 'brand'},
+        { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+        { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+        { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+        { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+        { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+        { title: this.$t('common.unit'), dataIndex: 'unit'},
+        { title: this.$t('purchase.form.columns.serialNumber'), dataIndex: 'snList', width:300},
+        { title: this.$t('purchase.form.columns.batchNumber'), dataIndex: 'batchNumber'},
+        { title: this.$t('purchase.form.columns.expirationDate'), dataIndex: 'expirationDate'},
+        { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+        { title: this.$t('common.quantity'), dataIndex: 'operNumber'},
+        { title: this.$t('sales.finishNumber'), dataIndex: 'finishNumber'},
+        { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+        { title: this.$t('common.amount'), dataIndex: 'allPrice'},
+        { title: this.$t('purchase.form.columns.taxRate') + '(%)', dataIndex: 'taxRate'},
+        { title: this.$t('purchase.form.columns.taxAmount'), dataIndex: 'taxMoney'},
+        { title: this.$t('purchase.form.columns.taxTotal'), dataIndex: 'taxLastMoney'},
+        { title: this.$t('common.weight'), dataIndex: 'weight'},
+        { title: this.$t('common.position'), dataIndex: 'position'},
+        { title: this.$t('common.remark'), dataIndex: 'remark'}
       ],
       saleOrderColumns: [
-        { title: '条码', dataIndex: 'barCode'},
-        { title: '名称', dataIndex: 'name'},
-        { title: '规格', dataIndex: 'standard'},
-        { title: '型号', dataIndex: 'model'},
-        { title: '颜色', dataIndex: 'color'},
-        { title: '品牌', dataIndex: 'brand'},
-        { title: '制造商', dataIndex: 'mfrs'},
-        { title: '扩展1', dataIndex: 'otherField1'},
-        { title: '扩展2', dataIndex: 'otherField2'},
-        { title: '扩展3', dataIndex: 'otherField3'},
-        { title: '库存', dataIndex: 'stock'},
-        { title: '单位', dataIndex: 'unit'},
-        { title: '多属性', dataIndex: 'sku'},
-        { title: '数量', dataIndex: 'operNumber'},
-        { title: '已采购', dataIndex: 'finishPurchaseNumber'},
-        { title: '已销售', dataIndex: 'finishNumber'},
-        { title: '单价', dataIndex: 'unitPrice'},
-        { title: '金额', dataIndex: 'allPrice'},
-        { title: '税率(%)', dataIndex: 'taxRate'},
-        { title: '税额', dataIndex: 'taxMoney'},
-        { title: '价税合计', dataIndex: 'taxLastMoney'},
-        { title: '备注', dataIndex: 'remark'}
+        { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+        { title: this.$t('common.name'), dataIndex: 'name'},
+        { title: this.$t('common.specification'), dataIndex: 'standard'},
+        { title: this.$t('common.model'), dataIndex: 'model'},
+        { title: this.$t('material.color'), dataIndex: 'color'},
+        { title: this.$t('common.brand'), dataIndex: 'brand'},
+        { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+        { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+        { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+        { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+        { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+        { title: this.$t('common.unit'), dataIndex: 'unit'},
+        { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+        { title: this.$t('common.quantity'), dataIndex: 'operNumber'},
+        { title: this.$t('purchase.finishPurchased'), dataIndex: 'finishPurchaseNumber'},
+        { title: this.$t('sales.partialSales'), dataIndex: 'finishNumber'},
+        { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+        { title: this.$t('common.amount'), dataIndex: 'allPrice'},
+        { title: this.$t('purchase.form.columns.taxRate') + '(%)', dataIndex: 'taxRate'},
+        { title: this.$t('purchase.form.columns.taxAmount'), dataIndex: 'taxMoney'},
+        { title: this.$t('purchase.form.columns.taxTotal'), dataIndex: 'taxLastMoney'},
+        { title: this.$t('common.remark'), dataIndex: 'remark'}
       ],
       saleOutColumns: [
-        { title: '仓库名称', dataIndex: 'depotName'},
-        { title: '条码', dataIndex: 'barCode'},
-        { title: '名称', dataIndex: 'name'},
-        { title: '规格', dataIndex: 'standard'},
-        { title: '型号', dataIndex: 'model'},
-        { title: '颜色', dataIndex: 'color'},
-        { title: '品牌', dataIndex: 'brand'},
-        { title: '制造商', dataIndex: 'mfrs'},
-        { title: '扩展1', dataIndex: 'otherField1'},
-        { title: '扩展2', dataIndex: 'otherField2'},
-        { title: '扩展3', dataIndex: 'otherField3'},
-        { title: '库存', dataIndex: 'stock'},
-        { title: '单位', dataIndex: 'unit'},
-        { title: '序列号', dataIndex: 'snList', width:300},
-        { title: '批号', dataIndex: 'batchNumber'},
-        { title: '有效期', dataIndex: 'expirationDate'},
-        { title: '多属性', dataIndex: 'sku'},
-        { title: '数量', dataIndex: 'operNumber'},
-        { title: '已出库', dataIndex: 'finishNumber'},
-        { title: '单价', dataIndex: 'unitPrice'},
-        { title: '金额', dataIndex: 'allPrice'},
-        { title: '税率(%)', dataIndex: 'taxRate'},
-        { title: '税额', dataIndex: 'taxMoney'},
-        { title: '价税合计', dataIndex: 'taxLastMoney'},
-        { title: '重量', dataIndex: 'weight'},
-        { title: '仓位货架', dataIndex: 'position'},
-        { title: '备注', dataIndex: 'remark'}
+        { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+        { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+        { title: this.$t('common.name'), dataIndex: 'name'},
+        { title: this.$t('common.specification'), dataIndex: 'standard'},
+        { title: this.$t('common.model'), dataIndex: 'model'},
+        { title: this.$t('material.color'), dataIndex: 'color'},
+        { title: this.$t('common.brand'), dataIndex: 'brand'},
+        { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+        { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+        { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+        { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+        { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+        { title: this.$t('common.unit'), dataIndex: 'unit'},
+        { title: this.$t('purchase.form.columns.serialNumber'), dataIndex: 'snList', width:300},
+        { title: this.$t('purchase.form.columns.batchNumber'), dataIndex: 'batchNumber'},
+        { title: this.$t('purchase.form.columns.expirationDate'), dataIndex: 'expirationDate'},
+        { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+        { title: this.$t('common.quantity'), dataIndex: 'operNumber'},
+        { title: this.$t('sales.finishNumber'), dataIndex: 'finishNumber'},
+        { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+        { title: this.$t('common.amount'), dataIndex: 'allPrice'},
+        { title: this.$t('purchase.form.columns.taxRate') + '(%)', dataIndex: 'taxRate'},
+        { title: this.$t('purchase.form.columns.taxAmount'), dataIndex: 'taxMoney'},
+        { title: this.$t('purchase.form.columns.taxTotal'), dataIndex: 'taxLastMoney'},
+        { title: this.$t('common.weight'), dataIndex: 'weight'},
+        { title: this.$t('common.position'), dataIndex: 'position'},
+        { title: this.$t('common.remark'), dataIndex: 'remark'}
       ],
       saleBackColumns: [
-        { title: '仓库名称', dataIndex: 'depotName'},
-        { title: '条码', dataIndex: 'barCode'},
-        { title: '名称', dataIndex: 'name'},
-        { title: '规格', dataIndex: 'standard'},
-        { title: '型号', dataIndex: 'model'},
-        { title: '颜色', dataIndex: 'color'},
-        { title: '品牌', dataIndex: 'brand'},
-        { title: '制造商', dataIndex: 'mfrs'},
-        { title: '扩展1', dataIndex: 'otherField1'},
-        { title: '扩展2', dataIndex: 'otherField2'},
-        { title: '扩展3', dataIndex: 'otherField3'},
-        { title: '库存', dataIndex: 'stock'},
-        { title: '单位', dataIndex: 'unit'},
-        { title: '序列号', dataIndex: 'snList', width:300},
-        { title: '批号', dataIndex: 'batchNumber'},
-        { title: '有效期', dataIndex: 'expirationDate'},
-        { title: '多属性', dataIndex: 'sku'},
-        { title: '数量', dataIndex: 'operNumber'},
-        { title: '已入库', dataIndex: 'finishNumber'},
-        { title: '单价', dataIndex: 'unitPrice'},
-        { title: '金额', dataIndex: 'allPrice'},
-        { title: '税率(%)', dataIndex: 'taxRate'},
-        { title: '税额', dataIndex: 'taxMoney'},
-        { title: '价税合计', dataIndex: 'taxLastMoney'},
-        { title: '重量', dataIndex: 'weight'},
-        { title: '仓位货架', dataIndex: 'position'},
-        { title: '备注', dataIndex: 'remark'}
+        { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+        { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+        { title: this.$t('common.name'), dataIndex: 'name'},
+        { title: this.$t('common.specification'), dataIndex: 'standard'},
+        { title: this.$t('common.model'), dataIndex: 'model'},
+        { title: this.$t('material.color'), dataIndex: 'color'},
+        { title: this.$t('common.brand'), dataIndex: 'brand'},
+        { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+        { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+        { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+        { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+        { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+        { title: this.$t('common.unit'), dataIndex: 'unit'},
+        { title: this.$t('purchase.form.columns.serialNumber'), dataIndex: 'snList', width:300},
+        { title: this.$t('purchase.form.columns.batchNumber'), dataIndex: 'batchNumber'},
+        { title: this.$t('purchase.form.columns.expirationDate'), dataIndex: 'expirationDate'},
+        { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+        { title: this.$t('common.quantity'), dataIndex: 'operNumber'},
+        { title: this.$t('purchase.finishInbound'), dataIndex: 'finishNumber'},
+        { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+        { title: this.$t('common.amount'), dataIndex: 'allPrice'},
+        { title: this.$t('purchase.form.columns.taxRate') + '(%)', dataIndex: 'taxRate'},
+        { title: this.$t('purchase.form.columns.taxAmount'), dataIndex: 'taxMoney'},
+        { title: this.$t('purchase.form.columns.taxTotal'), dataIndex: 'taxLastMoney'},
+        { title: this.$t('common.weight'), dataIndex: 'weight'},
+        { title: this.$t('common.position'), dataIndex: 'position'},
+        { title: this.$t('common.remark'), dataIndex: 'remark'}
       ],
       otherInColumns: [
-        { title: '仓库名称', dataIndex: 'depotName'},
-        { title: '条码', dataIndex: 'barCode'},
-        { title: '名称', dataIndex: 'name'},
-        { title: '规格', dataIndex: 'standard'},
-        { title: '型号', dataIndex: 'model'},
-        { title: '颜色', dataIndex: 'color'},
-        { title: '品牌', dataIndex: 'brand'},
-        { title: '制造商', dataIndex: 'mfrs'},
-        { title: '扩展1', dataIndex: 'otherField1'},
-        { title: '扩展2', dataIndex: 'otherField2'},
-        { title: '扩展3', dataIndex: 'otherField3'},
-        { title: '库存', dataIndex: 'stock'},
-        { title: '单位', dataIndex: 'unit'},
-        { title: '序列号', dataIndex: 'snList', width:300},
-        { title: '批号', dataIndex: 'batchNumber'},
-        { title: '有效期', dataIndex: 'expirationDate'},
-        { title: '多属性', dataIndex: 'sku'},
-        { title: '数量', dataIndex: 'operNumber'},
-        { title: '单价', dataIndex: 'unitPrice'},
-        { title: '金额', dataIndex: 'allPrice'},
-        { title: '重量', dataIndex: 'weight'},
-        { title: '仓位货架', dataIndex: 'position'},
-        { title: '备注', dataIndex: 'remark'}
+        { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+        { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+        { title: this.$t('common.name'), dataIndex: 'name'},
+        { title: this.$t('common.specification'), dataIndex: 'standard'},
+        { title: this.$t('common.model'), dataIndex: 'model'},
+        { title: this.$t('material.color'), dataIndex: 'color'},
+        { title: this.$t('common.brand'), dataIndex: 'brand'},
+        { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+        { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+        { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+        { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+        { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+        { title: this.$t('common.unit'), dataIndex: 'unit'},
+        { title: this.$t('purchase.form.columns.serialNumber'), dataIndex: 'snList', width:300},
+        { title: this.$t('purchase.form.columns.batchNumber'), dataIndex: 'batchNumber'},
+        { title: this.$t('purchase.form.columns.expirationDate'), dataIndex: 'expirationDate'},
+        { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+        { title: this.$t('common.quantity'), dataIndex: 'operNumber'},
+        { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+        { title: this.$t('common.amount'), dataIndex: 'allPrice'},
+        { title: this.$t('common.weight'), dataIndex: 'weight'},
+        { title: this.$t('common.position'), dataIndex: 'position'},
+        { title: this.$t('common.remark'), dataIndex: 'remark'}
       ],
       otherOutColumns: [
-        { title: '仓库名称', dataIndex: 'depotName'},
-        { title: '条码', dataIndex: 'barCode'},
-        { title: '名称', dataIndex: 'name'},
-        { title: '规格', dataIndex: 'standard'},
-        { title: '型号', dataIndex: 'model'},
-        { title: '颜色', dataIndex: 'color'},
-        { title: '品牌', dataIndex: 'brand'},
-        { title: '制造商', dataIndex: 'mfrs'},
-        { title: '扩展1', dataIndex: 'otherField1'},
-        { title: '扩展2', dataIndex: 'otherField2'},
-        { title: '扩展3', dataIndex: 'otherField3'},
-        { title: '库存', dataIndex: 'stock'},
-        { title: '单位', dataIndex: 'unit'},
-        { title: '序列号', dataIndex: 'snList', width:300},
-        { title: '批号', dataIndex: 'batchNumber'},
-        { title: '有效期', dataIndex: 'expirationDate'},
-        { title: '多属性', dataIndex: 'sku'},
-        { title: '数量', dataIndex: 'operNumber'},
-        { title: '单价', dataIndex: 'unitPrice'},
-        { title: '金额', dataIndex: 'allPrice'},
-        { title: '重量', dataIndex: 'weight'},
-        { title: '仓位货架', dataIndex: 'position'},
-        { title: '备注', dataIndex: 'remark'}
+        { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+        { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+        { title: this.$t('common.name'), dataIndex: 'name'},
+        { title: this.$t('common.specification'), dataIndex: 'standard'},
+        { title: this.$t('common.model'), dataIndex: 'model'},
+        { title: this.$t('material.color'), dataIndex: 'color'},
+        { title: this.$t('common.brand'), dataIndex: 'brand'},
+        { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+        { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+        { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+        { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+        { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+        { title: this.$t('common.unit'), dataIndex: 'unit'},
+        { title: this.$t('purchase.form.columns.serialNumber'), dataIndex: 'snList', width:300},
+        { title: this.$t('purchase.form.columns.batchNumber'), dataIndex: 'batchNumber'},
+        { title: this.$t('purchase.form.columns.expirationDate'), dataIndex: 'expirationDate'},
+        { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+        { title: this.$t('common.quantity'), dataIndex: 'operNumber'},
+        { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+        { title: this.$t('common.amount'), dataIndex: 'allPrice'},
+        { title: this.$t('common.weight'), dataIndex: 'weight'},
+        { title: this.$t('common.position'), dataIndex: 'position'},
+        { title: this.$t('common.remark'), dataIndex: 'remark'}
       ],
       allocationOutColumns: [
-        { title: '仓库名称', dataIndex: 'depotName'},
-        { title: '条码', dataIndex: 'barCode'},
-        { title: '名称', dataIndex: 'name'},
-        { title: '规格', dataIndex: 'standard'},
-        { title: '型号', dataIndex: 'model'},
-        { title: '颜色', dataIndex: 'color'},
-        { title: '品牌', dataIndex: 'brand'},
-        { title: '制造商', dataIndex: 'mfrs'},
-        { title: '扩展1', dataIndex: 'otherField1'},
-        { title: '扩展2', dataIndex: 'otherField2'},
-        { title: '扩展3', dataIndex: 'otherField3'},
-        { title: '库存', dataIndex: 'stock'},
-        { title: '调入仓库', dataIndex: 'anotherDepotName'},
-        { title: '单位', dataIndex: 'unit'},
-        { title: '多属性', dataIndex: 'sku'},
-        { title: '数量', dataIndex: 'operNumber'},
-        { title: '单价', dataIndex: 'unitPrice'},
-        { title: '金额', dataIndex: 'allPrice'},
-        { title: '重量', dataIndex: 'weight'},
-        { title: '仓位货架', dataIndex: 'position'},
-        { title: '备注', dataIndex: 'remark'}
+        { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+        { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+        { title: this.$t('common.name'), dataIndex: 'name'},
+        { title: this.$t('common.specification'), dataIndex: 'standard'},
+        { title: this.$t('common.model'), dataIndex: 'model'},
+        { title: this.$t('material.color'), dataIndex: 'color'},
+        { title: this.$t('common.brand'), dataIndex: 'brand'},
+        { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+        { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+        { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+        { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+        { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+        { title: this.$t('common.inboundDepot'), dataIndex: 'anotherDepotName'},
+        { title: this.$t('common.unit'), dataIndex: 'unit'},
+        { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+        { title: this.$t('common.quantity'), dataIndex: 'operNumber'},
+        { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+        { title: this.$t('common.amount'), dataIndex: 'allPrice'},
+        { title: this.$t('common.weight'), dataIndex: 'weight'},
+        { title: this.$t('common.position'), dataIndex: 'position'},
+        { title: this.$t('common.remark'), dataIndex: 'remark'}
       ],
       assembleColumns: [
-        { title: '商品类型', dataIndex: 'mType'},
-        { title: '仓库名称', dataIndex: 'depotName'},
-        { title: '条码', dataIndex: 'barCode'},
-        { title: '名称', dataIndex: 'name'},
-        { title: '规格', dataIndex: 'standard'},
-        { title: '型号', dataIndex: 'model'},
-        { title: '颜色', dataIndex: 'color'},
-        { title: '品牌', dataIndex: 'brand'},
-        { title: '制造商', dataIndex: 'mfrs'},
-        { title: '扩展1', dataIndex: 'otherField1'},
-        { title: '扩展2', dataIndex: 'otherField2'},
-        { title: '扩展3', dataIndex: 'otherField3'},
-        { title: '库存', dataIndex: 'stock'},
-        { title: '单位', dataIndex: 'unit'},
-        { title: '多属性', dataIndex: 'sku'},
-        { title: '数量', dataIndex: 'operNumber'},
-        { title: '单价', dataIndex: 'unitPrice'},
-        { title: '金额', dataIndex: 'allPrice'},
-        { title: '备注', dataIndex: 'remark'}
+        { title: this.$t('common.productType'), dataIndex: 'mType'},
+        { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+        { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+        { title: this.$t('common.name'), dataIndex: 'name'},
+        { title: this.$t('common.specification'), dataIndex: 'standard'},
+        { title: this.$t('common.model'), dataIndex: 'model'},
+        { title: this.$t('material.color'), dataIndex: 'color'},
+        { title: this.$t('common.brand'), dataIndex: 'brand'},
+        { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+        { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+        { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+        { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+        { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+        { title: this.$t('common.unit'), dataIndex: 'unit'},
+        { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+        { title: this.$t('common.quantity'), dataIndex: 'operNumber'},
+        { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+        { title: this.$t('common.amount'), dataIndex: 'allPrice'},
+        { title: this.$t('common.remark'), dataIndex: 'remark'}
       ],
       disassembleColumns: [
-        { title: '商品类型', dataIndex: 'mType'},
-        { title: '仓库名称', dataIndex: 'depotName'},
-        { title: '条码', dataIndex: 'barCode'},
-        { title: '名称', dataIndex: 'name'},
-        { title: '规格', dataIndex: 'standard'},
-        { title: '型号', dataIndex: 'model'},
-        { title: '颜色', dataIndex: 'color'},
-        { title: '品牌', dataIndex: 'brand'},
-        { title: '制造商', dataIndex: 'mfrs'},
-        { title: '扩展1', dataIndex: 'otherField1'},
-        { title: '扩展2', dataIndex: 'otherField2'},
-        { title: '扩展3', dataIndex: 'otherField3'},
-        { title: '库存', dataIndex: 'stock'},
-        { title: '单位', dataIndex: 'unit'},
-        { title: '多属性', dataIndex: 'sku'},
-        { title: '数量', dataIndex: 'operNumber'},
-        { title: '单价', dataIndex: 'unitPrice'},
-        { title: '金额', dataIndex: 'allPrice'},
-        { title: '备注', dataIndex: 'remark'}
+        { title: this.$t('common.productType'), dataIndex: 'mType'},
+        { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+        { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+        { title: this.$t('common.name'), dataIndex: 'name'},
+        { title: this.$t('common.specification'), dataIndex: 'standard'},
+        { title: this.$t('common.model'), dataIndex: 'model'},
+        { title: this.$t('material.color'), dataIndex: 'color'},
+        { title: this.$t('common.brand'), dataIndex: 'brand'},
+        { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+        { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+        { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+        { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+        { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+        { title: this.$t('common.unit'), dataIndex: 'unit'},
+        { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+        { title: this.$t('common.quantity'), dataIndex: 'operNumber'},
+        { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+        { title: this.$t('common.amount'), dataIndex: 'allPrice'},
+        { title: this.$t('common.remark'), dataIndex: 'remark'}
       ],
       stockCheckReplayColumns: [
-        { title: '仓库名称', dataIndex: 'depotName'},
-        { title: '条码', dataIndex: 'barCode'},
-        { title: '名称', dataIndex: 'name'},
-        { title: '规格', dataIndex: 'standard'},
-        { title: '型号', dataIndex: 'model'},
-        { title: '品牌', dataIndex: 'brand'},
-        { title: '制造商', dataIndex: 'mfrs'},
-        { title: '扩展1', dataIndex: 'otherField1'},
-        { title: '扩展2', dataIndex: 'otherField2'},
-        { title: '扩展3', dataIndex: 'otherField3'},
-        { title: '库存', dataIndex: 'stock'},
-        { title: '单位', dataIndex: 'unit'},
-        { title: '多属性', dataIndex: 'sku'},
-        { title: '数量', dataIndex: 'operNumber'},
-        { title: '单价', dataIndex: 'unitPrice'},
-        { title: '金额', dataIndex: 'allPrice'},
-        { title: '备注', dataIndex: 'remark'}
+        { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+        { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+        { title: this.$t('common.name'), dataIndex: 'name'},
+        { title: this.$t('common.specification'), dataIndex: 'standard'},
+        { title: this.$t('common.model'), dataIndex: 'model'},
+        { title: this.$t('common.brand'), dataIndex: 'brand'},
+        { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+        { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+        { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+        { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+        { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+        { title: this.$t('common.unit'), dataIndex: 'unit'},
+        { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+        { title: this.$t('common.quantity'), dataIndex: 'operNumber'},
+        { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+        { title: this.$t('common.amount'), dataIndex: 'allPrice'},
+        { title: this.$t('common.remark'), dataIndex: 'remark'}
       ],
       quickBtn: {
         retailBack: '',
@@ -487,7 +487,7 @@ export const BillListMixin = {
         deposit: ''
       })
       this.$refs.modalForm.edit(copyRecord);
-      this.$refs.modalForm.title = "复制新增";
+      this.$refs.modalForm.title = this.$t('common.copy') + this.$t('common.add');
       this.$refs.modalForm.disableSubmit = false;
       //开启明细的编辑模式
       this.$refs.modalForm.rowCanEdit = true
@@ -508,14 +508,14 @@ export const BillListMixin = {
           }
         })
       } else {
-        this.$message.warning("抱歉，只有未审核的单据才能编辑，请先进行反审核！")
+        this.$message.warning(this.$t('common.onlyPendingCanEdit'))
       }
     },
     myHandleDelete(record) {
       if(record.status === '0') {
         this.handleDelete(record.id)
       } else {
-        this.$message.warning("抱歉，只有未审核的单据才能删除，请先进行反审核！")
+        this.$message.warning(this.$t('common.onlyPendingCanDelete'))
       }
     },
     myHandleDetail(record, type, prefixNo) {
@@ -526,11 +526,11 @@ export const BillListMixin = {
     },
     batchForceClose: function () {
       if(!this.url.forceCloseBatch){
-        this.$message.error("请设置url.forceCloseBatch属性!")
+        this.$message.error(this.$t('common.setUrlError', { field: 'forceCloseBatch' }))
         return
       }
       if (this.selectedRowKeys.length <= 0) {
-        this.$message.warning('请选择一条记录！')
+        this.$message.warning(this.$t('common.selectRecord'))
       } else {
         let ids = "";
         for (let a = 0; a < this.selectedRowKeys.length; a++) {
@@ -538,8 +538,8 @@ export const BillListMixin = {
         }
         let that = this
         this.$confirm({
-          title: "确认强制结单",
-          content: "是否强制结单选中数据?",
+          title: this.$t('common.confirm') + this.$t('common.forceClose'),
+          content: this.$t('common.confirmOperateSelected'),
           onOk: function () {
             that.loading = true
             postAction(that.url.forceCloseBatch, {ids: ids}).then((res) => {
@@ -557,11 +557,11 @@ export const BillListMixin = {
     },
     batchForceClosePurchase: function () {
       if(!this.url.forceClosePurchaseBatch){
-        this.$message.error("请设置url.forceClosePurchaseBatch属性!")
+        this.$message.error(this.$t('common.setUrlError', { field: 'forceClosePurchaseBatch' }))
         return
       }
       if (this.selectedRowKeys.length <= 0) {
-        this.$message.warning('请选择一条记录！')
+        this.$message.warning(this.$t('common.selectRecord'))
       } else {
         let ids = "";
         for (let a = 0; a < this.selectedRowKeys.length; a++) {
@@ -569,8 +569,8 @@ export const BillListMixin = {
         }
         let that = this
         this.$confirm({
-          title: "确认强制结单(以销定购)",
-          content: "是否强制结单选中数据?",
+          title: this.$t('common.confirm') + this.$t('common.forceClose') + '(' + this.$t('purchase.transferToOrder') + ')',
+          content: this.$t('common.confirmOperateSelected'),
           onOk: function () {
             that.loading = true
             postAction(that.url.forceClosePurchaseBatch, {ids: ids}).then((res) => {
@@ -589,7 +589,7 @@ export const BillListMixin = {
     //批量修正最终欠款
     batchSetLastDebt() {
       if (this.selectedRowKeys.length <= 0) {
-        this.$message.warning('请选择一条记录！')
+        this.$message.warning(this.$t('common.selectRecord'))
       } else {
         let ids = "";
         for (let a = 0; a < this.selectedRowKeys.length; a++) {
@@ -597,14 +597,14 @@ export const BillListMixin = {
         }
         let that = this
         this.$confirm({
-          title: "确认修正欠款",
-          content: "是否对选的数据修正欠款?",
+          title: this.$t('common.confirm') + this.$t('sales.correctDebt'),
+          content: this.$t('common.confirmOperateSelected'),
           onOk: function () {
             that.loading = true
             postAction(that.url.batchSetLastDebtUrl, {ids: ids}).then((res) => {
               if(res.code === 200){
                 that.loadData()
-                that.$message.success('修正欠款完成')
+                that.$message.success(that.$t('common.operateSuccess'))
               } else {
                 that.$message.warning(res.data.message)
               }
@@ -618,7 +618,7 @@ export const BillListMixin = {
     handleApprove(record) {
       this.$refs.modalForm.action = "approve";
       this.$refs.modalForm.edit(record);
-      this.$refs.modalForm.title = "审核";
+      this.$refs.modalForm.title = this.$t('common.audit');
     },
     searchReset() {
       this.queryParam = {
@@ -806,11 +806,11 @@ export const BillListMixin = {
     },
     handleQuickEdit() {
       if (this.selectedRowKeys.length === 0) {
-        this.$message.warning('请选择一条数据')
+        this.$message.warning(this.$t('common.selectRecord'))
         return
       }
       if (this.selectedRowKeys.length > 1) {
-        this.$message.warning('只能选择一条数据进行快捷编辑')
+        this.$message.warning(this.$t('common.selectOnlyOne'))
         return
       }
       const record = this.dataSource.find(item => item.id === this.selectedRowKeys[0])
@@ -836,9 +836,9 @@ export const BillListMixin = {
     //跳转到下一个单据页面
     transferBill(type, quickBtnStr) {
       if (this.selectedRowKeys.length <= 0) {
-        this.$message.warning('请选择一条记录！')
+        this.$message.warning(this.$t('common.selectRecord'))
       } else if (this.selectedRowKeys.length > 1) {
-        this.$message.warning('只能选择一条记录！')
+        this.$message.warning(this.$t('common.selectOnlyOne'))
       } else {
         let info = this.selectionRows[0]
         if(info.status === '1' || info.status === '3') {
@@ -861,7 +861,7 @@ export const BillListMixin = {
                 Number(item.preNumber || 0) > Number(item.finishNumber || 0)
               )
               if (availableDetails.length === 0) {
-                this.$message.warning('原单据明细已全部转换完成，无可转单明细')
+                this.$message.warning(this.$t('purchase.validation.linkedBillCompleted'))
                 return
               }
               let deposit = info.changeAmount - info.finishDeposit
@@ -903,7 +903,7 @@ export const BillListMixin = {
             }
           })
         } else {
-          this.$message.warning('该状态不能' + type + '！')
+          this.$message.warning(this.$t('common.operateFailed'))
         }
       }
     },
@@ -924,7 +924,7 @@ export const BillListMixin = {
     handleExport() {
       let search = this.getQueryParams().search
       this.$refs.billExcelIframe.show(this.model, this.billExcelUrl + '?search=' + search + '&type=1', 150)
-      this.$refs.billExcelIframe.title = "确认导出"
+      this.$refs.billExcelIframe.title = this.$t('common.confirm') + this.$t('common.export')
     },
     // 展开/折叠行
     onExpand(expanded, record) {

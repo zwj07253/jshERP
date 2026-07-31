@@ -12,41 +12,40 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:15%;height: 60%;">
       <template slot="footer">
         <a-button key="back" v-if="isReadOnly" @click="handleCancel">
-          取消
+          {{ $t('common.cancel') }}
         </a-button>
       </template>
       <a-spin :spinning="confirmLoading">
         <a-form :form="form" id="roleModal">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="角色名称">
-            <a-input placeholder="请输入角色名称" v-decorator.trim="[ 'name', validatorRules.name]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.roleName')">
+            <a-input :placeholder="$t('common.roleName')" v-decorator.trim="[ 'name', validatorRules.name]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="数据类型">
-            <a-select placeholder="请选择数据类型" v-decorator="[ 'type', validatorRules.type]" style="width:94%">
-              <a-select-option value="全部数据">全部数据</a-select-option>
-              <a-select-option value="本部门数据">本部门数据</a-select-option>
-              <a-select-option value="个人数据">个人数据</a-select-option>
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.dataTypeLabel')">
+            <a-select :placeholder="$t('system.selectDataType')" v-decorator="[ 'type', validatorRules.type]" style="width:94%">
+              <a-select-option value="全部数据">{{ $t('system.allData') }}</a-select-option>
+              <a-select-option value="本部门数据">{{ $t('system.deptData') }}</a-select-option>
+              <a-select-option value="个人数据">{{ $t('system.personalData') }}</a-select-option>
             </a-select>
-            <a-tooltip title="1、全部数据-该角色对应的用户可以看到全部单据；2、本部门数据-该角色对应的用户可以看到自己所在部门的全部单据；
-                3、个人数据-该角色对应的用户只可以看到自己的单据。单据是指采购入库、销售出库等">
+            <a-tooltip :title="$t('common.dataTypeTip')">
               <a-icon type="question-circle" style="width:6%; padding-left: 5px; font-size: 18px;" />
             </a-tooltip>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="价格屏蔽">
-            <j-select-multiple style="width:94%" placeholder="请选择价格屏蔽" v-model="priceLimitList.value" :options="priceLimitList.options"/>
-            <a-tooltip title="价格屏蔽支持多选，可以对首页和单据进行价格屏蔽，还可以对商品库存和进销存统计报表进行成本价屏蔽">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.priceLimitLabel')">
+            <j-select-multiple style="width:94%" :placeholder="$t('system.selectPriceLimit')" v-model="priceLimitList.value" :options="priceLimitList.options"/>
+            <a-tooltip :title="$t('common.priceLimitTip')">
               <a-icon type="question-circle" style="width:6%; padding-left: 5px; font-size: 18px;" />
             </a-tooltip>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="备注">
-            <a-textarea :rows="1" placeholder="请输入备注" v-decorator="[ 'description', validatorRules.description ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.remark')">
+            <a-textarea :rows="1" :placeholder="$t('common.enterRemark')" v-decorator="[ 'description', validatorRules.description ]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="排序">
-            <a-input placeholder="请输入排序" v-decorator.trim="[ 'sort' ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.sort')">
+            <a-input :placeholder="$t('common.sort')" v-decorator.trim="[ 'sort' ]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -67,7 +66,7 @@
     },
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         model: {},
         isReadOnly: false,
@@ -81,13 +80,13 @@
         },
         priceLimitList: {
           options: [
-            { 'value': '1', 'text': '屏蔽首页采购价'},
-            { 'value': '2', 'text': '屏蔽首页零售价'},
-            { 'value': '3', 'text': '屏蔽首页销售价'},
-            { 'value': '4', 'text': '屏蔽单据采购价'},
-            { 'value': '5', 'text': '屏蔽单据零售价'},
-            { 'value': '6', 'text': '屏蔽单据销售价'},
-            { 'value': '7', 'text': '屏蔽库存成本价'}
+            { 'value': '1', 'text': this.$t('system.priceLimitHomePagePurchase')},
+            { 'value': '2', 'text': this.$t('system.priceLimitHomePageRetail')},
+            { 'value': '3', 'text': this.$t('system.priceLimitHomePageSales')},
+            { 'value': '4', 'text': this.$t('system.priceLimitBillPurchase')},
+            { 'value': '5', 'text': this.$t('system.priceLimitBillRetail')},
+            { 'value': '6', 'text': this.$t('system.priceLimitBillSales')},
+            { 'value': '7', 'text': this.$t('system.priceLimitStockCost')}
           ],
           value: ''
         },
@@ -96,19 +95,19 @@
         validatorRules:{
           name:{
             rules: [
-              { required: true, message: '请输入角色名称!' },
-              { min: 2, max: 30, message: '长度在 2 到 30 个字符', trigger: 'blur' },
+              { required: true, message: this.$t('system.roleNameRequired') },
+              { min: 2, max: 30, message: this.$t('system.roleNameLength'), trigger: 'blur' },
               { validator: this.validateRoleName}
             ]
           },
           type:{
             rules: [
-              { required: true, message: '请选择数据类型!' }
+              { required: true, message: this.$t('system.dataTypeRequired') }
             ]
           },
           description:{
             rules: [
-              { min: 0, max: 100, message: '长度不超过 100 个字符', trigger: 'blur' }
+              { min: 0, max: 100, message: this.$t('system.descLength'), trigger: 'blur' }
             ]
           }
         },
@@ -174,7 +173,7 @@
             if(!res.data.status){
               callback();
             } else {
-              callback("名称已经存在");
+              callback(this.$t('common.nameExists'));
             }
           } else {
             callback(res.data);

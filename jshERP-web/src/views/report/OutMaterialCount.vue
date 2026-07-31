@@ -8,28 +8,28 @@
           <a-form layout="inline" @keyup.enter.native="searchQuery">
             <a-row :gutter="24">
               <a-col :md="6" :sm="24">
-                <a-form-item label="商品信息" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入条码、名称、助记码、规格、型号等信息" v-model="queryParam.materialParam"></a-input>
+                <a-form-item :label="$t('common.materialInfo')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('common.materialInputPlaceholder')" v-model="queryParam.materialParam"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item label="单据日期" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                <a-form-item :label="$t('common.billDate')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                   <a-range-picker
                     style="width: 100%"
                     v-model="queryParam.createTimeRange"
                     format="YYYY-MM-DD"
-                    :placeholder="['开始时间', '结束时间']"
+                    :placeholder="[$t('common.startDate'), $t('common.endDate')]"
                     @change="onDateChange"
                   />
                 </a-form-item>
               </a-col>
               <a-col :md="12" :sm="24" >
                 <span style="float: left;overflow: hidden;white-space: nowrap;" class="table-page-search-submitButtons">
-                  <a-button type="primary" @click="searchQuery">查询</a-button>
-                  <a-button style="margin-left: 8px" v-print="'#reportPrint'" icon="printer">打印</a-button>
-                  <a-button style="margin-left: 8px" @click="exportExcel" icon="download">导出</a-button>
+                  <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                  <a-button style="margin-left: 8px" v-print="'#reportPrint'" icon="printer">{{ $t('common.print') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="exportExcel" icon="download">{{ $t('common.export') }}</a-button>
                   <a @click="handleToggleSearch" style="margin-left: 8px">
-                    {{ toggleSearchStatus ? '收起' : '展开' }}
+                    {{ toggleSearchStatus ? $t('common.collapse') : $t('common.expand') }}
                     <a-icon :type="toggleSearchStatus ? 'up' : 'down'"/>
                   </a>
                 </span>
@@ -38,20 +38,20 @@
             <a-row :gutter="24">
               <a-col :span="24">
                 <div class="out-material-summary">
-                  出库总数量：{{numSumTotalStr}}，出库总金额：{{priceSumTotalStr}}
+                  {{ $t('report.outboundTotalQty') }}：{{numSumTotalStr}}，{{ $t('report.outboundTotalAmount') }}：{{priceSumTotalStr}}
                 </div>
               </a-col>
             </a-row>
             <template v-if="toggleSearchStatus">
               <a-row :gutter="24">
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="往来单位" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-select placeholder="请选择往来单位" v-model="queryParam.organId"
+                  <a-form-item :label="$t('report.relatedOrg')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-select :placeholder="$t('report.selectOrg')" v-model="queryParam.organId"
                               :dropdownMatchSelectWidth="false" showSearch allow-clear optionFilterProp="children" @search="handleSearchOrgan">
                       <div slot="dropdownRender" slot-scope="menu">
                         <v-nodes :vnodes="menu" />
                         <a-divider style="margin: 4px 0;" />
-                        <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initOrgan"><a-icon type="reload" /> 刷新列表</div>
+                        <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initOrgan"><a-icon type="reload" /> {{ $t('common.refreshList') }}</div>
                       </div>
                       <a-select-option v-for="(item,index) in organList" :key="index" :value="item.id">
                         {{ item.supplier }}
@@ -60,11 +60,11 @@
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="仓库" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-form-item :label="$t('common.warehouse')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                     <a-select
                       optionFilterProp="children"
                       showSearch allow-clear style="width: 100%"
-                      placeholder="请选择仓库"
+                      :placeholder="$t('common.selectWarehouse')"
                       v-model="queryParam.depotId">
                       <a-select-option v-for="(depot,index) in depotList" :value="depot.id" :key="index">
                         {{ depot.depotName }}
@@ -73,16 +73,16 @@
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24" v-if="orgaTree.length">
-                  <a-form-item label="部门" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-form-item :label="$t('report.dept')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                     <a-tree-select style="width:100%" allow-clear :treeData="orgaTree"
-                                   v-model="queryParam.organizationId" placeholder="请选择部门">
+                                   v-model="queryParam.organizationId" :placeholder="$t('report.dept')">
                     </a-tree-select>
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="商品类别" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-form-item :label="$t('report.productCategory')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                     <a-tree-select style="width:100%" :dropdownStyle="{maxHeight:'200px',overflow:'auto'}" allow-clear
-                                   :treeData="categoryTree" v-model="queryParam.categoryId" placeholder="请选择商品类别">
+                                   :treeData="categoryTree" v-model="queryParam.categoryId" :placeholder="$t('report.productCategory')">
                     </a-tree-select>
                   </a-form-item>
                 </a-col>
@@ -122,7 +122,7 @@
                     </a-row>
                     <a-row style="padding-top: 10px;">
                       <a-col>
-                        恢复默认列配置：<a-button @click="handleRestDefault" type="link" size="small">恢复默认</a-button>
+                        {{ $t('common.restoreColumns') }}<a-button @click="handleRestDefault" type="link" size="small">{{ $t('common.restoreDefault') }}</a-button>
                       </a-col>
                     </a-row>
                   </a-checkbox-group>
@@ -141,9 +141,9 @@
                 :page-size="ipagination.pageSize"
                 :page-size-options="ipagination.pageSizeOptions"
                 :total="ipagination.total"
-                :show-total="total => `共 ${total} 条`">
+                :show-total="total => $t('common.totalItems', { total })">
                 <template slot="buildOptionText" slot-scope="props">
-                  <span>{{ props.value }}条/页</span>
+                  <span>{{ props.value }}{{ $t('report.itemsPerPage') }}</span>
                 </template>
               </a-pagination>
             </a-col>
@@ -211,21 +211,21 @@
         defColumns: [
           {
             dataIndex: 'rowIndex', width:40, align:"center", slots: { title: 'customTitle' },
-            customRender:function (t,r,index) {
-              return (t !== '合计') ? (parseInt(index) + 1) : t
+            customRender:(t,r,index) => {
+              return (t !== this.$t('common.total')) ? (parseInt(index) + 1) : t
             }
           },
-          {title: '条码', dataIndex: 'barCode', sorter: (a, b) => a.barCode - b.barCode, width: 120},
-          {title: '名称', dataIndex: 'mName', width: 120, ellipsis:true},
-          {title: '规格', dataIndex: 'standard', width: 100, ellipsis:true},
-          {title: '型号', dataIndex: 'model', width: 100, ellipsis:true},
-          {title: '颜色', dataIndex: 'color', width: 60, ellipsis:true},
-          {title: '品牌', dataIndex: 'brand', width: 100, ellipsis:true},
-          {title: '制造商', dataIndex: 'mfrs', width: 100, ellipsis:true},
-          {title: '类别', dataIndex: 'categoryName', width: 120, ellipsis:true},
-          {title: '单位', dataIndex: 'materialUnit', width: 120, ellipsis:true},
-          {title: '出库数量', dataIndex: 'numSum', sorter: (a, b) => a.numSum - b.numSum, width: 120},
-          {title: '出库金额', dataIndex: 'priceSum', sorter: (a, b) => a.priceSum - b.priceSum, width: 120}
+          {title: this.$t('common.barcode'), dataIndex: 'barCode', sorter: (a, b) => a.barCode - b.barCode, width: 120},
+          {title: this.$t('common.name'), dataIndex: 'mName', width: 120, ellipsis:true},
+          {title: this.$t('common.specification'), dataIndex: 'standard', width: 100, ellipsis:true},
+          {title: this.$t('common.model'), dataIndex: 'model', width: 100, ellipsis:true},
+          {title: this.$t('material.color'), dataIndex: 'color', width: 60, ellipsis:true},
+          {title: this.$t('common.brand'), dataIndex: 'brand', width: 100, ellipsis:true},
+          {title: this.$t('material.manufacturer'), dataIndex: 'mfrs', width: 100, ellipsis:true},
+          {title: this.$t('report.category'), dataIndex: 'categoryName', width: 120, ellipsis:true},
+          {title: this.$t('common.unit'), dataIndex: 'materialUnit', width: 120, ellipsis:true},
+          {title: this.$t('report.outboundQty'), dataIndex: 'numSum', sorter: (a, b) => a.numSum - b.numSum, width: 120},
+          {title: this.$t('report.outboundAmount'), dataIndex: 'priceSum', sorter: (a, b) => a.priceSum - b.priceSum, width: 120}
         ],
         url: {
           list: "/depotHead/findInOutMaterialCount",
@@ -247,7 +247,7 @@
         }
         const totalRow = {
           materialId: `out-material-count-total-${this.ipagination.current}`,
-          rowIndex: '合计'
+          rowIndex: this.$t('common.total')
         }
         const numericFields = ['numSum', 'priceSum']
         numericFields.forEach(field => {
@@ -350,14 +350,14 @@
       },
       searchQuery() {
         if(this.queryParam.beginTime == '' || this.queryParam.endTime == ''){
-          this.$message.warning('请选择单据日期！')
+          this.$message.warning(this.$t('report.selectBillDate'))
         } else {
           this.loadData(1);
         }
       },
       exportExcel() {
         if ((this.ipagination.total || 0) > 10000) {
-          this.$message.warning('单次导出不能超过10000条，请缩小查询范围')
+          this.$message.warning(this.$t('report.exportLimit'))
           return
         }
         let params = this.getQueryParams()
@@ -369,7 +369,7 @@
             this.exportExcelRows(res.data.rows || [])
           } else {
             const message = typeof res.data === 'string' ? res.data : res.data && res.data.message
-            this.$message.warning(message || '导出数据获取失败')
+            this.$message.warning(message || this.$t('report.exportFailed'))
           }
         }).finally(() => {
           this.loading = false
@@ -377,7 +377,7 @@
       },
       exportExcelRows(dataSource) {
         let list = []
-        let head = '条码,名称,规格,型号,颜色,品牌,制造商,类别,单位,出库数量,出库金额'
+        let head = [this.$t('common.barcode'), this.$t('common.name'), this.$t('material.specification'), this.$t('material.model'), this.$t('material.color'), this.$t('material.brand'), this.$t('material.manufacturer'), this.$t('common.category'), this.$t('material.unit'), this.$t('report.outboundQty'), this.$t('report.outboundAmount')].join(',')
         for (let i = 0; i < dataSource.length; i++) {
           let item = []
           let ds = dataSource[i]
@@ -385,8 +385,8 @@
             ds.categoryName, ds.materialUnit, ds.numSum, ds.priceSum)
           list.push(item)
         }
-        let tip = '单据日期：' + this.queryParam.beginTime + '~' + this.queryParam.endTime
-        this.handleExportXlsPost('出库汇总', '出库汇总', head, tip, list)
+        let tip = this.$t('common.billDate') + '：' + this.queryParam.beginTime + '~' + this.queryParam.endTime
+        this.handleExportXlsPost(this.$t('report.outMaterialExport'), this.$t('report.outMaterialExport'), head, tip, list)
       }
     }
   }

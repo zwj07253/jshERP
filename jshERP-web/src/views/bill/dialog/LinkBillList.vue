@@ -11,12 +11,12 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="关闭"
+      :cancelText="$t('common.close')"
       style="top:20px;height: 95%;">
       <template slot="footer">
         <a-button @click="handleCancel">关闭(ESC)</a-button>
         <a-button @click="handleBackBill" v-if="selectType === 'detail'">返回单据列表</a-button>
-        <a-button type="primary" @click="handleOk">确定</a-button>
+        <a-button type="primary" @click="handleOk">{{ $t('common.confirm') }}</a-button>
       </template>
       <!-- 查询区域 -->
       <div class="table-page-search-wrapper" v-if="selectType === 'list'">
@@ -24,22 +24,22 @@
         <a-form layout="inline" @keyup.enter.native="searchQuery">
           <a-row :gutter="24">
             <a-col :md="6" :sm="24">
-              <a-form-item label="单据编号" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
-                <a-input placeholder="请输入单据编号查询" v-model="queryParam.number"></a-input>
+              <a-form-item :label="$t('common.billNo')" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
+                <a-input :placeholder="$t('common.enterBillNo')" v-model="queryParam.number"></a-input>
               </a-form-item>
             </a-col>
             <a-col :md="6" :sm="24">
-              <a-form-item label="商品信息" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
-                <a-input placeholder="条码|名称|规格|型号" v-model="queryParam.materialParam"></a-input>
+              <a-form-item :label="$t('common.materialInfo')" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
+                <a-input :placeholder="$t('common.enterBarcodeNameSpecModel')" v-model="queryParam.materialParam"></a-input>
               </a-form-item>
             </a-col>
             <a-col :md="6" :sm="24">
-              <a-form-item label="单据日期" :labelCol="labelCol" :wrapperCol="wrapperCol">
+              <a-form-item :label="$t('common.billDate')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                 <a-range-picker
                   style="width: 100%"
                   v-model="queryParam.createTimeRange"
                   format="YYYY-MM-DD"
-                  :placeholder="['开始时间', '结束时间']"
+                  :placeholder="[$t('common.startTime'), $t('common.endTime')]"
                   @change="onDateChange"
                   @ok="onDateOk"
                 />
@@ -47,8 +47,8 @@
             </a-col>
             <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
               <a-col :md="6" :sm="24">
-                <a-button type="primary" @click="searchQuery">查询</a-button>
-                <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
+                <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                <a-button style="margin-left: 8px" @click="searchReset">{{ $t('common.reset') }}</a-button>
               </a-col>
             </span>
           </a-row>
@@ -74,16 +74,16 @@
         </span>
         <template slot="customRenderStatus" slot-scope="text, record">
           <template v-if="!queryParam.purchaseStatus">
-            <a-tag v-if="record.status === '0'" color="red">未审核</a-tag>
-            <a-tag v-if="record.status === '1'" color="green">已审核</a-tag>
+            <a-tag v-if="record.status === '0'" color="red">{{ $t('common.pending') }}</a-tag>
+            <a-tag v-if="record.status === '1'" color="green">{{ $t('common.approved') }}</a-tag>
             <a-tag v-if="record.status === '2' && queryParam.subType === '请购单'" color="cyan">完成采购</a-tag>
             <a-tag v-if="record.status === '2' && queryParam.subType === '采购订单'" color="cyan">完成采购</a-tag>
             <a-tag v-if="record.status === '2' && queryParam.subType === '销售订单'" color="cyan">完成销售</a-tag>
             <a-tag v-if="record.status === '3' && queryParam.subType === '请购单'" color="blue">部分采购</a-tag>
             <a-tag v-if="record.status === '3' && queryParam.subType === '采购订单'" color="blue">部分采购</a-tag>
             <a-tag v-if="record.status === '3' && queryParam.subType === '销售订单'" color="blue">部分销售</a-tag>
-            <a-tag v-if="record.status === '2' && (queryParam.subType === '采购'||queryParam.subType === '销售')" color="green">已审核</a-tag>
-            <a-tag v-if="record.status === '3' && (queryParam.subType === '采购'||queryParam.subType === '销售')" color="green">已审核</a-tag>
+            <a-tag v-if="record.status === '2' && (queryParam.subType === '采购'||queryParam.subType === '销售')" color="green">{{ $t('common.approved') }}</a-tag>
+            <a-tag v-if="record.status === '3' && (queryParam.subType === '采购'||queryParam.subType === '销售')" color="green">{{ $t('common.approved') }}</a-tag>
           </template>
           <template v-if="queryParam.purchaseStatus">
             <a-tag v-if="record.purchaseStatus === '0'" color="red">未采购</a-tag>
@@ -127,7 +127,7 @@
     },
     data () {
       return {
-        title: "操作",
+        title: this.$t('common.action'),
         visible: false,
         disableMixinCreated: true,
         selectedRowKeys: [],
@@ -164,21 +164,21 @@
         // 表头
         columns: [
           { title: '', dataIndex: 'organName',width:120, ellipsis:true},
-          { title: '单据编号', dataIndex: 'number',width:130,
+          { title: this.$t('common.billNo'), dataIndex: 'number',width:130,
             scopedSlots: { customRender: 'numberCustomRender' },
           },
-          { title: '商品信息', dataIndex: 'materialsList',width:280, ellipsis:true,
+          { title: this.$t('common.materialInfo'), dataIndex: 'materialsList',width:280, ellipsis:true,
             customRender:function (text,record,index) {
               if(text) {
                 return text.replace(",","，");
               }
             }
           },
-          { title: '单据日期', dataIndex: 'operTimeStr',width:145},
-          { title: '操作员', dataIndex: 'userName',width:70},
-          { title: '数量', dataIndex: 'materialCount',width:60},
-          { title: '金额合计', dataIndex: 'totalPrice',width:70},
-          { title: '含税合计', dataIndex: 'totalTaxLastMoney',width:70,
+          { title: this.$t('common.billDate'), dataIndex: 'operTimeStr',width:145},
+          { title: this.$t('common.operator'), dataIndex: 'userName',width:70},
+          { title: this.$t('common.quantity'), dataIndex: 'materialCount',width:60},
+          { title: this.$t('common.totalAmount'), dataIndex: 'totalPrice',width:70},
+          { title: this.$t('common.totalTaxAmount'), dataIndex: 'totalTaxLastMoney',width:70,
             customRender:function (text,record,index) {
               if(record.discountLastMoney) {
                 return (record.discountMoney + record.discountLastMoney).toFixed(2);
@@ -187,23 +187,23 @@
               }
             }
           },
-          { title: '状态', dataIndex: 'status', width: 70, align: "center",
+          { title: this.$t('common.status'), dataIndex: 'status', width: 70, align: "center",
             scopedSlots: { customRender: 'customRenderStatus' }
           }
         ],
         columnsDetail: [
-          { title: '条码', dataIndex: 'barCode',width:120},
-          { title: '名称', dataIndex: 'name',width:150, ellipsis:true},
-          { title: '规格', dataIndex: 'standard',width:100, ellipsis:true},
-          { title: '型号', dataIndex: 'model',width:100, ellipsis:true},
-          { title: '单位', dataIndex: 'unit',width:50},
-          { title: '数量', dataIndex: 'operNumber',width:80},
-          { title: '单价', dataIndex: 'unitPrice',width:80},
-          { title: '金额', dataIndex: 'allPrice',width:80},
-          { title: '税率(%)', dataIndex: 'taxRate', width:80},
-          { title: '税额', dataIndex: 'taxMoney', width:80},
-          { title: '价税合计', dataIndex: 'taxLastMoney', width:80},
-          { title: '备注', dataIndex: 'remark',width:100, ellipsis:true},
+          { title: this.$t('common.barcode'), dataIndex: 'barCode',width:120},
+          { title: this.$t('common.name'), dataIndex: 'name',width:150, ellipsis:true},
+          { title: this.$t('common.specification'), dataIndex: 'standard',width:100, ellipsis:true},
+          { title: this.$t('common.model'), dataIndex: 'model',width:100, ellipsis:true},
+          { title: this.$t('common.unit'), dataIndex: 'unit',width:50},
+          { title: this.$t('common.quantity'), dataIndex: 'operNumber',width:80},
+          { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice',width:80},
+          { title: this.$t('common.amount'), dataIndex: 'allPrice',width:80},
+          { title: this.$t('common.taxRate'), dataIndex: 'taxRate', width:80},
+          { title: this.$t('purchase.form.columns.taxAmount'), dataIndex: 'taxMoney', width:80},
+          { title: this.$t('purchase.form.columns.taxTotal'), dataIndex: 'taxLastMoney', width:80},
+          { title: this.$t('common.remark'), dataIndex: 'remark',width:100, ellipsis:true},
         ],
         dataSource:[],
         dataSourceDetail: [],
@@ -318,7 +318,7 @@
             this.initListColumns()
             this.loadDetailData(1)
           } else {
-            this.$message.warning('抱歉，请选择单据！')
+            this.$message.warning(this.$t('common.selectOnlyOne'))
           }
         } else {
           if(this.selectedDetailRowKeys.length) {
@@ -327,7 +327,7 @@
               this.remark, this.defaultDepotId, this.accountId, this.salesMan, this.payType)
             this.close()
           } else {
-            this.$message.warning('抱歉，请选择单据明细！')
+            this.$message.warning(this.$t('common.pleaseSelectDetail'))
           }
         }
       },
@@ -384,7 +384,7 @@
               this.dataSourceDetail = listEx
               this.ipagination.total = listEx.length
               if(listEx.length === 0) {
-                this.$message.warning('该单据的明细已全部转换完成，无可操作明细')
+                this.$message.warning(this.$t('bill.allDetailsConverted'))
               }
             }
             if(res.code===510){

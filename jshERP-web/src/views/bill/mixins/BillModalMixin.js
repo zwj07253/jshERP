@@ -51,7 +51,7 @@ export const BillModalMixin = {
       validatorRules:{
         price:{
           rules: [
-            { pattern: /^(([0-9][0-9]*)|([0]\.\d{0,4}|[0-9][0-9]*\.\d{0,4}))$/, message: '金额格式不正确!' }
+            { pattern: /^(([0-9][0-9]*)|([0]\.\d{0,4}|[0-9][0-9]*\.\d{0,4}))$/, message: this.$t('purchase.validation.amountPattern') }
           ]
         }
       },
@@ -102,7 +102,7 @@ export const BillModalMixin = {
           this.model.defaultNumber = res.data.defaultNumber
           this.form.setFieldsValue({'number':res.data.defaultNumber})
         } else if(res) {
-          this.$message.warning(res.data || '获取单据编号失败')
+          this.$message.warning(res.data || this.$t('common.getDataFailed'))
         }
       })
       this.$nextTick(() => {
@@ -133,7 +133,7 @@ export const BillModalMixin = {
         if (res && res.code === 200) {
           this.form.setFieldsValue({'number':res.data.defaultNumber})
         } else if(res) {
-          this.$message.warning(res.data || '获取单据编号失败')
+          this.$message.warning(res.data || this.$t('common.getDataFailed'))
         }
       })
       this.$nextTick(() => {
@@ -280,7 +280,7 @@ export const BillModalMixin = {
             if (res.code === 200 && res.data) {
               let multiAccountFlag = res.data.multiAccountFlag
               if(multiAccountFlag==='1') {
-                list.splice(0,0,{id: 0, name: '多账户'})
+                list.splice(0,0,{id: 0, name: this.$t('purchase.form.manyAccountDetails')})
               }
             }
             that.accountList = list
@@ -336,7 +336,7 @@ export const BillModalMixin = {
     selectAccount(value){
       if(value === 0) { //多账户
         this.$refs.manyAccountModalForm.edit(this.accountIdList, this.accountMoneyList)
-        this.$refs.manyAccountModalForm.title = "多账户结算"
+        this.$refs.manyAccountModalForm.title = this.$t('purchase.form.manyAccountDetails')
         this.manyAccountBtnStatus = true
       } else {
         this.accountIdList = []
@@ -356,32 +356,32 @@ export const BillModalMixin = {
     },
     addSupplier() {
       this.$refs.vendorModalForm.add();
-      this.$refs.vendorModalForm.title = "新增供应商";
+      this.$refs.vendorModalForm.title = this.$t('purchase.addSupplier');
       this.$refs.vendorModalForm.disableSubmit = false;
     },
     addCustomer() {
       this.$refs.customerModalForm.add();
-      this.$refs.customerModalForm.title = "新增客户（提醒：如果找不到新添加的客户，请到用户管理检查是否分配了该客户权限）";
+      this.$refs.customerModalForm.title = this.$t('sales.addCustomer');
       this.$refs.customerModalForm.disableSubmit = false;
     },
     addMember() {
       this.$refs.memberModalForm.add();
-      this.$refs.memberModalForm.title = "新增会员";
+      this.$refs.memberModalForm.title = this.$t('retail.addMember');
       this.$refs.memberModalForm.disableSubmit = false;
     },
     handleBatchSetDepot() {
       this.$refs.batchSetDepotModalForm.add();
-      this.$refs.batchSetDepotModalForm.title = "批量切换仓库";
+      this.$refs.batchSetDepotModalForm.title = this.$t('common.batchSetDepot');
       this.$refs.batchSetDepotModalForm.disableSubmit = false;
     },
     addDepot() {
       this.$refs.depotModalForm.add();
-      this.$refs.depotModalForm.title = "新增仓库";
+      this.$refs.depotModalForm.title = this.$t('common.add') + this.$t('system.depot');
       this.$refs.depotModalForm.disableSubmit = false;
     },
     addAccount() {
       this.$refs.accountModalForm.add();
-      this.$refs.accountModalForm.title = "新增结算账户";
+      this.$refs.accountModalForm.title = this.$t('common.add') + this.$t('system.account');
       this.$refs.accountModalForm.disableSubmit = false;
     },
     vendorModalFormOk() {
@@ -529,9 +529,9 @@ export const BillModalMixin = {
                     taxLastMoneyTotal += mArr[j].taxLastMoney-0
                     //组合和拆分单据给商品类型进行重新赋值
                     if(j===0) {
-                      mArr[0].mType = '组合件'
+                      mArr[0].mType = this.$t('common.compositeItem')
                     } else {
-                      mArr[j].mType = '普通子件'
+                      mArr[j].mType = this.$t('common.normalPart')
                     }
                   }
                   this.materialTable.dataSource = mArr
@@ -1072,7 +1072,7 @@ export const BillModalMixin = {
                   }
                   //如果扫码结果和序列号重复，就直接跳过
                   if(detail.snList === this.scanBarCode.trim()) {
-                    this.$message.warning('抱歉，已经扫描过该序列号！');
+                    this.$message.warning(this.$t('common.snAlreadyScanned'));
                     hasFinished = true
                   }
                   newDetailArr.push(detail)
@@ -1109,15 +1109,15 @@ export const BillModalMixin = {
                   item.taxLastMoney = mInfo.taxLastMoney
                   newDetailArr.push(item)
                 } else {
-                  this.$message.warning('抱歉，此条码不存在商品信息！');
+                  this.$message.warning(this.$t('common.barcodeNotFound'));
                 }
               }
               //组合和拆分单据给商品类型进行重新赋值
               for(let i=0; i< newDetailArr.length; i++) {
                 if(i===0) {
-                  newDetailArr[0].mType = '组合件'
+                  newDetailArr[0].mType = this.$t('common.compositeItem')
                 } else {
-                  newDetailArr[i].mType = '普通子件'
+                  newDetailArr[i].mType = this.$t('common.normalPart')
                 }
               }
               this.materialTable.dataSource = newDetailArr
@@ -1204,11 +1204,11 @@ export const BillModalMixin = {
           if (res && res.code === 200) {
             let sendWorkflowUrl = res.data.platformValue + '&no=' + this.model.number + '&type=1'
             this.$refs.modalWorkflow.show(this.model, sendWorkflowUrl, this.model.number, 1, 320)
-            this.$refs.modalWorkflow.title = "发起流程"
+            this.$refs.modalWorkflow.title = this.$t('common.launchWorkflow')
           }
         })
       } else {
-        this.$message.warning('请先保存单据后再提交流程！');
+        this.$message.warning(this.$t('common.saveFirst'));
       }
     },
     //三联打印新版
@@ -1219,11 +1219,11 @@ export const BillModalMixin = {
             let billPrintUrl = res.data.platformValue + '&no=' + this.model.number
             let billPrintHeight = document.documentElement.clientHeight - 260
             this.$refs.modalPrintPro.show(this.model, billPrintUrl, billPrintHeight)
-            this.$refs.modalPrintPro.title = billType + "-三联打印-新版"
+            this.$refs.modalPrintPro.title = billType + "-" + this.$t('common.printNew')
           }
         })
       } else {
-        this.$message.warning('请先保存单据后再打印！');
+        this.$message.warning(this.$t('common.saveFirst'));
       }
     },
     //三联打印
@@ -1234,11 +1234,11 @@ export const BillModalMixin = {
             let billPrintUrl = res.data.platformValue + '&no=' + this.model.number
             let billPrintHeight = this.materialTable.dataSource.length*50 + 600
             this.$refs.modalPrint.show(this.model, billPrintUrl, billPrintHeight)
-            this.$refs.modalPrint.title = billType + "-三联打印"
+            this.$refs.modalPrint.title = billType + "-" + this.$t('common.print')
           }
         })
       } else {
-        this.$message.warning('请先保存单据后再打印！');
+        this.$message.warning(this.$t('common.saveFirst'));
       }
     },
     //加载平台配置信息

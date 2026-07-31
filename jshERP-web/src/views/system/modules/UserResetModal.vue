@@ -12,13 +12,13 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:25%;height:35%;">
       <a-spin :spinning="confirmLoading">
         <a-form :form="form">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="新密码">
-            <a-input-password placeholder="请输入新密码" v-decorator.trim="[ 'password', validatorRules.password]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.newPassword')">
+            <a-input-password :placeholder="$t('system.enterNewPassword')" v-decorator.trim="[ 'password', validatorRules.password]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -35,7 +35,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         model: {},
         maskStyle: '',
@@ -52,8 +52,8 @@
         validatorRules:{
           password:{
             rules: [
-              { required: true, message: '请输入新密码!' },
-              { pattern: /^(?=.*[a-z])(?=.*\d).{6,}$/, message: '用户密码至少要有数字和小写字母，并且长度至少6位!' }
+              { required: true, message: this.$t('login.enterNewPasswordRequired') },
+              { pattern: /^(?=.*[a-z])(?=.*\d).{6,}$/, message: this.$t('login.passwordFormatError') }
             ]
           }
         },
@@ -90,7 +90,7 @@
             }
             resetPwd(bodyParam).then((res)=>{
               if(res.code === 200){
-                that.$message.success('重置密码成功！');
+                that.$message.success(this.$t('system.resetPasswordSuccess'));
                 that.$emit('ok');
                 that.close();
               }else{

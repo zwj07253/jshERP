@@ -2,7 +2,7 @@
   <div>
     <a-input-search
       v-model="userNames"
-      placeholder="请先选择用户"
+      :placeholder="$t('common.selectUser')"
       readOnly
       unselectable="on"
       @search="onSearchDepUser">

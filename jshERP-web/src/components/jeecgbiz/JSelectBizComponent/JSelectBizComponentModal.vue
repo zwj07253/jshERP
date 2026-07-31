@@ -1,12 +1,12 @@
 <template>
   <a-modal
     centered
-    :title="name + '选择'"
+    :title="name + $t('common.selectSuffix')"
     :width="width"
     :visible="visible"
     @ok="handleOk"
     @cancel="close"
-    cancelText="关闭">
+    :cancelText="$t('common.close')">
 
     <a-row :gutter="18">
       <a-col :span="16">
@@ -17,13 +17,13 @@
 
               <a-col :span="14">
                 <a-form-item :label="(queryParamText||name)">
-                  <a-input v-model="queryParam[queryParamCode||valueKey]" :placeholder="'请输入' + (queryParamText||name)" @pressEnter="searchQuery"/>
+                  <a-input v-model="queryParam[queryParamCode||valueKey]" :placeholder="$t('common.pleaseEnter') + (queryParamText||name)" @pressEnter="searchQuery"/>
                 </a-form-item>
               </a-col>
               <a-col :span="8">
                   <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
-                    <a-button type="primary" @click="searchQuery" icon="search">查询</a-button>
-                    <a-button type="primary" @click="searchReset" icon="reload" style="margin-left: 8px">重置</a-button>
+                    <a-button type="primary" @click="searchQuery" icon="search">{{ $t('common.search') }}</a-button>
+                    <a-button type="primary" @click="searchReset" icon="reload" style="margin-left: 8px">{{ $t('common.reset') }}</a-button>
                   </span>
               </a-col>
 
@@ -47,11 +47,11 @@
 
       </a-col>
       <a-col :span="8">
-        <a-card :title="'已选' + name" :bordered="false" :head-style="{padding:0}" :body-style="{padding:0}">
+        <a-card :title="$t('common.selectedPrefix') + name" :bordered="false" :head-style="{padding:0}" :body-style="{padding:0}">
 
           <a-table size="small" :rowKey="rowKey" bordered v-bind="selectedTable">
               <span slot="action" slot-scope="text, record, index">
-                <a @click="handleDeleteSelected(record, index)">删除</a>
+                <a @click="handleDeleteSelected(record, index)">{{ $t('common.delete') }}</a>
               </span>
           </a-table>
 
@@ -148,7 +148,7 @@
               ...this.columns[0],
               width: this.columns[0].widthRight || this.columns[0].width,
             },
-            { title: '操作', dataIndex: 'action', align: 'center', width: 60, scopedSlots: { customRender: 'action' }, }
+            { title: this.$t('common.action'), dataIndex: 'action', align: 'center', width: 60, scopedSlots: { customRender: 'action' }, }
           ],
           dataSource: [],
         },
@@ -160,7 +160,7 @@
           pageSize: 5,
           pageSizeOptions: ['5', '10', '20', '30'],
           showTotal: (total, range) => {
-            return range[0] + '-' + range[1] + ' 共' + total + '条'
+            return this.$t('common.pagedTotal', { range0: range[0], range1: range[1], total: total })
           },
           showQuickJumper: true,
           showSizeChanger: true,

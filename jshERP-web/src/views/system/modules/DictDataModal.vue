@@ -12,42 +12,42 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:10%;height: 80%;">
       <a-spin :spinning="confirmLoading">
         <a-form :form="form">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="字典类型">
-            <a-input placeholder="请输入字典类型" v-decorator.trim="[ 'dictType' ]" :readOnly="true" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.dictTypeLabel')">
+            <a-input :placeholder="$t('system.enterDictType')" v-decorator.trim="[ 'dictType' ]" :readOnly="true" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="字典标签">
-            <a-input placeholder="请输入字典标签" v-decorator.trim="[ 'dictLabel', validatorRules.dictLabel]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.dictLabel')">
+            <a-input :placeholder="$t('system.enterDictLabel')" v-decorator.trim="[ 'dictLabel', validatorRules.dictLabel]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="字典键值">
-            <a-input placeholder="请输入字典键值" v-decorator.trim="[ 'dictValue', validatorRules.dictValue]" :disabled="!!model.dictCode" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.dictValue')">
+            <a-input :placeholder="$t('system.enterDictValue')" v-decorator.trim="[ 'dictValue', validatorRules.dictValue]" :disabled="!!model.dictCode" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="字典排序">
-            <a-input-number style="width: 100%" placeholder="请输入字典排序" v-decorator.trim="[ 'dictSort', validatorRules.dictSort ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.dictSort')">
+            <a-input-number style="width: 100%" :placeholder="$t('system.enterDictSort')" v-decorator.trim="[ 'dictSort', validatorRules.dictSort ]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="样式属性">
-            <a-input placeholder="请输入样式属性" v-decorator.trim="[ 'cssClass' ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.cssClass')">
+            <a-input :placeholder="$t('system.enterCssClass')" v-decorator.trim="[ 'cssClass' ]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="回显样式">
-            <a-select placeholder="请选择回显样式" showSearch allow-clear optionFilterProp="children" v-decorator.trim="[ 'listClass' ]">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.listClass')">
+            <a-select :placeholder="$t('system.selectListClass')" showSearch allow-clear optionFilterProp="children" v-decorator.trim="[ 'listClass' ]">
               <a-select-option v-for="(item,index) in listClassOptions" :key="index" :value="item.value">
                 {{ item.label + '(' + item.value + ')' }}
               </a-select-option>
             </a-select>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="状态">
-            <a-select style="width:100%" placeholder="请选择状态" v-decorator.trim="[ 'status' ]">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.status')">
+            <a-select style="width:100%" :placeholder="$t('common.selectStatus')" v-decorator.trim="[ 'status' ]">
               <a-select-option v-for="dict in dict.type.sys_normal_disable" :key="dict.value" :value="dict.value">
                 {{ dict.label }}
               </a-select-option>
             </a-select>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="备注">
-            <a-textarea :rows="2" placeholder="请输入备注" v-decorator.trim="[ 'remark' ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.remark')">
+            <a-textarea :rows="2" :placeholder="$t('common.enterRemark')" v-decorator.trim="[ 'remark' ]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -64,7 +64,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         model: {},
         labelCol: {
@@ -80,17 +80,17 @@
         validatorRules:{
           dictLabel:{
             rules: [
-              { required: true, message: '请输入字典标签!' }
+              { required: true, message: this.$t('system.dictLabelRequired') }
             ]
           },
           dictValue:{
             rules: [
-              { required: true, message: '请输入字典键值!' }
+              { required: true, message: this.$t('system.dictValueRequired') }
             ]
           },
           dictSort:{
             rules: [
-              { required: true, message: '请输入字典排序!' }
+              { required: true, message: this.$t('system.dictSortRequired') }
             ]
           }
         },
@@ -98,27 +98,27 @@
         listClassOptions: [
           {
             value: "default",
-            label: "默认"
+            label: this.$t('system.styleDefault')
           },
           {
             value: "blue",
-            label: "主要"
+            label: this.$t('system.stylePrimary')
           },
           {
             value: "green",
-            label: "成功"
+            label: this.$t('system.styleSuccess')
           },
           {
             value: "grey",
-            label: "信息"
+            label: this.$t('system.styleInfo')
           },
           {
             value: "orange",
-            label: "警告"
+            label: this.$t('system.styleWarning')
           },
           {
             value: "red",
-            label: "危险"
+            label: this.$t('system.styleDanger')
           }
         ],
       }

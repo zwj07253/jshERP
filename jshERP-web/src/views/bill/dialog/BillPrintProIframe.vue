@@ -11,7 +11,7 @@
     @cancel="handleCancel"
     wrapClassName="ant-modal-cust-warp">
     <template slot="footer">
-      <a-button key="back" @click="handleCancel">取消(ESC)</a-button>
+        <a-button key="back" @click="handleCancel">{{ $t('common.cancel') }}(ESC)</a-button>
     </template>
     <a-form :form="form">
       <template>
@@ -38,7 +38,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title: "三联打印预览",
+        title: this.$t('common.tripartitePrintPreview'),
         width: '1500px',
         visible: false,
         modalStyle: '',

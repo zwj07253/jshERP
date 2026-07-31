@@ -6,7 +6,7 @@
     style="width: 100%"
     :disabled="disabled"
     :dropdownStyle="{ maxHeight: '400px', overflow: 'auto' }"
-    :placeholder="placeholder"
+    :placeholder="placeholder || $t('common.pleaseSelect')"
     :loadData="asyncLoadTreeData"
     :value="treeValue"
     :treeData="treeData"
@@ -32,7 +32,7 @@
       },
       placeholder:{
         type: String,
-        default: '请选择',
+        default: '',
         required: false
       },
       dict:{
