@@ -2,7 +2,6 @@ package com.jsh.erp.service;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.constants.BusinessConstants;
-import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.Tenant;
 import com.jsh.erp.datasource.entities.TenantEx;
 import com.jsh.erp.datasource.entities.TenantExample;
@@ -10,8 +9,6 @@ import com.jsh.erp.datasource.entities.UserEx;
 import com.jsh.erp.datasource.mappers.TenantMapper;
 import com.jsh.erp.datasource.mappers.TenantMapperEx;
 import com.jsh.erp.datasource.mappers.UserBusinessMapperEx;
-import com.jsh.erp.datasource.mappers.UserMapperEx;
-import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.exception.JshException;
 import com.jsh.erp.utils.PageUtils;
 import com.jsh.erp.utils.StringUtil;
@@ -38,9 +35,6 @@ public class TenantService {
 
     @Resource
     private TenantMapperEx tenantMapperEx;
-
-    @Resource
-    private UserMapperEx userMapperEx;
 
     @Resource
     private UserBusinessMapperEx userBusinessMapperEx;
@@ -124,15 +118,6 @@ public class TenantService {
         int result=0;
         try{
             if(BusinessConstants.DEFAULT_MANAGER.equals(userService.getCurrentUser().getLoginName())) {
-                // 校验用户数量限制：不允许降低到当前启用用户数以下
-                if (tenant.getUserNumLimit() != null && obj.get("tenantId") != null) {
-                    Long tenantId = obj.getLong("tenantId");
-                    int currentUserCount = userMapperEx.countActiveUsersByTenantId(tenantId);
-                    if (tenant.getUserNumLimit() < currentUserCount) {
-                        throw new BusinessRunTimeException(ExceptionConstants.TENANT_USER_LIMIT_UPDATE_CODE,
-                                ExceptionConstants.TENANT_USER_LIMIT_UPDATE_MSG);
-                    }
-                }
                 result = tenantMapper.updateByPrimaryKeySelective(tenant);
                 //更新租户对应的角色
                 if(obj.get("roleId")!=null) {

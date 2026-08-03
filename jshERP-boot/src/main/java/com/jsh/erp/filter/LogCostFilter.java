@@ -1,6 +1,7 @@
 package com.jsh.erp.filter;
 
 import com.jsh.erp.constants.BusinessConstants;
+import com.jsh.erp.datasource.entities.Tenant;
 import com.jsh.erp.datasource.entities.TenantExample;
 import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.mappers.TenantMapper;
