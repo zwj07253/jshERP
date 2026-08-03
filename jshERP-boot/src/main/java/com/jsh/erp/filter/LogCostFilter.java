@@ -1,7 +1,6 @@
 package com.jsh.erp.filter;
 
 import com.jsh.erp.constants.BusinessConstants;
-import com.jsh.erp.datasource.entities.Tenant;
 import com.jsh.erp.datasource.entities.TenantExample;
 import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.mappers.TenantMapper;
@@ -83,14 +82,9 @@ public class LogCostFilter implements Filter {
                             servletResponse.getWriter().write("loginOut");
                             return;
                         }
-                        Tenant tenant = tenantList.get(0);
-                        if ((tenant.getEnabled() != null && !tenant.getEnabled())
-                                || (tenant.getExpireTime() != null && tenant.getExpireTime().before(new java.util.Date()))) {
-                            redisService.deleteObjectBySession(servletRequest, "userId");
-                            servletResponse.setStatus(401);
-                            servletResponse.getWriter().write("loginOut");
-                            return;
-                        }
+                        // In the single-tenant deployment, the tenant row remains a
+                        // data-integrity boundary, but its enabled/expiry fields do not
+                        // restrict an otherwise valid user session.
                     }
                     chain.doFilter(request, response);
                     return;

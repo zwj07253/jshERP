@@ -428,16 +428,8 @@ public class UserService {
                 if(list.get(0).getStatus()!=0) {
                     return ExceptionCodeConstants.UserExceptionCode.BLACK_USER;
                 }
-                Long tenantId = list.get(0).getTenantId();
-                Tenant tenant = tenantService.getTenantByTenantId(tenantId);
-                if(tenant!=null) {
-                    if(tenant.getEnabled()!=null && !tenant.getEnabled()) {
-                        return ExceptionCodeConstants.UserExceptionCode.BLACK_TENANT;
-                    }
-                    if(tenant.getExpireTime()!=null && tenant.getExpireTime().getTime()<System.currentTimeMillis()){
-                        return ExceptionCodeConstants.UserExceptionCode.EXPIRE_TENANT;
-                    }
-                }
+                // The single-tenant deployment intentionally does not enforce tenant
+                // lifecycle status. User status and credentials are still validated.
             } else {
                 return ExceptionCodeConstants.UserExceptionCode.USER_ACCESS_EXCEPTION;
             }
@@ -470,12 +462,8 @@ public class UserService {
             data.put("msgTip", "user is black");
             return data;
         }
-        Tenant tenant = tenantService.getTenantByTenantId(user.getTenantId());
-        if (tenant != null && (Boolean.FALSE.equals(tenant.getEnabled())
-                || (tenant.getExpireTime() != null && tenant.getExpireTime().before(new Date())))) {
-            data.put("msgTip", "tenant is black or expire");
-            return data;
-        }
+        // The single-tenant deployment intentionally does not enforce tenant
+        // lifecycle status for WeChat sign-in.
         redisService.deleteObjectBySession(request, "userId");
         String token = UUID.randomUUID().toString().replace("-", "");
         if (user.getTenantId() != null) {

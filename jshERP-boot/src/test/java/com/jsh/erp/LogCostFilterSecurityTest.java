@@ -14,8 +14,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.Collections;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+
+import com.jsh.erp.datasource.entities.Tenant;
 
 import static org.mockito.Mockito.*;
 
@@ -80,6 +83,30 @@ class LogCostFilterSecurityTest {
 
         verify(chain).doFilter(request, response);
         verifyNoInteractions(tenantMapper);
+        verify(redisService, never()).deleteObjectBySession(request, "userId");
+    }
+
+    @Test
+    void disabledTenantDoesNotEndAnOtherwiseValidSession() throws Exception {
+        User active = new User();
+        active.setId(9L);
+        active.setLoginName("tenant-admin");
+        active.setTenantId(1L);
+        active.setStatus((byte) 0);
+        active.setDeleteFlag("0");
+        Tenant disabled = new Tenant();
+        disabled.setTenantId(1L);
+        disabled.setEnabled(false);
+
+        when(request.getRequestURI()).thenReturn("/jshERP-boot/user/getUserSession");
+        when(request.getHeader("X-Access-Token")).thenReturn("token_1");
+        when(redisService.getObjectFromSessionByKey(request, "userId")).thenReturn("9");
+        when(userMapper.selectByPrimaryKey(9L)).thenReturn(active);
+        when(tenantMapper.selectByExample(any())).thenReturn(Collections.singletonList(disabled));
+
+        filter.doFilter(request, response, chain);
+
+        verify(chain).doFilter(request, response);
         verify(redisService, never()).deleteObjectBySession(request, "userId");
     }
 }
