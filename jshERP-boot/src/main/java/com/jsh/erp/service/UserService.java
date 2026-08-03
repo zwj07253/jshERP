@@ -600,7 +600,7 @@ public class UserService {
             if(ue.getRoleId()!=null){
                 JSONObject ubObj = new JSONObject();
                 ubObj.put("type", "UserRole");
-                ubObj.put("keyid", userId);
+                ubObj.put("keyId", userId);
                 ubObj.put("value", "[" + ue.getRoleId() + "]");
                 userBusinessService.insertUserBusiness(ubObj, request);
             }
@@ -612,19 +612,19 @@ public class UserService {
                             ExceptionConstants.USER_LEADER_IS_EXIST_MSG);
                 }
             }
-            //新增用户和部门关联关系
-            OrgaUserRel oul=new OrgaUserRel();
-            //部门id
-            oul.setOrgaId(ue.getOrgaId());
-            oul.setUserId(userId);
-            //用户在部门中的排序
-            oul.setUserBlngOrgaDsplSeq(ue.getUserBlngOrgaDsplSeq());
-            oul=orgaUserRelService.addOrgaUserRel(oul);
-            if(oul==null){
-                logger.error("异常码[{}],异常提示[{}],参数,[{}]",
-                        ExceptionConstants.ORGA_USER_REL_ADD_FAILED_CODE,ExceptionConstants.ORGA_USER_REL_ADD_FAILED_MSG);
-                throw new BusinessRunTimeException(ExceptionConstants.ORGA_USER_REL_ADD_FAILED_CODE,
-                        ExceptionConstants.ORGA_USER_REL_ADD_FAILED_MSG);
+            // Department membership is optional in the single-tenant deployment.
+            if (ue.getOrgaId() != null) {
+                OrgaUserRel oul = new OrgaUserRel();
+                oul.setOrgaId(ue.getOrgaId());
+                oul.setUserId(userId);
+                oul.setUserBlngOrgaDsplSeq(ue.getUserBlngOrgaDsplSeq());
+                oul = orgaUserRelService.addOrgaUserRel(oul);
+                if (oul == null) {
+                    logger.error("异常码[{}],异常提示[{}],参数,[{}]",
+                            ExceptionConstants.ORGA_USER_REL_ADD_FAILED_CODE, ExceptionConstants.ORGA_USER_REL_ADD_FAILED_MSG);
+                    throw new BusinessRunTimeException(ExceptionConstants.ORGA_USER_REL_ADD_FAILED_CODE,
+                            ExceptionConstants.ORGA_USER_REL_ADD_FAILED_MSG);
+                }
             }
         }
     }
@@ -749,7 +749,7 @@ public class UserService {
             if(ue.getRoleId()!=null){
                 JSONObject ubObj = new JSONObject();
                 ubObj.put("type", "UserRole");
-                ubObj.put("keyid", ue.getId());
+                ubObj.put("keyId", ue.getId());
                 ubObj.put("value", "[" + ue.getRoleId() + "]");
                 Long ubId = userBusinessService.checkIsValueExist("UserRole", ue.getId().toString());
                 if(ubId!=null) {
@@ -767,32 +767,29 @@ public class UserService {
                             ExceptionConstants.USER_LEADER_IS_EXIST_MSG);
                 }
             }
-            //更新用户和部门关联关系
-            OrgaUserRel oul = new OrgaUserRel();
-            //部门和用户关联关系id
-            oul.setId(ue.getOrgaUserRelId());
-            //部门id
-            oul.setOrgaId(ue.getOrgaId());
-            //用户id
-            oul.setUserId(ue.getId());
-            //用户在部门中的排序
-            oul.setUserBlngOrgaDsplSeq(ue.getUserBlngOrgaDsplSeq());
-            if (oul.getId() != null) {
-                OrgaUserRel existingRelation = orgaUserRelMapper.selectByPrimaryKey(oul.getId());
-                if (existingRelation == null || !ue.getId().equals(existingRelation.getUserId())) {
-                    throw invalidUser("部门用户关系与目标用户不匹配");
+            // Department membership is optional. Do not create an empty relation
+            // when a user, including the tenant administrator, has no department.
+            if (ue.getOrgaId() != null) {
+                OrgaUserRel oul = new OrgaUserRel();
+                oul.setId(ue.getOrgaUserRelId());
+                oul.setOrgaId(ue.getOrgaId());
+                oul.setUserId(ue.getId());
+                oul.setUserBlngOrgaDsplSeq(ue.getUserBlngOrgaDsplSeq());
+                if (oul.getId() != null) {
+                    OrgaUserRel existingRelation = orgaUserRelMapper.selectByPrimaryKey(oul.getId());
+                    if (existingRelation == null || !ue.getId().equals(existingRelation.getUserId())) {
+                        throw invalidUser("部门用户关系与目标用户不匹配");
+                    }
+                    oul = orgaUserRelService.updateOrgaUserRel(oul);
+                } else {
+                    oul = orgaUserRelService.addOrgaUserRel(oul);
                 }
-                //已存在部门和用户的关联关系，更新
-                oul = orgaUserRelService.updateOrgaUserRel(oul);
-            } else {
-                //不存在部门和用户的关联关系，新建
-                oul = orgaUserRelService.addOrgaUserRel(oul);
-            }
-            if (oul == null) {
-                logger.error("异常码[{}],异常提示[{}],参数,[{}]",
-                        ExceptionConstants.ORGA_USER_REL_EDIT_FAILED_CODE, ExceptionConstants.ORGA_USER_REL_EDIT_FAILED_MSG);
-                throw new BusinessRunTimeException(ExceptionConstants.ORGA_USER_REL_EDIT_FAILED_CODE,
-                        ExceptionConstants.ORGA_USER_REL_EDIT_FAILED_MSG);
+                if (oul == null) {
+                    logger.error("异常码[{}],异常提示[{}],参数,[{}]",
+                            ExceptionConstants.ORGA_USER_REL_EDIT_FAILED_CODE, ExceptionConstants.ORGA_USER_REL_EDIT_FAILED_MSG);
+                    throw new BusinessRunTimeException(ExceptionConstants.ORGA_USER_REL_EDIT_FAILED_CODE,
+                            ExceptionConstants.ORGA_USER_REL_EDIT_FAILED_MSG);
+                }
             }
         }
     }
