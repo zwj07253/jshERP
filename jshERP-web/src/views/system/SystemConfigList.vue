@@ -249,6 +249,12 @@
         this.contentStyle = 'height:' + (document.documentElement.clientHeight-280) + 'px'
       }
     },
+    mounted () {
+      this.$refs.container.addEventListener('scroll', this.handleContainerScroll)
+    },
+    beforeDestroy () {
+      this.$refs.container.removeEventListener('scroll', this.handleContainerScroll)
+    },
     methods: {
       handleTabChange(key) {
         this.activeKey = key
@@ -264,6 +270,15 @@
         })
       },
       //初始化加载内容
+      handleContainerScroll () {
+        const container = this.$refs.container
+        const configSection = this.$refs.sec2
+        if (!container || !configSection) {
+          return
+        }
+        const configSectionTop = configSection.offsetTop - container.offsetTop
+        this.activeKey = container.scrollTop >= configSectionTop - 24 ? 'sec2' : 'sec1'
+      },
       init () {
         let param = {
           search: {"companyName":""},
