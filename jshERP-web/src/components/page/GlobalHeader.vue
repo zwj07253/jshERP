@@ -121,7 +121,11 @@
       }
     },
     created () {
+      this.$bus.$on('company-name-updated', this.handleCompanyNameUpdated)
       this.initSystemConfig()
+    },
+    beforeDestroy () {
+      this.$bus.$off('company-name-updated', this.handleCompanyNameUpdated)
     },
     methods: {
       showJump() {
@@ -168,6 +172,9 @@
             this.companyName = res.data.companyName
           }
         })
+      },
+      handleCompanyNameUpdated(companyName) {
+        this.companyName = companyName || ''
       },
     }
   }

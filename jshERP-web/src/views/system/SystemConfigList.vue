@@ -152,6 +152,10 @@
             </a-row>
           </div>
         </div>
+        <div class="action-footer">
+          <a-button @click="handleCancel" :disabled="confirmLoading || !hasChanges">{{ $t('common.cancel') }}</a-button>
+          <a-button type="primary" @click="doSave" :loading="confirmLoading" :disabled="!hasChanges">{{ $t('common.save') }}</a-button>
+        </div>
       </a-form>
     </a-spin>
   </a-card>
@@ -159,7 +163,6 @@
 <!-- b y 7 5 2 7  1 8 9 2 0 -->
 <script>
   import pick from 'lodash.pick'
-  import debounce from 'lodash/debounce'
   import JSelectMultiple from '@/components/jeecg/JSelectMultiple'
   import { addSystemConfig, editSystemConfig } from '@/api/api'
   import { autoJumpNextInput } from '@/utils/util'
@@ -180,6 +183,7 @@
         activeKey: 'sec1',
         visible: true,
         model: {},
+        hasChanges: false,
         depotFlagSwitch: false, //仓库权限状态
         customerFlagSwitch: false, //客户权限状态
         minusStockFlagSwitch: false, //负库存状态
@@ -238,12 +242,11 @@
       }
     },
     created () {
-      this.debouncedSave = debounce(this.doSave, 500)
       this.init()
       this.loadPlugins()
       if(this.isDesktop()) {
         this.cardStyle = 'height:' + (document.documentElement.clientHeight-100) + 'px'
-        this.contentStyle = 'height:' + (document.documentElement.clientHeight-220) + 'px'
+        this.contentStyle = 'height:' + (document.documentElement.clientHeight-280) + 'px'
       }
     },
     methods: {
@@ -272,6 +275,7 @@
             let record = res.data.rows[0]
             this.form.resetFields();
             this.model = Object.assign({}, record);
+            this.hasChanges = false;
             this.visible = true;
             this.$nextTick(() => {
               this.form.setFieldsValue(pick(this.model,'companyName', 'companyContacts', 'companyAddress',
@@ -469,10 +473,19 @@
       },
       //改变内容（防抖，500ms内多次操作只提交最后一次）
       handleChange() {
-        this.debouncedSave()
+        this.hasChanges = true
       },
       doSave() {
+        if(this.model.companyName && this.model.companyName.length>30) {
+          this.$message.warning(this.$t('system.companyNameLength'))
+          return
+        }
+        if(this.model.saleAgreement && this.model.saleAgreement.length>400) {
+          this.$message.warning(this.$t('system.saleAgreementLength'))
+          return
+        }
         this.confirmLoading = true
+        const companyName = this.model.companyName
         let obj
         if(!this.model.id){
           obj = addSystemConfig(this.model)
@@ -481,6 +494,9 @@
         }
         obj.then((res)=>{
           if(res.code === 200){
+            this.hasChanges = false
+            this.$bus.$emit('company-name-updated', companyName)
+            this.$message.success(this.$t('common.saveSuccess'))
             this.init()
           }else{
             this.$message.warning(res.data.message)
@@ -490,6 +506,9 @@
         }).finally(() => {
           this.confirmLoading = false
         })
+      },
+      handleCancel() {
+        this.init()
       },
       //刷新浏览器
       handleReload() {
@@ -516,6 +535,17 @@
   overflow-y: auto;   /* 出现滚动条 */
   padding: 16px;
   border-top: 1px solid #f0f0f0;
+}
+
+.action-footer {
+  padding: 12px 24px;
+  text-align: right;
+  background: #fff;
+  border-top: 1px solid #f0f0f0;
+}
+
+.action-footer .ant-btn + .ant-btn {
+  margin-left: 8px;
 }
 
 /* 每个区域样式 */
