@@ -4,45 +4,45 @@
     <a-form ref="formRegister" :autoFormCreate="(form)=>{this.form = form}" id="formRegister">
       <a-form-item
         fieldDecoratorId="username"
-        :fieldDecoratorOptions="{rules: [{ required: true, message: '用户名不能为空'}, { validator: this.handleUserName}], validateTrigger: ['change', 'blur'], validateFirst: true}">
+        :fieldDecoratorOptions="{rules: [{ required: true, message: this.$t('common.usernameRequired')}, { validator: this.handleUserName}], validateTrigger: ['change', 'blur'], validateFirst: true}">
         <a-input size="large" type="text" autocomplete="false"
-                 placeholder="请输入用户名"></a-input>
+                 :placeholder="$t('common.usernamePlaceholder')"></a-input>
       </a-form-item>
 
       <a-popover placement="rightTop" trigger="click" :visible="state.passwordLevelChecked">
         <template slot="content">
           <div :style="{ width: '240px' }">
-            <div :class="['user-register', passwordLevelClass]">强度：<span>{{ passwordLevelName }}</span></div>
+            <div :class="['user-register', passwordLevelClass]">{{$t('common.strength')}}：<span>{{ passwordLevelName }}</span></div>
             <a-progress :percent="state.percent" :showInfo="false" :strokeColor=" passwordLevelColor "/>
             <div style="margin-top: 10px;">
-              <span>请至少输入 6 个字符。请不要使用容易被猜到的密码。</span>
+              <span>{{$t('common.passwordHint')}}</span>
             </div>
           </div>
         </template>
         <a-form-item
           fieldDecoratorId="password"
           :fieldDecoratorOptions="{rules: [{ required: false}, { validator: this.handlePasswordLevel }], validateTrigger: ['change', 'blur'], validateFirst: true}">
-          <a-input-password size="large" type="password" @click="handlePasswordInputClick" autocomplete="false" placeholder="至少6位密码，区分大小写"></a-input-password>
+          <a-input-password size="large" type="password" @click="handlePasswordInputClick" autocomplete="false" :placeholder="$t('common.atLeast6')"></a-input-password>
         </a-form-item>
       </a-popover>
 
       <a-form-item
         fieldDecoratorId="password2"
-        :fieldDecoratorOptions="{rules: [{ required: true, message: '至少6位密码，区分大小写' }, { validator: this.handlePasswordCheck }], validateTrigger: ['change', 'blur'], validateFirst: true}">
+        :fieldDecoratorOptions="{rules: [{ required: true, message: this.$t('common.passwordRequired') }, { validator: this.handlePasswordCheck }], validateTrigger: ['change', 'blur'], validateFirst: true}">
 
-        <a-input-password size="large" type="password" autocomplete="false" placeholder="确认密码"></a-input-password>
+        <a-input-password size="large" type="password" autocomplete="false" :placeholder="$t('common.confirmPassword')"></a-input-password>
       </a-form-item>
 
       <a-row :gutter="0" v-if="checkcodeFlag==='1'">
         <a-col :span="14">
           <a-form-item
             fieldDecoratorId="inputCode"
-            :fieldDecoratorOptions="{rules: [{ required: true, message: '验证码不能为空'}, { validator: this.handleInputCode}], validateTrigger: ['change', 'blur'], validateFirst: true}">
+            :fieldDecoratorOptions="{rules: [{ required: true, message: this.$t('common.codeRequired')}, { validator: this.handleInputCode}], validateTrigger: ['change', 'blur'], validateFirst: true}">
             <a-input
               size="large"
               type="text"
               default-value=""
-              placeholder="请输入验证码">
+              :placeholder="$t('common.codePlaceholder')">
               <a-icon slot="prefix" type="smile" :style="{ color: 'rgba(0,0,0,.25)' }"/>
             </a-input>
           </a-form-item>
@@ -61,16 +61,16 @@
           class="register-button"
           :loading="registerBtn"
           @click.stop.prevent="handleSubmit"
-          :disabled="registerBtn">注册租户
+          :disabled="registerBtn">{{$t('common.registerTenant')}}
         </a-button>
-        <router-link class="login" :to="{ name: 'login' }">使用已有租户登录</router-link>
+        <router-link class="login" :to="{ name: 'login' }">{{$t('common.loginExisting')}}</router-link>
       </a-form-item>
 
       <div class="login-copyright" v-if="device === 'mobile'">
         <a-row>
           <a-col>
             © 2015-2030 Powered By
-            <a style="color:#00458a;" :href="systemUrl" target="_blank">官方网站</a>
+            <a style="color:#00458a;" :href="systemUrl" target="_blank">{{$t('common.officialSite')}}</a>
           </a-col>
         </a-row>
       </div>
@@ -83,12 +83,6 @@
   import {getAction, postAction} from '@/api/manage'
   import md5 from 'md5'
 
-  const levelNames = {
-    0: '低',
-    1: '低',
-    2: '中',
-    3: '强'
-  }
   const levelClass = {
     0: 'error',
     1: 'error',
@@ -132,6 +126,12 @@
         return levelClass[this.state.passwordLevel]
       },
       passwordLevelName() {
+        const levelNames = {
+          0: this.$t('common.strengthLow'),
+          1: this.$t('common.strengthLow'),
+          2: this.$t('common.strengthMedium'),
+          3: this.$t('common.strengthStrong')
+        }
         return levelNames[this.state.passwordLevel]
       },
       passwordLevelColor() {
@@ -173,7 +173,7 @@
       handleUserName(rule, value, callback) {
         let reg = /^(?=.*[a-z]).{4,}$/;
         if (!reg.test(value)) {
-          callback(new Error('用户名需要由4位小写字母组成!'))
+          callback(new Error(this.$t('common.usernameFormat')))
         }
         callback()
       },
@@ -182,7 +182,7 @@
         let level = 0
         let reg = /^(?=.*[a-z])(?=.*\d).{6,}$/;
         if (!reg.test(value)) {
-          callback(new Error('密码由6位数字、小写字母组成!'))
+          callback(new Error(this.$t('common.passwordFormat')))
         }
         // 判断这个字符串中有没有数字
         if (/[0-9]/.test(value)) {
@@ -207,7 +207,7 @@
           if (level === 0) {
             this.state.percent = 10
           }
-          callback(new Error('强度不够!'))
+          callback(new Error(this.$t('common.passwordStrengthLow')))
         }
       },
 
@@ -215,10 +215,10 @@
         let password = this.form.getFieldValue('password')
         //console.log('value', value)
         if (value === undefined) {
-          callback(new Error('请输入密码!'))
+          callback(new Error(this.$t('common.enterPassword')))
         }
         if (value && password && value.trim() !== password.trim()) {
-          callback(new Error('两次密码不一致!'))
+          callback(new Error(this.$t('common.passwordsNotMatch')))
         }
         callback()
       },
@@ -249,8 +249,8 @@
             postAction("/user/registerUser", register).then((res) => {
               if(res.code === 200){
                 this.$notification.success({
-                  message: '提示',
-                  description: "注册成功，请使用该租户登录！",
+                  message: this.$t('common.confirm'),
+                  description: this.$t('common.registeredSuccess'),
                   duration: 5
                 });
                 let that = this;
@@ -262,8 +262,8 @@
                 },2000);
               } else {
                 this.$notification['error']({
-                  message: "提示",
-                  description: res.data.message || "注册失败",
+                  message: this.$t('common.confirm'),
+                  description: res.data.message || this.$t('common.registeredFailed'),
                   duration: 2
                 });
                 //验证码刷新
@@ -281,8 +281,8 @@
       },
       requestFailed(err) {
         this.$notification['error']({
-          message: '错误',
-          description: ((err.response || {}).data || {}).message || "请求出现错误，请稍后再试",
+          message: this.$t('common.error'),
+          description: ((err.response || {}).data || {}).message || this.$t('common.requestError'),
           duration: 4,
         });
         this.registerBtn = false;

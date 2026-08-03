@@ -2,6 +2,7 @@ package com.jsh.erp;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.jsh.erp.constants.ExceptionConstants;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.*;
 
@@ -65,8 +66,9 @@ public class P1ExceptionTest extends ApiTestBase {
         body.put("rows", rows.toJSONString());
 
         Response resp = authReq().body(body.toJSONString()).post(CONTEXT + "/depotHead/addDepotHeadAndDetail");
-        // 数量为0应该报错或有提示，验证不会产生有效单据
-        assertNotNull(resp);
+        assertBizError(resp);
+        assertEquals(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_CODE,
+                JSONObject.parseObject(resp.body().asString()).getIntValue("code"));
     }
 
     // ===== 42. 采购入库-金额为负 =====
@@ -119,7 +121,9 @@ public class P1ExceptionTest extends ApiTestBase {
         body.put("rows", rows.toJSONString());
 
         Response resp = authReq().body(body.toJSONString()).post(CONTEXT + "/depotHead/addDepotHeadAndDetail");
-        assertNotNull(resp, "接口应有响应");
+        assertBizError(resp);
+        assertEquals(ExceptionConstants.DEPOT_HEAD_PURCHASE_AMOUNT_CODE,
+                JSONObject.parseObject(resp.body().asString()).getIntValue("code"));
     }
 
     // ===== 43. 销售出库-库存不足 =====
@@ -197,7 +201,7 @@ public class P1ExceptionTest extends ApiTestBase {
         Long headId = createDepotHeadAndDetail("入库", "采购",
                 supData.getJSONArray("rows").getJSONObject(0).getLong("id"), 0L,
                 depData.getJSONArray("rows").getJSONObject(0).getLong("id"),
-                matData.getJSONArray("rows").getJSONObject(0).getLong("id"), 1, 50.0);
+                findNonTrackedMaterialId(matData), 1, 50.0);
         if (headId == null) return;
 
         // 第一次审核
@@ -233,11 +237,17 @@ public class P1ExceptionTest extends ApiTestBase {
         Long headId = createDepotHeadAndDetail("入库", "采购",
                 supData.getJSONArray("rows").getJSONObject(0).getLong("id"), 0L,
                 depData.getJSONArray("rows").getJSONObject(0).getLong("id"),
-                matData.getJSONArray("rows").getJSONObject(0).getLong("id"), 1, 50.0);
+                findNonTrackedMaterialId(matData), 1, 50.0);
         if (headId == null) return;
 
         // 对未审核的单据反审核（应提示）
-        unauditDepotHead(headId);
+        JSONObject body = new JSONObject();
+        body.put("status", "0");
+        body.put("ids", String.valueOf(headId));
+        Response resp = authReq().body(body.toJSONString()).post(CONTEXT + "/depotHead/batchSetStatus");
+        assertNotNull(resp, "未审核单据反审核应有响应");
+        assertEquals(ExceptionConstants.DEPOT_HEAD_AUDIT_TO_UN_AUDIT_FAILED_CODE,
+                JSONObject.parseObject(resp.body().asString()).getIntValue("code"));
     }
 
     // ===== 46. 选择不存在的商品 =====
@@ -250,6 +260,16 @@ public class P1ExceptionTest extends ApiTestBase {
                 .param("id", 999999999L)
                 .get(CONTEXT + "/material/info");
         assertNotNull(resp, "接口应有响应");
+    }
+
+    private Long findNonTrackedMaterialId(JSONObject matData) {
+        for (JSONObject material : matData.getJSONArray("rows").toJavaList(JSONObject.class)) {
+            if (!"1".equals(material.getString("enableBatchNumber"))
+                    && !"1".equals(material.getString("enableSerialNumber"))) {
+                return material.getLong("id");
+            }
+        }
+        return matData.getJSONArray("rows").getJSONObject(0).getLong("id");
     }
 
     // ===== 47. 选择不存在的仓库 =====

@@ -12,14 +12,14 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="关闭"
+      :cancelText="$t('common.close')"
       style="top:20%;height: 60%;">
       <a-spin :spinning="confirmLoading">
         <a-form :form="form">
           <a-row class="form-row" :gutter="24">
             <a-col :lg="12" :md="12" :sm="24">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="结算账户1">
-                <a-select style="width:185px;" placeholder="请选择结算账户" v-decorator="[ 'oneAccountId' ]" :dropdownMatchSelectWidth="false" allowClear>
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.settleAccount') + ' 1'">
+                <a-select style="width:185px;" :placeholder="$t('common.selectSettleAccount')" v-decorator="[ 'oneAccountId' ]" :dropdownMatchSelectWidth="false" allowClear>
                   <a-select-option v-for="(item,index) in accountList" :key="index" :value="item.id">
                     {{ item.name }}
                   </a-select-option>
@@ -27,15 +27,15 @@
               </a-form-item>
             </a-col>
             <a-col :lg="12" :md="12" :sm="24">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="结算金额">
-                <a-input-number placeholder="请输入金额" v-decorator.trim="[ 'oneAccountPrice' ]" />
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.settleAmount')">
+                <a-input-number :placeholder="$t('common.amount')" v-decorator.trim="[ 'oneAccountPrice' ]" />
               </a-form-item>
             </a-col>
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :lg="12" :md="12" :sm="24">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="结算账户2">
-                <a-select style="width:185px;" placeholder="请选择结算账户" v-decorator="[ 'twoAccountId' ]" :dropdownMatchSelectWidth="false" allowClear>
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.settleAccount') + ' 2'">
+                <a-select style="width:185px;" :placeholder="$t('common.selectSettleAccount')" v-decorator="[ 'twoAccountId' ]" :dropdownMatchSelectWidth="false" allowClear>
                   <a-select-option v-for="(item,index) in accountList" :key="index" :value="item.id">
                     {{ item.name }}
                   </a-select-option>
@@ -43,15 +43,15 @@
               </a-form-item>
             </a-col>
             <a-col :lg="12" :md="12" :sm="24">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="结算金额">
-                <a-input-number placeholder="请输入金额" v-decorator.trim="[ 'twoAccountPrice' ]" />
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.settleAmount')">
+                <a-input-number :placeholder="$t('common.amount')" v-decorator.trim="[ 'twoAccountPrice' ]" />
               </a-form-item>
             </a-col>
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :lg="12" :md="12" :sm="24">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="结算账户3">
-                <a-select style="width:185px;" placeholder="请选择结算账户" v-decorator="[ 'threeAccountId' ]" :dropdownMatchSelectWidth="false" allowClear>
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.settleAccount') + ' 3'">
+                <a-select style="width:185px;" :placeholder="$t('common.selectSettleAccount')" v-decorator="[ 'threeAccountId' ]" :dropdownMatchSelectWidth="false" allowClear>
                   <a-select-option v-for="(item,index) in accountList" :key="index" :value="item.id">
                     {{ item.name }}
                   </a-select-option>
@@ -59,8 +59,8 @@
               </a-form-item>
             </a-col>
             <a-col :lg="12" :md="12" :sm="24">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="结算金额">
-                <a-input-number placeholder="请输入金额" v-decorator.trim="[ 'threeAccountPrice' ]" />
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.settleAmount')">
+                <a-input-number :placeholder="$t('common.amount')" v-decorator.trim="[ 'threeAccountPrice' ]" />
               </a-form-item>
             </a-col>
           </a-row>
@@ -78,7 +78,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title: this.$t('common.action'),
         visible: false,
         model: {},
         accountList: [],
@@ -159,14 +159,24 @@
               allPrice = allPrice + formData.threeAccountPrice
             }
             if(that.accountIdList.length<2 || that.accountMoneyList.length<2) {
-              this.$message.warning('抱歉，多账户结算必须选择两个以上账户和金额！');
+              this.$message.warning(this.$t('bill.multiAccountNeedTwo'));
+              that.confirmLoading = false;
+              return;
+            }
+            if(new Set(that.accountIdList).size !== that.accountIdList.length) {
+              this.$message.warning(this.$t('bill.multiAccountNoDuplicate'));
+              that.confirmLoading = false;
+              return;
+            }
+            if(that.accountIdList.length !== that.accountMoneyList.length) {
+              this.$message.warning(this.$t('bill.accountAmountMismatch'));
               that.confirmLoading = false;
               return;
             }
             if((formData.oneAccountId && !formData.oneAccountPrice)||
               (formData.twoAccountId && !formData.twoAccountPrice)||
               (formData.threeAccountId && !formData.threeAccountPrice)) {
-              this.$message.warning('抱歉，请填写结算金额！');
+              this.$message.warning(this.$t('bill.fillSettleAmount'));
               that.confirmLoading = false;
               return;
             }

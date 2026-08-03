@@ -15,6 +15,10 @@ import java.util.List;
  * @Date: 2019/1/25 14:50
  */
 public interface DepotHeadMapperEx {
+    DepotHead lockDepotHeadByNumber(@Param("number") String number);
+
+    DepotHead lockDepotHeadById(@Param("id") Long id);
+
     List<DepotHeadVo4List> selectByConditionDepotHead(
             @Param("type") String type,
             @Param("subType") String subType,
@@ -182,47 +186,6 @@ public interface DepotHeadMapperEx {
             @Param("depotFList") List<Long> depotFList,
             @Param("remark") String remark);
 
-    List<DepotHeadVo4StatementAccount> getStatementAccount(
-            @Param("beginTime") String beginTime,
-            @Param("endTime") String endTime,
-            @Param("organId") Integer organId,
-            @Param("organArray") String[] organArray,
-            @Param("hasDebt") Integer hasDebt,
-            @Param("supplierType") String supplierType,
-            @Param("type") String type,
-            @Param("subType") String subType,
-            @Param("typeBack") String typeBack,
-            @Param("subTypeBack") String subTypeBack,
-            @Param("billType") String billType,
-            @Param("offset") Integer offset,
-            @Param("rows") Integer rows);
-
-    int getStatementAccountCount(
-            @Param("beginTime") String beginTime,
-            @Param("endTime") String endTime,
-            @Param("organId") Integer organId,
-            @Param("organArray") String[] organArray,
-            @Param("hasDebt") Integer hasDebt,
-            @Param("supplierType") String supplierType,
-            @Param("type") String type,
-            @Param("subType") String subType,
-            @Param("typeBack") String typeBack,
-            @Param("subTypeBack") String subTypeBack,
-            @Param("billType") String billType);
-
-    List<DepotHeadVo4StatementAccount> getStatementAccountTotalPay(
-            @Param("beginTime") String beginTime,
-            @Param("endTime") String endTime,
-            @Param("organId") Integer organId,
-            @Param("organArray") String[] organArray,
-            @Param("hasDebt") Integer hasDebt,
-            @Param("supplierType") String supplierType,
-            @Param("type") String type,
-            @Param("subType") String subType,
-            @Param("typeBack") String typeBack,
-            @Param("subTypeBack") String subTypeBack,
-            @Param("billType") String billType);
-
     List<DepotHeadVo4List> getDetailByNumber(
             @Param("number") String number);
 
@@ -234,6 +197,8 @@ public interface DepotHeadMapperEx {
 
     List<DepotHead> getDepotHeadListByCreator(@Param("creatorArray") String[] creatorArray);
 
+    List<DepotHead> getDepotHeadListBySalesPersonIds(@Param("personIds") String[] personIds);
+
     List<InOutPriceVo> getBuyAndSaleStatisticsList(
             @Param("beginTime") String beginTime,
             @Param("endTime") String endTime,
@@ -242,6 +207,8 @@ public interface DepotHeadMapperEx {
 
     List<DepotHeadVo4List> debtList(
             @Param("organId") Long organId,
+            @Param("type") String type,
+            @Param("subType") String subType,
             @Param("creatorArray") String[] creatorArray,
             @Param("status") String status,
             @Param("number") String number,
@@ -254,6 +221,8 @@ public interface DepotHeadMapperEx {
 
     int debtListCount(
             @Param("organId") Long organId,
+            @Param("type") String type,
+            @Param("subType") String subType,
             @Param("creatorArray") String[] creatorArray,
             @Param("status") String status,
             @Param("number") String number,

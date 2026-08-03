@@ -11,12 +11,12 @@
       :mask="isDesktop()"
       :maskClosable="false"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:5%;height: 90%;">
       <template slot="footer">
         <a-button key="back" @click="handleCancel">
-          取消
+          {{ $t('common.cancel') }}
         </a-button>
       </template>
       <a-spin :spinning="confirmLoading">
@@ -46,7 +46,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         width: '800px',
         visible: false,
         model: {},
@@ -94,9 +94,8 @@
         let that = this
         that.treeData = []
         that.roleFunctionTree = []
-        let params = {};
-        params.id='';
-        getAction('/function/findRoleFunction?UBType=RoleFunctions&UBKeyId='+id).then((res) => {
+        that.iExpandedKeys = []
+        getAction('/function/tree').then((res) => {
           if (res) {
             //部门全选后，再添加部门，选中数量增多
             this.allTreeKeys = [];

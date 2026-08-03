@@ -1,98 +1,137 @@
 # YUEWEIERP
 
-YUEWEIERP是一套基于 Spring Boot + Vue 2 的开源进销存管理系统，适用于中小企业。系统采用 PostgreSQL 数据库，支持多租户、多语言（73种），并提供插件扩展能力。
-
-**核心功能：** 进销存管理 | 财务管理 | 生产管理 | 多租户 | 多语言
+YUEWEIERP 是一个基于 Spring Boot 和 Vue 2 的多租户进销存系统。项目包含采购、销售、零售、仓储、财务、商品资料、报表和系统管理等业务模块，并使用 PostgreSQL 与 Redis 提供数据存储和缓存能力。
 
 ## 技术栈
 
-### 后端
+| 层级 | 组件 |
+| --- | --- |
+| 后端 | JDK 17、Spring Boot 2.7.18、MyBatis-Plus 3.5.7、PageHelper |
+| 数据与缓存 | PostgreSQL 15、Redis 7（兼容 Redis 6.2+） |
+| 前端 | Vue 2.7、Vue Router 3、Vuex 3、Ant Design Vue 1.5 |
+| 构建与部署 | Maven 3.9+、Node.js 20.17+、Docker Compose |
 
-| 组件 | 版本 |
-|------|------|
-| Spring Boot | 2.7.18 |
-| MyBatis Plus | 3.5.7 |
-| PostgreSQL | 15+ |
-| Redis | 6.2.1+ |
-| Fastjson2 | 2.0.53 |
-| SpringDoc OpenAPI | 1.8.0 |
-| spring-brick（插件框架） | 3.1.2 |
-| JDK | 17 |
+## 主要功能
 
-### 前端
-
-| 组件 | 版本 |
-|------|------|
-| Vue | 2.7.16 |
-| Vue Router | 3.x |
-| Vuex | 3.x |
-| Ant Design Vue | 1.5.2 |
-| vue-i18n | 8.x |
-| Axios | 0.18.x |
-| Node | 20.17.0 |
+- 采购：请购、采购订单、采购入库、采购退货及转单。
+- 销售与零售：销售订单、销售出库、销售退货、零售出库和零售退货。
+- 仓储：其他出入库、调拨、组装、拆卸、库存流水和库存报表。
+- 财务：收款、付款、收入、支出、转账、账户与往来统计。
+- 基础资料与权限：商品、分类、单位、客户、供应商、仓库、用户、角色、菜单和按钮权限。
+- 多租户：业务数据按租户隔离；平台管理员仅管理平台侧功能。
+- 库存预警：安全库存报表；开启“强审核”后，单据审核/反审核会检查受影响的商品和仓库，并向拥有库存预警报表权限的用户发送系统通知。
 
 ## 项目结构
 
-```
+```text
 jshERP/
-├── jshERP-boot/                # 后端 Spring Boot 项目
-│   ├── pom.xml
-│   ├── docs/                   # 初始化 SQL 脚本
-│   │   ├── jsh_erp_pg.sql     # PostgreSQL 初始化（主）
-│   │   └── jsh_erp.sql        # MySQL 历史版本
-│   └── src/
-│       ├── main/
-│       │   ├── java/com/jsh/erp/
-│       │   │   ├── ErpApplication.java        # 启动类
-│       │   │   ├── controller/                # 31 个 Controller
-│       │   │   ├── service/                   # 31 个 Service
-│       │   │   ├── datasource/entities/       # 84 个实体类
-│       │   │   ├── datasource/mappers/        # 62 个 Mapper 接口
-│       │   │   ├── config/                    # 配置类
-│       │   │   └── utils/                     # 30 个工具类
-│       │   ├── resources/
-│       │   │   ├── application.yml
-│       │   │   └── mapper_xml/                # 63 个 Mapper XML
-│       │   ├── bin/                           # 部署脚本
-│       │   └── assembly/                      # 打包配置
-│       └── test/java/com/jsh/erp/             # 自动化测试
-│
-├── jshERP-web/                 # 前端 Vue 项目
-│   ├── package.json
-│   ├── vue.config.js
-│   └── src/
-│       ├── api/                # API 定义（~130 个接口）
-│       ├── views/
-│       │   ├── bill/           # 单据管理（15 个视图）
-│       │   ├── financial/      # 财务管理（6 个视图）
-│       │   ├── material/       # 商品管理（4 个视图）
-│       │   ├── report/         # 报表查询（14 个视图）
-│       │   └── system/         # 系统管理（20 个视图）
-│       ├── components/         # 公共组件
-│       ├── store/              # Vuex 状态管理
-│       └── utils/              # 工具函数
-│
-└── LICENSE                     # Apache 2.0
+├── jshERP-boot/                 # Spring Boot 后端
+│   ├── docs/                     # PostgreSQL 初始化与租户初始化脚本
+│   ├── src/main/java/            # Controller、Service、Entity、Mapper
+│   ├── src/main/resources/       # application.yml 与 MyBatis XML
+│   └── src/test/java/            # 单元测试与 API 回归测试
+├── jshERP-web/                  # Vue 2 前端
+│   ├── src/api/                  # API 调用
+│   ├── src/config/               # 基础路由配置
+│   ├── src/views/                # 页面组件
+│   └── src/store/                # Vuex 状态与动态菜单
+├── docker-compose.yml            # PostgreSQL、Redis、后端、前端
+├── Dockerfile                    # 后端镜像构建文件
+└── README.md
 ```
 
-## 快速开始
+## 快速启动（Docker Compose）
 
-### 环境要求
+这是推荐的本地体验方式。首次启动会初始化一个 PostgreSQL 数据卷，并自动执行：
 
-- JDK 17
-- PostgreSQL 15+
-- Redis 6.2.1+
-- Node 20.17.0
-- Maven 3.9+
-
-### 1. 数据库初始化
+- `jshERP-boot/docs/jsh_erp_pg.sql`：基础表、菜单、字典与平台配置；
+- `jshERP-boot/docs/02_initial_tenant.sql`：首个租户及租户管理员。
 
 ```bash
-psql -U postgres -c "CREATE DATABASE jsh_erp WITH ENCODING 'UTF8';"
-psql -U postgres -d jsh_erp -f jshERP-boot/docs/jsh_erp_pg.sql
+docker compose up -d --build
+docker compose ps
 ```
 
-### 2. 启动后端
+默认访问地址：
+
+| 服务 | 地址 |
+| --- | --- |
+| 前端 | `http://localhost:${WEB_PORT}`（默认端口 `80`） |
+| 后端 API | `http://localhost:${APP_PORT}/jshERP-boot`（默认端口 `9999`） |
+| API 文档 | `http://localhost:${APP_PORT}/jshERP-boot/doc.html` |
+| PostgreSQL | `localhost:${DB_PORT}`（默认端口 `5432`） |
+| Redis | `localhost:${REDIS_PORT}`（默认端口 `6379`） |
+
+Compose 可通过根目录 `.env` 覆盖端口、数据库用户和密码。默认数据库密码、Redis 密码仅适合本地开发，部署前务必修改。
+
+> `jsh_erp_pg.sql` 会先删除并重建表，仅用于新库初始化。已有业务库升级时不要直接执行该文件；应按版本逐项执行新增表/字段迁移，并先完成备份。
+
+## 自动备份与恢复
+
+Docker Compose 会启动独立的 `backup` 服务。默认按 `Asia/Shanghai` 时区每天 `02:30` 执行一次全量逻辑备份，并保留最近 30 天的备份目录。
+
+- 数据库：`pg_dump` 自定义格式，文件为 `database.dump`；
+- 文件：上传附件和已安装插件，文件为 `files.tar.gz`；
+- 校验：每份备份都有 `SHA256SUMS` 和 `MANIFEST.txt`；
+- 位置：项目根目录 `backups/<YYYYMMDD_HHMMSS>/`。该目录不提交到 Git，应定期复制到另一块磁盘、NAS 或对象存储。
+
+可在根目录 `.env` 中调整：
+
+```dotenv
+BACKUP_TIME=02:30
+BACKUP_RETENTION_DAYS=30
+TZ=Asia/Shanghai
+```
+
+需要立刻创建一份备份时执行：
+
+```bash
+docker compose run --rm backup /usr/local/bin/backup.sh
+```
+
+恢复前必须先停止业务写入并确认目标数据库允许被覆盖。数据库归档可用以下命令恢复（将目录名替换为实际备份目录）：
+
+```bash
+docker compose run --rm backup sh -c 'pg_restore --host=postgres --username="$POSTGRES_USER" --dbname="$POSTGRES_DB" --clean --if-exists /backup/20260101_023000/database.dump'
+```
+
+附件和插件恢复应在停止 `app` 服务后进行，并以同一份备份中的 `files.tar.gz` 覆盖对应 Docker 数据卷；恢复完成后再启动 `app`。建议至少每月在非生产环境做一次完整恢复演练。
+
+## 本地开发
+
+### 1. 准备依赖
+
+- JDK 17
+- Maven 3.9+
+- PostgreSQL 15+
+- Redis 6.2+
+- Node.js 20.17+
+
+默认后端连接配置在 `jshERP-boot/src/main/resources/application.yml`：
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:5432/jsh_erp
+    username: postgres
+    password: Postgres@123
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    password: 1234abcd
+```
+
+请按本地环境修改，密码不要提交到代码仓库。
+
+### 2. 初始化数据库
+
+```bash
+createdb -U postgres jsh_erp
+psql -U postgres -d jsh_erp -f jshERP-boot/docs/jsh_erp_pg.sql
+psql -U postgres -d jsh_erp -f jshERP-boot/docs/02_initial_tenant.sql
+```
+
+### 3. 启动后端
 
 ```bash
 cd jshERP-boot
@@ -100,11 +139,9 @@ mvn clean package -DskipTests
 java -jar target/jshERP.jar
 ```
 
-后端启动后访问：
-- API 服务：http://localhost:9999/jshERP-boot
-- Swagger 文档：http://localhost:9999/jshERP-boot/swagger-ui/index.html
+后端默认端口为 `9999`，上下文路径为 `/jshERP-boot`。
 
-### 3. 启动前端
+### 4. 启动前端
 
 ```bash
 cd jshERP-web
@@ -112,236 +149,59 @@ npm install
 npm run serve
 ```
 
-前端访问：http://localhost:3000
+开发服务器默认运行在 http://localhost:3000，并将 `/jshERP-boot` 请求代理到 `http://localhost:9999`。
 
-### 4. 登录系统
+## 登录与权限
 
-| 账号类型 | 用户名 | 密码 |
-|---------|--------|------|
-| 默认租户 | jsh | 123456 |
-| 超级管理员 | admin | 123456 |
+初始化脚本提供平台管理员和首个租户管理员。具体账号由 `02_initial_tenant.sql` 决定；首次部署前应检查并修改该脚本中的租户名称、登录名和初始密码。
 
-## 配置说明
+菜单和按钮权限分别配置。转单类操作除了来源单据的权限外，还需要目标单据的新增权限。修改角色权限后应重新登录，使前端权限缓存刷新。
 
-### 后端配置（application.yml）
+## 库存预警通知
 
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| server.port | 9999 | 服务端口 |
-| server.servlet.context-path | /jshERP-boot | 上下文路径 |
-| 数据库地址 | 127.0.0.1:5432/jsh_erp | PostgreSQL 连接 |
-| Redis 地址 | 127.0.0.1:6379 | Redis 连接 |
-| 文件上传大小 | 10MB | 单文件限制 |
-| 文件存储路径 | /opt/jshERP/upload | 本地上传目录 |
+库存安全阈值维护在商品的仓库库存设置中：
 
-### 前端配置（vue.config.js）
+- 当前库存低于最低安全库存时触发 LOW 预警；
+- 当前库存高于最高安全库存时触发 HIGH 预警；
+- 阈值为空或为 `0` 时对应方向不启用；
+- 同一租户、商品、仓库和预警方向只在“正常 → 越限”时通知一次；恢复正常后再次越限会重新通知。
 
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| 开发端口 | 3000 | 前端开发服务器 |
-| API 代理 | /jshERP-boot -> localhost:9999 | 反向代理 |
+自动通知仅在系统开启“强审核”时生效，因为此时库存随审核/反审核改变。通知对象必须拥有“库存预警报表”菜单权限；若启用仓库权限，还必须拥有对应仓库权限。顶部铃铛首次载入只显示未读数量，后续每 20 秒轮询一次并对新消息弹窗提示。
 
-## 数据库设计
-
-系统共 32 张业务表，所有表均支持多租户（`tenant_id`）和软删除（`delete_flag`）。
-
-<details>
-<summary>展开查看全部表</summary>
-
-| 表名 | 说明 |
-|------|------|
-| jsh_account | 账户信息 |
-| jsh_account_head | 财务主表 |
-| jsh_account_item | 财务明细 |
-| jsh_depot | 仓库 |
-| jsh_depot_head | 单据主表 |
-| jsh_depot_item | 单据明细 |
-| jsh_function | 功能菜单 |
-| jsh_in_out_item | 收支项目 |
-| jsh_log | 操作日志 |
-| jsh_material | 商品/物料 |
-| jsh_material_attribute | 商品属性 |
-| jsh_material_category | 商品分类 |
-| jsh_material_current_stock | 当前库存 |
-| jsh_material_extend | 商品价格扩展 |
-| jsh_material_initial_stock | 期初库存 |
-| jsh_material_property | 商品自定义字段 |
-| jsh_msg | 消息通知 |
-| jsh_orga_user_rel | 部门用户关系 |
-| jsh_organization | 部门 |
-| jsh_person | 经手人 |
-| jsh_platform_config | 平台参数 |
-| jsh_role | 角色 |
-| jsh_sequence | 单据编号序列 |
-| jsh_serial_number | 序列号 |
-| jsh_supplier | 供应商/客户 |
-| jsh_sys_dict_data | 字典数据 |
-| jsh_sys_dict_type | 字典类型 |
-| jsh_system_config | 系统参数 |
-| jsh_tenant | 租户 |
-| jsh_unit | 多单位 |
-| jsh_user | 用户 |
-| jsh_user_business | 用户角色模块关系 |
-
-</details>
-
-## PostgreSQL 适配说明
-
-本项目已从 MySQL 迁移至 PostgreSQL，主要语法变更：
-
-| MySQL | PostgreSQL | 说明 |
-|-------|-----------|------|
-| `ifnull(x, y)` | `COALESCE(x, y)` | 空值处理 |
-| `date_format(x, '%Y-%m-%d')` | `TO_CHAR(x, 'YYYY-MM-DD')` | 日期格式化 |
-| `group_concat(...)` | `STRING_AGG(..., ',')` | 字符串聚合 |
-| `FIND_IN_SET(x, col)` | `col ~ ('(^|,)' \|\| x \|\| '(,|$)')` | 集合查找 |
-| `SYSDATE()` | `NOW()` | 当前时间 |
-| `AUTO_INCREMENT` | `GENERATED BY DEFAULT AS IDENTITY` | 自增主键 |
-| `LIMIT offset, rows` | `LIMIT rows OFFSET offset` | 分页语法 |
-
-**注意事项：**
-- PostgreSQL 对大小写敏感，所有表名、字段名统一使用小写
-- `user`、`order`、`group` 等是保留字，SQL 中需注意
-- `ORDER BY x DESC` 时 NULL 排序与 MySQL 不同，必要时添加 `NULLS LAST`
-- 多租户场景使用 `PostgresTenantLineInnerInterceptor` 解决 JOIN 时 `tenant_id` 歧义
-
-## 自动化测试
-
-测试位于 `jshERP-boot/src/test/java/com/jsh/erp/`，基于 REST Assured 5.3.2，需要后端服务运行后执行。
-
-| 层级 | 测试类 | 说明 |
-|------|--------|------|
-| P0 | `SmokeTest` | 系统启动验证 |
-| P0 | `P0LoginAuthTest` | 登录认证 |
-| P0 | `P0PurchaseTest` | 采购全流程 |
-| P0 | `P0SalesTest` | 销售全流程 |
-| P0 | `P0RetailTransferTest` | 零售与调拨 |
-| P1 | `P1BasicDataTest` | 基础数据 CRUD |
-| P1 | `P1ExceptionTest` | 异常场景 |
-| P1 | `P1ReportTest` | 报表查询 |
-| P2 | `P2PgUpgradeTest` | PostgreSQL 适配回归 |
+## 测试与构建
 
 ```bash
-# 运行全部测试
+# 编译主代码和测试代码
 cd jshERP-boot
+mvn test-compile
+
+# 执行指定单元测试
+mvn -Dtest=StockWarningServiceTest test
+
+# 执行全部测试（部分 API 回归测试要求本地后端已启动）
 mvn test
 
-# 运行单个测试
-mvn test -Dtest=P0LoginAuthTest
-
-# 运行 P0 核心测试
-mvn test -Dtest=SmokeTest,P0LoginAuthTest,P0PurchaseTest,P0SalesTest,P0RetailTransferTest
+# 构建前端生产包
+cd ../jshERP-web
+npm run build
 ```
 
-## 部署
-
-### Linux 部署
-
-```bash
-# 打包
-cd jshERP-boot
-mvn clean package -DskipTests -P prod
-
-# 解压部署包到目标目录
-unzip target/jshERP-boot-assembly.zip -d /opt/jshERP
-
-# 启动
-cd /opt/jshERP/bin
-chmod +x *.sh
-./start.sh
-```
-
-部署包结构：
-
-```
-/opt/jshERP/
-├── lib/          # JAR 包
-├── config/       # 配置文件
-├── bin/          # 启动脚本
-│   ├── run-manage.sh   # 进程管理（start/stop/restart/status）
-│   ├── start.sh
-│   ├── stop.sh
-│   └── start.bat       # Windows 启动
-└── docs/         # SQL 脚本
-```
-
-### Docker Compose
-
-```yaml
-version: '3.8'
-services:
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: jsh_erp
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123456
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./jshERP-boot/docs/jsh_erp_pg.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  app:
-    build: .
-    ports:
-      - "9999:9999"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-volumes:
-  pgdata:
-```
+后端 `mvn package` 同时生成可执行 JAR 和 `dist/jshERP-bin.zip` 部署包。
 
 ## 常见问题
 
-**Q: 启动报 sequence 不存在**
-确保已执行 PostgreSQL 初始化脚本 `jsh_erp_pg.sql`，该脚本会自动创建所有 IDENTITY 序列。
+### Docker 启动后数据库没有重新初始化
 
-**Q: 多表 JOIN 查询报 tenant_id 歧义**
-PostgreSQL 严格模式下多表都有 `tenant_id` 时会报歧义。项目已内置 `PostgresTenantLineInnerInterceptor`，在 `MybatisPlusConfig` 中配置即可。
+PostgreSQL 初始化脚本只会在数据卷首次创建时执行。若要重新创建本地测试数据，应先确认不需要保留数据，再停止服务并删除对应 Docker 数据卷。
 
-**Q: 保留字字段查询报错**
-PostgreSQL 对保留字（如 `user`、`order`、`group`）更严格。检查 SQL 中是否需要对保留字加双引号。
+### 修改了菜单或按钮权限但页面没有变化
 
-**Q: 分页排序与 MySQL 不一致**
-PostgreSQL 的 `ORDER BY x DESC` 时 NULL 值默认排在最前面。如需保持一致，在排序字段后添加 `NULLS LAST`。
+退出后重新登录。前端会按用户缓存菜单和按钮权限。
 
-**Q: 忘记密码**
-默认租户账号：jsh，默认超管账户：admin，默认密码均为：123456。
+### API 回归测试提示无法连接
 
-## 功能模块
+`ApiTestBase` 默认请求 `http://localhost:9999/jshERP-boot`。先启动后端与 PostgreSQL、Redis，再执行 API 测试。
 
-| 模块 | 功能 |
-|------|------|
-| 零售管理 | 零售出库、零售退货 |
-| 采购管理 | 采购订单、采购入库、采购退货 |
-| 销售管理 | 销售订单、销售出库、销售退货 |
-| 仓库管理 | 其他入库、其他出库、调拨、组装拆卸 |
-| 财务管理 | 收款、付款、收入、支出、转账、预收款 |
-| 报表查询 | 库存报表、出入库明细、收发明细、客户/供应商对账、经营报表、库存预警 |
-| 商品管理 | 商品列表、商品分类、商品属性、自定义字段 |
-| 基础资料 | 仓库、供应商、客户、经手人、收支项目、多单位 |
-| 系统管理 | 用户、角色、部门、菜单、日志、消息、租户、字典、平台配置、插件管理 |
+## License
 
-## 开源协议
-
-本项目基于 [Apache License 2.0](LICENSE) 开源，企业可商用。
+本项目采用 [Apache License 2.0](LICENSE)。

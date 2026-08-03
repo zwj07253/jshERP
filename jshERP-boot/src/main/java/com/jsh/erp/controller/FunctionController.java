@@ -7,11 +7,15 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.base.BaseController;
 import com.jsh.erp.base.TableDataInfo;
+import com.jsh.erp.constants.BusinessConstants;
+import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.*;
 import com.jsh.erp.service.FunctionService;
+import com.jsh.erp.service.RoleService;
 import com.jsh.erp.service.SystemConfigService;
 import com.jsh.erp.service.UserBusinessService;
 import com.jsh.erp.service.UserService;
+import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.utils.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +24,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +45,9 @@ public class FunctionController extends BaseController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private RoleService roleService;
 
     @Resource
     private UserBusinessService userBusinessService;
@@ -150,6 +156,11 @@ public class FunctionController extends BaseController {
         //存放数据json数组
         JSONArray dataArray = new JSONArray();
         try {
+            User currentUser = userService.getCurrentUser();
+            if(currentUser == null || !currentUser.getId().toString().equals(userId)) {
+                throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
+                        ExceptionConstants.SUPPLIER_PERMISSION_MSG);
+            }
             Long roleId = 0L;
             String fc = "";
             List<UserBusiness> roleList = userBusinessService.getBasicData(userId, "UserRole");
@@ -174,7 +185,7 @@ public class FunctionController extends BaseController {
 
             List<Function> dataList = functionService.getRoleFunction(pNumber);
             if (dataList.size() != 0) {
-                User userInfo = userService.getCurrentUser();
+                User userInfo = currentUser;
                 //获取当前用户所属的租户所拥有的功能id的map
                 Map<Long, Long> funIdMap = functionService.getCurrentTenantFunIdMap();
                 dataArray = getMenuByFunction(dataList, fc, approvalFlag, funIdMap, userInfo);
@@ -195,9 +206,14 @@ public class FunctionController extends BaseController {
 
     public JSONArray getMenuByFunction(List<Function> dataList, String fc, String approvalFlag, Map<Long, Long> funIdMap, User userInfo) throws Exception {
         JSONArray dataArray = new JSONArray();
+        boolean isAdmin = "admin".equals(userInfo.getLoginName());
         for (Function function : dataList) {
+            //平台专属菜单：仅admin可见
+            if (!isAdmin && functionService.isPlatformExclusiveFunction(function)) {
+                continue;
+            }
             //如果不是超管也不是租户就需要校验，防止分配下级用户的功能权限，大于租户的权限
-            if("admin".equals(userInfo.getLoginName()) || userInfo.getId().equals(userInfo.getTenantId()) || funIdMap.get(function.getId())!=null) {
+            if(isAdmin || userInfo.getId().equals(userInfo.getTenantId()) || funIdMap.get(function.getId())!=null) {
                 //如果关闭多级审核，遇到任务审核菜单直接跳过
                 if("0".equals(approvalFlag) && "/workflow".equals(function.getUrl())) {
                     continue;
@@ -232,14 +248,23 @@ public class FunctionController extends BaseController {
      */
     @GetMapping(value = "/findRoleFunction")
     @Operation(summary = "角色对应功能显示")
-    public JSONArray findRoleFunction(@RequestParam("UBType") String type, @RequestParam("UBKeyId") String keyId,
+    public JSONArray findRoleFunction(@RequestParam("UBType") String type,
+                                      @RequestParam(value = "UBKeyId", required = false, defaultValue = "") String keyId,
                                  HttpServletRequest request)throws Exception {
+        roleService.checkReadPermission();
+        if(!"RoleFunctions".equals(type)) {
+            return new JSONArray();
+        }
+        if(keyId != null && !keyId.trim().isEmpty()) {
+            roleService.requireManagedRole(Long.valueOf(keyId));
+        }
         JSONArray arr = new JSONArray();
         try {
             User userInfo = userService.getCurrentUser();
+            boolean isAdmin = "admin".equals(userInfo.getLoginName());
             //获取当前用户所拥有的功能id列表
             List<Long> funIdList = functionService.getCurrentUserFunIdList();
-            if("admin".equals(userInfo.getLoginName())) {
+            if(isAdmin) {
                 funIdList = null;
             }
             List<Function> dataListFun = functionService.findRoleFunction("0", null);
@@ -253,21 +278,7 @@ public class FunctionController extends BaseController {
             //存放数据json数组
             JSONArray dataArray = new JSONArray();
             if (null != dataListFun) {
-                //根据条件从列表里面移除"系统管理"
-                List<Function> dataList = new ArrayList<>();
-                for (Function fun : dataListFun) {
-                    String token = request.getHeader("X-Access-Token");
-                    Long tenantId = Tools.getTenantIdByToken(token);
-                    if (tenantId!=0L) {
-                        if(!("系统管理").equals(fun.getName())) {
-                            dataList.add(fun);
-                        }
-                    } else {
-                        //超管
-                        dataList.add(fun);
-                    }
-                }
-                dataArray = getFunctionList(dataList, type, keyId, funIdList);
+                dataArray = getFunctionList(dataListFun, type, keyId, funIdList, isAdmin);
                 outer.put("children", dataArray);
             }
             arr.add(outer);
@@ -277,12 +288,58 @@ public class FunctionController extends BaseController {
         return arr;
     }
 
-    public JSONArray getFunctionList(List<Function> dataList, String type, String keyId, List<Long> funIdList) throws Exception {
+    /**
+     * Menu tree used when maintaining menu definitions. This must not reuse the
+     * role-permission tree: a new menu has no role id yet.
+     */
+    @GetMapping(value = "/tree")
+    @Operation(summary = "菜单树")
+    public JSONArray getFunctionTree(HttpServletRequest request) throws Exception {
+        JSONArray result = new JSONArray();
+        User user = userService.getCurrentUser();
+        if (user == null || !BusinessConstants.DEFAULT_MANAGER.equals(user.getLoginName())) {
+            return result;
+        }
+        JSONObject root = new JSONObject();
+        root.put("id", 0);
+        root.put("key", 0);
+        root.put("value", 0);
+        root.put("title", "功能列表");
+        root.put("attributes", "功能列表");
+        root.put("children", buildFunctionTree("0"));
+        result.add(root);
+        return result;
+    }
+
+    private JSONArray buildFunctionTree(String parentNumber) throws Exception {
+        JSONArray nodes = new JSONArray();
+        List<Function> functions = functionService.findRoleFunction(parentNumber, null);
+        for (Function function : functions) {
+            JSONObject node = new JSONObject();
+            node.put("id", function.getId());
+            node.put("key", function.getId());
+            node.put("value", function.getId());
+            node.put("title", function.getName());
+            node.put("attributes", function.getName());
+            JSONArray children = buildFunctionTree(function.getNumber());
+            if (!children.isEmpty()) {
+                node.put("children", children);
+            }
+            nodes.add(node);
+        }
+        return nodes;
+    }
+
+    public JSONArray getFunctionList(List<Function> dataList, String type, String keyId, List<Long> funIdList, boolean isAdmin) throws Exception {
         JSONArray dataArray = new JSONArray();
         //获取权限信息
         String ubValue = userBusinessService.getUBValueByTypeAndKeyId(type, keyId);
         if (null != dataList) {
             for (Function function : dataList) {
+                //非admin过滤平台专属功能
+                if (!isAdmin && functionService.isPlatformExclusiveFunction(function)) {
+                    continue;
+                }
                 JSONObject item = new JSONObject();
                 item.put("id", function.getId());
                 item.put("key", function.getId());
@@ -291,7 +348,7 @@ public class FunctionController extends BaseController {
                 item.put("attributes", function.getName());
                 List<Function> funList = functionService.findRoleFunction(function.getNumber(), funIdList);
                 if(funList.size()>0) {
-                    JSONArray funArr = getFunctionList(funList, type, keyId, funIdList);
+                    JSONArray funArr = getFunctionList(funList, type, keyId, funIdList, isAdmin);
                     item.put("children", funArr);
                     dataArray.add(item);
                 } else {
@@ -314,6 +371,8 @@ public class FunctionController extends BaseController {
     @Operation(summary = "根据id列表查找功能信息")
     public BaseResponseInfo findByIds(@RequestParam("roleId") Long roleId,
                                       HttpServletRequest request)throws Exception {
+        roleService.checkReadPermission();
+        roleService.requireManagedRole(roleId);
         BaseResponseInfo res = new BaseResponseInfo();
         try {
             List<UserBusiness> list = userBusinessService.getBasicData(roleId.toString(), "RoleFunctions");

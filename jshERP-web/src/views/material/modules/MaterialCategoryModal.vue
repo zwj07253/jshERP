@@ -15,27 +15,27 @@
       @ok="handleOk"
       @cancel="handleCancel"
       style="top:100px;height: 50%;"
-      cancelText="取消"
-      okText="保存">
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')">
       <a-spin :spinning="confirmLoading">
         <a-form :form="form">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="名称">
-            <a-input placeholder="请输入名称" v-decorator="['name', validatorRules.name ]"/>
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.name')">
+            <a-input :placeholder="$t('common.enterName')" v-decorator="['name', validatorRules.name ]"/>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="编号">
-            <a-input placeholder="请输入编号" v-decorator="['serialNo', validatorRules.serialNo ]"/>
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.serialNo')">
+            <a-input :placeholder="$t('common.enterNumber')" v-decorator="['serialNo', validatorRules.serialNo ]"/>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="上级目录">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('material.parentDirectory')">
             <a-tree-select style="width:100%" :dropdownStyle="{maxHeight:'200px',overflow:'auto'}"
                            allow-clear :treeDefaultExpandAll="true"
-                 :treeData="categoryTree" v-decorator="[ 'parentId' ]" placeholder="请选择上级目录">
+                 :treeData="categoryTree" v-decorator="[ 'parentId' ]" :placeholder="$t('material.selectParentDirectory')">
             </a-tree-select>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="排序">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.sort')">
             <a-input v-decorator="[ 'sort' ]"/>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="备注">
-            <a-textarea placeholder="请输入备注":rows="2" v-decorator.trim="[ 'remark' ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.remark')">
+            <a-textarea :placeholder="$t('common.enterRemark')":rows="2" v-decorator.trim="[ 'remark' ]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -59,7 +59,7 @@
         orgTypeData:[],
         phoneWarning:'',
         departName:"",
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         disableSubmit:false,
         model: {},
@@ -79,11 +79,11 @@
         validatorRules:{
           name: {
             rules: [
-              {required: true, message: '请输入名称!'},
+              {required: true, message: this.$t('common.enterName')},
               { validator: this.validateName}
             ]
           },
-          serialNo: {rules: [{required: true, message: '请输入编号!'}]}
+          serialNo: {rules: [{required: true, message: this.$t('material.enterSerialNumber')}]}
         },
         url: {
           add: "/materialCategory/add",
@@ -131,19 +131,16 @@
           if (!err) {
             that.confirmLoading = true;
             let formData = Object.assign(this.model, values);
-            //时间格式化
-            console.log(formData)
             httpAction(this.url.add,formData,"post").then((res)=>{
               if(res.code == 200){
                 that.$message.success(res.data.message);
-                that.loadTreeData();
                 that.$emit('ok');
+                that.close();
               }else{
                 that.$message.warning(res.data.message);
               }
             }).finally(() => {
               that.confirmLoading = false;
-              that.close();
             })
           }
         })
@@ -162,7 +159,7 @@
             if(!res.data.status){
               callback();
             } else {
-              callback("名称已经存在");
+              callback(this.$t('material.nameAlreadyExists'));
             }
           } else {
             callback(res.data);

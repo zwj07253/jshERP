@@ -27,10 +27,10 @@
       <template>
         <div v-if="isImageComp">
           <a-icon type="plus" />
-          <div class="ant-upload-text">{{ text }}</div>
+          <div class="ant-upload-text">{{ displayText }}</div>
         </div>
         <a-button v-else-if="buttonVisible">
-         <a-icon type="upload" />{{ text }}
+         <a-icon type="upload" />{{ displayText }}
         </a-button>
       </template>
     </a-upload>
@@ -87,7 +87,7 @@
       text:{
         type:String,
         required:false,
-        default:"点击上传"
+        default: ''
       },
       fileType:{
         type:String,
@@ -156,6 +156,9 @@
       }
     },
     computed:{
+      displayText(){
+        return this.text || this.$t('common.clickToUpload')
+      },
       isImageComp(){
         return this.fileType === FILE_TYPE_IMG
       },
@@ -248,7 +251,7 @@
         let fileSize = file.size;
         if(this.fileType===FILE_TYPE_IMG){
           if(fileType.indexOf('image')<0){
-            this.$message.warning('请上传图片');
+            this.$message.warning(this.$t('common.pleaseUploadImage'));
             this.uploadGoOn=false
             return false;
           }
@@ -256,7 +259,7 @@
         //验证文件大小
         if(fileSize>this.sizeLimit) {
           let parseSizeLimit = (this.sizeLimit/1024/1024).toFixed(2)
-          this.$message.warning('抱歉，文件大小不能超过' + parseSizeLimit + 'M');
+          this.$message.warning(this.$t('common.fileSizeExceeds', { size: parseSizeLimit }));
           this.uploadGoOn=false
           return false;
         }
@@ -283,7 +286,7 @@
           }
           //this.$message.success(`${info.file.name} 上传成功!`);
         }else if (info.file.status === 'error') {
-          this.$message.error(`${info.file.name} 上传失败.`);
+          this.$message.error(info.file.name + ' ' + this.$t('common.uploadFailed'));
         }else if(info.file.status === 'removed'){
           this.handleDelete(info.file)
         }
@@ -331,7 +334,7 @@
         //console.log(this.currentImg)
         let index = this.getIndexByUrl();
         if(index==0){
-          this.$message.warn('未知的操作')
+          this.$message.warn('Unknown operation')
         }else{
           let curr = this.fileList[index].url;
           let last = this.fileList[index-1].url;
@@ -352,7 +355,7 @@
       moveNext(){
         let index = this.getIndexByUrl();
         if(index==this.fileList.length-1){
-          this.$message.warn('已到最后~')
+          this.$message.warn('Already at the end')
         }else{
           let curr = this.fileList[index].url;
           let next = this.fileList[index+1].url;

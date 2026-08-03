@@ -11,10 +11,10 @@
       :maskClosable="false"
       :style="modalStyle"
       @cancel="handleCancel"
-      cancelText="关闭">
+      :cancelText="$t('common.close')">
       <template slot="footer">
-        <a-button key="back" @click="handleCancel">取消</a-button>
-        <a-button type="primary" :loading="loading" @click="handleSubmit">确认提交</a-button>
+        <a-button key="back" @click="handleCancel">{{ $t('common.cancel') }}</a-button>
+        <a-button type="primary" :loading="loading" @click="handleSubmit">{{ $t('common.confirm') }}{{ $t('common.submitWorkflow') }}</a-button>
       </template>
       <a-form :form="form">
         <template>
@@ -43,7 +43,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title: "发起流程",
+        title: this.$t('common.launchWorkflow'),
         width: '500px',
         visible: false,
         modalStyle: '',
@@ -79,7 +79,7 @@
         that.loading = true
         postAction('/api/plugin/workflow/workflowTask/add', formData).then((res)=>{
           if(res.code === 200){
-            that.$message.success('提交成功！')
+            that.$message.success(that.$t('common.submitSuccess'))
             that.close()
             setTimeout(function (){
               that.$emit('ok')

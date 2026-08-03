@@ -6,7 +6,7 @@
     :wrapClassName="wrapClassNameInfo()"
     @ok="handleSubmit"
     @cancel="close"
-    cancelText="关闭(ESC)"
+    :cancelText="$t('common.closeEsc')"
     style="top:20px;height: 95%;"
   >
     <a-row :gutter="10" style="padding: 10px; margin: -10px">
@@ -17,18 +17,18 @@
           <a-form layout="inline" @keyup.enter.native="onSearch">
             <a-row :gutter="24">
               <a-col :md="6" :sm="8">
-                <a-form-item label="关键词" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input ref="material" placeholder="请输入条码、名称、助记码等查询" v-model="queryParam.q"></a-input>
+                <a-form-item :label="$t('common.keyword')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input ref="material" :placeholder="$t('common.enterBarcodeNameMnemonic')" v-model="queryParam.q"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="8">
-                <a-form-item label="规格型号" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入规格、型号" v-model="queryParam.standardOrModel"></a-input>
+                <a-form-item :label="$t('common.specModel')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('common.enterSpecModel')" v-model="queryParam.standardOrModel"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="8">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="仓库">
-                  <a-select placeholder="选择仓库" v-model="queryParam.depotId" @change="onDepotChange"
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.depot')">
+                  <a-select :placeholder="$t('common.selectWarehouse')" v-model="queryParam.depotId" @change="onDepotChange"
                     :dropdownMatchSelectWidth="false" showSearch optionFilterProp="children" allow-clear>
                     <a-select-option v-for="(item,index) in depotList" :key="index" :value="item.id">
                       {{ item.depotName }}
@@ -38,13 +38,13 @@
               </a-col>
               <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
                 <a-col :md="6" :sm="8">
-                  <a-button type="primary" @click="loadMaterialData(1)">查询</a-button>
-                  <a-button style="margin-left: 8px" @click="searchReset(1)">重置</a-button>
-                  <a-tooltip title="没查询到，决定新增商品！">
-                    <a-button style="margin-left: 8px" @click="addMaterial">新增</a-button>
+                  <a-button type="primary" @click="loadMaterialData(1)">{{ $t('common.search') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="searchReset(1)">{{ $t('common.reset') }}</a-button>
+                  <a-tooltip :title="$t('common.noResultsAddProduct')">
+                    <a-button style="margin-left: 8px" @click="addMaterial">{{ $t('common.add') }}</a-button>
                   </a-tooltip>
                   <a @click="handleToggleSearch" style="margin-left: 8px">
-                    {{ toggleSearchStatus ? '收起' : '展开' }}
+                    {{ toggleSearchStatus ? $t('common.collapse') : $t('common.expand') }}
                     <a-icon :type="toggleSearchStatus ? 'up' : 'down'"/>
                   </a>
                 </a-col>
@@ -53,55 +53,55 @@
             <template v-if="toggleSearchStatus">
               <a-row :gutter="24">
                 <a-col :md="6" :sm="8">
-                  <a-form-item label="颜色" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
-                    <a-input placeholder="请输入颜色" v-model="queryParam.color"></a-input>
+                  <a-form-item :label="$t('material.color')" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
+                    <a-input :placeholder="$t('common.enterColor')" v-model="queryParam.color"></a-input>
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="8">
-                  <a-form-item label="品牌" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
-                    <a-input placeholder="请输入品牌" v-model="queryParam.brand"></a-input>
+                  <a-form-item :label="$t('common.brand')" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
+                    <a-input :placeholder="$t('common.brand')" v-model="queryParam.brand"></a-input>
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="8">
-                  <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="类别">
+                  <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.category')">
                     <a-tree-select style="width:100%" :dropdownStyle="{maxHeight:'200px',overflow:'auto'}" allow-clear
-                                   :treeData="categoryTree" v-model="queryParam.categoryId" placeholder="请选择类别">
+                                   :treeData="categoryTree" v-model="queryParam.categoryId" :placeholder="$t('financial.selectCategory')">
                     </a-tree-select>
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="8">
-                  <a-form-item label="制造商" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
-                    <a-input placeholder="请输入制造商" v-model="queryParam.mfrs"></a-input>
+                  <a-form-item :label="$t('material.manufacturer')" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
+                    <a-input :placeholder="$t('material.manufacturer')" v-model="queryParam.mfrs"></a-input>
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="8">
                   <a-form-item :label="queryTitle.mp1" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
-                    <a-input :placeholder="'请输入'+ queryTitle.mp1" v-model="queryParam.otherField1"></a-input>
+                    <a-input :placeholder="$t('common.pleaseEnter') + queryTitle.mp1" v-model="queryParam.otherField1"></a-input>
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="8">
                   <a-form-item :label="queryTitle.mp2" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
-                    <a-input :placeholder="'请输入'+ queryTitle.mp2" v-model="queryParam.otherField2"></a-input>
+                    <a-input :placeholder="$t('common.pleaseEnter') + queryTitle.mp2" v-model="queryParam.otherField2"></a-input>
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="8">
                   <a-form-item :label="queryTitle.mp3" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
-                    <a-input :placeholder="'请输入'+ queryTitle.mp3" v-model="queryParam.otherField3"></a-input>
+                    <a-input :placeholder="$t('common.pleaseEnter') + queryTitle.mp3" v-model="queryParam.otherField3"></a-input>
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="序列号" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-select placeholder="有无序列号" v-model="queryParam.enableSerialNumber">
-                      <a-select-option value="1">有</a-select-option>
-                      <a-select-option value="0">无</a-select-option>
+                  <a-form-item :label="$t('purchase.form.columns.serialNumber')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-select :placeholder="$t('common.snEnabled')" v-model="queryParam.enableSerialNumber">
+                      <a-select-option value="1">{{ $t('common.yesShort') }}</a-select-option>
+                      <a-select-option value="0">{{ $t('common.noShort') }}</a-select-option>
                     </a-select>
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="批号" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
-                    <a-select placeholder="有无批号" v-model="queryParam.enableBatchNumber">
-                      <a-select-option value="1">有</a-select-option>
-                      <a-select-option value="0">无</a-select-option>
+                  <a-form-item :label="$t('purchase.form.columns.batchNumber')" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
+                    <a-select :placeholder="$t('common.batchEnabled')" v-model="queryParam.enableBatchNumber">
+                      <a-select-option value="1">{{ $t('common.yesShort') }}</a-select-option>
+                      <a-select-option value="0">{{ $t('common.noShort') }}</a-select-option>
                     </a-select>
                   </a-form-item>
                 </a-col>
@@ -127,7 +127,7 @@
                   <img :src="getImgUrl(record.imgName, record.imgLarge)" width="500px" />
                 </template>
                 <div class="item-info" v-if="record.imgName">
-                  <img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" title="查看大图" />
+                  <img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" :title="$t('common.view')" />
                 </div>
               </a-popover>
             </template>
@@ -163,9 +163,9 @@
       return {
         modalWidth: 1450,
         queryTitle: {
-          mp1: '扩展1',
-          mp2: '扩展2',
-          mp3: '扩展3'
+          mp1: this.$t('purchase.form.columns.ext1'),
+          mp2: this.$t('purchase.form.columns.ext2'),
+          mp3: this.$t('purchase.form.columns.ext3')
         },
         queryParam: {
           q: '',
@@ -191,33 +191,33 @@
         },
         categoryTree:[],
         columns: [
-          {dataIndex: 'mBarCode', title: '条码', scopedSlots: { customRender: 'customBarCode' }},
-          {dataIndex: 'name', title: '名称', scopedSlots: { customRender: 'customName' }},
-          {dataIndex: 'categoryName', title: '类别'},
-          {dataIndex: 'standard', title: '规格'},
-          {dataIndex: 'model', title: '型号'},
-          {dataIndex: 'color', title: '颜色'},
-          {dataIndex: 'brand', title: '品牌'},
-          {dataIndex: 'mfrs', title: '制造商'},
-          {dataIndex: 'unit', title: '单位'},
-          {dataIndex: 'sku', title: '多属性'},
-          {dataIndex: 'stock', title: '库存'},
-          {dataIndex: 'otherField1', title: '扩展1'},
-          {dataIndex: 'otherField2', title: '扩展2'},
-          {dataIndex: 'otherField3', title: '扩展3'}
+          {dataIndex: 'mBarCode', title: this.$t('common.barcode'), scopedSlots: { customRender: 'customBarCode' }},
+          {dataIndex: 'name', title: this.$t('common.name'), scopedSlots: { customRender: 'customName' }},
+          {dataIndex: 'categoryName', title: this.$t('common.category')},
+          {dataIndex: 'standard', title: this.$t('common.specification')},
+          {dataIndex: 'model', title: this.$t('common.model')},
+          {dataIndex: 'color', title: this.$t('material.color')},
+          {dataIndex: 'brand', title: this.$t('common.brand')},
+          {dataIndex: 'mfrs', title: this.$t('material.manufacturer')},
+          {dataIndex: 'unit', title: this.$t('common.unit')},
+          {dataIndex: 'sku', title: this.$t('purchase.form.columns.sku')},
+          {dataIndex: 'stock', title: this.$t('purchase.form.columns.stock')},
+          {dataIndex: 'otherField1', title: this.$t('purchase.form.columns.ext1')},
+          {dataIndex: 'otherField2', title: this.$t('purchase.form.columns.ext2')},
+          {dataIndex: 'otherField3', title: this.$t('purchase.form.columns.ext3')}
         ],
         scrollTrigger: {},
         dataSource: [],
         selectedRowKeys: [],
         selectMaterialRows: [],
         selectMaterialIds: [],
-        title: '选择商品',
+        title: this.$t('common.productSelection'),
         ipagination: {
           current: 1,
           pageSize: 10,
           pageSizeOptions: ['10', '20', '30'],
           showTotal: (total, range) => {
-            return range[0] + '-' + range[1] + ' 共' + total + '条'
+            return this.$t('common.pagedTotal', { range0: range[0], range1: range[1], total: total })
           },
           showQuickJumper: true,
           showSizeChanger: true,
@@ -278,13 +278,13 @@
               if(this.queryParam.q === this.dataSource[0].mBarCode||
                 this.queryParam.q === this.dataSource[0].name||
                 this.queryParam.q === this.dataSource[0].mnemonic) {
-                this.title = '选择商品【再次回车可以直接选中】'
+                this.title = this.$t('common.productSelectionReenter')
                 this.$nextTick(() => this.$refs.material.focus());
               } else {
-                this.title = '选择商品'
+                this.title = this.$t('common.productSelection')
               }
             } else {
-              this.title = '选择商品'
+              this.title = this.$t('common.productSelection')
             }
           }
           this.loading = false
@@ -341,7 +341,7 @@
       },
       showModal(barCode) {
         this.visible = true;
-        this.title = '选择商品'
+        this.title = this.$t('common.productSelection')
         this.queryParam.q = barCode
         this.$nextTick(() => this.$refs.material.focus());
         this.loadTreeData()
@@ -375,7 +375,7 @@
       },
       addMaterial() {
         this.$refs.materialModalForm.add()
-        this.$refs.materialModalForm.title = '新增商品'
+        this.$refs.materialModalForm.title = this.$t('common.addNewProduct')
       },
       getImgUrl(imgName, type) {
         if(imgName && imgName.split(',')) {
@@ -405,7 +405,7 @@
           that.searchReset(0)
           that.close();
         } else {
-          that.$message.warning('请选择商品！')
+          that.$message.warning(this.$t('common.pleaseSelect') + this.$t('common.productSelection'))
         }
       },
       //获取选择信息

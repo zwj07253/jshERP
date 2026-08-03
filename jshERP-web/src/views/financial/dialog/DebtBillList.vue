@@ -11,7 +11,7 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="关闭"
+      :cancelText="$t('common.close')"
       style="top:20px;height: 95%;">
       <!-- 查询区域 -->
       <div class="table-page-search-wrapper">
@@ -19,22 +19,22 @@
         <a-form layout="inline" @keyup.enter.native="searchQuery">
           <a-row :gutter="24">
             <a-col :md="6" :sm="24">
-              <a-form-item label="单据编号" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
-                <a-input placeholder="请输入单据编号查询" v-model="queryParam.number"></a-input>
+              <a-form-item :label="$t('common.billNo')" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
+                <a-input :placeholder="$t('common.enterBillNo')" v-model="queryParam.number"></a-input>
               </a-form-item>
             </a-col>
             <a-col :md="6" :sm="24">
-              <a-form-item label="商品信息" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
-                <a-input placeholder="请输入名称、规格、型号" v-model="queryParam.materialParam"></a-input>
+              <a-form-item :label="$t('common.materialInfo')" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
+                <a-input :placeholder="$t('common.enterMaterial')" v-model="queryParam.materialParam"></a-input>
               </a-form-item>
             </a-col>
             <a-col :md="6" :sm="24">
-              <a-form-item label="单据日期" :labelCol="labelCol" :wrapperCol="wrapperCol">
+              <a-form-item :label="$t('common.billDate')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                 <a-range-picker
                   style="width: 100%"
                   v-model="queryParam.createTimeRange"
                   format="YYYY-MM-DD"
-                  :placeholder="['开始时间', '结束时间']"
+                  :placeholder="[$t('common.startDate'), $t('common.endDate')]"
                   @change="onDateChange"
                   @ok="onDateOk"
                 />
@@ -42,8 +42,8 @@
             </a-col>
             <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
               <a-col :md="6" :sm="24">
-                <a-button type="primary" @click="searchQuery">查询</a-button>
-                <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
+                <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                <a-button style="margin-left: 8px" @click="searchReset">{{ $t('common.reset') }}</a-button>
               </a-col>
             </span>
           </a-row>
@@ -87,7 +87,7 @@
     },
     data () {
       return {
-        title: "操作",
+        title: this.$t('common.action'),
         visible: false,
         disableMixinCreated: true,
         selectedRowKeys: [],
@@ -114,21 +114,21 @@
         columns: [
           { title: '', dataIndex: 'organName',width:120, ellipsis:true},
           {
-            title: '单据编号', dataIndex: 'number', width: 120,
+            title: this.$t('common.billNo'), dataIndex: 'number', width: 120,
             scopedSlots: { customRender: 'numberCustomRender' },
           },
-          { title: '商品信息', dataIndex: 'materialsList',width:200, ellipsis:true,
+          { title: this.$t('common.materialInfo'), dataIndex: 'materialsList',width:200, ellipsis:true,
             customRender:function (text,record,index) {
               if(text) {
                 return text.replace(",","，");
               }
             }
           },
-          { title: '单据日期', dataIndex: 'operTimeStr',width:130},
-          { title: '操作员', dataIndex: 'userName',width:70, ellipsis:true},
-          { title: '本单欠款', dataIndex: 'needDebt',width:70 },
-          { title: '已收欠款', dataIndex: 'finishDebt',width:70 },
-          { title: '待收欠款', dataIndex: 'debt',width:70 }
+          { title: this.$t('common.billDate'), dataIndex: 'operTimeStr',width:130},
+          { title: this.$t('common.operator'), dataIndex: 'userName',width:70, ellipsis:true},
+          { title: this.$t('financial.needDebt'), dataIndex: 'needDebt',width:70 },
+          { title: this.$t('financial.paidDebt'), dataIndex: 'finishDebt',width:70 },
+          { title: this.$t('financial.pendingDebt'), dataIndex: 'debt',width:70 }
         ],
         url: {
           list: "/depotHead/debtList"
@@ -150,11 +150,11 @@
         this.queryParam.status = status
         this.columns[0].title = organType
         if(type === '入库') {
-          this.columns[6].title = '已付欠款'
-          this.columns[7].title = '待付欠款'
+          this.columns[6].title = this.$t('financial.paidPaymentDebt')
+          this.columns[7].title = this.$t('financial.pendingPaymentDebt')
         } else if(type === '出库') {
-          this.columns[6].title = '已收欠款'
-          this.columns[7].title = '待收欠款'
+          this.columns[6].title = this.$t('financial.paidDebt')
+          this.columns[7].title = this.$t('financial.pendingDebt')
         }
         this.model = Object.assign({}, {});
         this.visible = true;

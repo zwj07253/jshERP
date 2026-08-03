@@ -98,12 +98,11 @@
             </if>
         </set>
         where is_sell != '1'
-        <if test="idList.size()>0">
-            and id in
-            <foreach collection="idList" item="item" index="index" separator="," open="(" close=")">
-                #{item}
-            </foreach>
-        </if>
+          and COALESCE(delete_flag,'0') != '1'
+          and id in
+          <foreach collection="idList" item="item" index="index" separator="," open="(" close=")">
+              #{item}
+          </foreach>
     </update>
 
     <update id="cancelSerialNumber">

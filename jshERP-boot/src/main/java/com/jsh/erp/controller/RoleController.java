@@ -7,6 +7,7 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.base.BaseController;
 import com.jsh.erp.base.TableDataInfo;
+import com.jsh.erp.constants.BusinessConstants;
 import com.jsh.erp.datasource.entities.Role;
 import com.jsh.erp.datasource.entities.RoleEx;
 import com.jsh.erp.service.RoleService;
@@ -46,9 +47,10 @@ public class RoleController extends BaseController {
     @Operation(summary = "根据id获取信息")
     public String getList(@RequestParam("id") Long id,
                           HttpServletRequest request) throws Exception {
+        roleService.checkReadPermission();
         Role role = roleService.getRole(id);
         Map<String, Object> objectMap = new HashMap<>();
-        if(role != null) {
+        if(role != null && !BusinessConstants.DELETE_FLAG_DELETED.equals(role.getDeleteFlag())) {
             objectMap.put("info", role);
             return returnJson(objectMap, ErpInfo.OK.name, ErpInfo.OK.code);
         } else {
@@ -102,6 +104,7 @@ public class RoleController extends BaseController {
     @Operation(summary = "检查名称是否存在")
     public String checkIsNameExist(@RequestParam Long id, @RequestParam(value ="name", required = false) String name,
                                    HttpServletRequest request)throws Exception {
+        roleService.checkEditPermission();
         Map<String, Object> objectMap = new HashMap<>();
         int exist = roleService.checkIsNameExist(id, name);
         if(exist > 0) {
@@ -121,6 +124,11 @@ public class RoleController extends BaseController {
     @Operation(summary = "查询用户的角色")
     public JSONArray findUserRole(@RequestParam("UBType") String type, @RequestParam("UBKeyId") String keyId,
                                   HttpServletRequest request)throws Exception {
+        roleService.checkAssignmentPermission();
+        if(!"UserRole".equals(type)) {
+            return new JSONArray();
+        }
+        roleService.validateAssignableUser(keyId);
         JSONArray arr = new JSONArray();
         try {
             //获取权限信息
@@ -147,6 +155,7 @@ public class RoleController extends BaseController {
     @GetMapping(value = "/allList")
     @Operation(summary = "查询全部角色列表")
     public List<Role> allList(HttpServletRequest request)throws Exception {
+        roleService.checkSelectionPermission();
         return roleService.allList();
     }
 

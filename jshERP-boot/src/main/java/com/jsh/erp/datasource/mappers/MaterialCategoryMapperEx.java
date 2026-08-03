@@ -1,12 +1,10 @@
 package com.jsh.erp.datasource.mappers;
 
 import com.jsh.erp.datasource.entities.MaterialCategory;
-import com.jsh.erp.datasource.vo.TreeNode;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Description
@@ -19,18 +17,17 @@ public interface MaterialCategoryMapperEx {
             @Param("name") String name,
             @Param("parentId") Integer parentId);
 
-    List<TreeNode> getNodeTree(@Param("currentId")Long currentId);
-    List<TreeNode> getNextNodeTree(Map<String, Object> parameterMap);
+    List<MaterialCategory> getActiveMaterialCategoryList();
 
-    int addMaterialCategory(MaterialCategory mc);
+    Object lockMaterialCategoryWrite(@Param("tenantId") Long tenantId);
 
-    int batchDeleteMaterialCategoryByIds(@Param("updateTime") Date updateTime, @Param("updater") Long updater, @Param("ids") String ids[]);
+    int batchDeleteMaterialCategoryByIds(@Param("updateTime") Date updateTime, @Param("updater") Long updater,
+                                         @Param("ids") List<Long> ids);
 
     int editMaterialCategory(MaterialCategory mc);
 
     List<MaterialCategory> getMaterialCategoryBySerialNo(@Param("serialNo") String serialNo, @Param("id") Long id);
 
-    List<MaterialCategory> getMaterialCategoryListByCategoryIds(@Param("parentIds") String[] categoryIds);
+    List<MaterialCategory> getMaterialCategoryListByCategoryIds(@Param("parentIds") List<Long> categoryIds);
 
-    List<MaterialCategory> getListByParentId(@Param("parentId") Long parentId);
 }

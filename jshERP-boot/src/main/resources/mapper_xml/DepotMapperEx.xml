@@ -36,6 +36,10 @@
         )
     </update>
 
+    <select id="lockDepotWrite" resultType="java.lang.Object">
+        select pg_advisory_xact_lock(2000000000 + COALESCE(#{tenantId}, 0))
+    </select>
+
 
 
 </mapper>

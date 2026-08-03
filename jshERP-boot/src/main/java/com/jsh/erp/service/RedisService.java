@@ -77,6 +77,13 @@ public class RedisService {
     }
 
     /**
+     * 缓存基本对象，设置过期时间
+     */
+    public <T> void setCacheObjectWithTTL(final String key, final T value, final Long timeout, final java.util.concurrent.TimeUnit timeUnit) {
+        redisTemplate.opsForValue().set(key, value, timeout, timeUnit);
+    }
+
+    /**
      * 获得缓存的基本对象。
      *
      * @param key 缓存键值
@@ -124,6 +131,25 @@ public class RedisService {
      */
     public void storageKeyWithTime(String key, String value, Long time) {
         redisTemplate.opsForValue().set(key, value, time, TimeUnit.SECONDS);
+    }
+
+    /**
+     * 仅当 key 不存在时设置值（分布式锁原语）
+     */
+    public boolean setIfAbsent(String key, String value, long timeout, TimeUnit timeUnit) {
+        Boolean result = redisTemplate.opsForValue().setIfAbsent(key, value, timeout, timeUnit);
+        return Boolean.TRUE.equals(result);
+    }
+
+    /**
+     * Atomically increments a short-lived counter and returns the new value.
+     */
+    public long incrementWithExpire(String key, long seconds) {
+        Long value = redisTemplate.opsForValue().increment(key);
+        if (value != null && value == 1L) {
+            redisTemplate.expire(key, seconds, TimeUnit.SECONDS);
+        }
+        return value == null ? 0L : value;
     }
 
     /**
@@ -212,5 +238,33 @@ public class RedisService {
      */
     public Collection<String> keys(final String pattern) {
         return redisTemplate.keys(pattern);
+    }
+
+    /**
+     * 使用 SCAN 命令匹配 key，避免 KEYS 阻塞 Redis
+     */
+    public java.util.Set<String> scanKeys(final String pattern) {
+        java.util.Set<String> keys = new java.util.HashSet<>();
+        try {
+            redisTemplate.execute((org.springframework.data.redis.core.RedisCallback<Void>) connection -> {
+                org.springframework.data.redis.core.ScanOptions options =
+                        org.springframework.data.redis.core.ScanOptions.scanOptions()
+                                .match(pattern)
+                                .count(100)
+                                .build();
+                try (org.springframework.data.redis.core.Cursor<byte[]> cursor = connection.scan(options)) {
+                    while (cursor.hasNext()) {
+                        keys.add(new String(cursor.next()));
+                    }
+                }
+                return null;
+            });
+        } catch (Exception e) {
+            Collection<String> fallbackKeys = redisTemplate.keys(pattern);
+            if (fallbackKeys != null) {
+                keys.addAll(fallbackKeys);
+            }
+        }
+        return keys;
     }
 }

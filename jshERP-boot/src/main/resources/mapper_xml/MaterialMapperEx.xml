@@ -1,6 +1,14 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.jsh.erp.datasource.mappers.MaterialMapperEx">
+
+    <select id="lockById" resultType="java.lang.Long">
+        select id
+        from jsh_material
+        where id = #{id}
+          and COALESCE(delete_flag, '0') != '1'
+        for update
+    </select>
     <resultMap extends="com.jsh.erp.datasource.mappers.MaterialMapper.BaseResultMap" id="ResultMapList" type="com.jsh.erp.datasource.entities.MaterialVo4Unit">
         <result column="unitName" jdbcType="VARCHAR" property="unitName" />
         <result column="ratio" jdbcType="DECIMAL" property="ratio" />
@@ -562,6 +570,22 @@
         and COALESCE(delete_flag,'0') !='1'
     </select>
 
+    <select id="getCountByMaterialAttributeIds" resultType="java.lang.Integer">
+        select count(*)
+        from jsh_material m
+        where COALESCE(m.delete_flag, '0') != '1'
+          and m.attribute is not null
+          and btrim(m.attribute) != ''
+          and EXISTS (
+            select 1
+            from jsonb_array_elements_text(COALESCE(m.attribute::jsonb -> 'manySku', '[]'::jsonb)) attr(value)
+            where attr.value in
+            <foreach collection="attributeIds" item="id" separator="," open="(" close=")">
+                CAST(#{id} AS text)
+            </foreach>
+          )
+    </select>
+
     <select id="getBarCodeList" resultType="java.lang.String">
         select me.bar_code from jsh_material_extend me
         where COALESCE(me.delete_Flag,'0') !='1'
@@ -640,6 +664,7 @@
         select material_id, COALESCE(sum(mis.number),0) number
         from jsh_material_initial_stock mis
         where 1=1
+        and COALESCE(mis.delete_flag,'0') !='1'
         <if test="depotList.size()>0">
             and mis.depot_id in
             <foreach collection="depotList" item="item" index="index" separator="," open="(" close=")">
@@ -653,7 +678,11 @@
         select m.id, m."name", m.standard, m.model, m.color, m.brand, m.mfrs, m.position, m.img_name,
                me.commodity_unit unitName, mc."name" categoryName, me.bar_code mBarCode,
         COALESCE(me.purchase_decimal,0) purchaseDecimal,
-        COALESCE(mcs.current_unit_price,0) currentUnitPrice,
+        COALESCE(
+            sum(COALESCE(mcs.current_unit_price,0) * COALESCE(mcs.current_number,0))
+                / NULLIF(sum(COALESCE(mcs.current_number,0)),0),
+            max(COALESCE(mcs.current_unit_price,0)), 0
+        ) currentUnitPrice,
         COALESCE(sum(mcs.current_number),0) currentStock,
         sum(COALESCE(me.purchase_decimal, 0) * COALESCE(mcs.current_number, 0)) currentStockPrice,
         sum(COALESCE(mcs.current_unit_price, 0) * COALESCE(mcs.current_number, 0)) currentStockMovePrice,
@@ -690,7 +719,7 @@
         </if>
         and COALESCE(m.delete_flag,'0') !='1'
         group by m.id, m."name", m.standard, m.model, m.color, m.brand, m.mfrs, m.position, m.img_name,
-        me.commodity_unit, mc."name", me.bar_code, COALESCE(me.purchase_decimal,0), COALESCE(mcs.current_unit_price,0)
+        me.commodity_unit, mc."name", me.bar_code, COALESCE(me.purchase_decimal,0)
         <if test="zeroStock == 0">
             having COALESCE(sum(mcs.current_number),0)!=0
         </if>
@@ -703,6 +732,10 @@
                 <if test="order == 'asc' or order == 'desc'">
                     ${order}
                 </if>
+                , m.id desc
+            </if>
+            <if test="column != 'mBarCode' and column != 'purchaseDecimal' and column != 'currentStock' and column != 'currentStockPrice' and column != 'currentWeight'">
+                order by m.id desc
             </if>
         </if>
         <if test="offset != null and rows != null">
@@ -852,5 +885,22 @@
             )
         </if>
     </select>
+
+    <update id="setCategoryIdToNull">
+        update jsh_material
+        set category_id = null
+        where id = #{id}
+          and COALESCE(delete_flag, '0') != '1'
+    </update>
+
+    <update id="batchSetCategoryIdToNull">
+        update jsh_material
+        set category_id = null
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        and COALESCE(delete_flag, '0') != '1'
+    </update>
 
 </mapper>

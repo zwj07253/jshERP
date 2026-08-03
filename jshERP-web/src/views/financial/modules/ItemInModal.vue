@@ -12,23 +12,23 @@
     :id="prefixNo"
     style="top:20px;height: 95%;">
     <template slot="footer">
-      <a-button @click="handleCancel">取消</a-button>
-      <a-button v-if="checkFlag && isCanCheck" :loading="confirmLoading" @click="handleOkAndCheck">保存并审核</a-button>
-      <a-button type="primary" :loading="confirmLoading" @click="handleOkOnly">保存（Ctrl+S）</a-button>
+      <a-button @click="handleCancel">{{ $t('common.cancel') }}</a-button>
+      <a-button v-if="checkFlag && isCanCheck" :loading="confirmLoading" @click="handleOkAndCheck">{{ $t('common.saveAndApprove') }}</a-button>
+      <a-button type="primary" :loading="confirmLoading" @click="handleOkOnly">{{ $t('common.save') }}</a-button>
       <!--发起多级审核-->
-      <a-button v-if="!checkFlag" @click="handleWorkflow()" type="primary">提交流程</a-button>
+      <a-button v-if="!checkFlag" @click="handleWorkflow()" type="primary">{{ $t('common.submitWorkflow') }}</a-button>
     </template>
     <a-spin :spinning="confirmLoading">
       <a-form :form="form">
         <a-row class="form-row" :gutter="24">
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="往来单位">
-              <a-select placeholder="请选择往来单位" v-decorator="[ 'organId', validatorRules.organId ]"
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.supplier')">
+              <a-select :placeholder="$t('common.selectSupplier')" v-decorator="[ 'organId', validatorRules.organId ]"
                 :dropdownMatchSelectWidth="false" showSearch optionFilterProp="children" @search="handleSearchOrgan">
                 <div slot="dropdownRender" slot-scope="menu">
                   <v-nodes :vnodes="menu" />
                   <a-divider style="margin: 4px 0;" />
-                  <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initOrgan"><a-icon type="reload" /> 刷新列表</div>
+                  <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initOrgan"><a-icon type="reload" /> {{ $t('common.refreshList') }}</div>
                 </div>
                 <a-select-option v-for="(item,index) in organList" :key="index" :value="item.id">
                   {{ item.supplier }}
@@ -37,24 +37,24 @@
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
               <j-date v-decorator="['billTime', validatorRules.billTime ]" :show-time="true"/>
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
-              <a-input placeholder="请输入单据编号" v-decorator.trim="[ 'billNo', validatorRules.billNo ]" />
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
+              <a-input :placeholder="$t('common.enterBillNo')" v-decorator.trim="[ 'billNo', validatorRules.billNo ]" />
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="财务人员">
-              <a-select placeholder="请选择财务人员" v-decorator="[ 'handsPersonId' ]"
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.operator')">
+              <a-select :placeholder="$t('common.selectOperator')" v-decorator="[ 'handsPersonId' ]"
                         :dropdownMatchSelectWidth="false" showSearch optionFilterProp="children">
                 <div slot="dropdownRender" slot-scope="menu">
                   <v-nodes :vnodes="menu" />
                   <a-divider style="margin: 4px 0;" />
-                  <div v-if="quickBtn.person" class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="addPerson"><a-icon type="plus" /> 新增经手人</div>
-                  <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initPerson"><a-icon type="reload" /> 刷新</div>
+                  <div v-if="quickBtn.person" class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="addPerson"><a-icon type="plus" /> {{ $t('common.add') }}{{ $t('common.operator') }}</div>
+                  <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initPerson"><a-icon type="reload" /> {{ $t('common.refresh') }}</div>
                 </div>
                 <a-select-option v-for="(item,index) in personList" :key="index" :value="item.id">
                   {{ item.name }}
@@ -77,27 +77,27 @@
           @valueChange="onValueChange">
           <template #inOutItemAdd>
             <a-divider v-if="quickBtn.inOutItem" style="margin: 4px 0;" />
-            <div v-if="quickBtn.inOutItem" class="dropdown-btn" @click="addInOutItem('in')"><a-icon type="plus" /> 新增收支项目</div>
-            <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initInOutItem('in')"><a-icon type="reload" /> 刷新列表</div>
+            <div v-if="quickBtn.inOutItem" class="dropdown-btn" @click="addInOutItem('in')"><a-icon type="plus" /> {{ $t('financial.newInOutItem') }}</div>
+            <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initInOutItem('in')"><a-icon type="reload" /> {{ $t('common.refreshList') }}</div>
           </template>
         </j-editable-table>
         <a-row class="form-row" :gutter="24">
           <a-col :lg="24" :md="24" :sm="24">
             <a-form-item :labelCol="labelCol" :wrapperCol="{xs: { span: 24 },sm: { span: 24 }}" label="">
-              <a-textarea :rows="2" placeholder="请输入备注" v-decorator="[ 'remark' ]" style="margin-top:8px;"/>
+              <a-textarea :rows="2" :placeholder="$t('common.enterRemark')" v-decorator="[ 'remark' ]" style="margin-top:8px;"/>
             </a-form-item>
           </a-col>
         </a-row>
         <a-row class="form-row" :gutter="24">
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="收入账户">
-              <a-select placeholder="请选择收入账户" v-decorator="[ 'accountId', validatorRules.accountId ]"
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.form.incomeAccount')">
+              <a-select :placeholder="$t('financial.form.selectIncomeAccount')" v-decorator="[ 'accountId', validatorRules.accountId ]"
                 :dropdownMatchSelectWidth="false" showSearch optionFilterProp="children">
                 <div slot="dropdownRender" slot-scope="menu">
                   <v-nodes :vnodes="menu" />
                   <a-divider style="margin: 4px 0;" />
-                  <div v-if="quickBtn.account" class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="addAccount"><a-icon type="plus" /> 新增</div>
-                  <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initAccount"><a-icon type="reload" /> 刷新</div>
+                  <div v-if="quickBtn.account" class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="addAccount"><a-icon type="plus" /> {{ $t('common.add') }}</div>
+                  <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initAccount"><a-icon type="reload" /> {{ $t('common.refresh') }}</div>
                 </div>
                 <a-select-option v-for="(item,index) in accountList" :key="index" :value="item.id">
                   {{ item.name }}
@@ -106,8 +106,8 @@
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="收入金额">
-              <a-input placeholder="请输入收入金额" v-decorator.trim="[ 'changeAmount', validatorRules.changeAmount ]" :readOnly="true"/>
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.form.incomeAmount')">
+              <a-input :placeholder="$t('financial.form.enterIncomeAmount')" v-decorator.trim="[ 'changeAmount', validatorRules.changeAmount ]" :readOnly="true"/>
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
@@ -117,7 +117,7 @@
         </a-row>
         <a-row class="form-row" :gutter="24">
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="附件">
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.attachment')">
               <j-upload v-model="fileList" bizPath="financial"></j-upload>
             </a-form-item>
           </a-col>
@@ -158,7 +158,7 @@
     },
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         width: '1600px',
         moreStatus: false,
         // 新增时子表默认添加几行空数据
@@ -181,35 +181,38 @@
           loading: false,
           dataSource: [],
           columns: [
-            { title: '收入项目',key: 'inOutItemId',width: '20%', type: FormTypes.select, placeholder: '请选择${title}', options: [],
-              allowSearch:true, validateRules: [{ required: true, message: '${title}不能为空' }]
+            { title: this.$t('financial.form.incomeItem'),key: 'inOutItemId',width: '20%', type: FormTypes.select, placeholder: this.$t('common.pleaseSelect') + '${title}', options: [],
+              allowSearch:true, validateRules: [{ required: true, message: this.$t('financial.validation.fieldCannotBeEmpty') }]
             },
-            { title: '金额',key: 'eachAmount', width: '10%', type: FormTypes.inputNumber, statistics: true, placeholder: '请选择${title}',
-              validateRules: [{ required: true, message: '${title}不能为空' }]
+            { title: this.$t('financial.form.amount'),key: 'eachAmount', width: '10%', type: FormTypes.inputNumber, statistics: true, placeholder: this.$t('common.pleaseSelect') + '${title}',
+              validateRules: [
+                { required: true, message: this.$t('financial.validation.fieldCannotBeEmpty') },
+                { pattern: /^(?=.*[1-9])\d+(?:\.\d+)?$/, message: this.$t('financial.validation.fieldMustBePositive') }
+              ]
             },
-            { title: '备注',key: 'remark', width: '30%', type: FormTypes.input, placeholder: '请选择${title}'}
+            { title: this.$t('common.remark'),key: 'remark', width: '30%', type: FormTypes.input, placeholder: this.$t('common.pleaseSelect') + '${title}'}
           ]
         },
         confirmLoading: false,
         validatorRules:{
           billTime:{
             rules: [
-              { required: true, message: '请选择单据日期!' }
+              { required: true, message: this.$t('financial.form.selectBillDate') }
             ]
           },
           billNo:{
             rules: [
-              { required: true, message: '请输入单据编号!' }
+              { required: true, message: this.$t('purchase.validation.documentNumberRequired') }
             ]
           },
           accountId:{
             rules: [
-              { required: true, message: '请选择收入账户!' }
+              { required: true, message: this.$t('financial.form.selectIncomeAccountValidation') }
             ]
           },
           changeAmount:{
             rules: [
-              { required: true, message: '请输入收入金额!' }
+              { required: true, message: this.$t('financial.form.enterIncomeAmountValidation') }
             ]
           }
         },

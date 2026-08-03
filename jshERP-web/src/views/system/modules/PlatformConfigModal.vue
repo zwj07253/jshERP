@@ -12,16 +12,16 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:25%;height: 40%;">
       <a-spin :spinning="confirmLoading">
         <a-form :form="form" id="platformConfigModal">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="配置名称">
-            <a-input placeholder="请输入配置名称" v-decorator.trim="[ 'platformKeyInfo' ]" :readOnly="true" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.configName')">
+            <a-input :placeholder="$t('common.configName')" v-decorator.trim="[ 'platformKeyInfo' ]" :readOnly="true" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="配置值">
-            <a-input placeholder="请输入配置值" v-decorator.trim="[ 'platformValue' ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.configValue')">
+            <a-input :placeholder="$t('common.configValue')" v-decorator.trim="[ 'platformValue' ]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -38,7 +38,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         model: {},
         labelCol: {
@@ -88,12 +88,12 @@
             obj.then((res)=>{
               if(res.code === 200){
                 that.$emit('ok');
+                that.close();
               }else{
                 that.$message.warning(res.data.message);
               }
             }).finally(() => {
               that.confirmLoading = false;
-              that.close();
             })
           }
         })

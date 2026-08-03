@@ -13,20 +13,20 @@
     :id="prefixNo"
     style="top:20px;height: 95%;">
     <template slot="footer">
-      <a-button @click="handleCancel">取消</a-button>
-      <a-button v-if="billPrintFlag && isShowPrintBtn" @click="handlePrintPro('其它入库')">三联打印-新版</a-button>
-      <a-button v-if="billPrintFlag && isShowPrintBtn" @click="handlePrint('其它入库')">三联打印</a-button>
-      <a-button v-if="checkFlag && isCanCheck" :loading="confirmLoading" @click="handleOkAndCheck">保存并审核</a-button>
-      <a-button type="primary" :loading="confirmLoading" @click="handleOkOnly">保存（Ctrl+S）</a-button>
+      <a-button @click="handleCancel">{{ $t('common.cancel') }}</a-button>
+      <a-button v-if="billPrintFlag && isShowPrintBtn" @click="handlePrintPro('其它入库')">{{ $t('common.printNew') }}</a-button>
+      <a-button v-if="billPrintFlag && isShowPrintBtn" @click="handlePrint('其它入库')">{{ $t('common.print') }}</a-button>
+      <a-button v-if="checkFlag && isCanCheck" :loading="confirmLoading" @click="handleOkAndCheck">{{ $t('common.saveAndApprove') }}</a-button>
+      <a-button type="primary" :loading="confirmLoading" @click="handleOkOnly">{{ $t('common.save') }}</a-button>
       <!--发起多级审核-->
-      <a-button v-if="!checkFlag" @click="handleWorkflow()" type="primary">提交流程</a-button>
+      <a-button v-if="!checkFlag" @click="handleWorkflow()" type="primary">{{ $t('common.submitWorkflow') }}</a-button>
     </template>
     <a-spin :spinning="confirmLoading">
       <a-form :form="form">
         <a-row class="form-row" :gutter="24">
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="供应商">
-              <a-select placeholder="请选择供应商" v-decorator="[ 'organId' ]" :disabled="!rowCanEdit"
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.supplier')">
+              <a-select :placeholder="$t('common.selectSupplier')" v-decorator="[ 'organId' ]" :disabled="!rowCanEdit"
                 :dropdownMatchSelectWidth="false" showSearch optionFilterProp="children" @search="handleSearchSupplier">
                 <div slot="dropdownRender" slot-scope="menu">
                   <v-nodes :vnodes="menu" />
@@ -41,18 +41,18 @@
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
               <j-date v-decorator="['operTime', validatorRules.operTime]" :show-time="true"/>
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
-              <a-input placeholder="请输入单据编号" v-decorator.trim="[ 'number', validatorRules.number ]" />
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
+              <a-input :placeholder="$t('common.enterBillNo')" v-decorator.trim="[ 'number', validatorRules.number ]" />
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item v-if="inOutManageFlag && !model.billType" :labelCol="labelCol" :wrapperCol="wrapperCol" label="关联单据">
-              <a-input-search placeholder="请选择待入库单据" v-decorator="[ 'linkNumber' ]" @search="onSearchLinkNumber" :readOnly="true"/>
+            <a-form-item v-if="inOutManageFlag && !model.billType" :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.linkedBill')">
+              <a-input-search :placeholder="$t('common.selectPendingInboundBill')" v-decorator="[ 'linkNumber' ]" @search="onSearchLinkNumber" :readOnly="true"/>
             </a-form-item>
           </a-col>
         </a-row>
@@ -71,15 +71,15 @@
           @added="onAdded"
           @deleted="onDeleted">
           <template #buttonAfter>
-            <a-row v-if="rowCanEdit" :gutter="24" style="float:left;" data-step="4" data-title="扫码录入" data-intro="此功能支持扫码枪扫描商品条码进行录入">
+            <a-row v-if="rowCanEdit" :gutter="24" style="float:left;" data-step="4" :data-title="$t('common.scanEntry')" :data-intro="$t('common.scanEntry')">
               <a-col v-if="scanStatus" :md="6" :sm="24">
-                <a-button @click="scanEnter">扫码录入</a-button>
+                <a-button @click="scanEnter">{{ $t('common.scanEntry') }}</a-button>
               </a-col>
               <a-col v-if="!scanStatus" :md="16" :sm="24" style="padding: 0 8px 0 12px">
-                <a-input placeholder="请扫描商品条码并回车" v-model="scanBarCode" @pressEnter="scanPressEnter" ref="scanBarCode"/>
+                <a-input :placeholder="$t('common.scanBarcodePlaceholder')" v-model="scanBarCode" @pressEnter="scanPressEnter" ref="scanBarCode"/>
               </a-col>
               <a-col v-if="!scanStatus" :md="6" :sm="24" style="padding: 0px 12px 0 0">
-                <a-button @click="stopScan">收起扫码</a-button>
+                <a-button @click="stopScan">{{ $t('common.hideScan') }}</a-button>
               </a-col>
             </a-row>
             <a-row v-if="rowCanEdit" :gutter="24" style="float:left;padding-bottom: 5px;padding-left:20px;">
@@ -98,13 +98,13 @@
         <a-row class="form-row" :gutter="24">
           <a-col :lg="24" :md="24" :sm="24">
             <a-form-item :labelCol="labelCol" :wrapperCol="{xs: { span: 24 },sm: { span: 24 }}" label="">
-              <a-textarea :rows="1" placeholder="请输入备注" v-decorator="[ 'remark' ]" style="margin-top:8px;"/>
+              <a-textarea :rows="1" :placeholder="$t('common.enterRemark')" v-decorator="[ 'remark' ]" style="margin-top:8px;"/>
             </a-form-item>
           </a-col>
         </a-row>
         <a-row class="form-row" :gutter="24">
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="附件">
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.attachment')">
               <j-upload v-model="fileList" bizPath="bill"></j-upload>
             </a-form-item>
           </a-col>
@@ -159,7 +159,7 @@
     },
     data () {
       return {
-        title:"操作",
+        title: this.$t('common.action'),
         width: '1600px',
         moreStatus: false,
         // 新增时子表默认添加几行空数据
@@ -186,35 +186,35 @@
           loading: false,
           dataSource: [],
           columns: [
-            { title: '仓库名称', key: 'depotId', width: '8%', type: FormTypes.select, placeholder: '请选择${title}', options: [],
+            { title: this.$t('common.depotName'), key: 'depotId', width: '8%', type: FormTypes.select, placeholder: '请选择${title}', options: [],
               allowSearch:true, validateRules: [{ required: true, message: '${title}不能为空' }]
             },
-            { title: '条码', key: 'barCode', width: '12%', type: FormTypes.popupJsh, kind: 'material', multi: true,
+            { title: this.$t('common.barcode'), key: 'barCode', width: '12%', type: FormTypes.popupJsh, kind: 'material', multi: true,
               validateRules: [{ required: true, message: '${title}不能为空' }]
             },
-            { title: '名称', key: 'name', width: '10%', type: FormTypes.normal },
-            { title: '规格', key: 'standard', width: '9%', type: FormTypes.normal },
-            { title: '型号', key: 'model', width: '9%', type: FormTypes.normal },
-            { title: '颜色', key: 'color', width: '5%', type: FormTypes.normal },
-            { title: '品牌', key: 'brand', width: '6%', type: FormTypes.normal },
-            { title: '制造商', key: 'mfrs', width: '6%', type: FormTypes.normal },
-            { title: '扩展1', key: 'otherField1', width: '4%', type: FormTypes.normal },
-            { title: '扩展2', key: 'otherField2', width: '4%', type: FormTypes.normal },
-            { title: '扩展3', key: 'otherField3', width: '4%', type: FormTypes.normal },
-            { title: '库存', key: 'stock', width: '5%', type: FormTypes.normal },
-            { title: '单位', key: 'unit', width: '4%', type: FormTypes.normal },
-            { title: '序列号', key: 'snList', width: '12%', type: FormTypes.popupJsh, kind: 'snAdd', multi: true },
-            { title: '批号', key: 'batchNumber', width: '7%', type: FormTypes.input },
-            { title: '有效期', key: 'expirationDate',width: '7%', type: FormTypes.date },
-            { title: '多属性', key: 'sku', width: '9%', type: FormTypes.normal },
-            { title: '原数量', key: 'preNumber', width: '4%', type: FormTypes.normal },
-            { title: '已入库', key: 'finishNumber', width: '4%', type: FormTypes.normal },
-            { title: '数量', key: 'operNumber', width: '5%', type: FormTypes.inputNumber, statistics: true,
+            { title: this.$t('common.name'), key: 'name', width: '10%', type: FormTypes.normal },
+            { title: this.$t('common.specification'), key: 'standard', width: '9%', type: FormTypes.normal },
+            { title: this.$t('common.model'), key: 'model', width: '9%', type: FormTypes.normal },
+            { title: this.$t('material.color'), key: 'color', width: '5%', type: FormTypes.normal },
+            { title: this.$t('common.brand'), key: 'brand', width: '6%', type: FormTypes.normal },
+            { title: this.$t('material.manufacturer'), key: 'mfrs', width: '6%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.ext1'), key: 'otherField1', width: '4%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.ext2'), key: 'otherField2', width: '4%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.ext3'), key: 'otherField3', width: '4%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.stock'), key: 'stock', width: '5%', type: FormTypes.normal },
+            { title: this.$t('common.unit'), key: 'unit', width: '4%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.serialNumber'), key: 'snList', width: '12%', type: FormTypes.popupJsh, kind: 'snAdd', multi: true },
+            { title: this.$t('purchase.form.columns.batchNumber'), key: 'batchNumber', width: '7%', type: FormTypes.input },
+            { title: this.$t('purchase.form.columns.expirationDate'), key: 'expirationDate',width: '7%', type: FormTypes.date },
+            { title: this.$t('purchase.form.columns.sku'), key: 'sku', width: '9%', type: FormTypes.normal },
+            { title: this.$t('common.originalQuantity'), key: 'preNumber', width: '4%', type: FormTypes.normal },
+            { title: this.$t('purchase.finishInbound'), key: 'finishNumber', width: '4%', type: FormTypes.normal },
+            { title: this.$t('common.quantity'), key: 'operNumber', width: '5%', type: FormTypes.inputNumber, statistics: true,
               validateRules: [{ required: true, message: '${title}不能为空' }]
             },
-            { title: '单价', key: 'unitPrice', width: '5%', type: FormTypes.inputNumber},
-            { title: '金额', key: 'allPrice', width: '5%', type: FormTypes.inputNumber, statistics: true },
-            { title: '备注', key: 'remark', width: '5%', type: FormTypes.input },
+            { title: this.$t('purchase.form.columns.unitPrice'), key: 'unitPrice', width: '5%', type: FormTypes.inputNumber},
+            { title: this.$t('common.amount'), key: 'allPrice', width: '5%', type: FormTypes.inputNumber, statistics: true },
+            { title: this.$t('common.remark'), key: 'remark', width: '5%', type: FormTypes.input },
             { title: '关联id', key: 'linkId', width: '5%', type: FormTypes.hidden },
           ]
         },
@@ -222,12 +222,12 @@
         validatorRules:{
           operTime:{
             rules: [
-              { required: true, message: '请输入单据日期!' }
+              { required: true, message: this.$t('purchase.validation.documentDateRequired') }
             ]
           },
           number:{
             rules: [
-              { required: true, message: '请输入单据编号!' }
+              { required: true, message: this.$t('purchase.validation.documentNumberRequired') }
             ]
           },
           type:{
@@ -279,12 +279,28 @@
             linkType: 'basic'
           }
           let url = this.readOnly ? this.url.detailList : this.url.detailList;
-          this.requestSubTableData(url, params, this.materialTable);
+          this.requestSubTableData(url, params, this.materialTable, () => {
+            if(this.action === 'copyAdd') {
+              this.materialTable.dataSource.forEach(info => {
+                this.$delete(info, 'linkId')
+                this.$delete(info, 'preNumber')
+                this.$delete(info, 'finishNumber')
+              })
+            }
+          });
         }
         //复制新增单据-初始化单号和日期
         if(this.action === 'copyAdd') {
           this.model.id = ''
           this.model.tenantId = ''
+          this.model.linkNumber = ''
+          this.rowCanEdit = true
+          this.materialTable.columns[1].type = FormTypes.popupJsh
+          this.changeFormTypes(this.materialTable.columns, 'preNumber', 0)
+          this.changeFormTypes(this.materialTable.columns, 'finishNumber', 0)
+          this.$nextTick(() => {
+            this.form.setFieldsValue({'linkNumber': ''})
+          })
           this.copyAddInit(this.prefixNo)
         }
         this.initSystemConfig()

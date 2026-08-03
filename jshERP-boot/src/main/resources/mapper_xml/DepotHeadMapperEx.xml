@@ -2,6 +2,22 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.jsh.erp.datasource.mappers.DepotHeadMapperEx">
 
+    <select id="lockDepotHeadByNumber" resultMap="com.jsh.erp.datasource.mappers.DepotHeadMapper.BaseResultMap">
+        select <include refid="com.jsh.erp.datasource.mappers.DepotHeadMapper.Base_Column_List" />
+        from jsh_depot_head
+        where number=#{number}
+          and COALESCE(delete_flag,'0') !='1'
+        for update
+    </select>
+
+    <select id="lockDepotHeadById" resultMap="com.jsh.erp.datasource.mappers.DepotHeadMapper.BaseResultMap">
+        select <include refid="com.jsh.erp.datasource.mappers.DepotHeadMapper.Base_Column_List" />
+        from jsh_depot_head
+        where id=#{id}
+          and COALESCE(delete_flag,'0') !='1'
+        for update
+    </select>
+
     <resultMap extends="com.jsh.erp.datasource.mappers.DepotHeadMapper.BaseResultMap" id="ResultMapEx" type="com.jsh.erp.datasource.vo.DepotHeadVo4List">
         <result column="depotHeadType" jdbcType="VARCHAR" property="depotHeadType" />
         <result column="OrganName" jdbcType="VARCHAR" property="organName" />
@@ -51,16 +67,6 @@
         <result column="materialUnit" jdbcType="VARCHAR" property="materialUnit" />
         <result column="numSum" jdbcType="DECIMAL" property="numSum" />
         <result column="priceSum" jdbcType="DECIMAL" property="priceSum" />
-    </resultMap>
-
-    <resultMap id="ResultStatementAccount" type="com.jsh.erp.datasource.vo.DepotHeadVo4StatementAccount">
-        <result column="number" jdbcType="VARCHAR" property="number" />
-        <result column="type" jdbcType="VARCHAR" property="type" />
-        <result column="discount_last_money" jdbcType="DECIMAL" property="discountLastMoney" />
-        <result column="other_money" jdbcType="DECIMAL" property="otherMoney" />
-        <result column="change_amount" jdbcType="DECIMAL" property="changeAmount" />
-        <result column="supplierName" jdbcType="VARCHAR" property="supplierName" />
-        <result column="oTime" jdbcType="VARCHAR" property="oTime" />
     </resultMap>
 
     <select id="selectByConditionDepotHead" parameterType="com.jsh.erp.datasource.entities.DepotHeadExample" resultMap="ResultMapEx">
@@ -132,10 +138,20 @@
             and di.depot_id=#{depotId}::bigint
         </if>
         <if test="depotArray != null and depotArray !=''">
-            and di.depot_id in (
-            <foreach collection="depotArray" item="depotId" separator=",">
-                #{depotId}::bigint
-            </foreach>
+            and not exists (
+                select 1 from jsh_depot_item denied_di
+                where denied_di.header_id=dh.id
+                  and COALESCE(denied_di.delete_flag,'0') !='1'
+                  and (denied_di.depot_id is null or denied_di.depot_id not in (
+                    <foreach collection="depotArray" item="depotId" separator=",">
+                        #{depotId}::bigint
+                    </foreach>
+                  ) or (dh.sub_type='调拨' and (denied_di.another_depot_id is null
+                  or denied_di.another_depot_id not in (
+                    <foreach collection="depotArray" item="depotId" separator=",">
+                        #{depotId}::bigint
+                    </foreach>
+                  ))))
             )
         </if>
         <if test="creatorArray != null">
@@ -146,8 +162,8 @@
             )
         </if>
         <if test="accountId != null">
-            <bind name="bindAccountId" value="'%'+accountId+'%'"/>
-            and (dh.account_id=#{accountId} or dh.account_id_list like #{bindAccountId})
+            and (dh.account_id=#{accountId}
+                or #{accountId}::text = any(string_to_array(replace(COALESCE(dh.account_id_list,''),' ',''), ',')))
         </if>
         <if test="hasDebt != null and hasDebt ==1">
             and
@@ -210,9 +226,9 @@
     </select>
 
     <select id="findInOutDetail" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultWithInfoExMap">
-        select dh.number,me.bar_code barCode, m."name" mname,m.model,m.standard,m.color,m.brand,m.mfrs,di.unit_price unitPrice,di.material_unit as mUnit, di.sku,
+        select di.id,dh.number,me.bar_code barCode, m."name" mname,m.model,m.standard,m.color,m.brand,m.mfrs,di.unit_price unitPrice,di.material_unit as mUnit, di.sku,
         di.oper_number operNumber,di.all_price allPrice, COALESCE(di.tax_rate,0) taxRate, COALESCE(di.tax_money,0) taxMoney, COALESCE(di.tax_last_money,0) taxLastMoney,
-        s.supplier sname,d.dname dname, TO_CHAR(dh.oper_time, 'YYYY-MM-DD') operTime, concat(dh.sub_type,dh."type") as newType,
+        s.supplier sname,d.dname dname, TO_CHAR(dh.oper_time, 'YYYY-MM-DD') operTime, dh.sub_type subType, concat(dh.sub_type,dh."type") as newType,
         concat_ws('  ',dh.remark,di.remark) as newRemark
         from jsh_depot_head dh
         left join jsh_depot_item di on di.header_id=dh.id and COALESCE(di.delete_flag,'0') !='1'
@@ -248,7 +264,7 @@
             <foreach collection="organArray" item="organId" separator=",">
                 #{organId}::bigint
             </foreach>
-            ) or dh.sub_type='采购退货' or dh.sub_type='零售' or dh.sub_type='其它')
+            ) or dh.sub_type not in ('销售','销售退货'))
         </if>
         <if test="categoryList.size()>0">
             and m.category_id in
@@ -277,18 +293,21 @@
             and (dh.remark like #{bindRemark} or di.remark like #{bindRemark})
         </if>
         and dh.sub_type!='调拨'
+        and di.id is not null
         and COALESCE(dh.delete_flag,'0') !='1'
-        <if test="column == 'createTime'">
-            order by oper_time desc,number desc
-        </if>
-        <if test="column != 'createTime'">
-            <if test="column == 'barCode' or column == 'operNumber' or column == 'unitPrice' or column == 'allPrice' or column == 'taxMoney'">
-                order by ${column}
-                <if test="order == 'asc' or order == 'desc'">
-                    ${order}
-                </if>
-            </if>
-        </if>
+        <choose>
+            <when test="column == 'barCode'">order by me.bar_code</when>
+            <when test="column == 'operNumber'">order by di.oper_number</when>
+            <when test="column == 'unitPrice'">order by di.unit_price</when>
+            <when test="column == 'allPrice'">order by di.all_price</when>
+            <when test="column == 'taxMoney'">order by COALESCE(di.tax_money,0)</when>
+            <otherwise>order by dh.oper_time</otherwise>
+        </choose>
+        <choose>
+            <when test="order == 'asc'">asc</when>
+            <otherwise>desc</otherwise>
+        </choose>
+        , dh.number desc, di.id desc
         <if test="offset != null and rows != null">
             LIMIT #{rows} OFFSET #{offset}
         </if>
@@ -330,7 +349,7 @@
             <foreach collection="organArray" item="organId" separator=",">
                 #{organId}::bigint
             </foreach>
-            ) or dh.sub_type='采购退货' or dh.sub_type='零售' or dh.sub_type='其它')
+            ) or dh.sub_type not in ('销售','销售退货'))
         </if>
         <if test="categoryList.size()>0">
             and m.category_id in
@@ -359,6 +378,7 @@
             and (dh.remark like #{bindRemark} or di.remark like #{bindRemark})
         </if>
         and dh.sub_type!='调拨'
+        and di.id is not null
         and COALESCE(dh.delete_flag,'0') !='1'
     </select>
 
@@ -398,7 +418,7 @@
             <foreach collection="organArray" item="organId" separator=",">
                 #{organId}::bigint
             </foreach>
-            ) or dh.sub_type='采购退货' or dh.sub_type='零售' or dh.sub_type='其它')
+            ) or dh.sub_type not in ('销售','销售退货'))
         </if>
         <if test="categoryList.size()>0">
             and m.category_id in
@@ -427,12 +447,13 @@
             and (dh.remark like #{bindRemark} or di.remark like #{bindRemark})
         </if>
         and dh.sub_type!='调拨'
+        and di.id is not null
         and COALESCE(dh.delete_flag,'0') !='1'
     </select>
 
     <select id="findInOutMaterialCount" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultInOutMaterialCount">
         select di.material_id materialId, me.bar_code barCode, m."name" mName,m.model,m.standard,m.color,m.brand,m.mfrs,
-               mc."name" categoryName,(m.unit || u.basic_unit) materialUnit,
+               mc."name" categoryName,COALESCE(NULLIF(u.basic_unit, ''), m.unit) materialUnit,
         sum(di.basic_number) numSum,
         sum(di.all_price) priceSum
         from jsh_depot_head dh
@@ -458,7 +479,7 @@
             <foreach collection="organArray" item="organId" separator=",">
                 #{organId}::bigint
             </foreach>
-            ) or dh.sub_type='采购退货' or dh.sub_type='零售' or dh.sub_type='其它')
+            ) or dh.sub_type not in ('销售','销售退货'))
         </if>
         <if test="depotList.size()>0">
             <if test="type == '入库'">
@@ -500,19 +521,20 @@
             and (dh.sub_type!='采购' and dh.sub_type!='采购退货' and dh.sub_type!='销售' and dh.sub_type!='销售退货')
         </if>
         and COALESCE(dh.delete_flag,'0') !='1'
+        and di.id is not null
         group by di.material_id, me.bar_code, m."name",m.model,m.standard,m.color,m.brand,m.mfrs,
-        mc."name", (m.unit || u.basic_unit)
-        <if test="column == 'createTime'">
-            order by materialId desc
-        </if>
-        <if test="column != 'createTime'">
-            <if test="column == 'barCode' or column == 'numSum' or column == 'priceSum'">
-                order by ${column}
-                <if test="order == 'asc' or order == 'desc'">
-                    ${order}
-                </if>
-            </if>
-        </if>
+        mc."name", COALESCE(NULLIF(u.basic_unit, ''), m.unit)
+        <choose>
+            <when test="column == 'barCode'">order by me.bar_code</when>
+            <when test="column == 'numSum'">order by sum(di.basic_number)</when>
+            <when test="column == 'priceSum'">order by sum(di.all_price)</when>
+            <otherwise>order by di.material_id</otherwise>
+        </choose>
+        <choose>
+            <when test="order == 'asc'">asc</when>
+            <otherwise>desc</otherwise>
+        </choose>
+        , di.material_id desc
         <if test="offset != null and rows != null">
             LIMIT #{rows} OFFSET #{offset}
         </if>
@@ -541,7 +563,7 @@
             <foreach collection="organArray" item="organId" separator=",">
                 #{organId}::bigint
             </foreach>
-            ) or dh.sub_type='采购退货' or dh.sub_type='零售' or dh.sub_type='其它')
+            ) or dh.sub_type not in ('销售','销售退货'))
         </if>
         <if test="depotList.size()>0">
             <if test="type == '入库'">
@@ -583,6 +605,7 @@
             and (dh.sub_type!='采购' and dh.sub_type!='采购退货' and dh.sub_type!='销售' and dh.sub_type!='销售退货')
         </if>
         and COALESCE(dh.delete_flag,'0') !='1'
+        and di.id is not null
         group by di.material_id) a
     </select>
 
@@ -611,7 +634,7 @@
             <foreach collection="organArray" item="organId" separator=",">
                 #{organId}::bigint
             </foreach>
-            ) or dh.sub_type='采购退货' or dh.sub_type='零售' or dh.sub_type='其它')
+            ) or dh.sub_type not in ('销售','销售退货'))
         </if>
         <if test="depotList.size()>0">
             <if test="type == '入库'">
@@ -653,10 +676,11 @@
             and (dh.sub_type!='采购' and dh.sub_type!='采购退货' and dh.sub_type!='销售' and dh.sub_type!='销售退货')
         </if>
         and COALESCE(dh.delete_flag,'0') !='1'
+        and di.id is not null
     </select>
 
     <select id="findAllocationDetail" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultWithInfoExMap">
-        select dh.number,me.bar_code barCode, m."name" mname,m.model,m.standard,m.color,m.brand,m.mfrs,di.unit_price unitPrice,di.material_unit as mUnit,
+        select di.id,dh.number,me.bar_code barCode, m."name" mname,m.model,m.standard,m.color,m.brand,m.mfrs,di.unit_price unitPrice,di.material_unit as mUnit,
                di.oper_number operNumber,di.all_price allPrice,sname, d.dName dname,TO_CHAR(dh.oper_time, 'YYYY-MM-DD') operTime,
                concat(dh.sub_type,dh."type") as newType, concat_ws('  ',dh.remark,di.remark) as newRemark
         from jsh_depot_head dh
@@ -713,17 +737,19 @@
             and (dh.remark like #{bindRemark} or di.remark like #{bindRemark})
         </if>
         and COALESCE(dh.delete_flag,'0') !='1'
-        <if test="column == 'createTime'">
-            order by oper_time desc,number desc
-        </if>
-        <if test="column != 'createTime'">
-            <if test="column == 'barCode' or column == 'operNumber' or column == 'unitPrice' or column == 'allPrice'">
-                order by ${column}
-                <if test="order == 'asc' or order == 'desc'">
-                    ${order}
-                </if>
-            </if>
-        </if>
+        and di.id is not null
+        <choose>
+            <when test="column == 'barCode'">order by me.bar_code</when>
+            <when test="column == 'operNumber'">order by di.oper_number</when>
+            <when test="column == 'unitPrice'">order by di.unit_price</when>
+            <when test="column == 'allPrice'">order by di.all_price</when>
+            <otherwise>order by dh.oper_time</otherwise>
+        </choose>
+        <choose>
+            <when test="order == 'asc'">asc</when>
+            <otherwise>desc</otherwise>
+        </choose>
+        , dh.number desc, di.id desc
         <if test="offset != null and rows != null">
             LIMIT #{rows} OFFSET #{offset}
         </if>
@@ -783,6 +809,7 @@
             and (dh.remark like #{bindRemark} or di.remark like #{bindRemark})
         </if>
         and COALESCE(dh.delete_flag,'0') !='1'
+        and di.id is not null
     </select>
 
     <select id="findAllocationStatistic" parameterType="com.jsh.erp.datasource.entities.DepotItemExample" resultMap="ResultWithInfoExMap">
@@ -841,251 +868,7 @@
             and (dh.remark like #{bindRemark} or di.remark like #{bindRemark})
         </if>
         and COALESCE(dh.delete_flag,'0') !='1'
-    </select>
-
-    <select id="getStatementAccount" resultType="com.jsh.erp.datasource.vo.DepotHeadVo4StatementAccount">
-        select *, (preBackInMoney+preBackOutMoney) as preBackMoney, (backInMoney+backOutMoney) as backMoney from
-        (select s.id, s.supplier, s.contacts, s.telephone, s.phone_num, s.email,
-            -- 起始期初金额
-            (case when s."type"='供应商' then COALESCE(s.begin_need_pay,0) else COALESCE(s.begin_need_get,0) end) begin_need,
-            -- 上期欠款金额
-            (select
-            COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
-            from jsh_depot_head dh
-            where dh.organ_id=s.id
-            and dh."type"=#{type} and dh.sub_type=#{subType}
-            and dh.oper_time &lt;= #{beginTime}::timestamp
-            and COALESCE(dh.delete_flag,'0') !='1') preDebtMoney,
-            -- 上期退货的欠款金额
-            (select
-            COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
-            from jsh_depot_head dh
-            where dh.organ_id=s.id
-            and dh."type"=#{typeBack} and dh.sub_type=#{subTypeBack}
-            and dh.oper_time &lt;= #{beginTime}::timestamp
-            and COALESCE(dh.delete_flag,'0') !='1') preReturnDebtMoney,
-            -- 上期收款
-            (select COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
-            left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='收款'
-            and ah.bill_time &lt;= #{beginTime}::timestamp
-            and COALESCE(ai.delete_flag,'0') !='1') preBackInMoney,
-            -- 上期付款
-            (select 0-COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
-            left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='付款'
-            and ah.bill_time &lt;= #{beginTime}::timestamp
-            and COALESCE(ai.delete_flag,'0') !='1') preBackOutMoney,
-            -- 本期欠款
-            (select
-            COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
-            from jsh_depot_head dh
-            where dh.organ_id=s.id
-            and dh."type"=#{type} and dh.sub_type=#{subType}
-            and dh.oper_time>#{beginTime}::timestamp and dh.oper_time &lt;= #{endTime}::timestamp
-            and COALESCE(dh.delete_flag,'0') !='1') debtMoney,
-            -- 本期退货的欠款金额
-            (select
-            COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
-            from jsh_depot_head dh
-            where dh.organ_id=s.id
-            and dh."type"=#{typeBack} and dh.sub_type=#{subTypeBack}
-            and dh.oper_time>#{beginTime}::timestamp and dh.oper_time &lt;= #{endTime}::timestamp
-            and COALESCE(dh.delete_flag,'0') !='1') returnDebtMoney,
-            -- 本期收款
-            (select COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
-            left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='收款'
-            and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
-            and COALESCE(ai.delete_flag,'0') !='1') backInMoney,
-            -- 本期付款
-            (select 0-COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
-            left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='付款'
-            and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
-            and COALESCE(ai.delete_flag,'0') !='1') backOutMoney
-        from jsh_supplier s
-        where s.enabled=true
-        and s."type"=#{supplierType}
-        <if test="organId != null">
-            and s.id = #{organId}::bigint
-        </if>
-        <if test="organArray != null and organArray !=''">
-            and s.id in (
-            <foreach collection="organArray" item="organId" separator=",">
-                #{organId}::bigint
-            </foreach>
-            )
-        </if>
-        and COALESCE(s.delete_flag,'0') !='1') tb
-        <if test="hasDebt == 1">
-            where begin_need+preDebtMoney-preReturnDebtMoney-preBackInMoney-preBackOutMoney+debtMoney-returnDebtMoney-backInMoney-backOutMoney!=0
-        </if>
-        <if test="hasDebt == 0">
-            where begin_need+preDebtMoney-preReturnDebtMoney-preBackInMoney-preBackOutMoney+debtMoney-returnDebtMoney-backInMoney-backOutMoney=0
-        </if>
-        order by begin_need+preDebtMoney-preReturnDebtMoney-preBackInMoney-preBackOutMoney+debtMoney-returnDebtMoney-backInMoney-backOutMoney desc
-        <if test="offset != null and rows != null">
-            LIMIT #{rows} OFFSET #{offset}
-        </if>
-    </select>
-
-    <select id="getStatementAccountCount" resultType="java.lang.Integer">
-        select count(1) from
-        (select s.id, s.supplier, s.contacts, s.telephone, s.phone_num, s.email,
-            -- 起始期初金额
-            (case when s."type"='供应商' then COALESCE(s.begin_need_pay,0) else COALESCE(s.begin_need_get,0) end) begin_need,
-            -- 上期欠款金额
-            (select
-            COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
-            from jsh_depot_head dh
-            where dh.organ_id=s.id
-            and dh."type"=#{type} and dh.sub_type=#{subType}
-            and dh.oper_time &lt;= #{beginTime}::timestamp
-            and COALESCE(dh.delete_flag,'0') !='1') preDebtMoney,
-            -- 上期退货的欠款金额
-            (select
-            COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
-            from jsh_depot_head dh
-            where dh.organ_id=s.id
-            and dh."type"=#{typeBack} and dh.sub_type=#{subTypeBack}
-            and dh.oper_time &lt;= #{beginTime}::timestamp
-            and COALESCE(dh.delete_flag,'0') !='1') preReturnDebtMoney,
-            -- 上期收款
-            (select COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
-            left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='收款'
-            and ah.bill_time &lt;= #{beginTime}::timestamp
-            and COALESCE(ai.delete_flag,'0') !='1') preBackInMoney,
-            -- 上期付款
-            (select 0-COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
-            left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='付款'
-            and ah.bill_time &lt;= #{beginTime}::timestamp
-            and COALESCE(ai.delete_flag,'0') !='1') preBackOutMoney,
-            -- 本期欠款
-            (select
-            COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
-            from jsh_depot_head dh
-            where dh.organ_id=s.id
-            and dh."type"=#{type} and dh.sub_type=#{subType}
-            and dh.oper_time>#{beginTime}::timestamp and dh.oper_time &lt;= #{endTime}::timestamp
-            and COALESCE(dh.delete_flag,'0') !='1') debtMoney,
-            -- 本期退货的欠款金额
-            (select
-            COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
-            from jsh_depot_head dh
-            where dh.organ_id=s.id
-            and dh."type"=#{typeBack} and dh.sub_type=#{subTypeBack}
-            and dh.oper_time>#{beginTime}::timestamp and dh.oper_time &lt;= #{endTime}::timestamp
-            and COALESCE(dh.delete_flag,'0') !='1') returnDebtMoney,
-            -- 本期收款
-            (select COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
-            left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='收款'
-            and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
-            and COALESCE(ai.delete_flag,'0') !='1') backInMoney,
-            -- 本期付款
-            (select 0-COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
-            left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='付款'
-            and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
-            and COALESCE(ai.delete_flag,'0') !='1') backOutMoney
-        from jsh_supplier s
-        where s.enabled=true
-        and s."type"=#{supplierType}
-        <if test="organId != null">
-            and s.id = #{organId}::bigint
-        </if>
-        <if test="organArray != null and organArray !=''">
-            and s.id in (
-            <foreach collection="organArray" item="organId" separator=",">
-                #{organId}::bigint
-            </foreach>
-            )
-        </if>
-        and COALESCE(s.delete_flag,'0') !='1') tb
-        <if test="hasDebt == 1">
-            where begin_need+preDebtMoney-preReturnDebtMoney-preBackInMoney-preBackOutMoney+debtMoney-returnDebtMoney-backInMoney-backOutMoney!=0
-        </if>
-        <if test="hasDebt == 0">
-            where begin_need+preDebtMoney-preReturnDebtMoney-preBackInMoney-preBackOutMoney+debtMoney-returnDebtMoney-backInMoney-backOutMoney=0
-        </if>
-    </select>
-
-    <select id="getStatementAccountTotalPay" resultType="com.jsh.erp.datasource.vo.DepotHeadVo4StatementAccount">
-        select sum(begin_need) begin_need, sum(preDebtMoney) preDebtMoney, sum(preReturnDebtMoney) preReturnDebtMoney, sum(preBackInMoney+preBackOutMoney) preBackMoney,
-               sum(debtMoney) debtMoney, sum(returnDebtMoney) returnDebtMoney, sum(backInMoney+backOutMoney) backMoney from
-        (select s.id,
-            (case when s."type"='供应商' then COALESCE(s.begin_need_pay,0) else COALESCE(s.begin_need_get,0) end) begin_need,
-            (select
-            COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
-            from jsh_depot_head dh
-            where dh.organ_id=s.id
-            and dh."type"=#{type} and dh.sub_type=#{subType}
-            and dh.oper_time &lt;= #{beginTime}::timestamp
-            and COALESCE(dh.delete_flag,'0') !='1') preDebtMoney,
-            (select
-            COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
-            from jsh_depot_head dh
-            where dh.organ_id=s.id
-            and dh."type"=#{typeBack} and dh.sub_type=#{subTypeBack}
-            and dh.oper_time &lt;= #{beginTime}::timestamp
-            and COALESCE(dh.delete_flag,'0') !='1') preReturnDebtMoney,
-            (select COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
-            left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='收款'
-            and ah.bill_time &lt;= #{beginTime}::timestamp
-            and COALESCE(ai.delete_flag,'0') !='1') preBackInMoney,
-            (select 0-COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
-            left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='付款'
-            and ah.bill_time &lt;= #{beginTime}::timestamp
-            and COALESCE(ai.delete_flag,'0') !='1') preBackOutMoney,
-            (select
-            COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
-            from jsh_depot_head dh
-            where dh.organ_id=s.id
-            and dh."type"=#{type} and dh.sub_type=#{subType}
-            and dh.oper_time>#{beginTime}::timestamp and dh.oper_time &lt;= #{endTime}::timestamp
-            and COALESCE(dh.delete_flag,'0') !='1') debtMoney,
-            (select
-            COALESCE(sum(dh.discount_last_money),0)+COALESCE(sum(dh.other_money),0)-COALESCE(sum(dh.deposit),0)-abs(COALESCE(sum(dh.change_amount),0))
-            from jsh_depot_head dh
-            where dh.organ_id=s.id
-            and dh."type"=#{typeBack} and dh.sub_type=#{subTypeBack}
-            and dh.oper_time>#{beginTime}::timestamp and dh.oper_time &lt;= #{endTime}::timestamp
-            and COALESCE(dh.delete_flag,'0') !='1') returnDebtMoney,
-            (select COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
-            left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='收款'
-            and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
-            and COALESCE(ai.delete_flag,'0') !='1') backInMoney,
-            (select 0-COALESCE(sum(ai.each_amount),0) from jsh_account_item ai
-            left join jsh_account_head ah on ai.header_id=ah.id and COALESCE(ah.delete_flag,'0') !='1'
-            where ah.organ_id=s.id and ah."type"='付款'
-            and ah.bill_time>#{beginTime}::timestamp and ah.bill_time &lt;= #{endTime}::timestamp
-            and COALESCE(ai.delete_flag,'0') !='1') backOutMoney
-        from jsh_supplier s
-        where s.enabled=true
-        and s."type"=#{supplierType}
-        <if test="organId != null">
-            and s.id = #{organId}::bigint
-        </if>
-        <if test="organArray != null and organArray !=''">
-            and s.id in (
-            <foreach collection="organArray" item="organId" separator=",">
-                #{organId}::bigint
-            </foreach>
-            )
-        </if>
-        and COALESCE(s.delete_flag,'0') !='1') tb
-        <if test="hasDebt == 1">
-            where begin_need+preDebtMoney-preReturnDebtMoney-preBackInMoney-preBackOutMoney+debtMoney-returnDebtMoney-backInMoney-backOutMoney!=0
-        </if>
-        <if test="hasDebt == 0">
-            where begin_need+preDebtMoney-preReturnDebtMoney-preBackInMoney-preBackOutMoney+debtMoney-returnDebtMoney-backInMoney-backOutMoney=0
-        </if>
+        and di.id is not null
     </select>
 
     <select id="getDetailByNumber" parameterType="com.jsh.erp.datasource.entities.DepotHeadExample" resultMap="ResultMapEx">
@@ -1107,7 +890,7 @@
         where 1=1
         and id in (
         <foreach collection="ids" item="id" separator=",">
-            #{id}
+            #{id}::bigint
         </foreach>
         )
     </update>
@@ -1117,10 +900,21 @@
         <include refid="com.jsh.erp.datasource.mappers.DepotHeadMapper.Base_Column_List" />
         from jsh_depot_head
         where 1=1
-        and account_id in (
-        <foreach collection="accountIds" item="accountId" separator=",">
-            #{accountId}
-        </foreach>
+        and (
+            account_id in (
+            <foreach collection="accountIds" item="accountId" separator=",">
+                #{accountId}::bigint
+            </foreach>
+            )
+            or exists (
+                select 1
+                from unnest(string_to_array(replace(COALESCE(account_id_list, ''), ' ', ''), ',')) as account_value
+                where account_value in (
+                <foreach collection="accountIds" item="accountId" separator=",">
+                    #{accountId}
+                </foreach>
+                )
+            )
         )
         and COALESCE(delete_flag,'0') !='1'
     </select>
@@ -1147,6 +941,17 @@
         </foreach>
         )
         and COALESCE(delete_flag,'0') !='1'
+    </select>
+    <select id="getDepotHeadListBySalesPersonIds" resultMap="com.jsh.erp.datasource.mappers.DepotHeadMapper.BaseResultMap">
+        select
+        <include refid="com.jsh.erp.datasource.mappers.DepotHeadMapper.Base_Column_List" />
+        from jsh_depot_head
+        where COALESCE(delete_flag,'0') !='1'
+        and (
+        <foreach collection="personIds" item="personId" separator=" or ">
+            sales_man ~ ('(^|,)' || #{personId} || '(,|$)')
+        </foreach>
+        )
     </select>
 
     <select id="getBuyAndSaleStatisticsList" resultType="com.jsh.erp.datasource.vo.InOutPriceVo">
@@ -1178,12 +983,19 @@
         select distinct dh.*, s.supplier OrganName, u.username userName
         from jsh_depot_head dh
         left join jsh_supplier s on dh.organ_id=s.id and COALESCE(s.delete_Flag,'0') !='1'
-        left join jsh_user u on dh.creator=u.id and COALESCE(u.delete_flag,'0') !='1'
+        left join jsh_user u on dh.creator=u.id
         left join jsh_depot_item di on dh.id = di.header_id and COALESCE(di.delete_flag,'0') !='1'
         left join jsh_material m on di.material_id = m.id and COALESCE(m.delete_flag,'0') !='1'
         where 1=1
         and (dh."type"='入库' or dh."type"='出库')
         and (dh.sub_type='采购' or dh.sub_type='销售' or dh.sub_type='采购退货' or dh.sub_type='销售退货')
+        <if test="type != null and type !=''">
+            and dh."type"=#{type}
+        </if>
+        <if test="subType != null and subType !=''">
+            and dh.sub_type=#{subType}
+        </if>
+        and dh.status='1'
         <if test="organId != null">
             and dh.organ_id = #{organId}::bigint
         </if>
@@ -1218,7 +1030,12 @@
             </foreach>
             )
         </if>
-        and (COALESCE(abs(dh.change_amount),0)+(select COALESCE(sum(abs(ai.each_amount)),0) from jsh_account_item ai where ai.bill_id=dh.id and COALESCE(ai.delete_flag,'0') !='1'))
+        and (COALESCE(abs(dh.change_amount),0)+(select COALESCE(sum(abs(ai.each_amount)),0)
+            from jsh_account_item ai
+            join jsh_account_head ah on ah.id=ai.header_id
+            where ai.bill_id=dh.id and ah.status='1'
+              and ((dh."type"='出库' and ah."type"='收款') or (dh."type"='入库' and ah."type"='付款'))
+              and COALESCE(ai.delete_flag,'0') !='1' and COALESCE(ah.delete_flag,'0') !='1'))
         &lt; (COALESCE(dh.discount_last_money,0) + COALESCE(dh.other_money,0) - COALESCE(dh.deposit,0))
         and COALESCE(dh.delete_flag,'0') !='1'
         order by dh.oper_time desc
@@ -1232,12 +1049,19 @@
         select distinct dh.*, s.supplier OrganName, u.username userName
         from jsh_depot_head dh
         left join jsh_supplier s on dh.organ_id=s.id and COALESCE(s.delete_Flag,'0') !='1'
-        left join jsh_user u on dh.creator=u.id and COALESCE(u.delete_flag,'0') !='1'
+        left join jsh_user u on dh.creator=u.id
         left join jsh_depot_item di on dh.id = di.header_id and COALESCE(di.delete_flag,'0') !='1'
         left join jsh_material m on di.material_id = m.id and COALESCE(m.delete_flag,'0') !='1'
         where 1=1
         and (dh."type"='入库' or dh."type"='出库')
         and (dh.sub_type='采购' or dh.sub_type='销售' or dh.sub_type='采购退货' or dh.sub_type='销售退货')
+        <if test="type != null and type !=''">
+            and dh."type"=#{type}
+        </if>
+        <if test="subType != null and subType !=''">
+            and dh.sub_type=#{subType}
+        </if>
+        and dh.status='1'
         <if test="organId != null">
             and dh.organ_id = #{organId}::bigint
         </if>
@@ -1272,7 +1096,12 @@
             </foreach>
             )
         </if>
-        and (COALESCE(abs(dh.change_amount),0)+(select COALESCE(sum(abs(ai.each_amount)),0) from jsh_account_item ai where ai.bill_id=dh.id and COALESCE(ai.delete_flag,'0') !='1'))
+        and (COALESCE(abs(dh.change_amount),0)+(select COALESCE(sum(abs(ai.each_amount)),0)
+            from jsh_account_item ai
+            join jsh_account_head ah on ah.id=ai.header_id
+            where ai.bill_id=dh.id and ah.status='1'
+              and ((dh."type"='出库' and ah."type"='收款') or (dh."type"='入库' and ah."type"='付款'))
+              and COALESCE(ai.delete_flag,'0') !='1' and COALESCE(ah.delete_flag,'0') !='1'))
         &lt; (COALESCE(dh.discount_last_money,0) + COALESCE(dh.other_money,0) - COALESCE(dh.deposit,0))
         and COALESCE(dh.delete_flag,'0') !='1' ) tb
     </select>
@@ -1376,7 +1205,7 @@
         </if>) tb
         left join jsh_depot_head jdh on jdh.id=tb.id and COALESCE(jdh.delete_flag,'0') !='1'
         left join jsh_supplier s on jdh.organ_id=s.id and COALESCE(s.delete_flag,'0') !='1'
-        left join jsh_user u on jdh.creator=u.id and COALESCE(u.delete_flag,'0') !='1'
+        left join jsh_user u on jdh.creator=u.id
         left join jsh_account a on jdh.account_id=a.id and COALESCE(a.delete_flag,'0') !='1'
     </select>
 
@@ -1441,9 +1270,10 @@
     <select id="getBillAllPriceByOrganId" resultType="java.math.BigDecimal">
         select COALESCE(sum(dh.total_price),0) allPrice from jsh_depot_head dh
         where dh.organ_id=#{organId}::bigint
-        and dh."type" = '出库'
-        and dh.sub_type = '零售'
         and dh.pay_type = '预付款'
+        and ((dh."type" = '出库' and dh.sub_type = '零售')
+          or (dh."type" = '入库' and dh.sub_type = '零售退货'))
+        and dh.status = '1'
         and COALESCE(dh.delete_flag,'0') !='1'
     </select>
 </mapper>

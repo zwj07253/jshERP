@@ -27,8 +27,8 @@
         returnKeys: ['id', 'roleCode'],
         url: { list: '/sys/role/list' },
         columns: [
-          { title: '角色名称', dataIndex: 'roleName', align: 'center', width: 120 },
-          { title: '角色编码', dataIndex: 'roleCode', align: 'center', width: 120 }
+          { title: this.$t('common.roleName'), dataIndex: 'roleName', align: 'center', width: 120 },
+          { title: this.$t('common.roleCode'), dataIndex: 'roleCode', align: 'center', width: 120 }
         ]
       }
     }

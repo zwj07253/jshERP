@@ -93,12 +93,12 @@
         and COALESCE(delete_flag,'0') !='1'
         order by sort asc, id desc
         <if test="limit != null">
-            LIMIT 500
+            LIMIT #{limit}
         </if>
     </select>
 
     <select id="getInfoById" resultType="com.jsh.erp.datasource.entities.Supplier">
-        select id, supplier from jsh_supplier
+        select * from jsh_supplier
         where id = #{id}
         and COALESCE(delete_flag,'0') !='1'
     </select>
@@ -108,5 +108,12 @@
         where supplier = #{name} and "type" = #{type}
         and COALESCE(delete_flag,'0') !='1'
         limit 1
+    </select>
+
+    <select id="lockById" resultMap="com.jsh.erp.datasource.mappers.SupplierMapper.BaseResultMap">
+        select * from jsh_supplier
+        where id = #{id}
+        and COALESCE(delete_flag,'0') !='1'
+        for update
     </select>
 </mapper>

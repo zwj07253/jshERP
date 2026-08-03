@@ -258,7 +258,12 @@ public class P2PgUpgradeTest extends ApiTestBase {
     void httpStatus401() {
         Response resp = io.restassured.RestAssured.given()
                 .get(CONTEXT + "/user/getUserSession");
-        assertNotEquals(200, resp.jsonPath().getInt("code"));
+        assertNotEquals(200, resp.statusCode());
+        if (resp.contentType() != null && resp.contentType().toLowerCase().contains("json")) {
+            assertNotEquals(200, resp.jsonPath().getInt("code"));
+        } else {
+            assertFalse(resp.body().asString().trim().isEmpty(), "未授权响应不应为空");
+        }
     }
 
     // ===== 79. PG大小写 =====

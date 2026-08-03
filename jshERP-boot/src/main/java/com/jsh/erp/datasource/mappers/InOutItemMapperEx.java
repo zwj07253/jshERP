@@ -15,4 +15,6 @@ public interface InOutItemMapperEx {
             @Param("remark") String remark);
 
     int batchDeleteInOutItemByIds(@Param("updateTime") Date updateTime, @Param("updater") Long updater, @Param("ids") String ids[]);
+
+    Object lockInOutItemWrite(@Param("tenantId") Long tenantId);
 }

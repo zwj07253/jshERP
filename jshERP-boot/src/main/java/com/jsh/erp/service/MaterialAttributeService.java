@@ -3,10 +3,13 @@ package com.jsh.erp.service;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.constants.BusinessConstants;
+import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.MaterialAttribute;
 import com.jsh.erp.datasource.entities.MaterialAttributeExample;
+import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.mappers.MaterialAttributeMapper;
 import com.jsh.erp.datasource.mappers.MaterialAttributeMapperEx;
+import com.jsh.erp.datasource.mappers.MaterialMapperEx;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.exception.JshException;
 import com.jsh.erp.utils.PageUtils;
@@ -19,10 +22,14 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class MaterialAttributeService {
+    private static final String MATERIAL_ATTRIBUTE_URL = "/material/material_attribute";
+    private static final String EDIT_BUTTON_CODE = "1";
     private Logger logger = LoggerFactory.getLogger(MaterialAttributeService.class);
 
     @Resource
@@ -33,15 +40,15 @@ public class MaterialAttributeService {
 
     @Resource
     private MaterialAttributeMapperEx materialAttributeMapperEx;
+    @Resource
+    private MaterialMapperEx materialMapperEx;
+    @Resource
+    private UserService userService;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public MaterialAttribute getMaterialAttribute(long id)throws Exception {
-        MaterialAttribute result=null;
-        try{
-            result=materialAttributeMapper.selectByPrimaryKey(id);
-        }catch(Exception e){
-            JshException.readFail(logger, e);
-        }
-        return result;
+        return getInfoById(id);
     }
 
     public List<MaterialAttribute> getMaterialAttribute() throws Exception{
@@ -70,7 +77,10 @@ public class MaterialAttributeService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertMaterialAttribute(JSONObject obj, HttpServletRequest request)throws Exception {
-        MaterialAttribute m = JSONObject.parseObject(obj.toJSONString(), MaterialAttribute.class);
+        platformAccessService.assertBusinessWriteAllowed();
+        checkEditPermission();
+        MaterialAttribute m = buildMaterialAttribute(obj, false);
+        validateMaterialAttribute(m, null);
         try{
             materialAttributeMapper.insertSelective(m);
             logService.insertLog("商品属性",
@@ -88,7 +98,15 @@ public class MaterialAttributeService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateMaterialAttribute(JSONObject obj, HttpServletRequest request) throws Exception{
-        MaterialAttribute materialAttribute = JSONObject.parseObject(obj.toJSONString(), MaterialAttribute.class);
+        platformAccessService.assertBusinessWriteAllowed();
+        checkEditPermission();
+        MaterialAttribute materialAttribute = buildMaterialAttribute(obj, true);
+        MaterialAttribute existing = materialAttribute.getId() == null ? null : getInfoById(materialAttribute.getId());
+        if (existing == null) {
+            throw invalidAttribute("商品属性不存在或已删除");
+        }
+        requireTenantOwnership(existing);
+        validateMaterialAttribute(materialAttribute, existing);
         try{
             materialAttributeMapper.updateByPrimaryKeySelective(materialAttribute);
             logService.insertLog("商品属性",
@@ -102,17 +120,27 @@ public class MaterialAttributeService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteMaterialAttribute(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
+        checkEditPermission();
+        MaterialAttribute existing = getInfoById(id);
+        if (existing != null) {
+            requireTenantOwnership(existing);
+        }
         return batchDeleteMaterialAttributeByIds(id.toString());
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteMaterialAttribute(String ids, HttpServletRequest request)throws Exception {
+        checkEditPermission();
         return batchDeleteMaterialAttributeByIds(ids);
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
-    public int batchDeleteMaterialAttributeByIds(String ids) throws Exception{
-        String [] idArray=ids.split(",");
+    private int batchDeleteMaterialAttributeByIds(String ids) throws Exception{
+        List<Long> idList = StringUtil.strToLongList(ids);
+        ensureAttributesNotInUse(idList);
+        requireBatchTenantOwnership(idList);
+        String [] idArray = idList.stream().map(String::valueOf).toArray(String[]::new);
         try{
             return materialAttributeMapperEx.batchDeleteMaterialAttributeByIds(idArray);
         }catch(Exception e){
@@ -121,7 +149,30 @@ public class MaterialAttributeService {
         }
     }
 
+    private void requireTenantOwnership(MaterialAttribute record) throws Exception {
+        if (record == null) return;
+        User currentUser = userService.getCurrentUser();
+        Long currentTenantId = currentUser == null ? null : currentUser.getTenantId();
+        if (currentTenantId != null && !currentTenantId.equals(record.getTenantId())) {
+            throw invalidAttribute("商品属性不存在或已删除");
+        }
+    }
+
+    private void requireBatchTenantOwnership(List<Long> idList) throws Exception {
+        if (idList == null || idList.isEmpty()) return;
+        User currentUser = userService.getCurrentUser();
+        Long currentTenantId = currentUser == null ? null : currentUser.getTenantId();
+        if (currentTenantId == null) return;
+        for (Long id : idList) {
+            MaterialAttribute record = getInfoById(id);
+            if (record != null && !currentTenantId.equals(record.getTenantId())) {
+                throw invalidAttribute("商品属性不存在或已删除");
+            }
+        }
+    }
+
     public int checkIsNameExist(Long id, String name)throws Exception {
+        name = name == null ? null : name.trim();
         MaterialAttributeExample example = new MaterialAttributeExample();
         example.createCriteria().andIdNotEqualTo(id).andAttributeNameEqualTo(name).andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
         List<MaterialAttribute> list =null;
@@ -160,5 +211,68 @@ public class MaterialAttributeService {
         } else {
             return null;
         }
+    }
+
+    private MaterialAttribute buildMaterialAttribute(JSONObject obj, boolean update) {
+        MaterialAttribute attribute = new MaterialAttribute();
+        if (update) {
+            attribute.setId(obj.getLong("id"));
+        }
+        attribute.setAttributeName(obj.getString("attributeName"));
+        attribute.setAttributeValue(obj.getString("attributeValue"));
+        attribute.setDeleteFlag(update ? null : BusinessConstants.DELETE_FLAG_EXISTS);
+        return attribute;
+    }
+
+    private void validateMaterialAttribute(MaterialAttribute attribute, MaterialAttribute existing) throws Exception {
+        String name = StringUtil.toNull(attribute.getAttributeName());
+        if (name == null || name.length() > 50) {
+            throw invalidAttribute("属性名称不能为空且不能超过50个字符");
+        }
+        String normalizedValue = normalizeAttributeValue(attribute.getAttributeValue());
+        if (StringUtil.isEmpty(normalizedValue) || normalizedValue.length() > 500) {
+            throw invalidAttribute("属性值不能为空且不能超过500个字符");
+        }
+        attribute.setAttributeName(name);
+        attribute.setAttributeValue(normalizedValue);
+        if (checkIsNameExist(attribute.getId() == null ? 0L : attribute.getId(), name) > 0) {
+            throw invalidAttribute("属性名称已存在");
+        }
+        if (existing != null && !normalizedValue.equals(existing.getAttributeValue())) {
+            ensureAttributesNotInUse(java.util.Collections.singletonList(existing.getId()));
+        }
+    }
+
+    private String normalizeAttributeValue(String value) {
+        Set<String> values = new LinkedHashSet<>();
+        if (value != null) {
+            for (String item : value.split("\\|")) {
+                String normalized = StringUtil.toNull(item);
+                if (normalized != null) {
+                    values.add(normalized);
+                }
+            }
+        }
+        return String.join("|", values);
+    }
+
+    private void ensureAttributesNotInUse(List<Long> ids) {
+        if (ids != null && !ids.isEmpty() && materialMapperEx.getCountByMaterialAttributeIds(ids) > 0) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_ATTRIBUTE_IN_USE_CODE,
+                    ExceptionConstants.MATERIAL_ATTRIBUTE_IN_USE_MSG);
+        }
+    }
+
+    private void checkEditPermission() throws Exception {
+        User user = userService.getCurrentUser();
+        if (!userService.hasButtonPermission(user == null ? null : user.getId(), MATERIAL_ATTRIBUTE_URL, EDIT_BUTTON_CODE)) {
+            throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_PERMISSION_CODE,
+                    ExceptionConstants.MATERIAL_PERMISSION_MSG);
+        }
+    }
+
+    private BusinessRunTimeException invalidAttribute(String reason) {
+        return new BusinessRunTimeException(ExceptionConstants.MATERIAL_ATTRIBUTE_INVALID_CODE,
+                String.format(ExceptionConstants.MATERIAL_ATTRIBUTE_INVALID_MSG, reason));
     }
 }

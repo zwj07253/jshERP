@@ -15,6 +15,8 @@ public class DepotItemVo4DetailByTypeAndMId {
 
     private String subType;
 
+    private String materialType;
+
     private BigDecimal bnum;
 
     private BigDecimal unitPrice;
@@ -65,6 +67,14 @@ public class DepotItemVo4DetailByTypeAndMId {
 
     public void setSubType(String subType) {
         this.subType = subType;
+    }
+
+    public String getMaterialType() {
+        return materialType;
+    }
+
+    public void setMaterialType(String materialType) {
+        this.materialType = materialType;
     }
 
     public BigDecimal getBnum() {

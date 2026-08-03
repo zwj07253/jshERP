@@ -9,26 +9,29 @@
     style="top:15%;height: 60%;"
    >
     <template slot="footer">
-      <a-button key="back" @click="handleCancel">关闭</a-button>
-      <a-button v-if="record.openType==='url'" type="primary" @click="toHandle">去处理</a-button>
+      <a-button key="back" @click="handleCancel">{{ $t('common.close') }}</a-button>
+      <a-button v-if="record.openType==='url'" type="primary" @click="toHandle">{{ $t('common.goProcess') }}</a-button>
     </template>
     <a-card class="daily-article" :loading="loading">
-      <span style="font-size:18px;">{{record.msgTitle}}</span>
-      <span style="font-size:14px; padding-left:30px; color:grey">通知日期：{{record.createTimeStr}}</span>
+      <span style="font-size:18px;">{{ notificationTitle }}</span>
+      <span style="font-size:14px; padding-left:30px; color:grey">{{ $t('common.notificationDate') }}：{{record.createTimeStr}}</span>
       <a-divider />
-      <span v-html="record.msgContent" class="article-content"></span>
+      <span v-if="isStructuredStockWarning" class="article-content">{{ notificationContent }}</span>
+      <span v-else v-html="notificationContent" class="article-content"></span>
     </a-card>
   </j-modal>
 </template>
 
 <script>
+  import { getNotificationContent, getNotificationTitle, isStructuredStockWarning } from '@/utils/notificationI18n'
+
   export default {
     name: "SysAnnouncementModal",
     components: {
     },
     data () {
       return {
-        title:"通知消息",
+        title: this.$t('common.notificationMessage'),
         record: {},
         labelCol: {
           xs: { span: 24 },
@@ -54,7 +57,16 @@
         }
       }
     },
-    created () {
+    computed: {
+      notificationTitle () {
+        return getNotificationTitle(this.record, this.$i18n)
+      },
+      notificationContent () {
+        return getNotificationContent(this.record, this.$i18n)
+      },
+      isStructuredStockWarning () {
+        return isStructuredStockWarning(this.record)
+      }
     },
     methods: {
       detail (record) {

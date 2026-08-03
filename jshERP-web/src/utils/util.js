@@ -2,15 +2,17 @@ import { isURL } from '@/utils/validate'
 import { downFilePost} from '@/api/manage'
 import Vue from 'vue'
 import introJs from 'intro.js'
+import { i18n } from '@/locales'
 
-export function timeFix() {
+export function timeFix(t) {
   const time = new Date()
   const hour = time.getHours()
-  return hour < 9 ? '早上好' : (hour <= 11 ? '上午好' : (hour <= 13 ? '中午好' : (hour < 20 ? '下午好' : '晚上好')))
+  const fn = t || (k => k)
+  return hour < 9 ? fn('login.goodMorning') : (hour <= 11 ? fn('login.goodForenoon') : (hour <= 13 ? fn('login.goodNoon') : (hour < 20 ? fn('login.goodAfternoon') : fn('login.goodEvening'))))
 }
 
 export function welcome() {
-  const arr = ['休息一会儿吧', '准备吃什么呢?', '要不要打一把 DOTA', '我猜你可能累了']
+  const arr = [i18n.t('common.takeABreak'), i18n.t('common.whatToEat'), i18n.t('common.playDota'), i18n.t('common.maybeTired')]
   let index = Math.floor((Math.random()*arr.length))
   return arr[index]
 }
@@ -85,10 +87,10 @@ export function generateIndexRouter(data) {
   let indexRouter = generateChildRouters(data)
   indexRouter.splice(0,0, {
     path: '/',
-    name: '首页',
+    name: 'Home',
     component: () => import('@/components/layouts/TabLayout'),
     meta: {
-      title: '首页',
+      title: 'Home',
       icon: 'icon-present',
       url: '/dashboard/analysis'
     },
@@ -104,13 +106,29 @@ function generateChildRouters (data) {
   for (let item of data) {
     let componentPath = "";
     item.route = "1";
-    if(item.component.indexOf("layouts")>=0){
-      componentPath = () => import('@/components'+item.component);
-    } else {
-      componentPath = () => import('@/views'+item.component);
+    // 校验组件路径合法性：不能包含..，必须以/开头
+    let component = item.component || '';
+    if(component.indexOf('..') >= 0 || !component.startsWith('/')) {
+      console.warn('非法组件路径，已跳过:', component);
+      continue;
     }
-    // eslint-disable-next-line
-    let URL = (item.url|| '').replace(/{{([^}}]+)?}}/g, (s1, s2) => eval(s2)) // URL支持{{ window.xxx }}占位符变量
+    if(component.indexOf("layouts")>=0){
+      componentPath = () => import('@/components'+component);
+    } else {
+      componentPath = () => import('@/views'+component);
+    }
+    // 安全解析URL占位符，只允许 window.xxx 模式
+    let URL = (item.url|| '').replace(/{{([^}}]+)?}}/g, (s1, s2) => {
+      try {
+        let key = s2.trim();
+        if(key.startsWith('window.')) {
+          return key.split('.').reduce((obj, k) => (obj && obj[k] !== undefined) ? obj[k] : '', window);
+        }
+        return '';
+      } catch(e) {
+        return '';
+      }
+    })
     if (isURL(URL)) {
       item.url = URL;
     }
@@ -417,6 +435,9 @@ export function replaceAll(text, checker, replacer) {
  * @returns {string}
  */
 export function getMpListShort(thisRows, checker, replacer) {
+  if (!thisRows) {
+    thisRows = Vue.ls.get(getMaterialPropertyCacheKey()) || Vue.ls.get('materialPropertyList') || []
+  }
   let mPropertyListShort = ''
   let anotherNameStr = ''
   for (let i = 0; i < thisRows.length; i++) {
@@ -429,7 +450,28 @@ export function getMpListShort(thisRows, checker, replacer) {
 }
 
 /**
- * js获取当前年份， 格式“yyyy”
+ * 获取租户相关的 materialPropertyList 缓存 key
+ * 防止多租户/多账号切换时缓存串数据
+ */
+export function getMaterialPropertyCacheKey() {
+  try {
+    let userInfo = Vue.ls.get('Login_Userinfo')
+    let tenantId = userInfo && userInfo.tenantId ? userInfo.tenantId : 'default'
+    return 'materialPropertyList_' + tenantId
+  } catch (e) {
+    return 'materialPropertyList_default'
+  }
+}
+
+/**
+ * 从租户隔离的缓存中获取 materialPropertyList
+ */
+export function getMaterialPropertyList() {
+  return Vue.ls.get(getMaterialPropertyCacheKey()) || []
+}
+
+/**
+ * js获取当前年份， 格式”yyyy”
  */
 export function getNowFormatYear() {
   let date = new Date();
@@ -629,24 +671,18 @@ export function getCheckFlag(multiBillType, multiLevelApprovalFlag, prefixNo) {
  * @returns {Array}
  */
 export function changeListFmtMinus(str) {
-  let newArr = new Array()
-  if(str) {
-    let arr = []
-    if(str.indexOf(',')>-1) {
-      arr = str.split(',')
-    } else {
-      arr = str
-    }
-    for(let i=0; i<arr.length; i++) {
-      if(arr[i] < 0){
-        newArr.push((arr[i]-0).toString());
+  const newArr = []
+  if (str !== undefined && str !== null && str !== '') {
+    const arr = Array.isArray(str) ? str : String(str).split(',')
+    for (let i = 0; i < arr.length; i++) {
+      if (arr[i] === undefined || arr[i] === null || String(arr[i]).trim() === '') {
+        continue
       }
-      else {
-        newArr.push((0 - arr[i]).toString());
-      }
+      const amount = Number(arr[i])
+      newArr.push((amount < 0 ? amount : 0 - amount).toString())
     }
   }
-  return newArr;
+  return newArr
 }
 
 // 数据合并
@@ -668,13 +704,13 @@ export function mergeRecursive(source, target) {
 //通过post方式导出Excel
 export function exportXlsPost(fileName, title, head, tip, list) {
   if(!fileName || typeof fileName != "string"){
-    fileName = "导出文件"
+    fileName = "Export"
   }
   let paramObj = {'title': title, 'head': head, 'tip': tip, 'list': list}
   console.log("导出参数", paramObj)
   downFilePost(paramObj).then((data)=>{
     if (!data) {
-      this.$message.warning("文件下载失败")
+      this.$message.warning(this.$t('common.downloadFailed'))
       return
     }
     if (typeof window.navigator.msSaveBlob !== 'undefined') {
@@ -710,9 +746,9 @@ export function handleIntroJs(module, cur_version) {
     return;
   }
   introJsObj.setOptions({
-    prevLabel: '&larr; 上一步',
-    nextLabel: '下一步 &rarr;',
-    doneLabel: '知道了',
+    prevLabel: '&larr; ' + i18n.t('common.prevStep'),
+    nextLabel: i18n.t('common.nextStep') + ' &rarr;',
+    doneLabel: i18n.t('common.gotIt'),
     exitOnOverlayClick: false //点击空白区域是否关闭提示组件
   }).oncomplete(function(){
     //点击跳过按钮后执行的事件(这里保存对应的版本号到缓存,并且设置有效期为100天）

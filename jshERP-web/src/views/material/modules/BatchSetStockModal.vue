@@ -12,18 +12,18 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:30%;height: 30%;">
       <template slot="footer">
         <a-button key="back" v-if="isReadOnly" @click="handleCancel">
-          取消
+          {{ $t('common.cancel') }}
         </a-button>
       </template>
       <a-spin :spinning="confirmLoading">
         <a-form :form="form">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="请输入数量">
-            <a-input placeholder="请输入数量" v-decorator.trim="[ 'number', validatorRules.number]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.quantity')">
+            <a-input :placeholder="$t('common.quantity')" v-decorator.trim="[ 'number', validatorRules.number]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -38,7 +38,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"批量设置",
+        title:this.$t('common.batchSetInfo'),
         visible: false,
         isReadOnly: false,
         batchType: '',
@@ -56,7 +56,7 @@
         validatorRules:{
           number:{
             rules: [
-              { required: true, message: '请输入数量!' }
+              { required: true, message: this.$t('purchase.validation.quantityRequired') }
             ]}
         }
       }
@@ -67,11 +67,11 @@
       add (type) {
         this.batchType = type
         if(type === 'initStock') {
-          this.title = '期初库存-批量设置'
+          this.title = this.$t('material.initStockBatchSet')
         } else if(type === 'lowSafeStock') {
-          this.title = '最低安全库存-批量设置'
+          this.title = this.$t('material.lowSafeStockBatchSet')
         } else if(type === 'highSafeStock') {
-          this.title = '最高安全库存-批量设置'
+          this.title = this.$t('material.highSafeStockBatchSet')
         }
         this.edit({});
       },

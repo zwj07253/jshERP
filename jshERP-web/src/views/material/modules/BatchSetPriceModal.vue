@@ -12,18 +12,18 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:30%;height: 30%;">
       <template slot="footer">
         <a-button key="back" v-if="isReadOnly" @click="handleCancel">
-          取消
+          {{ $t('common.cancel') }}
         </a-button>
       </template>
       <a-spin :spinning="confirmLoading">
         <a-form :form="form">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="请输入价格">
-            <a-input placeholder="请输入价格" v-decorator.trim="[ 'price', validatorRules.price]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('material.enterPrice')">
+            <a-input :placeholder="$t('material.enterPrice')" v-decorator.trim="[ 'price', validatorRules.price]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -38,7 +38,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"批量设置",
+        title:this.$t('common.batchSetInfo'),
         visible: false,
         isReadOnly: false,
         batchType: '',
@@ -56,7 +56,7 @@
         validatorRules:{
           price:{
             rules: [
-              { required: true, message: '请输入价格!' }
+              { required: true, message: this.$t('material.enterPriceRequired') }
             ]}
         }
       }
@@ -67,13 +67,13 @@
       add (type) {
         this.batchType = type
         if(type === 'purchase') {
-          this.title = '采购价-批量设置'
+          this.title = this.$t('material.purchasePriceBatchSet')
         } else if(type === 'commodity') {
-          this.title = '零售价-批量设置'
+          this.title = this.$t('material.retailPriceBatchSet')
         } else if(type === 'wholesale') {
-          this.title = '销售价-批量设置'
+          this.title = this.$t('material.salesPriceBatchSet')
         } else if(type === 'low') {
-          this.title = '最低售价-批量设置'
+          this.title = this.$t('material.lowestPriceBatchSet')
         }
         this.edit({});
       },

@@ -12,8 +12,6 @@ import com.jsh.erp.service.InOutItemService;
 import com.jsh.erp.utils.Constants;
 import com.jsh.erp.utils.ErpInfo;
 import com.jsh.erp.utils.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -32,8 +30,6 @@ import static com.jsh.erp.utils.ResponseJsonUtil.returnStr;
 @RequestMapping(value = "/inOutItem")
 @Tag(name = "收支项目")
 public class InOutItemController extends BaseController {
-    private Logger logger = LoggerFactory.getLogger(InOutItemController.class);
-
     @Resource
     private InOutItemService inOutItemService;
 
@@ -41,6 +37,7 @@ public class InOutItemController extends BaseController {
     @Operation(summary = "根据id获取信息")
     public String getList(@RequestParam("id") Long id,
                           HttpServletRequest request) throws Exception {
+        inOutItemService.checkReadPermission();
         InOutItem inOutItem = inOutItemService.getInOutItem(id);
         Map<String, Object> objectMap = new HashMap<>();
         if(inOutItem != null) {
@@ -55,6 +52,7 @@ public class InOutItemController extends BaseController {
     @Operation(summary = "获取信息列表")
     public TableDataInfo getList(@RequestParam(value = Constants.SEARCH, required = false) String search,
                                  HttpServletRequest request)throws Exception {
+        inOutItemService.checkReadPermission();
         String name = StringUtil.getInfo(search, "name");
         String type = StringUtil.getInfo(search, "type");
         String remark = StringUtil.getInfo(search, "remark");
@@ -99,6 +97,7 @@ public class InOutItemController extends BaseController {
     public String checkIsNameExist(@RequestParam Long id,
                                    @RequestParam(value ="name", required = false) String name,
                                    HttpServletRequest request)throws Exception {
+        inOutItemService.checkReadPermission();
         Map<String, Object> objectMap = new HashMap<>();
         int exist = inOutItemService.checkIsNameExist(id, name);
         if(exist > 0) {
@@ -117,26 +116,18 @@ public class InOutItemController extends BaseController {
     @GetMapping(value = "/findBySelect")
     @Operation(summary = "查找收支项目信息")
     public String findBySelect(@RequestParam("type") String type, HttpServletRequest request) throws Exception{
-        String res = null;
-        try {
-            List<InOutItem> dataList = inOutItemService.findBySelect(type);
-            //存放数据json数组
-            JSONArray dataArray = new JSONArray();
-            if (null != dataList) {
-                for (InOutItem inOutItem : dataList) {
-                    JSONObject item = new JSONObject();
-                    item.put("id", inOutItem.getId());
-                    //收支项目名称
-                    item.put("name", inOutItem.getName());
-                    dataArray.add(item);
-                }
+        inOutItemService.checkSelectPermission(type);
+        List<InOutItem> dataList = inOutItemService.findBySelect(type);
+        JSONArray dataArray = new JSONArray();
+        if (null != dataList) {
+            for (InOutItem inOutItem : dataList) {
+                JSONObject item = new JSONObject();
+                item.put("id", inOutItem.getId());
+                item.put("name", inOutItem.getName());
+                dataArray.add(item);
             }
-            res = dataArray.toJSONString();
-        } catch(Exception e){
-            logger.error(e.getMessage(), e);
-            res = "获取数据失败";
         }
-        return res;
+        return dataArray.toJSONString();
     }
 
     /**

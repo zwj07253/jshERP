@@ -11,17 +11,17 @@
       <a-col>
         <!-- 操作按钮 -->
         <div v-if="actionButton" class="action-button">
-          <a-button type="primary" icon="plus" @click="handleClickAdd" :disabled="disabled">插入行</a-button>
+          <a-button type="primary" icon="plus" @click="handleClickAdd" :disabled="disabled">{{ $t('common.insertRow') }}</a-button>
           <span class="gap"></span>
           <template v-if="selectedRowIds.length>0">
             <a-popconfirm
-              :title="`确定要移除这 ${selectedRowIds.length} 项吗?`"
+              :title="$t('common.confirmRemoveItems', { count: selectedRowIds.length })"
               @confirm="handleConfirmDelete">
-              <a-button type="primary" icon="minus" :disabled="disabled">移除行</a-button>
+              <a-button type="primary" icon="minus" :disabled="disabled">{{ $t('common.removeRow') }}</a-button>
               <span class="gap"></span>
             </a-popconfirm>
             <template v-if="showClearSelectButton">
-              <a-button icon="delete" @click="handleClickClearSelection">清空选择</a-button>
+              <a-button icon="delete" @click="handleClickClearSelection">{{ $t('common.clearSelection') }}</a-button>
               <span class="gap"></span>
             </template>
           </template>
@@ -29,9 +29,9 @@
         <div v-if="actionDeleteButton" class="action-button">
           <template v-if="selectedRowIds.length>0">
             <a-popconfirm
-              :title="`确定要移除这 ${selectedRowIds.length} 项吗?`"
+              :title="$t('common.confirmRemoveItems', { count: selectedRowIds.length })"
               @confirm="handleConfirmDelete">
-              <a-button type="primary" icon="minus" :disabled="disabled">移除行</a-button>
+              <a-button type="primary" icon="minus" :disabled="disabled">{{ $t('common.removeRow') }}</a-button>
               <span class="gap"></span>
             </a-popconfirm>
           </template>
@@ -91,7 +91,7 @@
           <div class="tr-expand" :style="`height:${getExpandHeight}px; z-index:${loading?'11':'9'};`"></div>
           <!-- 无数据时显示 -->
           <div v-if="rows.length===0" class="tr-nodata">
-            <span>暂无数据</span>
+            <span>{{ $t('common.noData') }}</span>
           </div>
           <!-- v-model="rows"-->
           <draggable
@@ -135,7 +135,7 @@
 
                 <div v-if="dragSortAndNumber" class="td td-ds" :style="style.tdLeftDs">
                   <a-dropdown :trigger="['click']" :getPopupContainer="getParentContainer">
-                    <div class="td-ds-icons" title="点击不放可以拖动" style="text-align: center; line-height: 32px">
+                    <div class="td-ds-icons" :title="$t('common.dragHint')" style="text-align: center; line-height: 32px">
                       <span>{{ rowIndex+1 }}</span>
                     </div>
 
@@ -326,20 +326,20 @@
                         >
 
                           <template slot="addonBefore" style="width: 30px">
-                            <a-tooltip v-if="file.status==='uploading'" :title="`上传中(${Math.floor(file.percent)}%)`">
+                            <a-tooltip v-if="file.status==='uploading'" :title="$t('common.uploading', { percent: Math.floor(file.percent) })">
                               <a-icon type="loading"/>
                             </a-tooltip>
-                            <a-tooltip v-else-if="file.status==='done'" title="上传完成">
+                            <a-tooltip v-else-if="file.status==='done'" :title="$t('common.uploadDone')">
                               <a-icon type="check-circle" style="color:#00DB00;"/>
                             </a-tooltip>
-                            <a-tooltip v-else title="上传失败">
+                            <a-tooltip v-else :title="$t('common.uploadFailed')">
                               <a-icon type="exclamation-circle" style="color:red;"/>
                             </a-tooltip>
                           </template>
 
                           <template v-if="col.allowDownload!==false || col.allowRemove!==false" slot="addonAfter" style="width: 30px">
                             <a-dropdown :trigger="['click']" placement="bottomRight" :getPopupContainer="getParentContainer">
-                              <a-tooltip title="操作" :getPopupContainer="getParentContainer">
+                              <a-tooltip :title="$t('common.action')" :getPopupContainer="getParentContainer">
                                 <a-icon
                                   v-if="file.status!=='uploading'"
                                   type="setting"
@@ -348,10 +348,10 @@
 
                               <a-menu slot="overlay">
                                 <a-menu-item v-if="col.allowDownload!==false" @click="handleClickDownloadFile(id)">
-                                  <span><a-icon type="download"/>&nbsp;下载</span>
+                                  <span><a-icon type="download"/>&nbsp;{{ $t('common.download') }}</span>
                                 </a-menu-item>
                                 <a-menu-item v-if="col.allowRemove!==false" @click="handleClickDelFile(id)">
-                                  <span><a-icon type="delete"/>&nbsp;删除</span>
+                                  <span><a-icon type="delete"/>&nbsp;{{ $t('common.delete') }}</span>
                                 </a-menu-item>
                               </a-menu>
                             </a-dropdown>
@@ -457,7 +457,7 @@
                     <div v-else-if="col.type === formTypes.file" :key="i">
                       <template v-if="uploadValues[id] != null" v-for="(file,fileKey) of [(uploadValues[id]||{})]">
                         <div :key="fileKey" style="position: relative;">
-                          <a-tooltip v-if="file.status==='uploading'" :title="`上传中(${Math.floor(file.percent)}%)`">
+                          <a-tooltip v-if="file.status==='uploading'" :title="$t('common.uploading', { percent: Math.floor(file.percent) })">
                             <a-icon type="loading" style="color:red;"/>
                             <span style="color:red;margin-left:5px">{{  file.status }}</span>
                           </a-tooltip>
@@ -474,19 +474,19 @@
 
                           <template style="width: 30px">
                             <a-dropdown :trigger="['click']" placement="bottomRight" :getPopupContainer="getParentContainer" style="margin-left: 10px;">
-                              <a-tooltip title="操作" :getPopupContainer="getParentContainer">
+                              <a-tooltip :title="$t('common.action')" :getPopupContainer="getParentContainer">
                                 <a-icon v-if="file.status!=='uploading'" type="setting" style="cursor: pointer;"/>
                               </a-tooltip>
 
                               <a-menu slot="overlay">
                                 <a-menu-item v-if="col.allowDownload!==false" @click="handleClickDownFileByUrl(id)">
-                                  <span><a-icon type="download"/>&nbsp;下载</span>
+                                  <span><a-icon type="download"/>&nbsp;{{ $t('common.download') }}</span>
                                 </a-menu-item>
                                 <a-menu-item @click="handleClickDelFile(id)">
-                                  <span><a-icon type="delete"/>&nbsp;删除</span>
+                                  <span><a-icon type="delete"/>&nbsp;{{ $t('common.delete') }}</span>
                                 </a-menu-item>
                                 <a-menu-item @click="handleMoreOperation(id)">
-                                  <span><a-icon type="bars" /> 更多</span>
+                                  <span><a-icon type="bars" /> {{ $t('common.more') }}</span>
                                 </a-menu-item>
                               </a-menu>
                             </a-dropdown>
@@ -518,7 +518,7 @@
                               v-bind="buildProps(row,col)"
                               @change="(v)=>handleChangeUpload(v,id,row,col)"
                             >
-                              <a-button icon="upload">上传文件</a-button>
+                              <a-button icon="upload">{{ $t('common.uploadFile') }}</a-button>
                             </a-upload>
                           </span>
                         </a-tooltip>
@@ -533,26 +533,26 @@
                             <a-icon type="loading"/>
                           </template>
                           <template v-else-if="uploadValues[id]['path']">
-                            <img class="j-editable-image" :src="getCellImageView(id)" alt="无图片" @click="handleMoreOperation(id,'img')"/>
+                            <img class="j-editable-image" :src="getCellImageView(id)" :alt="$t('common.noImage')" @click="handleMoreOperation(id,'img')"/>
                           </template>
                           <template v-else>
                             <a-icon type="exclamation-circle" style="color: red;" @click="handleClickShowImageError(id)"/>
                           </template>
                           <template slot="addonBefore" style="width: 30px">
-                            <a-tooltip v-if="file.status==='uploading'" :title="`上传中(${Math.floor(file.percent)}%)`">
+                            <a-tooltip v-if="file.status==='uploading'" :title="$t('common.uploading', { percent: Math.floor(file.percent) })">
                               <a-icon type="loading"/>
                             </a-tooltip>
-                            <a-tooltip v-else-if="file.status==='done'" title="上传完成">
+                            <a-tooltip v-else-if="file.status==='done'" :title="$t('common.uploadDone')">
                               <a-icon type="check-circle" style="color:#00DB00;"/>
                             </a-tooltip>
-                            <a-tooltip v-else title="上传失败">
+                            <a-tooltip v-else :title="$t('common.uploadFailed')">
                               <a-icon type="exclamation-circle" style="color:red;"/>
                             </a-tooltip>
                           </template>
 
                           <template style="width: 30px">
                             <a-dropdown :trigger="['click']" placement="bottomRight" :getPopupContainer="getParentContainer" style="margin-left: 10px;">
-                              <a-tooltip title="操作" :getPopupContainer="getParentContainer">
+                              <a-tooltip :title="$t('common.action')" :getPopupContainer="getParentContainer">
                                 <a-icon
                                   v-if="file.status!=='uploading'"
                                   type="setting"
@@ -561,13 +561,13 @@
 
                               <a-menu slot="overlay">
                                 <a-menu-item v-if="col.allowDownload!==false" @click="handleClickDownFileByUrl(id)">
-                                  <span><a-icon type="download"/>&nbsp;下载</span>
+                                  <span><a-icon type="download"/>&nbsp;{{ $t('common.download') }}</span>
                                 </a-menu-item>
                                 <a-menu-item @click="handleClickDelFile(id)">
-                                  <span><a-icon type="delete"/>&nbsp;删除</span>
+                                  <span><a-icon type="delete"/>&nbsp;{{ $t('common.delete') }}</span>
                                 </a-menu-item>
                                 <a-menu-item @click="handleMoreOperation(id,'img')">
-                                  <span><a-icon type="bars" /> 更多</span>
+                                  <span><a-icon type="bars" /> {{ $t('common.more') }}</span>
                                 </a-menu-item>
                               </a-menu>
                             </a-dropdown>
@@ -600,7 +600,7 @@
                               v-bind="buildProps(row,col)"
                               @change="(v)=>handleChangeUpload(v,id,row,col)"
                             >
-                              <a-button icon="upload">上传图片</a-button>
+                              <a-button icon="upload">{{ $t('common.uploadImage') }}</a-button>
                             </a-upload>
                           </span>
                         </a-tooltip>
@@ -770,7 +770,7 @@
             <div v-if="dragSortAndNumber" class="td td-ds" :style="style.tdLeftDs">
             </div>
             <div v-if="rowNumber" class="td td-num" :style="style.tdLeft">
-              <span v-if="!rowSelection">统计</span>
+              <span v-if="!rowSelection">{{ $t('common.statistics') }}</span>
             </div>
             <div v-if="rowSelection" class="td td-cb" :style="style.tdLeft">
             </div>
@@ -2009,17 +2009,17 @@
 
               // 兼容 online 的规则
               let foo = [
-                { title: '6到16位数字', value: 'n6-16', pattern: /^\d{6,18}$/ },
-                { title: '6到16位任意字符', value: '*6-16', pattern: /^.{6,16}$/ },
-                { title: '6到18位字母', value: 's6-18', pattern: /^[a-z|A-Z]{6,18}$/ },
-                { title: '网址', value: 'url', pattern: /^(?:([A-Za-z]+):)?(\/{0,3})([0-9.\-A-Za-z]+)(?::(\d+))?(?:\/([^?#]*))?(?:\?([^#]*))?(?:#(.*))?$/ },
-                { title: '电子邮件', value: 'e', pattern: /^([\w]+\.*)([\w]+)@[\w]+\.\w{3}(\.\w{2}|)$/ },
-                { title: '手机号码', value: 'm', pattern: /^1[3456789]\d{9}$/ },
-                { title: '邮政编码', value: 'p', pattern: /^[1-9]\d{5}$/ },
-                { title: '字母', value: 's', pattern: /^[A-Z|a-z]+$/ },
-                { title: '数字', value: 'n', pattern: /^-?\d+(\.?\d+|\d?)$/ },
-                { title: '整数', value: 'z', pattern: /^-?\d+$/ },
-                { title: '非空', value: '*', pattern: /^.+$/ },
+                { title: this.$t('common.pattern6to16Digits'), value: 'n6-16', pattern: /^\d{6,18}$/ },
+                { title: this.$t('common.pattern6to16Any'), value: '*6-16', pattern: /^.{6,16}$/ },
+                { title: this.$t('common.pattern6to18Letters'), value: 's6-18', pattern: /^[a-z|A-Z]{6,18}$/ },
+                { title: this.$t('common.patternUrl'), value: 'url', pattern: /^(?:([A-Za-z]+):)?(\/{0,3})([0-9.\-A-Za-z]+)(?::(\d+))?(?:\/([^?#]*))?(?:\?([^#]*))?(?:#(.*))?$/ },
+                { title: this.$t('common.patternEmail'), value: 'e', pattern: /^([\w]+\.*)([\w]+)@[\w]+\.\w{3}(\.\w{2}|)$/ },
+                { title: this.$t('common.phoneNo'), value: 'm', pattern: /^1[3456789]\d{9}$/ },
+                { title: this.$t('common.patternPostalCode'), value: 'p', pattern: /^[1-9]\d{5}$/ },
+                { title: this.$t('common.patternLetters'), value: 's', pattern: /^[A-Z|a-z]+$/ },
+                { title: this.$t('common.patternDigits'), value: 'n', pattern: /^-?\d+(\.?\d+|\d?)$/ },
+                { title: this.$t('common.patternInteger'), value: 'z', pattern: /^-?\d+$/ },
+                { title: this.$t('common.patternNonEmpty'), value: '*', pattern: /^.+$/ },
                 { title: '金额', value: 'money', pattern: /^(([1-9][0-9]*)|([0]\.\d{0,2}|[1-9][0-9]*\.\d{0,2}))$/ },
               ]
               let flag = false
@@ -2420,7 +2420,7 @@
         if (file.status === 'done') {
           value['path'] = file.response[column.responseName]
         } else if (file.status === 'error') {
-          value['message'] = file.response.message || '未知错误'
+          value['message'] = file.response.message || this.$t('common.error')
         }
         this.uploadValues = this.bindValuesChange(value, id, 'uploadValues')
       },
@@ -2531,7 +2531,7 @@
       handleClickShowImageError(id) {
         let currUploadObj = this.uploadValues[id] || null
         if (currUploadObj && currUploadObj['message']) {
-          this.$error({ title: '上传出错', content: '错误信息：' + currUploadObj['message'], maskClosable: true })
+          this.$error({ title: this.$t('common.uploadFailed'), content: currUploadObj['message'], maskClosable: true })
         }
       },
 

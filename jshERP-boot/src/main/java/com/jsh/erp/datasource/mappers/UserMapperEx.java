@@ -34,6 +34,9 @@ public interface UserMapperEx {
     @InterceptorIgnore(tenantLine = "true")
     void disableUserByLimit(@Param("tenantId") Long tenantId);
 
+    @InterceptorIgnore(tenantLine = "true")
+    int countActiveUsersByTenantId(@Param("tenantId") Long tenantId);
+
     List<User> getListByOrgaId(
             @Param("id") Long id,
             @Param("orgaId") Long orgaId);

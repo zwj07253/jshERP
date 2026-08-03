@@ -7,23 +7,23 @@
       <span v-show="false">{{tooltipProps}}</span>
       <!-- end 不知道为什么不加上这段代码就无法生效 -->
       <template slot="title">
-        <span>已有高级查询条件生效</span>
+        <span>{{ $t('common.advancedQueryConditionsActive') }}</span>
         <a-divider type="vertical"/>
-        <a @click="handleReset">清空</a>
+        <a @click="handleReset">{{ $t('common.clear') }}</a>
       </template>
       <a-button-group>
         <a-button type="primary" @click="handleOpen">
           <a-icon type="appstore" theme="twoTone" spin/>
-          <span>高级查询</span>
+          <span>{{ $t('common.advancedQuery') }}</span>
         </a-button>
         <a-button v-if="izMobile" type="primary" icon="delete" @click="handleReset"/>
       </a-button-group>
     </a-tooltip>
-    <a-button v-else type="primary" icon="filter" @click="handleOpen">高级查询</a-button>
+    <a-button v-else type="primary" icon="filter" @click="handleOpen">{{ $t('common.advancedQuery') }}</a-button>
   </slot>
 
   <j-modal
-    title="高级查询构造器"
+    :title="$t('common.advancedQueryBuilder')"
     :width="1000"
     :visible="visible"
     @cancel="handleCancel"
@@ -35,11 +35,11 @@
 
     <template slot="footer">
       <div style="float: left">
-        <a-button :loading="loading" @click="handleReset">重置</a-button>
-        <a-button :loading="loading" @click="handleSave">保存查询条件</a-button>
+        <a-button :loading="loading" @click="handleReset">{{ $t('common.reset') }}</a-button>
+        <a-button :loading="loading" @click="handleSave">{{ $t('common.saveQueryConditions') }}</a-button>
       </div>
-      <a-button :loading="loading" @click="handleCancel">关闭</a-button>
-      <a-button :loading="loading" type="primary" @click="handleOk">查询</a-button>
+      <a-button :loading="loading" @click="handleCancel">{{ $t('common.close') }}</a-button>
+      <a-button :loading="loading" type="primary" @click="handleOk">{{ $t('common.search') }}</a-button>
     </template>
 
     <a-spin :spinning="loading">
@@ -48,9 +48,9 @@
 
           <a-empty v-if="queryParamsModel.length === 0" style="margin-bottom: 12px;">
             <div slot="description">
-              <span>没有任何查询条件</span>
+              <span>{{ $t('common.noQueryConditions') }}</span>
               <a-divider type="vertical"/>
-              <a @click="handleAdd">点击新增</a>
+              <a @click="handleAdd">{{ $t('common.clickToAdd') }}</a>
             </div>
           </a-empty>
 
@@ -58,10 +58,10 @@
 
             <a-row style="margin-bottom: 12px;">
               <a-col :md="12" :xs="24">
-                <a-form-item label="过滤条件匹配" :labelCol="{md: 6,xs:24}" :wrapperCol="{md: 18,xs:24}" style="width: 100%;">
+                <a-form-item :label="$t('common.filterConditionMatch')" :labelCol="{md: 6,xs:24}" :wrapperCol="{md: 18,xs:24}" style="width: 100%;">
                   <a-select v-model="matchType" :getPopupContainer="node=>node.parentNode" style="width: 100%;">
-                    <a-select-option value="and">AND（所有条件都要求匹配）</a-select-option>
-                    <a-select-option value="or">OR（条件中的任意一个匹配）</a-select-option>
+                    <a-select-option value="and">{{ $t('common.andAllMatch') }}</a-select-option>
+                    <a-select-option value="or">{{ $t('common.orAnyMatch') }}</a-select-option>
                   </a-select>
                 </a-form-item>
               </a-col>
@@ -75,7 +75,7 @@
                   v-model="item.field"
                   :treeData="fieldTreeData"
                   :dropdownStyle="{ maxHeight: '400px', overflow: 'auto' }"
-                  placeholder="选择查询字段"
+                  :placeholder="$t('common.selectQueryField')"
                   allowClear
                   treeDefaultExpandAll
                   :getPopupContainer="node=>node.parentNode"
@@ -86,17 +86,17 @@
               </a-col>
 
               <a-col :md="4" :xs="24" style="margin-bottom: 12px;">
-                <a-select placeholder="匹配规则" :value="item.rule" :getPopupContainer="node=>node.parentNode" @change="handleRuleChange(item,$event)">
-                  <a-select-option value="eq">等于</a-select-option>
-                  <a-select-option value="like">包含</a-select-option>
-                  <a-select-option value="right_like">以..开始</a-select-option>
-                  <a-select-option value="left_like">以..结尾</a-select-option>
-                  <a-select-option value="in">在...中</a-select-option>
-                  <a-select-option value="ne">不等于</a-select-option>
-                  <a-select-option value="gt">大于</a-select-option>
-                  <a-select-option value="ge">大于等于</a-select-option>
-                  <a-select-option value="lt">小于</a-select-option>
-                  <a-select-option value="le">小于等于</a-select-option>
+                <a-select :placeholder="$t('common.matchRule')" :value="item.rule" :getPopupContainer="node=>node.parentNode" @change="handleRuleChange(item,$event)">
+                  <a-select-option value="eq">{{ $t('common.equals') }}</a-select-option>
+                  <a-select-option value="like">{{ $t('common.contains') }}</a-select-option>
+                  <a-select-option value="right_like">{{ $t('common.startsWith') }}</a-select-option>
+                  <a-select-option value="left_like">{{ $t('common.endsWith') }}</a-select-option>
+                  <a-select-option value="in">{{ $t('common.inList') }}</a-select-option>
+                  <a-select-option value="ne">{{ $t('common.notEquals') }}</a-select-option>
+                  <a-select-option value="gt">{{ $t('common.greaterThan') }}</a-select-option>
+                  <a-select-option value="ge">{{ $t('common.greaterThanOrEqual') }}</a-select-option>
+                  <a-select-option value="lt">{{ $t('common.lessThan') }}</a-select-option>
+                  <a-select-option value="le">{{ $t('common.lessThanOrEqual') }}</a-select-option>
                 </a-select>
               </a-col>
 
@@ -112,8 +112,8 @@
                     ></j-popup>
                   </template>
                   <template v-else>
-                    <j-multi-select-tag v-show="allowMultiple(item)" v-model="item.val" :dictCode="item.dictCode" placeholder="请选择"/>
-                    <j-dict-select-tag v-show="!allowMultiple(item)" v-model="item.val" :dictCode="item.dictCode" placeholder="请选择"/>
+                    <j-multi-select-tag v-show="allowMultiple(item)" v-model="item.val" :dictCode="item.dictCode" :placeholder="$t('common.pleaseSelect')"/>
+                    <j-dict-select-tag v-show="!allowMultiple(item)" v-model="item.val" :dictCode="item.dictCode" :placeholder="$t('common.pleaseSelect')"/>
                   </template>
                 </template>
                 <j-popup v-else-if="item.type === 'popup'" :value="item.val" v-bind="item.popup" group-id="superQuery" @input="(e,v)=>handleChangeJPopup(item,e,v)"/>
@@ -122,14 +122,14 @@
                   v-model="item.val"
                   :buttons="false"
                   :multiple="false"
-                  placeholder="请选择用户"
+                  :placeholder="$t('common.selectUser')"
                   :returnKeys="['id', item.customReturnField || 'username']"
                 />
                 <j-select-depart
                   v-else-if="item.type === 'select-depart' || item.type === 'sel_depart'"
                   v-model="item.val"
                   :multi="false"
-                  placeholder="请选择部门"
+                  :placeholder="$t('common.selectDepartment')"
                   :customReturnField="item.customReturnField || 'id'"
                 />
                 <a-select
@@ -137,15 +137,15 @@
                   v-model="item.val"
                   :options="item.options"
                   allowClear
-                  placeholder="请选择"
+                  :placeholder="$t('common.pleaseSelect')"
                   :mode="allowMultiple(item)?'multiple':''"
                 />
                 <j-area-linkage v-model="item.val" v-else-if="item.type==='area-linkage' || item.type==='pca'" style="width: 100%"/>
-                <j-date v-else-if=" item.type=='date' " v-model="item.val" placeholder="请选择日期" style="width: 100%"></j-date>
-                <j-date v-else-if=" item.type=='datetime' " v-model="item.val" placeholder="请选择时间" :show-time="true" date-format="YYYY-MM-DD HH:mm:ss" style="width: 100%"></j-date>
+                <j-date v-else-if=" item.type=='date' " v-model="item.val" :placeholder="$t('common.selectDate')" style="width: 100%"></j-date>
+                <j-date v-else-if=" item.type=='datetime' " v-model="item.val" :placeholder="$t('common.selectTime')" :show-time="true" date-format="YYYY-MM-DD HH:mm:ss" style="width: 100%"></j-date>
                 <a-time-picker v-else-if="item.type==='time'" :value="item.val ? moment(item.val,'HH:mm:ss') : null" format="HH:mm:ss" style="width: 100%" @change="(time,value)=>item.val=value"/>
-                <a-input-number v-else-if=" item.type=='int'||item.type=='number' " style="width: 100%" placeholder="请输入数值" v-model="item.val"/>
-                <a-input v-else v-model="item.val" placeholder="请输入值"/>
+                <a-input-number v-else-if=" item.type=='int'||item.type=='number' " style="width: 100%" :placeholder="$t('common.enterNumber')" v-model="item.val"/>
+                <a-input v-else v-model="item.val" :placeholder="$t('common.enterValue')"/>
               </a-col>
 
               <a-col :md="4" :xs="0" style="margin-bottom: 12px;">
@@ -167,10 +167,10 @@
 
           <a-card class="j-super-query-history-card" :bordered="true">
             <div slot="title">
-              保存的查询
+              {{ $t('common.savedQueries') }}
             </div>
 
-            <a-empty v-if="saveTreeData.length === 0" class="j-super-query-history-empty" description="没有保存任何查询"/>
+            <a-empty v-if="saveTreeData.length === 0" class="j-super-query-history-empty" :description="$t('common.noSavedQueries')"/>
             <a-tree
               v-else
               class="j-super-query-history-tree"
@@ -189,7 +189,7 @@
 
     </a-spin>
 
-    <a-modal title="请输入保存的名称" :visible="prompt.visible" @cancel="prompt.visible=false" @ok="handlePromptOk">
+    <a-modal :title="$t('common.enterTitle')" :visible="prompt.visible" @cancel="prompt.visible=false" @ok="handlePromptOk">
       <a-input v-model="prompt.value"></a-input>
     </a-modal>
 
@@ -345,7 +345,7 @@
           }
           this.emitCallback(event)
         } else {
-          this.$message.warn("不能查询空条件")
+          this.$message.warn(this.$t('common.noQueryConditions'))
         }
       },
       emitCallback(event = {}) {
@@ -402,7 +402,7 @@
       handleSave() {
         let queryParams = this.removeEmptyObject(this.queryParamsModel)
         if (this.isNullArray(queryParams)) {
-          this.$message.warning('空条件不能保存')
+          this.$message.warning(this.$t('common.emptyQueryCannotSave'))
         } else {
           this.prompt.value = ''
           this.prompt.visible = true
@@ -411,7 +411,7 @@
       handlePromptOk() {
         let { value } = this.prompt
         if(!value){
-          this.$message.warning('保存名称不能为空')
+          this.$message.warning(this.$t('common.saveNameRequired'))
           return
         }
         // 取出查询条件
@@ -420,12 +420,12 @@
         let filterList = this.saveTreeData.filter(i => i.originTitle === value)
         if (filterList.length > 0) {
           this.$confirm({
-            content: `${value} 已存在，是否覆盖？`,
+            content: this.$t('common.alreadyExistsOverwrite', { name: value }),
             onOk: () => {
               this.prompt.visible = false
               filterList[0].records = records
               this.saveToLocalStore()
-              this.$message.success('保存成功')
+              this.$message.success(this.$t('common.saveSuccess'))
             }
           })
         } else {
@@ -439,7 +439,7 @@
           }))
           // 保存到 LocalStore
           this.saveToLocalStore()
-          this.$message.success('保存成功')
+          this.$message.success(this.$t('common.saveSuccess'))
         }
       },
       handleTreeSelect(idx, event) {
@@ -455,7 +455,7 @@
         event.stopPropagation()
 
         this.$confirm({
-          content: '是否删除当前查询？',
+          content: this.$t('common.deleteCurrentQuery'),
           onOk: () => {
             let { eventKey } = vNode
             this.saveTreeData.splice(Number.parseInt(eventKey.substring(2)), 1)

@@ -9,8 +9,8 @@
     @cancel="cancel"
     :maskClosable="false"
     :mask="false"
-    okText="确认"
-    cancelText="取消">
+    :okText="$t('common.confirm')"
+    :cancelText="$t('common.cancel')">
     <a-tabs>
       <a-tab-pane tab="方向性图标" key="1">
         <ul>
@@ -101,11 +101,11 @@ export default {
     chooseIcon (icon) {
       this.activeIndex = icon
       this.choosedIcon = icon
-      this.$message.success(`选中 ${icon}`)
+      this.$message.success(this.$t('common.selected') + ': ' + icon)
     },
     ok () {
       if (this.choosedIcon === '') {
-        this.$message.warning('尚未选择任何图标')
+        this.$message.warning(this.$t('common.pleaseSelectIcon'))
         return
       }
       this.reset()

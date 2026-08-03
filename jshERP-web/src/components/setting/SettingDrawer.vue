@@ -11,12 +11,12 @@
       <div class="setting-drawer-index-content">
 
         <div :style="{ marginBottom: '24px' }">
-          <h3 class="setting-drawer-index-title">整体风格设置</h3>
+          <h3 class="setting-drawer-index-title">{{ $t('settings.overallStyle') }}</h3>
 
           <div class="setting-drawer-index-blockChecbox">
             <a-tooltip>
               <template slot="title">
-                暗色菜单风格
+                {{ $t('settings.darkMenuStyle') }}
               </template>
               <div class="setting-drawer-index-item" @click="handleMenuTheme('dark')">
                 <img src="../../assets/dark.svg" alt="dark">
@@ -28,7 +28,7 @@
 
             <a-tooltip>
               <template slot="title">
-                亮色菜单风格
+                {{ $t('settings.lightMenuStyle') }}
               </template>
               <div class="setting-drawer-index-item" @click="handleMenuTheme('light')">
                 <img src="../../assets/light.svg" alt="light">
@@ -41,7 +41,7 @@
         </div>
 
         <div :style="{ marginBottom: '24px' }">
-          <h3 class="setting-drawer-index-title">主题色</h3>
+          <h3 class="setting-drawer-index-title">{{ $t('settings.themeColor') }}</h3>
 
           <div style="height: 20px">
             <a-tooltip class="setting-drawer-theme-color-colorBlock" v-for="(item, index) in colorList" :key="index">
@@ -58,24 +58,33 @@
         <a-divider />
 
         <div :style="{ marginBottom: '24px' }">
+          <h3 class="setting-drawer-index-title">{{ $t('settings.language') }}</h3>
+          <a-select :value="$i18n.locale" style="width:150px" @change="changeLanguage">
+            <a-select-option value="zh-CN">{{ $t('language.chinese') }}</a-select-option>
+            <a-select-option value="en">{{ $t('language.english') }}</a-select-option>
+          </a-select>
+        </div>
+        <a-divider />
+
+        <div :style="{ marginBottom: '24px' }">
           <div :style="{ marginTop: '24px' }">
             <a-list :split="false">
               <a-list-item>
                 <a-switch slot="actions" size="small" :defaultChecked="fixedHeader" @change="handleFixedHeader" />
                 <a-list-item-meta>
-                  <div slot="title">固定 Header</div>
+                  <div slot="title">{{ $t('settings.fixedHeader') }}</div>
                 </a-list-item-meta>
               </a-list-item>
               <a-list-item>
                 <a-switch slot="actions" size="small" :disabled="!fixedHeader" :defaultChecked="autoHideHeader" @change="handleFixedHeaderHidden" />
                 <a-list-item-meta>
-                  <div slot="title" :style="{ textDecoration: !fixedHeader ? 'line-through' : 'unset' }">下滑时隐藏 Header</div>
+                  <div slot="title" :style="{ textDecoration: !fixedHeader ? 'line-through' : 'unset' }">{{ $t('settings.hideHeaderOnScroll') }}</div>
                 </a-list-item-meta>
               </a-list-item>
               <a-list-item >
                 <a-switch slot="actions" size="small" :disabled="(layoutMode === 'topmenu')" :checked="fixSiderbar" @change="handleFixSiderbar" />
                 <a-list-item-meta>
-                  <div slot="title" :style="{ textDecoration: layoutMode === 'topmenu' ? 'line-through' : 'unset' }">固定侧边菜单</div>
+                  <div slot="title" :style="{ textDecoration: layoutMode === 'topmenu' ? 'line-through' : 'unset' }">{{ $t('settings.fixedSider') }}</div>
                 </a-list-item-meta>
               </a-list-item>
             </a-list>
@@ -84,98 +93,13 @@
         <a-divider />
 
         <div :style="{ marginBottom: '24px' }">
-          <h3 class="setting-drawer-index-title">语言设置</h3>
-          <div style="padding: 10px 0 50px 0">
-            <div style="float:left; width: 40%; line-height: 30px">{{langSetTitle}}</div>
-            <div style="float:left; width: 60%" id="langSetting">
-              <a-select placeholder="请选择语言" showSearch optionFilterProp="children" :value="currentLang" @change="handleChangeLang" style="width:150px">
-                <a-select-option class="ignore" value="chinese_simplified">简体中文</a-select-option>
-                <a-select-option class="ignore" value="chinese_traditional">繁體中文</a-select-option>
-                <a-select-option class="ignore" value="english">English</a-select-option>
-                <a-select-option class="ignore" value="korean">한국어</a-select-option>
-                <a-select-option class="ignore" value="japanese">しろうと</a-select-option>
-                <a-select-option class="ignore" value="vietnamese">Tiếng Việt</a-select-option>
-                <a-select-option class="ignore" value="hindi">हिन्दी</a-select-option>
-                <a-select-option class="ignore" value="russian">Русский язык</a-select-option>
-                <a-select-option class="ignore" value="french">Français</a-select-option>
-                <a-select-option class="ignore" value="ukrainian">УкраїнськаName</a-select-option>
-                <a-select-option class="ignore" value="norwegian">Norge</a-select-option>
-                <a-select-option class="ignore" value="welsh">color name</a-select-option>
-                <a-select-option class="ignore" value="dutch">nederlands</a-select-option>
-                <a-select-option class="ignore" value="filipino">Pilipino</a-select-option>
-                <a-select-option class="ignore" value="lao">ກະຣຸນາ</a-select-option>
-                <a-select-option class="ignore" value="telugu">తెలుగుQFontDatabase</a-select-option>
-                <a-select-option class="ignore" value="romanian">Română</a-select-option>
-                <a-select-option class="ignore" value="nepali">नेपालीName</a-select-option>
-                <a-select-option class="ignore" value="haitian_creole">Kreyòl ayisyen</a-select-option>
-                <a-select-option class="ignore" value="czech">český</a-select-option>
-                <a-select-option class="ignore" value="swedish">Svenska</a-select-option>
-                <a-select-option class="ignore" value="malagasy">Malagasy</a-select-option>
-                <a-select-option class="ignore" value="burmese">ဗာရမ်</a-select-option>
-                <a-select-option class="ignore" value="pashto">پښتوName</a-select-option>
-                <a-select-option class="ignore" value="thai">คนไทย</a-select-option>
-                <a-select-option class="ignore" value="armenian">Արմենյան</a-select-option>
-                <a-select-option class="ignore" value="persian">Persian</a-select-option>
-                <a-select-option class="ignore" value="kurdish">Kurdî</a-select-option>
-                <a-select-option class="ignore" value="turkish">Türkçe</a-select-option>
-                <a-select-option class="ignore" value="bulgarian">български</a-select-option>
-                <a-select-option class="ignore" value="malay">Malay</a-select-option>
-                <a-select-option class="ignore" value="swahili">Kiswahili</a-select-option>
-                <a-select-option class="ignore" value="oriya">ଓଡିଆ</a-select-option>
-                <a-select-option class="ignore" value="icelandic">ÍslandName</a-select-option>
-                <a-select-option class="ignore" value="irish">Íris</a-select-option>
-                <a-select-option class="ignore" value="khmer">ខ្មែរKCharselect unicode block name</a-select-option>
-                <a-select-option class="ignore" value="gujarati">ગુજરાતી</a-select-option>
-                <a-select-option class="ignore" value="slovak">Slovenská</a-select-option>
-                <a-select-option class="ignore" value="kannada">ಕನ್ನಡ್Name</a-select-option>
-                <a-select-option class="ignore" value="hebrew">היברית</a-select-option>
-                <a-select-option class="ignore" value="hungarian">magyar</a-select-option>
-                <a-select-option class="ignore" value="marathi">मराठीName</a-select-option>
-                <a-select-option class="ignore" value="tamil">தாமில்</a-select-option>
-                <a-select-option class="ignore" value="estonian">eesti keel</a-select-option>
-                <a-select-option class="ignore" value="malayalam">മലമാലം</a-select-option>
-                <a-select-option class="ignore" value="inuktitut">ᐃᓄᒃᑎᑐᑦ</a-select-option>
-                <a-select-option class="ignore" value="arabic">بالعربية</a-select-option>
-                <a-select-option class="ignore" value="deutsch">Deutsch</a-select-option>
-                <a-select-option class="ignore" value="slovene">slovenščina</a-select-option>
-                <a-select-option class="ignore" value="bengali">বেঙ্গালী</a-select-option>
-                <a-select-option class="ignore" value="urdu">اوردو</a-select-option>
-                <a-select-option class="ignore" value="azerbaijani">azerbaijani</a-select-option>
-                <a-select-option class="ignore" value="portuguese">português</a-select-option>
-                <a-select-option class="ignore" value="samoan">lifiava</a-select-option>
-                <a-select-option class="ignore" value="afrikaans">afrikaans</a-select-option>
-                <a-select-option class="ignore" value="tongan">汤加语</a-select-option>
-                <a-select-option class="ignore" value="greek">ελληνικά</a-select-option>
-                <a-select-option class="ignore" value="indonesian">IndonesiaName</a-select-option>
-                <a-select-option class="ignore" value="spanish">Español</a-select-option>
-                <a-select-option class="ignore" value="danish">dansk</a-select-option>
-                <a-select-option class="ignore" value="amharic">amharic</a-select-option>
-                <a-select-option class="ignore" value="punjabi">ਪੰਜਾਬੀName</a-select-option>
-                <a-select-option class="ignore" value="albanian">albanian</a-select-option>
-                <a-select-option class="ignore" value="lithuanian">Lietuva</a-select-option>
-                <a-select-option class="ignore" value="italian">italiano</a-select-option>
-                <a-select-option class="ignore" value="maltese">Malti</a-select-option>
-                <a-select-option class="ignore" value="finnish">suomi</a-select-option>
-                <a-select-option class="ignore" value="catalan">català</a-select-option>
-                <a-select-option class="ignore" value="croatian">hrvatski</a-select-option>
-                <a-select-option class="ignore" value="bosnian">bosnian</a-select-option>
-                <a-select-option class="ignore" value="polish">Polski</a-select-option>
-                <a-select-option class="ignore" value="latvian">latviešu</a-select-option>
-                <a-select-option class="ignore" value="maori">Maori</a-select-option>
-              </a-select>
-            </div>
-          </div>
-        </div>
-        <a-divider />
-
-        <div :style="{ marginBottom: '24px' }">
-          <h3 class="setting-drawer-index-title">其他设置</h3>
+          <h3 class="setting-drawer-index-title">{{ $t('settings.otherSettings') }}</h3>
           <div>
             <a-list :split="false">
               <a-list-item>
                 <a-switch slot="actions" size="small" :defaultChecked="colorWeak" @change="onColorWeak" />
                 <a-list-item-meta>
-                  <div slot="title">色弱模式</div>
+                  <div slot="title">{{ $t('settings.colorWeakMode') }}</div>
                 </a-list-item-meta>
               </a-list-item>
             </a-list>
@@ -196,6 +120,7 @@
   import { updateTheme, updateColorWeak, colorList } from '@/components/tools/setting'
   import { mixin, mixinDevice } from '@/utils/mixin.js'
   import { triggerWindowResizeEvent } from '@/utils/util'
+  import { setLocale } from '@/locales'
 
   export default {
     components: {
@@ -206,8 +131,6 @@
     data() {
       return {
         visible: true,
-        langSetTitle: '选择语言',
-        currentLang: '',
         colorList
       }
     },
@@ -230,10 +153,10 @@
         this.$store.dispatch('ToggleMultipage', this.multipage)
       }
     },
-    created () {
-      this.currentLang = translate.language.getCurrent()
-    },
     methods: {
+      changeLanguage(value) {
+        setLocale(value)
+      },
       showDrawer() {
         this.visible = true
       },
@@ -278,10 +201,6 @@
       handleFixSiderbar (fixed) {
         this.fixSiderbar = fixed
         this.$store.dispatch('ToggleFixSiderbar', fixed)
-      },
-      handleChangeLang(value) {
-        translate.changeLanguage(value)
-        this.currentLang = translate.language.getCurrent()
       }
     },
   }

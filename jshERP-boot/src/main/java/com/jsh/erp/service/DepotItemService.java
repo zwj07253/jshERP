@@ -7,9 +7,11 @@ import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.*;
 import com.jsh.erp.datasource.mappers.*;
 import com.jsh.erp.datasource.vo.DepotItemStockWarningCount;
+import com.jsh.erp.datasource.vo.DepotItemVo4InOutStock;
 import com.jsh.erp.datasource.vo.DepotItemVo4Stock;
 import com.jsh.erp.datasource.vo.DepotItemVoBatchNumberList;
 import com.jsh.erp.datasource.vo.InOutPriceVo;
+import com.jsh.erp.datasource.vo.MaterialExtendStock;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.exception.JshException;
 import com.jsh.erp.utils.StringUtil;
@@ -23,6 +25,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class DepotItemService {
@@ -62,7 +65,56 @@ public class DepotItemService {
     @Resource
     private MaterialCurrentStockMapperEx materialCurrentStockMapperEx;
     @Resource
+    private MaterialMapperEx materialMapperEx;
+    @Resource
     private LogService logService;
+    @Resource
+    private PlatformAccessService platformAccessService;
+
+    public void checkRetailReportPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if(!userService.hasFunctionPermission(userId, "/report/retail_out_report")) {
+            throw new BusinessRunTimeException(ExceptionConstants.RETAIL_REPORT_PERMISSION_CODE,
+                    ExceptionConstants.RETAIL_REPORT_PERMISSION_MSG);
+        }
+    }
+
+    public void checkBuyReportPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if(!userService.hasFunctionPermission(userId, "/report/buy_in_report")) {
+            throw new BusinessRunTimeException(ExceptionConstants.BUY_REPORT_PERMISSION_CODE,
+                    ExceptionConstants.BUY_REPORT_PERMISSION_MSG);
+        }
+    }
+
+    public void checkSaleReportPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if(!userService.hasFunctionPermission(userId, "/report/sale_out_report")) {
+            throw new BusinessRunTimeException(ExceptionConstants.SALE_REPORT_PERMISSION_CODE,
+                    ExceptionConstants.SALE_REPORT_PERMISSION_MSG);
+        }
+    }
+
+    public void checkInOutStockReportPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if(!userService.hasFunctionPermission(userId, "/report/in_out_stock_report")) {
+            throw new BusinessRunTimeException(ExceptionConstants.IN_OUT_STOCK_REPORT_PERMISSION_CODE,
+                    ExceptionConstants.IN_OUT_STOCK_REPORT_PERMISSION_MSG);
+        }
+    }
+
+    public void checkStockWarningReportPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if(!userService.hasFunctionPermission(userId, "/report/stock_warning_report")) {
+            throw new BusinessRunTimeException(ExceptionConstants.STOCK_WARNING_REPORT_PERMISSION_CODE,
+                    ExceptionConstants.STOCK_WARNING_REPORT_PERMISSION_MSG);
+        }
+    }
 
     public DepotItem getDepotItem(long id)throws Exception {
         DepotItem result=null;
@@ -108,6 +160,7 @@ public class DepotItemService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertDepotItem(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         DepotItem depotItem = JSONObject.parseObject(obj.toJSONString(), DepotItem.class);
         int result =0;
         try{
@@ -120,6 +173,7 @@ public class DepotItemService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateDepotItem(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         DepotItem depotItem = JSONObject.parseObject(obj.toJSONString(), DepotItem.class);
         int result =0;
         try{
@@ -132,6 +186,7 @@ public class DepotItemService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteDepotItem(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         int result =0;
         try{
             result=depotItemMapper.deleteByPrimaryKey(id);
@@ -143,6 +198,7 @@ public class DepotItemService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteDepotItem(String ids, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         List<Long> idList = StringUtil.strToLongList(ids);
         DepotItemExample example = new DepotItemExample();
         example.createCriteria().andIdIn(idList);
@@ -228,6 +284,7 @@ public class DepotItemService {
         try{
             DepotItemExample example = new DepotItemExample();
             example.createCriteria().andHeaderIdEqualTo(headerId).andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+            example.setOrderByClause("id asc");
             list = depotItemMapper.selectByExample(example);
         }catch(Exception e){
             JshException.readFail(logger, e);
@@ -292,24 +349,33 @@ public class DepotItemService {
         return list;
     }
 
-    public List<DepotItemVo4WithInfoEx> getInOutStock(String materialParam, List<Long> categoryIdList, String endTime, Integer offset, Integer rows)throws Exception {
-        List<DepotItemVo4WithInfoEx> list =null;
-        try{
-            list = depotItemMapperEx.getInOutStock(materialParam, categoryIdList, endTime, offset, rows);
-        }catch(Exception e){
-            JshException.readFail(logger, e);
-        }
-        return list;
+    public List<DepotItemVo4InOutStock> getInOutStock(String materialParam, List<Long> categoryIdList,
+                                                       List<Long> depotList, String beginTime, String endTime,
+                                                       Boolean forceFlag, Boolean inOutManageFlag,
+                                                       Boolean moveAvgPriceFlag, String column, String order,
+                                                       Integer offset, Integer rows)throws Exception {
+        return depotItemMapperEx.getInOutStock(materialParam, categoryIdList, depotList, beginTime, endTime,
+                forceFlag, inOutManageFlag, moveAvgPriceFlag, column, order, offset, rows);
     }
 
-    public int getInOutStockCount(String materialParam, List<Long> categoryIdList, String endTime)throws Exception {
-        int result=0;
-        try{
-            result = depotItemMapperEx.getInOutStockCount(materialParam, categoryIdList, endTime);
-        }catch(Exception e){
-            JshException.readFail(logger, e);
-        }
-        return result;
+    public int getInOutStockCount(String materialParam, List<Long> categoryIdList, List<Long> depotList,
+                                  String beginTime, String endTime, Boolean forceFlag,
+                                  Boolean inOutManageFlag, Boolean moveAvgPriceFlag)throws Exception {
+        return depotItemMapperEx.getInOutStockCount(materialParam, categoryIdList, depotList, beginTime, endTime,
+                forceFlag, inOutManageFlag, moveAvgPriceFlag);
+    }
+
+    public DepotItemVo4InOutStock getInOutStockStatistic(String materialParam, List<Long> categoryIdList,
+                                                          List<Long> depotList, String beginTime, String endTime,
+                                                          Boolean forceFlag, Boolean inOutManageFlag,
+                                                          Boolean moveAvgPriceFlag)throws Exception {
+        return depotItemMapperEx.getInOutStockStatistic(materialParam, categoryIdList, depotList, beginTime, endTime,
+                forceFlag, inOutManageFlag, moveAvgPriceFlag);
+    }
+
+    public BigDecimal getInOutStockUnitPrice(Long mId, List<Long> depotList,
+                                             Boolean moveAvgPriceFlag)throws Exception {
+        return zeroIfNull(depotItemMapperEx.getInOutStockUnitPrice(mId, depotList, moveAvgPriceFlag));
     }
 
     public List<DepotItemVo4WithInfoEx> getListWithBuyOrSale(String materialParam, String billType,
@@ -323,15 +389,18 @@ public class DepotItemService {
         return list;
     }
 
+    public List<DepotItemVo4WithInfoEx> getRetailOutSummary(String materialParam, String beginTime, String endTime,
+                                                            String[] creatorArray, Long organId, String[] organArray,
+                                                            List<Long> categoryList, List<Long> depotList, Boolean forceFlag,
+                                                            String column, String order, Integer offset, Integer rows) throws Exception {
+        return depotItemMapperEx.getRetailOutSummary(materialParam, beginTime, endTime, creatorArray, organId,
+                organArray, categoryList, depotList, forceFlag, column, order, offset, rows);
+    }
+
     public int getListWithBuyOrSaleCount(String materialParam, String billType,
                                          String beginTime, String endTime, String[] creatorArray, Long organId, String[] organArray, List<Long> categoryList, List<Long> depotList, Boolean forceFlag)throws Exception {
-        int result=0;
-        try{
-            result = depotItemMapperEx.getListWithBuyOrSaleCount(materialParam, billType, beginTime, endTime, creatorArray, organId, organArray, categoryList, depotList, forceFlag);
-        }catch(Exception e){
-            JshException.readFail(logger, e);
-        }
-        return result;
+        return depotItemMapperEx.getListWithBuyOrSaleCount(materialParam, billType, beginTime, endTime,
+                creatorArray, organId, organArray, categoryList, depotList, forceFlag);
     }
 
     public BigDecimal buyOrSale(String type, String subType, Long meId, String beginTime, String endTime,
@@ -351,14 +420,17 @@ public class DepotItemService {
 
     public BigDecimal buyOrSalePriceTotal(String type, String subType, String materialParam, String beginTime, String endTime,
                                 String[] creatorArray, Long organId, String [] organArray, List<Long> categoryList, List<Long> depotList, Boolean forceFlag) throws Exception{
-        BigDecimal result= BigDecimal.ZERO;
-        try{
-            result= depotItemMapperEx.buyOrSalePriceTotal(type, subType, materialParam, beginTime, endTime, creatorArray, organId, organArray, categoryList, depotList, forceFlag);
-        }catch(Exception e){
-            JshException.readFail(logger, e);
-        }
-        return result;
+        return depotItemMapperEx.buyOrSalePriceTotal(type, subType, materialParam, beginTime, endTime,
+                creatorArray, organId, organArray, categoryList, depotList, forceFlag);
 
+    }
+
+    public List<DepotItemVo4WithInfoEx> getBuyInSummary(String materialParam, String beginTime, String endTime,
+                                                        String[] creatorArray, Long organId, String[] organArray,
+                                                        List<Long> categoryList, List<Long> depotList, Boolean forceFlag,
+                                                        String column, String order, Integer offset, Integer rows) throws Exception {
+        return depotItemMapperEx.getBuyInSummary(materialParam, beginTime, endTime, creatorArray, organId,
+                organArray, categoryList, depotList, forceFlag, column, order, offset, rows);
     }
 
     /**
@@ -390,11 +462,40 @@ public class DepotItemService {
         deleteDepotItemHeadId(headerId);
         JSONArray rowArr = JSONArray.parseArray(rows);
         if (null != rowArr && rowArr.size()>0) {
+            boolean purchaseInbound = BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())
+                    && BusinessConstants.SUB_TYPE_PURCHASE.equals(depotHead.getSubType());
+            boolean purchaseReturn = BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
+                    && BusinessConstants.SUB_TYPE_PURCHASE_RETURN.equals(depotHead.getSubType());
+            boolean salesOutbound = BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType())
+                    && BusinessConstants.SUB_TYPE_SALES.equals(depotHead.getSubType());
+            boolean salesReturn = BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())
+                    && BusinessConstants.SUB_TYPE_SALES_RETURN.equals(depotHead.getSubType());
+            boolean otherStockBill = (BusinessConstants.DEPOTHEAD_TYPE_IN.equals(depotHead.getType())
+                    || BusinessConstants.DEPOTHEAD_TYPE_OUT.equals(depotHead.getType()))
+                    && BusinessConstants.SUB_TYPE_OTHER.equals(depotHead.getSubType());
+            boolean assemble = BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(depotHead.getType())
+                    && BusinessConstants.SUB_TYPE_ASSEMBLE.equals(depotHead.getSubType());
+            boolean disassemble = BusinessConstants.DEPOTHEAD_TYPE_OTHER.equals(depotHead.getType())
+                    && BusinessConstants.SUB_TYPE_DISASSEMBLE.equals(depotHead.getSubType());
+            boolean purchaseDepotPermission = purchaseInbound || purchaseReturn || salesOutbound || salesReturn
+                    || otherStockBill || assemble || disassemble;
+            Set<Long> allowedPurchaseDepotIds = new HashSet<>();
+            User currentUser = userService.getCurrentUser();
+            boolean adminUser = currentUser != null && "admin".equals(currentUser.getLoginName());
+            if (purchaseDepotPermission && !adminUser) {
+                JSONArray allowedDepotArray = depotService.findDepotByCurrentUser();
+                for (Object depotObject : allowedDepotArray) {
+                    allowedPurchaseDepotIds.add(JSONObject.parseObject(depotObject.toString()).getLong("id"));
+                }
+            }
             //针对组装单、拆卸单校验是否存在组合件和普通子件
             checkAssembleWithMaterialType(rowArr, depotHead.getSubType());
             //校验多行明细当中是否存在重复的序列号
             checkSerialNumberRepeatWithCurrent(rowArr);
             List<DepotItem> depotItemList = new ArrayList<>();
+            Map<String, BigDecimal> outboundQuantityMap = new HashMap<>();
+            Set<String> lockedStockKeys = new HashSet<>();
+            lockMaterialsByRows(rowArr, lockedStockKeys);
             for (int i = 0; i < rowArr.size(); i++) {
                 DepotItem depotItem = new DepotItem();
                 JSONObject rowObj = JSONObject.parseObject(rowArr.getString(i));
@@ -500,26 +601,20 @@ public class DepotItemService {
                 }
                 //以下进行单位换算
                 Unit unitInfo = materialService.findUnit(materialExtend.getMaterialId()); //查询多单位信息
+                String submittedUnit = rowObj.getString("unit");
+                if (!isMaterialUnitValid(submittedUnit, materialExtend, unitInfo)) {
+                    throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_MATERIAL_UNIT_CODE,
+                            String.format(ExceptionConstants.DEPOT_HEAD_MATERIAL_UNIT_MSG, barCode));
+                }
                 if (StringUtil.isExist(rowObj.get("operNumber"))) {
                     depotItem.setOperNumber(rowObj.getBigDecimal("operNumber"));
-                    String unit = rowObj.get("unit").toString();
+                    String unit = submittedUnit;
                     BigDecimal oNumber = rowObj.getBigDecimal("operNumber");
-                    if (StringUtil.isNotEmpty(unitInfo.getName())) {
-                        String basicUnit = unitInfo.getBasicUnit(); //基本单位
-                        if (unit.equals(basicUnit)) { //如果等于基本单位
-                            depotItem.setBasicNumber(oNumber); //数量一致
-                        } else if (unit.equals(unitInfo.getOtherUnit())) { //如果等于副单位
-                            depotItem.setBasicNumber(oNumber.multiply(unitInfo.getRatio())); //数量乘以比例
-                        } else if (unit.equals(unitInfo.getOtherUnitTwo())) { //如果等于副单位2
-                            depotItem.setBasicNumber(oNumber.multiply(unitInfo.getRatioTwo())); //数量乘以比例
-                        } else if (unit.equals(unitInfo.getOtherUnitThree())) { //如果等于副单位3
-                            depotItem.setBasicNumber(oNumber.multiply(unitInfo.getRatioThree())); //数量乘以比例
-                        } else {
-                            depotItem.setBasicNumber(oNumber); //数量一致
-                        }
-                    } else {
-                        depotItem.setBasicNumber(oNumber); //其他情况
-                    }
+                    depotItem.setBasicNumber(unitService.parseBasicNumberByUnit(oNumber, unitInfo, unit));
+                }
+                if (depotItem.getOperNumber() == null || depotItem.getOperNumber().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_CODE,
+                            String.format(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_MSG, barCode));
                 }
                 //如果数量+已完成数量>原订单数量，给出预警(判断前提是存在关联订单|关联请购单)
                 String linkStr = StringUtil.isNotEmpty(depotHead.getLinkNumber())? depotHead.getLinkNumber(): depotHead.getLinkApply();
@@ -594,6 +689,26 @@ public class DepotItemService {
                 }
                 if (StringUtil.isExist(rowObj.get("depotId"))) {
                     depotItem.setDepotId(rowObj.getLong("depotId"));
+                    if (purchaseDepotPermission && !adminUser && !allowedPurchaseDepotIds.contains(depotItem.getDepotId())) {
+                        if (assemble || disassemble) {
+                            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_DATA_PERMISSION_CODE,
+                                    ExceptionConstants.DEPOT_DATA_PERMISSION_MSG);
+                        }
+                        if (otherStockBill) {
+                            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_OTHER_DATA_PERMISSION_CODE,
+                                    ExceptionConstants.DEPOT_HEAD_OTHER_DATA_PERMISSION_MSG);
+                        }
+                        if (salesOutbound || salesReturn) {
+                            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_SALES_DATA_PERMISSION_CODE,
+                                    ExceptionConstants.DEPOT_HEAD_SALES_DATA_PERMISSION_MSG);
+                        }
+                        if (purchaseReturn) {
+                            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_DATA_PERMISSION_CODE,
+                                    ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_DATA_PERMISSION_MSG);
+                        }
+                        throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DATA_PERMISSION_CODE,
+                                ExceptionConstants.DEPOT_HEAD_PURCHASE_IN_DATA_PERMISSION_MSG);
+                    }
                 } else {
                     if(!BusinessConstants.SUB_TYPE_PURCHASE_APPLY.equals(depotHead.getSubType())
                             && !BusinessConstants.SUB_TYPE_PURCHASE_ORDER.equals(depotHead.getSubType())
@@ -651,15 +766,23 @@ public class DepotItemService {
                     if(systemConfigService.getForceApprovalFlag() && "0".equals(depotHead.getStatus())) {
                         //如果开启强审核，并且没有保存的同时审核，则跳过库存判断
                     } else {
-                        if(!systemConfigService.getMinusStockFlag() && stock.compareTo(thisRealNumber)<0){
-                            //如果开启出入库管理，并且类型等于采购退货、销售，则跳过
-                            if(systemConfigService.getInOutManageFlag() &&
-                                    (BusinessConstants.SUB_TYPE_PURCHASE_RETURN.equals(depotHead.getSubType())
-                                            ||BusinessConstants.SUB_TYPE_SALES.equals(depotHead.getSubType()))) {
-                                //跳过
-                            } else {
-                                throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_STOCK_NOT_ENOUGH_CODE,
-                                        String.format(ExceptionConstants.MATERIAL_STOCK_NOT_ENOUGH_MSG, stockMsg));
+                        if(!systemConfigService.getMinusStockFlag()) {
+                            lockMaterialForStockCheck(depotItem, lockedStockKeys);
+                            String stockScopeKey = getStockScopeKey(depotItem, barCode);
+                            BigDecimal accumulatedNumber = outboundQuantityMap.getOrDefault(stockScopeKey, BigDecimal.ZERO).add(thisRealNumber);
+                            outboundQuantityMap.put(stockScopeKey, accumulatedNumber);
+                            //加锁后重新读取，避免并发零售出库同时通过库存校验
+                            stock = getStockForDepotItem(depotItem, barCode);
+                            if(stock.compareTo(accumulatedNumber)<0){
+                                //如果开启出入库管理，并且类型等于采购退货、销售，则跳过
+                                if(systemConfigService.getInOutManageFlag() &&
+                                        (BusinessConstants.SUB_TYPE_PURCHASE_RETURN.equals(depotHead.getSubType())
+                                                ||BusinessConstants.SUB_TYPE_SALES.equals(depotHead.getSubType()))) {
+                                    //跳过
+                                } else {
+                                    throw new BusinessRunTimeException(ExceptionConstants.MATERIAL_STOCK_NOT_ENOUGH_CODE,
+                                            String.format(ExceptionConstants.MATERIAL_STOCK_NOT_ENOUGH_MSG, stockMsg));
+                                }
                             }
                         }
                     }
@@ -684,6 +807,22 @@ public class DepotItemService {
                 }
                 depotItemList.add(depotItem);
             }
+            if (assemble) {
+                normalizeAssembleCost(depotHead, depotItemList);
+                if (!systemConfigService.getMinusStockFlag()
+                        && (!systemConfigService.getForceApprovalFlag()
+                        || BusinessConstants.BILLS_STATUS_AUDIT.equals(depotHead.getStatus()))) {
+                    checkAssembleMaterialStock(depotHead.getNumber(), depotItemList);
+                }
+            }
+            if (disassemble) {
+                normalizeDisassembleCost(depotHead, depotItemList);
+                if (!systemConfigService.getMinusStockFlag()
+                        && (!systemConfigService.getForceApprovalFlag()
+                        || BusinessConstants.BILLS_STATUS_AUDIT.equals(depotHead.getStatus()))) {
+                    checkDisassembleMaterialStock(depotHead.getNumber(), depotItemList);
+                }
+            }
             //批量写入单据明细数据
             depotItemMapperEx.batchInsert(depotItemList);
             for (DepotItem depotItem : depotItemList) {
@@ -700,9 +839,13 @@ public class DepotItemService {
                     || BusinessConstants.SUB_TYPE_REPLAY.equals(depotHead.getSubType())
                     || BusinessConstants.SUB_TYPE_OTHER.equals(depotHead.getSubType())) {
                 if(StringUtil.isNotEmpty(depotHead.getLinkNumber())) {
-                    //单据状态:是否全部完成 2-全部完成 3-部分完成（针对订单的分批出入库）
-                    String billStatus = getBillStatusByParam(depotHead, depotHead.getLinkNumber(), "normal");
-                    changeBillStatus(depotHead.getLinkNumber(), billStatus);
+                    if (BusinessConstants.SUB_TYPE_SALES.equals(depotHead.getSubType())) {
+                        depotHeadService.recalculateSalesOrderStatus(depotHead.getLinkNumber());
+                    } else {
+                        //单据状态:是否全部完成 2-全部完成 3-部分完成（针对订单的分批出入库）
+                        String billStatus = getBillStatusByParam(depotHead, depotHead.getLinkNumber(), "normal");
+                        changeBillStatus(depotHead.getLinkNumber(), billStatus);
+                    }
                 }
             }
             //当前单据类型为采购订单的逻辑
@@ -733,14 +876,38 @@ public class DepotItemService {
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public String getBillStatusByParam(DepotHead depotHead, String linkStr, String linkType) {
         String res = BusinessConstants.BILLS_STATUS_SKIPED;
-        //获取原单据的商品和商品数量（汇总）
-        List<DepotItemVo4MaterialAndSum> linkList = depotItemMapperEx.getLinkBillDetailMaterialSum(linkStr);
-        //获取分批操作后单据的商品和商品数量（汇总）
-        List<DepotItemVo4MaterialAndSum> batchList = depotItemMapperEx.getBatchBillDetailMaterialSum(linkStr, linkType, depotHead.getType());
+        List<DepotItemVo4MaterialAndSum> linkList;
+        List<DepotItemVo4MaterialAndSum> batchList;
+        if (BusinessConstants.SUB_TYPE_PURCHASE_ORDER.equals(depotHead.getSubType())) {
+            //采购订单按来源明细和基本数量统计，避免同一商品使用不同单位时误判状态
+            linkList = depotItemMapperEx.getSourceBillDetailBasicSum(linkStr);
+            batchList = depotItemMapperEx.getLinkedBillDetailBasicSum(linkStr, linkType,
+                    BusinessConstants.DEPOTHEAD_TYPE_OTHER, BusinessConstants.SUB_TYPE_PURCHASE_ORDER);
+        } else if (BusinessConstants.SUB_TYPE_PURCHASE.equals(depotHead.getSubType())) {
+            //采购入库只统计关联采购订单的采购入库明细
+            linkList = depotItemMapperEx.getSourceBillDetailBasicSum(linkStr);
+            batchList = depotItemMapperEx.getLinkedBillDetailBasicSum(linkStr, "normal",
+                    BusinessConstants.DEPOTHEAD_TYPE_IN, BusinessConstants.SUB_TYPE_PURCHASE);
+        } else if (BusinessConstants.SUB_TYPE_SALES.equals(depotHead.getSubType())) {
+            linkList = depotItemMapperEx.getSourceBillDetailBasicSum(linkStr);
+            batchList = depotItemMapperEx.getAuditedSalesOutboundBasicSum(linkStr);
+        } else if (BusinessConstants.SUB_TYPE_OTHER.equals(depotHead.getSubType())) {
+            //其它出入库按来源明细ID和基本数量统计，避免同商品多行、多单位时误判完成状态。
+            linkList = depotItemMapperEx.getSourceBillDetailBasicSum(linkStr);
+            batchList = depotItemMapperEx.getLinkedBillDetailBasicSum(linkStr, "normal",
+                    depotHead.getType(), BusinessConstants.SUB_TYPE_OTHER);
+        } else {
+            //兼容其它原有单据链路
+            linkList = depotItemMapperEx.getLinkBillDetailMaterialSum(linkStr);
+            batchList = depotItemMapperEx.getBatchBillDetailMaterialSum(linkStr, linkType, depotHead.getType());
+        }
+        if (batchList == null || batchList.isEmpty()) {
+            return BusinessConstants.BILLS_STATUS_AUDIT;
+        }
         //将分批操作后的单据的商品和商品数据构造成Map
         Map<Long, BigDecimal> materialSumMap = new HashMap<>();
         for(DepotItemVo4MaterialAndSum materialAndSum : batchList) {
-            materialSumMap.put(materialAndSum.getMaterialExtendId(), materialAndSum.getOperNumber());
+            materialSumMap.merge(materialAndSum.getMaterialExtendId(), materialAndSum.getOperNumber(), BigDecimal::add);
         }
         for(DepotItemVo4MaterialAndSum materialAndSum : linkList) {
             //过滤掉原单里面有数量为0的商品
@@ -826,9 +993,10 @@ public class DepotItemService {
             DepotItemExample example = new DepotItemExample();
             example.createCriteria().andHeaderIdEqualTo(headerId);
             depotItemMapper.deleteByExample(example);
-            //3、计算删除之后单据明细中商品的库存
+            //3、计算删除之后单据明细中商品的库存和移动平均成本，避免编辑时沿用旧明细成本。
             for(DepotItem depotItem : depotItemList){
                 updateCurrentStock(depotItem);
+                updateCurrentUnitPrice(depotItem);
             }
         }catch(Exception e){
             JshException.writeFail(logger, e);
@@ -882,18 +1050,17 @@ public class DepotItemService {
     public void checkAssembleWithMaterialType(JSONArray rowArr, String subType) {
         if(BusinessConstants.SUB_TYPE_ASSEMBLE.equals(subType) ||
                 BusinessConstants.SUB_TYPE_DISASSEMBLE.equals(subType)) {
-            if(rowArr.size() > 1) {
-                JSONObject firstRowObj = JSONObject.parseObject(rowArr.getString(0));
-                JSONObject secondRowObj = JSONObject.parseObject(rowArr.getString(1));
-                String firstMaterialType = firstRowObj.getString("mType");
-                String secondMaterialType = secondRowObj.getString("mType");
-                if(!"组合件".equals(firstMaterialType) || !"普通子件".equals(secondMaterialType)) {
-                    throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_CHECK_ASSEMBLE_EMPTY_CODE,
-                            String.format(ExceptionConstants.DEPOT_HEAD_CHECK_ASSEMBLE_EMPTY_MSG));
-                }
-            } else {
+            if(rowArr.size() < 2) {
                 throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_CHECK_ASSEMBLE_EMPTY_CODE,
                         String.format(ExceptionConstants.DEPOT_HEAD_CHECK_ASSEMBLE_EMPTY_MSG));
+            }
+            for (int index = 0; index < rowArr.size(); index++) {
+                JSONObject rowObject = JSONObject.parseObject(rowArr.getString(index));
+                String expectedMaterialType = index == 0 ? "组合件" : "普通子件";
+                if (!expectedMaterialType.equals(rowObject.getString("mType"))) {
+                    throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_CODE,
+                            ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_MSG);
+                }
             }
         }
     }
@@ -961,10 +1128,12 @@ public class DepotItemService {
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
-    public List<DepotItemStockWarningCount> findStockWarningCount(Integer offset, Integer rows, String materialParam, List<Long> depotList, List<Long> categoryList) {
+    public List<DepotItemStockWarningCount> findStockWarningCount(Integer offset, Integer rows, String materialParam,
+                                                                  List<Long> depotList, List<Long> categoryList,
+                                                                  String column, String order) {
         List<DepotItemStockWarningCount> list = null;
         try{
-            list =depotItemMapperEx.findStockWarningCount(offset, rows, materialParam, depotList, categoryList);
+            list =depotItemMapperEx.findStockWarningCount(offset, rows, materialParam, depotList, categoryList, column, order);
         }catch(Exception e){
             JshException.readFail(logger, e);
         }
@@ -1121,6 +1290,7 @@ public class DepotItemService {
      */
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public void updateCurrentUnitPrice(DepotItem depotItem) throws Exception {
+        materialMapperEx.lockById(depotItem.getMaterialId());
         Boolean forceFlag = systemConfigService.getForceApprovalFlag();
         //此处给出入库管理的传值默认为false，不然会导致查询不到销售相关的单据
         Boolean inOutManageFlag = false;
@@ -1136,7 +1306,10 @@ public class DepotItemService {
             BigDecimal basicNumber = item.getBnum()!=null?item.getBnum():BigDecimal.ZERO;
             //数量*单价  另外计算新的成本价
             BigDecimal allPrice = unitService.parseAllPriceByUnit(item.getAllPrice()!=null?item.getAllPrice():BigDecimal.ZERO, unitInfo, item.getMaterialUnit());
-            if(basicNumber.compareTo(BigDecimal.ZERO)!=0 && allPrice.compareTo(BigDecimal.ZERO)!=0) {
+            boolean zeroCostStockBill = BusinessConstants.SUB_TYPE_ASSEMBLE.equals(item.getSubType())
+                    || BusinessConstants.SUB_TYPE_DISASSEMBLE.equals(item.getSubType());
+            if (basicNumber.compareTo(BigDecimal.ZERO) != 0
+                    && (allPrice.compareTo(BigDecimal.ZERO) != 0 || zeroCostStockBill)) {
                 //入库
                 if (BusinessConstants.DEPOTHEAD_TYPE_IN.equals(item.getType())) {
                     //零售退货、销售退货
@@ -1173,10 +1346,31 @@ public class DepotItemService {
                         currentAllPrice = currentAllPrice.add(basicNumber.multiply(currentUnitPrice));
                     }
                 }
-                //特殊情况：1-组装单 2-拆卸单 3-盘点复盘
-                if(BusinessConstants.SUB_TYPE_ASSEMBLE.equals(item.getSubType())||
-                        BusinessConstants.SUB_TYPE_DISASSEMBLE.equals(item.getSubType())||
-                        BusinessConstants.SUB_TYPE_REPLAY.equals(item.getSubType())) {
+                //组装产出的组合件按已固化的子件成本入库，普通子件按当前移动平均价出库。
+                if (BusinessConstants.SUB_TYPE_ASSEMBLE.equals(item.getSubType())) {
+                    currentNumber = currentNumber.add(basicNumber);
+                    if ("组合件".equals(item.getMaterialType())) {
+                        currentAllPrice = currentAllPrice.add(zeroIfNull(item.getAllPrice()));
+                        if (currentAllPrice.compareTo(BigDecimal.ZERO) > 0
+                                && currentNumber.compareTo(BigDecimal.ZERO) > 0) {
+                            currentUnitPrice = currentAllPrice.divide(currentNumber, 4, BigDecimal.ROUND_HALF_UP);
+                        }
+                    } else {
+                        currentAllPrice = currentAllPrice.add(basicNumber.multiply(currentUnitPrice));
+                    }
+                }
+                //拆卸使用已固化且守恒的成本：组合件出库为负，普通子件入库为正。
+                if (BusinessConstants.SUB_TYPE_DISASSEMBLE.equals(item.getSubType())) {
+                    currentNumber = currentNumber.add(basicNumber);
+                    currentAllPrice = currentAllPrice.add(zeroIfNull(item.getAllPrice()));
+                    if (currentAllPrice.compareTo(BigDecimal.ZERO) > 0
+                            && currentNumber.compareTo(BigDecimal.ZERO) > 0) {
+                        currentUnitPrice = currentAllPrice.divide(currentNumber, 4, BigDecimal.ROUND_HALF_UP);
+                    } else if (basicNumber.compareTo(BigDecimal.ZERO) > 0 && item.getUnitPrice() != null) {
+                        currentUnitPrice = item.getUnitPrice();
+                    }
+                }
+                if (BusinessConstants.SUB_TYPE_REPLAY.equals(item.getSubType())) {
                     //数量*当前的成本单价
                     currentNumber = currentNumber.add(basicNumber);
                     currentAllPrice = currentAllPrice.add(basicNumber.multiply(currentUnitPrice));
@@ -1198,6 +1392,8 @@ public class DepotItemService {
      */
     public void updateCurrentStockFun(Long mId, Long dId, BigDecimal currentUnitPrice) throws Exception {
         if(mId!=null && dId!=null) {
+            // Serialize the stock snapshot rebuild and the select/insert pair.
+            materialMapperEx.lockById(mId);
             MaterialCurrentStockExample example = new MaterialCurrentStockExample();
             example.createCriteria().andMaterialIdEqualTo(mId).andDepotIdEqualTo(dId)
                     .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
@@ -1229,15 +1425,7 @@ public class DepotItemService {
             String noType = "normal";
             count = depotItemMapperEx.getFinishNumber(meId, linkId, linkStr, noType, goToType);
             //根据多单位情况进行数量的转换
-            if(materialUnit.equals(unitInfo.getOtherUnit()) && unitInfo.getRatio()!=null && unitInfo.getRatio().compareTo(BigDecimal.ZERO)!=0) {
-                count = count.divide(unitInfo.getRatio(),2,BigDecimal.ROUND_HALF_UP);
-            }
-            if(materialUnit.equals(unitInfo.getOtherUnitTwo()) && unitInfo.getRatioTwo()!=null && unitInfo.getRatioTwo().compareTo(BigDecimal.ZERO)!=0) {
-                count = count.divide(unitInfo.getRatioTwo(),2,BigDecimal.ROUND_HALF_UP);
-            }
-            if(materialUnit.equals(unitInfo.getOtherUnitThree()) && unitInfo.getRatioThree()!=null && unitInfo.getRatioThree().compareTo(BigDecimal.ZERO)!=0) {
-                count = count.divide(unitInfo.getRatioThree(),2,BigDecimal.ROUND_HALF_UP);
-            }
+            count = unitService.parseStockByUnit(count, unitInfo, materialUnit);
         }
         return count;
     }
@@ -1280,15 +1468,7 @@ public class DepotItemService {
         }
         BigDecimal count = depotItemMapperEx.getFinishNumber(meId, linkId, linkStr, noType, goToType);
         //根据多单位情况进行数量的转换
-        if(materialUnit.equals(unitInfo.getOtherUnit()) && unitInfo.getRatio()!=null && unitInfo.getRatio().compareTo(BigDecimal.ZERO)!=0) {
-            count = count.divide(unitInfo.getRatio(),2,BigDecimal.ROUND_HALF_UP);
-        }
-        if(materialUnit.equals(unitInfo.getOtherUnitTwo()) && unitInfo.getRatioTwo()!=null && unitInfo.getRatioTwo().compareTo(BigDecimal.ZERO)!=0) {
-            count = count.divide(unitInfo.getRatioTwo(),2,BigDecimal.ROUND_HALF_UP);
-        }
-        if(materialUnit.equals(unitInfo.getOtherUnitThree()) && unitInfo.getRatioThree()!=null && unitInfo.getRatioThree().compareTo(BigDecimal.ZERO)!=0) {
-            count = count.divide(unitInfo.getRatioThree(),2,BigDecimal.ROUND_HALF_UP);
-        }
+        count = unitService.parseStockByUnit(count, unitInfo, materialUnit);
         return count;
     }
 
@@ -1314,15 +1494,7 @@ public class DepotItemService {
         }
         BigDecimal count = depotItemMapperEx.getRealFinishNumber(meId, linkId, linkStr, linkType, currentHeaderId, goToType);
         //根据多单位情况进行数量的转换
-        if(materialUnit.equals(unitInfo.getOtherUnit()) && unitInfo.getRatio()!=null && unitInfo.getRatio().compareTo(BigDecimal.ZERO)!=0) {
-            count = count.divide(unitInfo.getRatio(),2,BigDecimal.ROUND_HALF_UP);
-        }
-        if(materialUnit.equals(unitInfo.getOtherUnitTwo()) && unitInfo.getRatioTwo()!=null && unitInfo.getRatioTwo().compareTo(BigDecimal.ZERO)!=0) {
-            count = count.divide(unitInfo.getRatioTwo(),2,BigDecimal.ROUND_HALF_UP);
-        }
-        if(materialUnit.equals(unitInfo.getOtherUnitThree()) && unitInfo.getRatioThree()!=null && unitInfo.getRatioThree().compareTo(BigDecimal.ZERO)!=0) {
-            count = count.divide(unitInfo.getRatioThree(),2,BigDecimal.ROUND_HALF_UP);
-        }
+        count = unitService.parseStockByUnit(count, unitInfo, materialUnit);
         return count;
     }
 
@@ -1331,11 +1503,12 @@ public class DepotItemService {
         List<DepotItemVoBatchNumberList> reslist = new ArrayList<>();
         List<DepotItemVoBatchNumberList> list =  depotItemMapperEx.getBatchNumberList(StringUtil.toNull(number), name,
                 depotId, barCode, batchNumber, forceFlag, inOutManageFlag);
+        Map<Long, Unit> unitMap = getBatchUnitMap(list);
         for(DepotItemVoBatchNumberList bn: list) {
             if(bn.getTotalNum()!=null && bn.getTotalNum().compareTo(BigDecimal.ZERO)>0) {
                 bn.setExpirationDateStr(Tools.parseDateToStr(bn.getExpirationDate()));
                 if(bn.getUnitId()!=null) {
-                    Unit unit = unitService.getUnit(bn.getUnitId());
+                    Unit unit = unitMap.get(bn.getUnitId());
                     String commodityUnit = bn.getCommodityUnit();
                     bn.setTotalNum(unitService.parseStockByUnit(bn.getTotalNum(), unit, commodityUnit));
                 }
@@ -1359,18 +1532,30 @@ public class DepotItemService {
         Boolean inOutManageFlag = systemConfigService.getInOutManageFlag();
         List<DepotItemVoBatchNumberList> list =  depotItemMapperEx.getBatchNumberList(null, null,
                 depotId, barCode, batchNumber, forceFlag, inOutManageFlag);
+        Map<Long, Unit> unitMap = getBatchUnitMap(list);
         if(list!=null && list.size()>0) {
-            DepotItemVoBatchNumberList bn = list.get(0);
-            totalNum = bn.getTotalNum();
-            if(bn.getTotalNum()!=null && bn.getTotalNum().compareTo(BigDecimal.ZERO)>0) {
+            for (DepotItemVoBatchNumberList bn : list) {
+                BigDecimal rowTotal = bn.getTotalNum() == null ? BigDecimal.ZERO : bn.getTotalNum();
+                if(rowTotal.compareTo(BigDecimal.ZERO)>0) {
                 if(bn.getUnitId()!=null) {
-                    Unit unit = unitService.getUnit(bn.getUnitId());
+                    Unit unit = unitMap.get(bn.getUnitId());
                     String commodityUnit = bn.getCommodityUnit();
-                    totalNum = unitService.parseStockByUnit(bn.getTotalNum(), unit, commodityUnit);
+                        rowTotal = unitService.parseStockByUnit(rowTotal, unit, commodityUnit);
+                    }
                 }
+                totalNum = totalNum.add(rowTotal);
             }
         }
         return totalNum;
+    }
+
+    private Map<Long, Unit> getBatchUnitMap(List<DepotItemVoBatchNumberList> batchList) throws Exception {
+        if (batchList == null || batchList.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Set<Long> unitIds = batchList.stream().map(DepotItemVoBatchNumberList::getUnitId)
+                .filter(Objects::nonNull).collect(Collectors.toSet());
+        return unitService.getUnitMap(unitIds);
     }
 
     public Long getCountByMaterialAndDepot(Long mId, Long depotId) {
@@ -1511,6 +1696,32 @@ public class DepotItemService {
         return stock!=null? stock: BigDecimal.ZERO;
     }
 
+    public Map<Long, BigDecimal> getCurrentStockByMaterialIds(Long depotId, List<Long> materialIds) {
+        Map<Long, BigDecimal> stockMap = new HashMap<>();
+        if (materialIds.isEmpty()) {
+            return stockMap;
+        }
+        for (MaterialCurrentStock stock : depotItemMapperEx.getCurrentStockByMaterialIds(depotId, materialIds)) {
+            stockMap.put(stock.getMaterialId(), stock.getCurrentNumber());
+        }
+        return stockMap;
+    }
+
+    public Map<Long, BigDecimal> getSkuStockByMaterialExtendIds(Long depotId, List<Long> materialExtendIds) throws Exception {
+        Map<Long, BigDecimal> stockMap = new HashMap<>();
+        if (materialExtendIds.isEmpty()) {
+            return stockMap;
+        }
+        List<Long> depotList = depotService.parseDepotList(depotId);
+        List<MaterialExtendStock> stocks = depotItemMapperEx.getSkuStockByMaterialExtendIds(
+                depotList, materialExtendIds, systemConfigService.getForceApprovalFlag(),
+                systemConfigService.getInOutManageFlag());
+        for (MaterialExtendStock stock : stocks) {
+            stockMap.put(stock.getMaterialExtendId(), stock.getStock());
+        }
+        return stockMap;
+    }
+
     /**
      * 校验单据中的商品库存是否不足
      * @param number
@@ -1519,7 +1730,347 @@ public class DepotItemService {
      * @throws Exception
      */
     public void checkMaterialStock(String number, Long headerId) throws Exception {
-        List<DepotItem> depotItemList = getListByHeaderId(headerId);
+        DepotHead depotHead = new DepotHead();
+        depotHead.setId(headerId);
+        depotHead.setNumber(number);
+        checkMaterialStock(Collections.singletonList(depotHead));
+    }
+
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
+    public void refreshAssembleCost(DepotHead depotHead) throws Exception {
+        if (depotHead == null || depotHead.getId() == null) {
+            return;
+        }
+        List<DepotItem> detailList = getListByHeaderId(depotHead.getId());
+        normalizeAssembleCost(depotHead, detailList);
+        for (DepotItem detail : detailList) {
+            depotItemMapper.updateByPrimaryKeySelective(detail);
+        }
+    }
+
+    private void normalizeAssembleCost(DepotHead depotHead, List<DepotItem> detailList) throws Exception {
+        if (detailList == null || detailList.size() < 2) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_MSG);
+        }
+        DepotItem combinationItem = null;
+        List<DepotItem> componentItems = new ArrayList<>();
+        for (DepotItem detail : detailList) {
+            if ("组合件".equals(detail.getMaterialType())) {
+                if (combinationItem != null) {
+                    throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_CODE,
+                            ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_MSG);
+                }
+                combinationItem = detail;
+            } else if ("普通子件".equals(detail.getMaterialType())) {
+                componentItems.add(detail);
+            } else {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_CODE,
+                        ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_MSG);
+            }
+        }
+        if (combinationItem == null || componentItems.isEmpty()
+                || combinationItem.getBasicNumber() == null
+                || combinationItem.getBasicNumber().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_MSG);
+        }
+        for (DepotItem component : componentItems) {
+            if (Objects.equals(component.getMaterialExtendId(), combinationItem.getMaterialExtendId())) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_SAME_MATERIAL_CODE,
+                        String.format(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_SAME_MATERIAL_MSG,
+                                combinationItem.getMaterialExtendId()));
+            }
+        }
+        BigDecimal totalComponentCost = BigDecimal.ZERO;
+        Set<String> lockedCostKeys = new HashSet<>();
+        for (DepotItem component : componentItems) {
+            lockMaterialForStockCheck(component, lockedCostKeys);
+            BigDecimal basicUnitCost = materialCurrentStockMapperEx.getCurrentUnitPriceByMId(component.getMaterialId());
+            if (basicUnitCost == null) {
+                MaterialExtend materialExtend = materialExtendService.getMaterialExtend(component.getMaterialExtendId());
+                basicUnitCost = materialExtend == null || materialExtend.getPurchaseDecimal() == null
+                        ? BigDecimal.ZERO : materialExtend.getPurchaseDecimal();
+            }
+            BigDecimal componentCost = component.getBasicNumber().multiply(basicUnitCost)
+                    .setScale(2, BigDecimal.ROUND_HALF_UP);
+            Unit componentUnit = materialService.findUnit(component.getMaterialId());
+            BigDecimal submittedUnitCost = unitService.parseUnitPriceByUnit(basicUnitCost, componentUnit,
+                    component.getMaterialUnit()).setScale(4, BigDecimal.ROUND_HALF_UP);
+            component.setUnitPrice(submittedUnitCost);
+            component.setPurchaseUnitPrice(submittedUnitCost);
+            component.setAllPrice(componentCost);
+            component.setTaxUnitPrice(submittedUnitCost);
+            component.setTaxRate(BigDecimal.ZERO);
+            component.setTaxMoney(BigDecimal.ZERO);
+            component.setTaxLastMoney(componentCost);
+            totalComponentCost = totalComponentCost.add(componentCost);
+        }
+        BigDecimal combinationBasicCost = totalComponentCost.divide(combinationItem.getBasicNumber(),
+                4, BigDecimal.ROUND_HALF_UP);
+        Unit combinationUnit = materialService.findUnit(combinationItem.getMaterialId());
+        BigDecimal combinationSubmittedCost = unitService.parseUnitPriceByUnit(combinationBasicCost,
+                combinationUnit, combinationItem.getMaterialUnit()).setScale(4, BigDecimal.ROUND_HALF_UP);
+        combinationItem.setUnitPrice(combinationSubmittedCost);
+        combinationItem.setPurchaseUnitPrice(combinationSubmittedCost);
+        combinationItem.setAllPrice(totalComponentCost.setScale(2, BigDecimal.ROUND_HALF_UP));
+        combinationItem.setTaxUnitPrice(combinationSubmittedCost);
+        combinationItem.setTaxRate(BigDecimal.ZERO);
+        combinationItem.setTaxMoney(BigDecimal.ZERO);
+        combinationItem.setTaxLastMoney(combinationItem.getAllPrice());
+
+        DepotHead costHead = new DepotHead();
+        costHead.setId(depotHead.getId());
+        costHead.setTotalPrice(combinationItem.getAllPrice());
+        depotHeadMapper.updateByPrimaryKeySelective(costHead);
+        depotHead.setTotalPrice(combinationItem.getAllPrice());
+    }
+
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
+    public void refreshDisassembleCost(DepotHead depotHead) throws Exception {
+        if (depotHead == null || depotHead.getId() == null) {
+            return;
+        }
+        List<DepotItem> detailList = getListByHeaderId(depotHead.getId());
+        normalizeDisassembleCost(depotHead, detailList);
+        for (DepotItem detail : detailList) {
+            depotItemMapper.updateByPrimaryKeySelective(detail);
+        }
+    }
+
+    /**
+     * 拆卸以组合件当前移动平均成本作为总投入成本，并按各子件当前成本权重分摊。
+     * 当所有子件成本权重均为零时按基本数量分摊，最后一行承接分币差，确保成本严格守恒。
+     */
+    private void normalizeDisassembleCost(DepotHead depotHead, List<DepotItem> detailList) throws Exception {
+        if (detailList == null || detailList.size() < 2) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_MSG);
+        }
+        DepotItem combinationItem = null;
+        List<DepotItem> componentItems = new ArrayList<>();
+        for (int index = 0; index < detailList.size(); index++) {
+            DepotItem detail = detailList.get(index);
+            String expectedMaterialType = index == 0 ? "组合件" : "普通子件";
+            if (!expectedMaterialType.equals(detail.getMaterialType())) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_CODE,
+                        ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_MSG);
+            }
+            if ("组合件".equals(detail.getMaterialType())) {
+                if (combinationItem != null) {
+                    throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_CODE,
+                            ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_MSG);
+                }
+                combinationItem = detail;
+            } else {
+                componentItems.add(detail);
+            }
+        }
+        if (combinationItem == null || componentItems.isEmpty()
+                || combinationItem.getBasicNumber() == null
+                || combinationItem.getBasicNumber().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_MSG);
+        }
+        for (DepotItem component : componentItems) {
+            if (component.getBasicNumber() == null || component.getBasicNumber().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_CODE,
+                        ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_MSG);
+            }
+            if (Objects.equals(component.getMaterialExtendId(), combinationItem.getMaterialExtendId())) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_SAME_MATERIAL_CODE,
+                        String.format(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_SAME_MATERIAL_MSG,
+                                combinationItem.getMaterialExtendId()));
+            }
+        }
+
+        Set<String> lockedCostKeys = new HashSet<>();
+        lockMaterialForStockCheck(combinationItem, lockedCostKeys);
+        BigDecimal combinationBasicUnitCost = getCurrentBasicUnitCost(combinationItem);
+        BigDecimal totalInputCost = combinationItem.getBasicNumber().multiply(combinationBasicUnitCost)
+                .setScale(2, BigDecimal.ROUND_HALF_UP);
+        setDisassembleItemCost(combinationItem, combinationBasicUnitCost, totalInputCost);
+
+        List<BigDecimal> allocationWeights = new ArrayList<>();
+        BigDecimal totalWeight = BigDecimal.ZERO;
+        BigDecimal totalQuantity = BigDecimal.ZERO;
+        for (DepotItem component : componentItems) {
+            lockMaterialForStockCheck(component, lockedCostKeys);
+            BigDecimal weight = component.getBasicNumber().multiply(getCurrentBasicUnitCost(component));
+            allocationWeights.add(weight);
+            totalWeight = totalWeight.add(weight);
+            totalQuantity = totalQuantity.add(component.getBasicNumber());
+        }
+        boolean allocateByCost = totalWeight.compareTo(BigDecimal.ZERO) > 0;
+        BigDecimal denominator = allocateByCost ? totalWeight : totalQuantity;
+        BigDecimal allocatedCost = BigDecimal.ZERO;
+        for (int index = 0; index < componentItems.size(); index++) {
+            DepotItem component = componentItems.get(index);
+            BigDecimal componentCost;
+            if (index == componentItems.size() - 1) {
+                componentCost = totalInputCost.subtract(allocatedCost).setScale(2, BigDecimal.ROUND_HALF_UP);
+            } else {
+                BigDecimal weight = allocateByCost ? allocationWeights.get(index) : component.getBasicNumber();
+                componentCost = denominator.compareTo(BigDecimal.ZERO) == 0 ? BigDecimal.ZERO
+                        : totalInputCost.multiply(weight).divide(denominator, 2, BigDecimal.ROUND_HALF_UP);
+                allocatedCost = allocatedCost.add(componentCost);
+            }
+            BigDecimal componentBasicUnitCost = componentCost.divide(component.getBasicNumber(),
+                    4, BigDecimal.ROUND_HALF_UP);
+            setDisassembleItemCost(component, componentBasicUnitCost, componentCost);
+        }
+
+        DepotHead costHead = new DepotHead();
+        costHead.setId(depotHead.getId());
+        costHead.setTotalPrice(totalInputCost);
+        depotHeadMapper.updateByPrimaryKeySelective(costHead);
+        depotHead.setTotalPrice(totalInputCost);
+    }
+
+    private BigDecimal getCurrentBasicUnitCost(DepotItem item) throws Exception {
+        BigDecimal basicUnitCost = materialCurrentStockMapperEx.getCurrentUnitPriceByMId(item.getMaterialId());
+        if (basicUnitCost == null) {
+            MaterialExtend materialExtend = materialExtendService.getMaterialExtend(item.getMaterialExtendId());
+            basicUnitCost = materialExtend == null || materialExtend.getPurchaseDecimal() == null
+                    ? BigDecimal.ZERO : materialExtend.getPurchaseDecimal();
+        }
+        if (basicUnitCost.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_AMOUNT_CODE,
+                    ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_AMOUNT_MSG);
+        }
+        return basicUnitCost;
+    }
+
+    private void setDisassembleItemCost(DepotItem item, BigDecimal basicUnitCost,
+                                        BigDecimal allPrice) throws Exception {
+        Unit unitInfo = materialService.findUnit(item.getMaterialId());
+        BigDecimal submittedUnitCost = unitService.parseUnitPriceByUnit(basicUnitCost, unitInfo,
+                item.getMaterialUnit()).setScale(4, BigDecimal.ROUND_HALF_UP);
+        item.setUnitPrice(submittedUnitCost);
+        item.setPurchaseUnitPrice(submittedUnitCost);
+        item.setAllPrice(allPrice.setScale(2, BigDecimal.ROUND_HALF_UP));
+        item.setTaxUnitPrice(submittedUnitCost);
+        item.setTaxRate(BigDecimal.ZERO);
+        item.setTaxMoney(BigDecimal.ZERO);
+        item.setTaxLastMoney(item.getAllPrice());
+    }
+
+    public void checkAssembleMaterialStock(List<DepotHead> depotHeadList) throws Exception {
+        Map<String, BigDecimal> outboundQuantityMap = new HashMap<>();
+        Set<String> lockedStockKeys = new HashSet<>();
+        for (DepotHead depotHead : depotHeadList) {
+            checkAssembleMaterialStock(depotHead.getNumber(), getListByHeaderId(depotHead.getId()),
+                    outboundQuantityMap, lockedStockKeys);
+        }
+    }
+
+    public void checkDisassembleMaterialStock(List<DepotHead> depotHeadList) throws Exception {
+        Map<String, BigDecimal> outboundQuantityMap = new HashMap<>();
+        Set<String> lockedStockKeys = new HashSet<>();
+        for (DepotHead depotHead : depotHeadList) {
+            checkDisassembleMaterialStock(depotHead.getNumber(), getListByHeaderId(depotHead.getId()),
+                    outboundQuantityMap, lockedStockKeys);
+        }
+    }
+
+    private void checkDisassembleMaterialStock(String number, List<DepotItem> detailList) throws Exception {
+        checkDisassembleMaterialStock(number, detailList, new HashMap<>(), new HashSet<>());
+    }
+
+    private void checkDisassembleMaterialStock(String number, List<DepotItem> detailList,
+                                               Map<String, BigDecimal> outboundQuantityMap,
+                                               Set<String> lockedStockKeys) throws Exception {
+        List<DepotItem> combinationItems = new ArrayList<>();
+        for (DepotItem detail : detailList) {
+            if ("组合件".equals(detail.getMaterialType())) {
+                combinationItems.add(detail);
+            }
+        }
+        if (combinationItems.size() != 1) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_DISASSEMBLE_STRUCTURE_MSG);
+        }
+        checkMaterialStock(number, combinationItems, outboundQuantityMap, lockedStockKeys);
+    }
+
+    private void checkAssembleMaterialStock(String number, List<DepotItem> detailList) throws Exception {
+        checkAssembleMaterialStock(number, detailList, new HashMap<>(), new HashSet<>());
+    }
+
+    private void checkAssembleMaterialStock(String number, List<DepotItem> detailList,
+                                            Map<String, BigDecimal> outboundQuantityMap,
+                                            Set<String> lockedStockKeys) throws Exception {
+        List<DepotItem> componentItems = new ArrayList<>();
+        for (DepotItem detail : detailList) {
+            if ("普通子件".equals(detail.getMaterialType())) {
+                componentItems.add(detail);
+            }
+        }
+        if (componentItems.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_CODE,
+                    ExceptionConstants.DEPOT_HEAD_ASSEMBLE_STRUCTURE_MSG);
+        }
+        checkMaterialStock(number, componentItems, outboundQuantityMap, lockedStockKeys);
+    }
+
+    /**
+     * 批量审核时在同一个库存口径内累计所有待审核出库数量，避免多张单据分别校验后造成负库存。
+     */
+    public void checkMaterialStock(List<DepotHead> depotHeadList) throws Exception {
+        Map<String, BigDecimal> outboundQuantityMap = new HashMap<>();
+        Set<String> lockedStockKeys = new HashSet<>();
+        for (DepotHead depotHead : depotHeadList) {
+            List<DepotItem> depotItemList = getListByHeaderId(depotHead.getId());
+            checkMaterialStock(depotHead.getNumber(), depotItemList, outboundQuantityMap, lockedStockKeys);
+        }
+    }
+
+    /** Lock every material in deterministic order before a multi-bill stock change. */
+    public void lockMaterialsForStockChange(Collection<DepotHead> depotHeads) throws Exception {
+        SortedSet<Long> materialIds = new TreeSet<>();
+        for (DepotHead depotHead : depotHeads) {
+            for (DepotItem depotItem : getListByHeaderId(depotHead.getId())) {
+                if (depotItem.getMaterialId() != null) {
+                    materialIds.add(depotItem.getMaterialId());
+                }
+            }
+        }
+        for (Long materialId : materialIds) {
+            materialMapperEx.lockById(materialId);
+        }
+    }
+
+    private void lockMaterialsByRows(JSONArray rowArr, Set<String> lockedStockKeys) throws Exception {
+        SortedSet<Long> materialIds = new TreeSet<>();
+        for (int i = 0; i < rowArr.size(); i++) {
+            JSONObject row = JSONObject.parseObject(rowArr.getString(i));
+            MaterialExtend extend = materialExtendService.getInfoByBarCode(row.getString("barCode"));
+            if (extend != null && extend.getMaterialId() != null) {
+                materialIds.add(extend.getMaterialId());
+            }
+        }
+        for (Long materialId : materialIds) {
+            materialMapperEx.lockById(materialId);
+            lockedStockKeys.add(String.valueOf(materialId));
+        }
+    }
+
+    public List<DepotItemVo4WithInfoEx> getSaleOutSummary(String materialParam, String beginTime, String endTime,
+                                                           String[] creatorArray, Long organId, String[] organArray,
+                                                           List<Long> categoryList, List<Long> depotList, Boolean forceFlag,
+                                                           String column, String order, Integer offset, Integer rows) throws Exception {
+        try {
+            return depotItemMapperEx.getSaleOutSummary(materialParam, beginTime, endTime, creatorArray, organId,
+                    organArray, categoryList, depotList, forceFlag, column, order, offset, rows);
+        } catch (Exception e) {
+            JshException.readFail(logger, e);
+            return new ArrayList<>();
+        }
+    }
+
+    private void checkMaterialStock(String number, List<DepotItem> depotItemList,
+                                    Map<String, BigDecimal> outboundQuantityMap,
+                                    Set<String> lockedStockKeys) throws Exception {
         for (DepotItem depotItem : depotItemList) {
             Material material = materialService.getMaterial(depotItem.getMaterialId());
             MaterialExtend materialExtend = materialExtendService.getMaterialExtend(depotItem.getMaterialExtendId());
@@ -1539,10 +2090,53 @@ public class DepotItemService {
                 //对于批次商品，直接使用当前填写的数量
                 thisRealNumber = depotItem.getOperNumber()==null?BigDecimal.ZERO:depotItem.getOperNumber();
             }
-            if(stock.compareTo(thisRealNumber)<0){
+            if(thisRealNumber.compareTo(BigDecimal.ZERO)<=0) {
+                throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_CODE,
+                        String.format(ExceptionConstants.DEPOT_HEAD_NUMBER_MUST_POSITIVE_MSG, materialExtend.getBarCode()));
+            }
+            lockMaterialForStockCheck(depotItem, lockedStockKeys);
+            String stockScopeKey = getStockScopeKey(depotItem, materialExtend.getBarCode());
+            BigDecimal accumulatedNumber = outboundQuantityMap.getOrDefault(stockScopeKey, BigDecimal.ZERO).add(thisRealNumber);
+            outboundQuantityMap.put(stockScopeKey, accumulatedNumber);
+            stock = getStockForDepotItem(depotItem, materialExtend.getBarCode());
+            if(stock.compareTo(accumulatedNumber)<0){
                 throw new BusinessRunTimeException(ExceptionConstants.BILL_MATERIAL_STOCK_NOT_ENOUGH_CODE,
                         String.format(ExceptionConstants.BILL_MATERIAL_STOCK_NOT_ENOUGH_MSG, number, stockMsg));
             }
         }
+    }
+
+    private boolean isMaterialUnitValid(String submittedUnit, MaterialExtend materialExtend, Unit unitInfo) {
+        return StringUtil.isNotEmpty(submittedUnit)
+                && submittedUnit.equals(materialExtend.getCommodityUnit());
+    }
+
+    private void lockMaterialForStockCheck(DepotItem depotItem, Set<String> lockedStockKeys) {
+        String lockKey = String.valueOf(depotItem.getMaterialId());
+        if (lockedStockKeys.add(lockKey)) {
+            // 始终锁定商品主记录，库存汇总行尚未创建时也有稳定的并发锁。
+            materialMapperEx.lockById(depotItem.getMaterialId());
+        }
+    }
+
+    private String getStockScopeKey(DepotItem depotItem, String barCode) {
+        if (StringUtil.isNotEmpty(depotItem.getBatchNumber())) {
+            return "batch:" + depotItem.getDepotId() + ":" + barCode + ":" + depotItem.getBatchNumber();
+        }
+        if (StringUtil.isNotEmpty(depotItem.getSku())) {
+            return "sku:" + depotItem.getDepotId() + ":" + depotItem.getMaterialExtendId();
+        }
+        return "material:" + depotItem.getDepotId() + ":" + depotItem.getMaterialId();
+    }
+
+    private BigDecimal getStockForDepotItem(DepotItem depotItem, String barCode) throws Exception {
+        BigDecimal stock = getCurrentStockByParam(depotItem.getDepotId(), depotItem.getMaterialId());
+        if (StringUtil.isNotEmpty(depotItem.getSku())) {
+            stock = getSkuStockByParam(depotItem.getDepotId(), depotItem.getMaterialExtendId(), null, null);
+        }
+        if (StringUtil.isNotEmpty(depotItem.getBatchNumber())) {
+            stock = getOneBatchNumberStock(depotItem.getDepotId(), barCode, depotItem.getBatchNumber());
+        }
+        return stock;
     }
 }

@@ -12,24 +12,24 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:100px;height: 60%;">
       <template slot="footer">
         <a-button key="back" v-if="isReadOnly" @click="handleCancel">
-          取消
+          {{ $t('common.cancel') }}
         </a-button>
       </template>
       <a-spin :spinning="confirmLoading">
         <a-form :form="form">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="属性名">
-            <a-input placeholder="请输入属性名" v-decorator.trim="[ 'attributeName', validatorRules.attributeName]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('material.attributeName')">
+            <a-input :placeholder="$t('material.enterAttributeName')" v-decorator.trim="[ 'attributeName', validatorRules.attributeName]" />
           </a-form-item>
         </a-form>
         <a-form :form="form">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="属性值">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('material.attributeValue')">
             <a-tabs v-model:activeKey="activeKey" size="small">
-              <a-tab-pane key="1" tab="标签模式" forceRender>
+              <a-tab-pane key="1" :tab="$t('material.tagMode')" forceRender>
                 <template v-for="(tag, index) in tags">
                   <a-tag color="blue" style="margin-bottom: 10px" :key="tag" :closable="true" @close="() => handleClose(tag)">
                     {{ tag }}
@@ -47,13 +47,13 @@
                   @keyup.enter="handleInputConfirm"
                 />
                 <a-tag v-else style="background: #fff; borderStyle: dashed;" @click="showInput">
-                  <a-icon type="plus" /> 请输入属性值
+                  <a-icon type="plus" /> {{ $t('material.enterAttributeValue') }}
                 </a-tag>
               </a-tab-pane>
-              <a-tab-pane key="2" tab="文字模式" forceRender>
-                <a-textarea :rows="8" placeholder="请输入属性值" @change="handleValueChange"
+              <a-tab-pane key="2" :tab="$t('material.textMode')" forceRender>
+                <a-textarea :rows="8" :placeholder="$t('material.enterAttributeValue')" @change="handleValueChange"
                             v-decorator.trim="[ 'attributeValue', validatorRules.attributeValue]" />
-                注意：属性值请用竖线隔开，比如：红色|橙色|黄色|绿色
+                {{ $t('material.attributeValueSeparatorTip') }}
               </a-tab-pane>
             </a-tabs>
           </a-form-item>
@@ -72,7 +72,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         model: {},
         isReadOnly: false,
@@ -93,14 +93,14 @@
         validatorRules:{
           attributeName:{
             rules: [
-              { required: true, message: '请输入属性名!' },
-              { min: 1, max: 10, message: '长度在 1 到 10 个字符', trigger: 'blur' },
+              { required: true, message: this.$t('material.enterAttributeName') + '!' },
+              { min: 1, max: 10, message: this.$t('common.aliasLength'), trigger: 'blur' },
               { validator: this.validateAttributeName}
             ]
           },
           attributeValue:{
             rules: [
-              { required: true, message: '请输入属性值!' }
+              { required: true, message: this.$t('material.enterAttributeValue') + '!' }
             ]
           }
         }
@@ -170,7 +170,7 @@
               if(!res.data.status){
                 callback();
               } else {
-                callback("名称已经存在");
+                callback(this.$t('material.nameAlreadyExists'));
               }
             } else {
               callback(res.data);

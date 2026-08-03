@@ -63,6 +63,14 @@ public class TenantConfig {
     }
 
     /**
+     * 注册平台管理员 DML 拦截器（独立于租户拦截器，避免循环依赖）
+     */
+    @Bean
+    public PlatformAdminDmlInterceptor platformAdminDmlInterceptor() {
+        return new PlatformAdminDmlInterceptor();
+    }
+
+    /**
      * 相当于顶部的：
      * {@code @MapperScan("com.jsh.erp.datasource.mappers*")}
      * 这里可以扩展，比如使用配置文件来配置扫描Mapper的路径

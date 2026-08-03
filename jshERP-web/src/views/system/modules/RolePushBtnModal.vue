@@ -12,8 +12,8 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:5%;height: 95%;">
       <a-spin :spinning="confirmLoading">
         <div class="table-page-search-wrapper">
@@ -23,19 +23,19 @@
               <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
                 <a-col :md="12" :sm="24">
                   <a-button @click="toggleChecked">
-                    {{ !checked ? '全选' : '全取消' }}
+                    {{ !checked ? $t('system.selectAll') : $t('system.deselectAll') }}
                   </a-button>
                   <a-button @click="editToggleChecked" style="margin-left: 8px">
-                    {{ !editChecked ? '全选-编辑' : '全取消-编辑' }}
+                    {{ !editChecked ? $t('system.selectAllEdit') : $t('system.deselectAllEdit') }}
                   </a-button>
                   <a-button @click="auditToggleChecked" style="margin-left: 8px">
-                    {{ !auditChecked ? '全选-审核' : '全取消-审核' }}
+                    {{ !auditChecked ? $t('system.selectAllAudit') : $t('system.deselectAllAudit') }}
                   </a-button>
                   <a-button @click="unAuditToggleChecked" style="margin-left: 8px">
-                    {{ !unAuditChecked ? '全选-反审核' : '全取消-反审核' }}
+                    {{ !unAuditChecked ? $t('system.selectAllUnaudit') : $t('system.deselectAllUnaudit') }}
                   </a-button>
                   <a-button @click="exportToggleChecked" style="margin-left: 8px">
-                    {{ !exportChecked ? '全选-导出' : '全取消-导出' }}
+                    {{ !exportChecked ? $t('system.selectAllExport') : $t('system.deselectAllExport') }}
                   </a-button>
                 </a-col>
               </span>
@@ -54,13 +54,13 @@
             :dataSource="dataSource"
             :loading="loading">
             <span slot="action" slot-scope="text, record">
-              <a-checkbox v-if="record.pushBtn.indexOf(1)>-1" value="1" :checked="record.btnStr?record.btnStr.indexOf(1)>-1:false" @change="onChange(record,'1')">编辑</a-checkbox>
-              <a-checkbox v-if="record.pushBtn.indexOf(2)>-1" value="2" :checked="record.btnStr?record.btnStr.indexOf(2)>-1:false" @change="onChange(record,'2')">审核</a-checkbox>
-              <a-checkbox v-if="record.pushBtn.indexOf(7)>-1" value="7" :checked="record.btnStr?record.btnStr.indexOf(7)>-1:false" @change="onChange(record,'7')">反审核</a-checkbox>
-              <a-checkbox v-if="record.pushBtn.indexOf(3)>-1" value="3" :checked="record.btnStr?record.btnStr.indexOf(3)>-1:false" @change="onChange(record,'3')">导出</a-checkbox>
-              <a-checkbox v-if="record.pushBtn.indexOf(4)>-1" value="4" :checked="record.btnStr?record.btnStr.indexOf(4)>-1:false" @change="onChange(record,'4')">启用禁用</a-checkbox>
-              <a-checkbox v-if="record.pushBtn.indexOf(5)>-1" value="5" :checked="record.btnStr?record.btnStr.indexOf(5)>-1:false" @change="onChange(record,'5')">打印</a-checkbox>
-              <a-checkbox v-if="record.pushBtn.indexOf(6)>-1" value="6" :checked="record.btnStr?record.btnStr.indexOf(6)>-1:false" @change="onChange(record,'6')">作废</a-checkbox>
+              <a-checkbox v-if="record.pushBtn.indexOf(1)>-1" value="1" :checked="record.btnStr?record.btnStr.indexOf(1)>-1:false" @change="onChange(record,'1')">{{ $t('common.edit') }}</a-checkbox>
+              <a-checkbox v-if="record.pushBtn.indexOf(2)>-1" value="2" :checked="record.btnStr?record.btnStr.indexOf(2)>-1:false" @change="onChange(record,'2')">{{ $t('common.audit') }}</a-checkbox>
+              <a-checkbox v-if="record.pushBtn.indexOf(7)>-1" value="7" :checked="record.btnStr?record.btnStr.indexOf(7)>-1:false" @change="onChange(record,'7')">{{ $t('common.unaudit') }}</a-checkbox>
+              <a-checkbox v-if="record.pushBtn.indexOf(3)>-1" value="3" :checked="record.btnStr?record.btnStr.indexOf(3)>-1:false" @change="onChange(record,'3')">{{ $t('common.export') }}</a-checkbox>
+              <a-checkbox v-if="record.pushBtn.indexOf(4)>-1" value="4" :checked="record.btnStr?record.btnStr.indexOf(4)>-1:false" @change="onChange(record,'4')">{{ $t('system.btnEnableDisable') }}</a-checkbox>
+              <a-checkbox v-if="record.pushBtn.indexOf(5)>-1" value="5" :checked="record.btnStr?record.btnStr.indexOf(5)>-1:false" @change="onChange(record,'5')">{{ $t('common.print') }}</a-checkbox>
+              <a-checkbox v-if="record.pushBtn.indexOf(6)>-1" value="6" :checked="record.btnStr?record.btnStr.indexOf(6)>-1:false" @change="onChange(record,'6')">{{ $t('system.btnVoid') }}</a-checkbox>
             </span>
           </a-table>
         </div>
@@ -80,7 +80,7 @@
     mixins:[JeecgListMixin, mixinDevice],
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         width: '800px',
         visible: false,
         model: {},
@@ -107,12 +107,12 @@
             }
           },
           {
-            title: '名称',
+            title: this.$t('common.name'),
             align:"center",
             dataIndex: 'name'
           },
           {
-            title: '按钮列表',
+            title: this.$t('system.buttonList'),
             dataIndex: 'action',
             align:"center",
             scopedSlots: { customRender: 'action' }
@@ -178,12 +178,12 @@
             obj.then((res)=>{
               if(res.code === 200){
                 that.$emit('ok');
+                that.close();
               }else{
                 that.$message.warning(res.data);
               }
             }).finally(() => {
               that.confirmLoading = false;
-              that.close();
             })
           }
         })

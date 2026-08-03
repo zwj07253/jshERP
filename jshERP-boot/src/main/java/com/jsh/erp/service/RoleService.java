@@ -1,13 +1,16 @@
 package com.jsh.erp.service;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.JSONArray;
 import com.jsh.erp.constants.BusinessConstants;
-import com.jsh.erp.datasource.entities.Role;
-import com.jsh.erp.datasource.entities.RoleEx;
-import com.jsh.erp.datasource.entities.RoleExample;
-import com.jsh.erp.datasource.entities.User;
+import com.jsh.erp.constants.ExceptionConstants;
+import com.jsh.erp.datasource.entities.*;
+import com.jsh.erp.datasource.mappers.FunctionMapper;
 import com.jsh.erp.datasource.mappers.RoleMapper;
 import com.jsh.erp.datasource.mappers.RoleMapperEx;
+import com.jsh.erp.datasource.mappers.UserBusinessMapper;
+import com.jsh.erp.datasource.mappers.UserBusinessMapperEx;
+import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.exception.JshException;
 import com.jsh.erp.utils.PageUtils;
 import com.jsh.erp.utils.StringUtil;
@@ -22,8 +25,16 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 public class RoleService {
@@ -37,9 +48,23 @@ public class RoleService {
     private LogService logService;
     @Resource
     private UserService userService;
+    @Resource
+    private UserBusinessMapperEx userBusinessMapperEx;
+
+    @Resource
+    private UserBusinessMapper userBusinessMapper;
+    @Resource
+    private FunctionMapper functionMapper;
 
     //超管的专用角色
-    private static Long MANAGE_ROLE_ID = 4L;
+    private static final Long MANAGE_ROLE_ID = 4L;
+    private static final String ROLE_URL = "/system/role";
+    private static final String USER_URL = "/system/user";
+    private static final String EDIT_BUTTON_CODE = "1";
+    private static final Set<String> ROLE_TYPES = new HashSet<>(Arrays.asList(
+            BusinessConstants.ROLE_TYPE_PUBLIC,
+            BusinessConstants.ROLE_TYPE_THIS_ORG,
+            BusinessConstants.ROLE_TYPE_PRIVATE));
 
     public Role getRole(long id)throws Exception {
         Role result=null;
@@ -94,6 +119,7 @@ public class RoleService {
     }
 
     public List<RoleEx> select(String name, String description)throws Exception {
+        checkReadPermission();
         List<RoleEx> list=null;
         try{
             PageUtils.startPage();
@@ -120,10 +146,13 @@ public class RoleService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertRole(JSONObject obj, HttpServletRequest request)throws Exception {
-        Role role = JSONObject.parseObject(obj.toJSONString(), Role.class);
+        checkEditPermission();
+        lockRoleWrite();
+        Role role = buildRole(obj, null);
+        validateRole(role);
+        ensureNameUnique(null, role.getName(), role.getTenantId());
         int result=0;
         try{
-            role.setEnabled(true);
             result=roleMapper.insertSelective(role);
             logService.insertLog("角色",
                     new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_ADD).append(role.getName()).toString(), request);
@@ -135,7 +164,16 @@ public class RoleService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateRole(JSONObject obj, HttpServletRequest request) throws Exception{
-        Role role = JSONObject.parseObject(obj.toJSONString(), Role.class);
+        checkEditPermission();
+        lockRoleWrite();
+        Long id = obj.getLong("id");
+        Role existing = id == null ? null : roleMapper.selectByPrimaryKey(id);
+        if(existing == null || BusinessConstants.DELETE_FLAG_DELETED.equals(existing.getDeleteFlag())) {
+            throw invalidRole("角色不存在或已删除");
+        }
+        Role role = buildRole(obj, existing);
+        validateRole(role);
+        ensureNameUnique(role.getId(), role.getName(), existing.getTenantId());
         int result=0;
         try{
             result=roleMapper.updateByPrimaryKeySelective(role);
@@ -149,17 +187,27 @@ public class RoleService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteRole(Long id, HttpServletRequest request)throws Exception {
+        checkEditPermission();
         return batchDeleteRoleByIds(id.toString());
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteRole(String ids, HttpServletRequest request) throws Exception{
+        checkEditPermission();
         return batchDeleteRoleByIds(ids);
     }
 
     public int checkIsNameExist(Long id, String name) throws Exception{
         RoleExample example = new RoleExample();
-        example.createCriteria().andIdNotEqualTo(id).andNameEqualTo(name).andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        RoleExample.Criteria criteria = example.createCriteria().andIdNotEqualTo(id).andNameEqualTo(name)
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        User currentUser = userService.getCurrentUser();
+        Long tenantId = currentUser == null ? null : currentUser.getTenantId();
+        if(tenantId == null || tenantId == 0L) {
+            criteria.andTenantIdIsNull();
+        } else {
+            criteria.andTenantIdEqualTo(tenantId);
+        }
         List<Role> list =null;
         try{
             list=roleMapper.selectByExample(example);
@@ -190,19 +238,35 @@ public class RoleService {
      */
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchDeleteRoleByIds(String ids) throws Exception{
+        lockRoleWrite();
+        List<Long> roleIds = parseIds(ids);
+        if(roleIds.isEmpty()) {
+            throw invalidRole("请选择要删除的角色");
+        }
+        if(roleIds.contains(MANAGE_ROLE_ID)) {
+            throw invalidRole("系统管理员角色不能删除");
+        }
+        String normalizedIds = roleIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+        List<Role> existingRoles = getRoleListByIds(normalizedIds);
+        if(existingRoles.size() != roleIds.size()
+                || existingRoles.stream().anyMatch(role -> BusinessConstants.DELETE_FLAG_DELETED.equals(role.getDeleteFlag()))) {
+            throw invalidRole("角色不存在或已删除");
+        }
+        ensureRolesNotAssigned(roleIds, "删除");
         StringBuffer sb = new StringBuffer();
         sb.append(BusinessConstants.LOG_OPERATION_TYPE_DELETE);
-        List<Role> list = getRoleListByIds(ids);
-        for(Role role: list){
+        for(Role role: existingRoles){
             sb.append("[").append(role.getName()).append("]");
         }
         logService.insertLog("角色", sb.toString(),
                 ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
         User userInfo=userService.getCurrentUser();
-        String [] idArray=ids.split(",");
+        String [] idArray=roleIds.stream().map(String::valueOf).toArray(String[]::new);
         int result=0;
         try{
             result=roleMapperEx.batchDeleteRoleByIds(new Date(),userInfo==null?null:userInfo.getId(),idArray);
+            userBusinessMapperEx.deleteRoleFunctionsByRoleIds(
+                    roleIds.stream().map(String::valueOf).collect(Collectors.toList()));
         }catch(Exception e){
             JshException.writeFail(logger, e);
         }
@@ -215,10 +279,29 @@ public class RoleService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batchSetStatus(Boolean status, String ids)throws Exception {
+        checkEditPermission();
+        lockRoleWrite();
+        if(status == null) {
+            throw invalidRole("角色状态不能为空");
+        }
+        List<Long> roleIds = parseIds(ids);
+        if(roleIds.isEmpty()) {
+            throw invalidRole("请选择要设置状态的角色");
+        }
+        if(!status && roleIds.contains(MANAGE_ROLE_ID)) {
+            throw invalidRole("系统管理员角色不能禁用");
+        }
+        List<Role> roles = getRoleListByIds(roleIds.stream().map(String::valueOf).collect(Collectors.joining(",")));
+        if(roles.size() != roleIds.size()
+                || roles.stream().anyMatch(role -> BusinessConstants.DELETE_FLAG_DELETED.equals(role.getDeleteFlag()))) {
+            throw invalidRole("角色不存在或已删除");
+        }
+        if(!status) {
+            ensureRolesNotAssigned(roleIds, "禁用");
+        }
         logService.insertLog("角色",
                 new StringBuffer(BusinessConstants.LOG_OPERATION_TYPE_ENABLED).toString(),
                 ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
-        List<Long> roleIds = StringUtil.strToLongList(ids);
         Role role = new Role();
         role.setEnabled(status);
         RoleExample example = new RoleExample();
@@ -230,6 +313,176 @@ public class RoleService {
             JshException.writeFail(logger, e);
         }
         return result;
+    }
+
+    public void checkReadPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if(!userService.hasFunctionPermission(userId, ROLE_URL)) {
+            throw permissionDenied();
+        }
+    }
+
+    public void checkSelectionPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if(!userService.hasFunctionPermission(userId, ROLE_URL)
+                && !userService.hasFunctionPermission(userId, USER_URL)) {
+            throw permissionDenied();
+        }
+    }
+
+    public void checkAssignmentPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if(!userService.hasButtonPermission(userId, ROLE_URL, EDIT_BUTTON_CODE)
+                && !userService.hasButtonPermission(userId, USER_URL, EDIT_BUTTON_CODE)) {
+            throw permissionDenied();
+        }
+    }
+
+    public void checkEditPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if(!userService.hasButtonPermission(userId, ROLE_URL, EDIT_BUTTON_CODE)) {
+            throw permissionDenied();
+        }
+    }
+
+    public Role requireActiveRole(Long roleId) throws Exception {
+        Role role = roleId == null ? null : getRoleWithoutTenant(roleId);
+        if(role == null || !Boolean.TRUE.equals(role.getEnabled())
+                || BusinessConstants.DELETE_FLAG_DELETED.equals(role.getDeleteFlag())) {
+            throw permissionDenied();
+        }
+        return role;
+    }
+
+    public Role requireManagedRole(Long roleId) throws Exception {
+        Role role = roleId == null ? null : roleMapper.selectByPrimaryKey(roleId);
+        if(role == null || BusinessConstants.DELETE_FLAG_DELETED.equals(role.getDeleteFlag())) {
+            throw invalidRole("角色不存在或已删除");
+        }
+        // 租户归属校验：非admin用户只能操作自己租户的角色
+        User currentUser = userService.getCurrentUser();
+        if(currentUser != null && !BusinessConstants.DEFAULT_MANAGER.equals(currentUser.getLoginName())) {
+            Long currentTenantId = currentUser.getTenantId();
+            Long roleTenantId = role.getTenantId();
+            if(currentTenantId != null && currentTenantId != 0L) {
+                if(!currentTenantId.equals(roleTenantId)) {
+                    throw permissionDenied();
+                }
+            }
+        }
+        return role;
+    }
+
+    public void validateAssignableUser(String userId) throws Exception {
+        try {
+            if(userService.getUser(Long.parseLong(userId)) == null) {
+                throw invalidRole("用户不存在");
+            }
+        } catch(NumberFormatException e) {
+            throw invalidRole("用户ID不合法");
+        }
+    }
+
+    private Role buildRole(JSONObject obj, Role existing) throws Exception {
+        Role role = new Role();
+        if(existing != null) {
+            role.setId(existing.getId());
+        } else {
+            User currentUser = userService.getCurrentUser();
+            Long tenantId = currentUser == null ? null : currentUser.getTenantId();
+            role.setTenantId(tenantId != null && tenantId == 0L ? null : tenantId);
+            role.setEnabled(true);
+            role.setDeleteFlag(BusinessConstants.DELETE_FLAG_EXISTS);
+        }
+        role.setName(obj.getString("name"));
+        role.setType(obj.getString("type"));
+        role.setPriceLimit(normalizePriceLimit(obj.getString("priceLimit")));
+        role.setDescription(obj.getString("description"));
+        role.setSort(obj.getString("sort"));
+        return role;
+    }
+
+    private void validateRole(Role role) {
+        if(StringUtil.isEmpty(role.getName()) || role.getName().length() < 2 || role.getName().length() > 30) {
+            throw invalidRole("角色名称长度必须为2到30个字符");
+        }
+        if(!ROLE_TYPES.contains(role.getType())) {
+            throw invalidRole("角色数据类型不合法");
+        }
+        if(role.getDescription() != null && role.getDescription().length() > 100) {
+            throw invalidRole("角色备注不能超过100个字符");
+        }
+        if(role.getSort() != null && role.getSort().length() > 10) {
+            throw invalidRole("角色排序不能超过10个字符");
+        }
+    }
+
+    private String normalizePriceLimit(String priceLimit) {
+        if(StringUtil.isEmpty(priceLimit)) {
+            return null;
+        }
+        String compact = priceLimit.replace(",", "").replace(" ", "");
+        Set<Character> values = new HashSet<>();
+        for(char value : compact.toCharArray()) {
+            if(value < '1' || value > '7') {
+                throw invalidRole("价格屏蔽选项不合法");
+            }
+            values.add(value);
+        }
+        return values.stream().sorted().map(String::valueOf).collect(Collectors.joining(","));
+    }
+
+    private void ensureNameUnique(Long id, String name, Long tenantId) {
+        RoleExample example = new RoleExample();
+        RoleExample.Criteria criteria = example.createCriteria().andNameEqualTo(name)
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        if(id != null) {
+            criteria.andIdNotEqualTo(id);
+        }
+        if(tenantId == null) {
+            criteria.andTenantIdIsNull();
+        } else {
+            criteria.andTenantIdEqualTo(tenantId);
+        }
+        if(roleMapper.countByExample(example) > 0) {
+            throw invalidRole("角色名称已经存在");
+        }
+    }
+
+    private void ensureRolesNotAssigned(List<Long> roleIds, String operation) {
+        for(Long roleId : roleIds) {
+            List<Long> userIds = userBusinessMapperEx.getUBKeyIdByTypeAndOneValue("UserRole", roleId.toString());
+            if(userIds != null && !userIds.isEmpty()) {
+                throw invalidRole("角色已分配给用户，不能" + operation);
+            }
+        }
+    }
+
+    private List<Long> parseIds(String ids) {
+        try {
+            return StringUtil.isEmpty(ids) ? new ArrayList<>() : StringUtil.strToLongList(ids);
+        } catch(Exception e) {
+            throw invalidRole("角色ID不合法");
+        }
+    }
+
+    private void lockRoleWrite() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        roleMapperEx.lockRoleWrite(currentUser == null ? 0L : currentUser.getTenantId());
+    }
+
+    private BusinessRunTimeException invalidRole(String detail) {
+        return new BusinessRunTimeException(ExceptionConstants.INVALID_ARGUMENT_CODE,
+                String.format(ExceptionConstants.INVALID_ARGUMENT_MSG, detail));
+    }
+
+    private BusinessRunTimeException permissionDenied() {
+        return new BusinessRunTimeException(ExceptionConstants.PERMISSION_DENIED_CODE,
+                ExceptionConstants.PERMISSION_DENIED_MSG);
     }
 
     /**
@@ -320,5 +573,202 @@ public class RoleService {
     public String getCurrentPriceLimit(HttpServletRequest request) throws Exception {
         Long userId = userService.getUserId(request);
         return userService.getRoleTypeByUserId(userId).getPriceLimit();
+    }
+
+    /**
+     * 仅供租户开通流程调用：从模板角色复制一个新角色给新租户，跳过权限检查。
+     * @param templateRoleId 模板角色ID（manage.roleId 配置值）
+     * @param tenantId 新租户ID
+     * @return 新角色的ID
+     */
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
+    public Long copyTemplateRoleForTenant(Integer templateRoleId, Long tenantId) throws Exception {
+        // 校验模板角色
+        Role template = roleMapper.selectByPrimaryKey(templateRoleId.longValue());
+        if (template == null) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADD_FAILED_CODE,
+                    "模板角色(ID=" + templateRoleId + ")不存在，无法创建租户角色");
+        }
+        if (BusinessConstants.DELETE_FLAG_DELETED.equals(template.getDeleteFlag())) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADD_FAILED_CODE,
+                    "模板角色(ID=" + templateRoleId + ")已删除，无法创建租户角色");
+        }
+        if (!Boolean.TRUE.equals(template.getEnabled())) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADD_FAILED_CODE,
+                    "模板角色(ID=" + templateRoleId + ")已停用，无法创建租户角色");
+        }
+        if (template.getTenantId() != null) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADD_FAILED_CODE,
+                    "模板角色(ID=" + templateRoleId + ")不是全局模板(tenantId应为null)，无法创建租户角色");
+        }
+        // 校验模板的 RoleFunctions
+        List<UserBusiness> templateRFList = userBusinessMapperEx.getBasicDataByKeyIdAndType(
+                templateRoleId.toString(), "RoleFunctions");
+        if (templateRFList == null || templateRFList.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADD_FAILED_CODE,
+                    "模板角色(ID=" + templateRoleId + ")没有菜单权限配置(RoleFunctions)，无法创建租户角色");
+        }
+        UserBusiness templateRF = templateRFList.get(0);
+        TemplateRoleFunctions resolvedFunctions = resolveTemplateRoleFunctions(templateRF);
+        // 创建新角色（复制模板属性，绑定到新租户）
+        Role newRole = new Role();
+        newRole.setName(template.getName());
+        newRole.setType(template.getType());
+        newRole.setPriceLimit(template.getPriceLimit());
+        newRole.setValue(template.getValue());
+        newRole.setDescription(template.getDescription());
+        newRole.setEnabled(template.getEnabled());
+        newRole.setSort(template.getSort());
+        newRole.setTenantId(tenantId);
+        newRole.setDeleteFlag(BusinessConstants.DELETE_FLAG_EXISTS);
+        roleMapper.insertSelective(newRole);
+        Long newRoleId = newRole.getId();
+        // 复制模板的 RoleFunctions 到新角色
+        UserBusiness newRF = new UserBusiness();
+        newRF.setType("RoleFunctions");
+        newRF.setKeyId(newRoleId.toString());
+        newRF.setValue(resolvedFunctions.value);
+        newRF.setBtnStr(resolvedFunctions.btnStr);
+        newRF.setTenantId(tenantId);
+        newRF.setDeleteFlag(BusinessConstants.DELETE_FLAG_EXISTS);
+        userBusinessMapper.insertSelective(newRF);
+        return newRoleId;
+    }
+
+    /** 创建新租户预置的业务角色，所有角色均使用全部数据范围。 */
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
+    public void createDefaultRolesForTenant(Long tenantId) {
+        createDefaultRole(tenantId, "采购员", "2,3,5,6,7", false,
+                "0101", "010101", "010102", "010103", "010105", "0102", "01020101",
+                "0502", "050201", "050202", "050203", "050204", "0301", "030101", "030113");
+        createDefaultRole(tenantId, "销售员", "1,4,7", false,
+                "0101", "010101", "010102", "010103", "010105", "0102", "01020102",
+                "0603", "060301", "060303", "060305", "0301", "030101", "030113");
+        createDefaultRole(tenantId, "仓管员", "1,2,3,4,5,6", false,
+                "0101", "010101", "010102", "010103", "010105", "0801", "080103", "080105",
+                "080107", "080109", "080111", "0301", "030101", "030113");
+        createDefaultRole(tenantId, "财务人员", null, false,
+                "0704", "070402", "070403", "070404", "070405", "070406", "070407",
+                "0301", "030110", "030111");
+        createDefaultRole(tenantId, "查看者", "1,2,3,4,5,6,7", true,
+                "0101", "010101", "010102", "010103", "010105", "0102", "01020101", "01020102",
+                "01020103", "010202", "010204", "010205", "010206", "0301", "030101", "030102",
+                "030103", "030104", "030105", "030106", "030107", "030108", "030109", "030110",
+                "030111", "030112", "030113", "030150", "0401", "040102", "040104", "0502", "050201",
+                "050202", "050203", "050204", "0603", "060301", "060303", "060305", "0704", "070402",
+                "070403", "070404", "070405", "070406", "070407", "0801", "080103", "080105", "080107",
+                "080109", "080111");
+    }
+
+    private void createDefaultRole(Long tenantId, String name, String priceLimit, boolean readOnly,
+                                   String... menuNumbers) {
+        List<String> numbers = Arrays.asList(menuNumbers);
+        Map<String, Function> functionsByNumber = findActiveFunctionsByNumber(numbers);
+        Role role = new Role();
+        role.setName(name);
+        role.setType(BusinessConstants.ROLE_TYPE_PUBLIC);
+        role.setPriceLimit(priceLimit);
+        role.setEnabled(true);
+        role.setSort("0");
+        role.setTenantId(tenantId);
+        role.setDeleteFlag(BusinessConstants.DELETE_FLAG_EXISTS);
+        roleMapper.insertSelective(role);
+
+        UserBusiness permissions = new UserBusiness();
+        permissions.setType("RoleFunctions");
+        permissions.setKeyId(role.getId().toString());
+        StringBuilder value = new StringBuilder();
+        JSONArray buttons = new JSONArray();
+        for (String number : numbers) {
+            Function function = functionsByNumber.get(number);
+            value.append('[').append(function.getId()).append(']');
+            if (!readOnly && StringUtil.isNotEmpty(function.getPushBtn())) {
+                JSONObject button = new JSONObject();
+                button.put("funId", function.getId());
+                button.put("btnStr", function.getPushBtn());
+                buttons.add(button);
+            }
+        }
+        permissions.setValue(value.toString());
+        permissions.setBtnStr(readOnly ? null : buttons.toJSONString());
+        permissions.setTenantId(tenantId);
+        permissions.setDeleteFlag(BusinessConstants.DELETE_FLAG_EXISTS);
+        userBusinessMapper.insertSelective(permissions);
+    }
+
+    private Map<String, Function> findActiveFunctionsByNumber(List<String> numbers) {
+        FunctionExample example = new FunctionExample();
+        example.createCriteria().andNumberIn(numbers)
+                .andEnabledEqualTo(true)
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        Map<String, Function> functionsByNumber = new LinkedHashMap<>();
+        for (Function function : functionMapper.selectByExample(example)) {
+            functionsByNumber.put(function.getNumber(), function);
+        }
+        if (functionsByNumber.size() != numbers.size()) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADD_FAILED_CODE,
+                    "默认角色包含不存在、已停用或已删除的菜单编号");
+        }
+        return functionsByNumber;
+    }
+
+    /**
+     * 模板角色可以用菜单编号保存权限，例如 [n:0001][n:010101]。
+     * 创建租户时再按当前数据库中的菜单编号解析为菜单主键，避免初始化脚本依赖菜单 ID。
+     */
+    private TemplateRoleFunctions resolveTemplateRoleFunctions(UserBusiness templateRF) {
+        String value = templateRF.getValue();
+        if (value == null || !value.contains("[n:")) {
+            return new TemplateRoleFunctions(value, templateRF.getBtnStr());
+        }
+        Matcher matcher = TEMPLATE_NUMBER_PATTERN.matcher(value);
+        List<String> numbers = new ArrayList<>();
+        while (matcher.find()) {
+            numbers.add(matcher.group(1));
+        }
+        if (numbers.isEmpty()) {
+            throw new BusinessRunTimeException(ExceptionConstants.ROLE_ADD_FAILED_CODE,
+                    "模板角色菜单编号配置不能为空");
+        }
+        Map<String, Function> functionsByNumber = findActiveFunctionsByNumber(numbers);
+        StringBuilder resolvedValue = new StringBuilder();
+        Map<String, Long> idsByNumber = new LinkedHashMap<>();
+        for (String number : numbers) {
+            Function function = functionsByNumber.get(number);
+            resolvedValue.append('[').append(function.getId()).append(']');
+            idsByNumber.put(number, function.getId());
+        }
+        return new TemplateRoleFunctions(resolvedValue.toString(),
+                resolveTemplateButtonPermissions(templateRF.getBtnStr(), idsByNumber));
+    }
+
+    private String resolveTemplateButtonPermissions(String btnStr, Map<String, Long> idsByNumber) {
+        if (StringUtil.isEmpty(btnStr) || !btnStr.contains("funNumber")) {
+            return btnStr;
+        }
+        JSONArray resolved = new JSONArray();
+        for (Object item : JSONArray.parseArray(btnStr)) {
+            JSONObject button = (JSONObject) item;
+            Long functionId = idsByNumber.get(button.getString("funNumber"));
+            if (functionId != null) {
+                JSONObject resolvedButton = new JSONObject();
+                resolvedButton.put("funId", functionId);
+                resolvedButton.put("btnStr", button.getString("btnStr"));
+                resolved.add(resolvedButton);
+            }
+        }
+        return resolved.toJSONString();
+    }
+
+    private static final Pattern TEMPLATE_NUMBER_PATTERN = Pattern.compile("\\[n:([^\\]]+)]");
+
+    private static class TemplateRoleFunctions {
+        private final String value;
+        private final String btnStr;
+
+        private TemplateRoleFunctions(String value, String btnStr) {
+            this.value = value;
+            this.btnStr = btnStr;
+        }
     }
 }

@@ -12,39 +12,39 @@
     wrapClassName="ant-modal-cust-warp">
     <template slot="footer">
       <!--打印-->
-      <a-button key="back" @click="handleCancel">取消(ESC)</a-button>
+      <a-button key="back" @click="handleCancel">{{ $t('common.cancel') }}(ESC)</a-button>
       <template v-if="isShowPrintBtn">
-        <a-button v-if="billPrintFlag" @click="handlePrintPro">三联打印-新版</a-button>
-        <a-button v-if="billPrintFlag" @click="handlePrint">三联打印</a-button>
+        <a-button v-if="billPrintFlag" @click="handlePrintPro">{{ $t('common.printNew') }}</a-button>
+        <a-button v-if="billPrintFlag" @click="handlePrint">{{ $t('common.print') }}</a-button>
         <!--此处为解决缓存问题-->
-        <a-button v-if="billType === '零售出库'" v-print="'#retailOutPrint'">普通打印</a-button>
-        <a-button v-if="billType === '零售退货入库'" v-print="'#retailBackPrint'">普通打印</a-button>
-        <a-button v-if="billType === '请购单'" v-print="'#purchaseApplyPrint'">普通打印</a-button>
-        <a-button v-if="billType === '采购订单'" v-print="'#purchaseOrderPrint'">普通打印</a-button>
-        <a-button v-if="billType === '采购入库'" v-print="'#purchaseInPrint'">普通打印</a-button>
-        <a-button v-if="billType === '采购退货出库'" v-print="'#purchaseBackPrint'">普通打印</a-button>
-        <a-button v-if="billType === '销售订单'" v-print="'#saleOrderPrint'">普通打印</a-button>
-        <a-button v-if="billType === '销售出库'" v-print="'#saleOutPrint'">普通打印</a-button>
-        <a-button v-if="billType === '销售退货入库'" v-print="'#saleBackPrint'">普通打印</a-button>
-        <a-button v-if="billType === '其它入库'" v-print="'#otherInPrint'">普通打印</a-button>
-        <a-button v-if="billType === '其它出库'" v-print="'#otherOutPrint'">普通打印</a-button>
-        <a-button v-if="billType === '调拨出库'" v-print="'#allocationOutPrint'">普通打印</a-button>
-        <a-button v-if="billType === '组装单'" v-print="'#assemblePrint'">普通打印</a-button>
-        <a-button v-if="billType === '拆卸单'" v-print="'#disassemblePrint'">普通打印</a-button>
-        <a-button v-if="billType === '盘点复盘'" v-print="'#stockCheckReplayPrint'">普通打印</a-button>
+        <a-button v-if="billType === '零售出库'" v-print="'#retailOutPrint'">{{ $t('common.print') }}</a-button>
+        <a-button v-if="billType === '零售退货入库'" v-print="'#retailBackPrint'">{{ $t('common.print') }}</a-button>
+        <a-button v-if="billType === '请购单'" v-print="'#purchaseApplyPrint'">{{ $t('common.print') }}</a-button>
+        <a-button v-if="billType === '采购订单'" v-print="'#purchaseOrderPrint'">{{ $t('common.print') }}</a-button>
+        <a-button v-if="billType === '采购入库'" v-print="'#purchaseInPrint'">{{ $t('common.print') }}</a-button>
+        <a-button v-if="billType === '采购退货出库'" v-print="'#purchaseBackPrint'">{{ $t('common.print') }}</a-button>
+        <a-button v-if="billType === '销售订单'" v-print="'#saleOrderPrint'">{{ $t('common.print') }}</a-button>
+        <a-button v-if="billType === '销售出库'" v-print="'#saleOutPrint'">{{ $t('common.print') }}</a-button>
+        <a-button v-if="billType === '销售退货入库'" v-print="'#saleBackPrint'">{{ $t('common.print') }}</a-button>
+        <a-button v-if="billType === '其它入库'" v-print="'#otherInPrint'">{{ $t('common.print') }}</a-button>
+        <a-button v-if="billType === '其它出库'" v-print="'#otherOutPrint'">{{ $t('common.print') }}</a-button>
+        <a-button v-if="billType === '调拨出库'" v-print="'#allocationOutPrint'">{{ $t('common.print') }}</a-button>
+        <a-button v-if="billType === '组装单'" v-print="'#assemblePrint'">{{ $t('common.print') }}</a-button>
+        <a-button v-if="billType === '拆卸单'" v-print="'#disassemblePrint'">{{ $t('common.print') }}</a-button>
+        <a-button v-if="billType === '盘点复盘'" v-print="'#stockCheckReplayPrint'">{{ $t('common.print') }}</a-button>
       </template>
       <!--导出Excel-->
-      <a-button v-if="billType === '零售出库'||billType === '零售退货入库'" @click="retailExportExcel()">导出</a-button>
-      <a-button v-if="billType === '请购单'" @click="applyExportExcel()">导出</a-button>
-      <a-button v-if="billType === '采购订单'||billType === '销售订单'" @click="orderExportExcel()">导出</a-button>
+      <a-button v-if="billType === '零售出库'||billType === '零售退货入库'" @click="retailExportExcel()">{{ $t('common.export') }}</a-button>
+      <a-button v-if="billType === '请购单'" @click="applyExportExcel()">{{ $t('common.export') }}</a-button>
+      <a-button v-if="billType === '采购订单'||billType === '销售订单'" @click="orderExportExcel()">{{ $t('common.export') }}</a-button>
       <a-button v-if="billType === '采购入库'||billType === '采购退货出库'||billType === '销售出库'||billType === '销售退货入库'"
-                @click="purchaseSaleExportExcel()">导出</a-button>
-      <a-button v-if="billType === '其它入库'||billType === '其它出库'" @click="otherExportExcel()">导出</a-button>
-      <a-button v-if="billType === '调拨出库'" @click="allocationOutExportExcel()">导出</a-button>
-      <a-button v-if="billType === '组装单'||billType === '拆卸单'" @click="assembleExportExcel()">导出</a-button>
-      <a-button v-if="billType === '盘点复盘'" @click="stockCheckReplayExportExcel()">导出</a-button>
+                @click="purchaseSaleExportExcel()">{{ $t('common.export') }}</a-button>
+      <a-button v-if="billType === '其它入库'||billType === '其它出库'" @click="otherExportExcel()">{{ $t('common.export') }}</a-button>
+      <a-button v-if="billType === '调拨出库'" @click="allocationOutExportExcel()">{{ $t('common.export') }}</a-button>
+      <a-button v-if="billType === '组装单'||billType === '拆卸单'" @click="assembleExportExcel()">{{ $t('common.export') }}</a-button>
+      <a-button v-if="billType === '盘点复盘'" @click="stockCheckReplayExportExcel()">{{ $t('common.export') }}</a-button>
       <!--反审核-->
-      <a-button v-if="checkFlag && isCanBackCheck && model.status==='1'" @click="handleBackCheck()">反审核</a-button>
+      <a-button v-if="checkFlag && isCanBackCheck && model.status==='1'" @click="handleBackCheck()">{{ $t('common.unaudit') }}</a-button>
     </template>
     <a-form :form="form">
       <!--零售出库-->
@@ -52,24 +52,24 @@
         <section ref="print" id="retailOutPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="会员卡号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.memberCard')">
                 <a-input v-decorator="['id']" hidden/>
                 {{model.organName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.operTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.number}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="收款类型">
-                {{model.payType}}
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('retail.paymentType')">
+                {{getPaymentTypeLabel(model.payType)}}
               </a-form-item>
             </a-col>
           </a-row>
@@ -89,36 +89,36 @@
                     <div :style="record.imgName?'float:left;line-height:30px':'float:left;'">{{record.barCode}}</div>
                     <a-popover placement="right" trigger="click">
                       <template slot="content"><img :src="getImgUrl(record.imgName, record.imgLarge)" width="500px" /></template>
-                      <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" title="查看大图" /></div>
+                      <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" :title="$t('common.view')" /></div>
                     </a-popover>
                   </template>
                 </a-table>
               </div>
             </a-col>
-            <a-col :span="6">
+            <a-col :lg="6" :md="24" :sm="24" class="bill-summary-panel">
               <a-row class="form-row" :gutter="24">
                 <a-col :lg="24" :md="6" :sm="6">
-                  <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据金额">
+                  <a-form-item :labelCol="summaryLabelCol" :wrapperCol="summaryWrapperCol" :label="$t('common.documentAmount')">
                     {{model.changeAmount}}
                   </a-form-item>
                 </a-col>
                 <a-col :lg="24" :md="6" :sm="6">
-                  <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="收款金额">
+                  <a-form-item :labelCol="summaryLabelCol" :wrapperCol="summaryWrapperCol" :label="$t('retail.getAmount')">
                     {{model.getAmount}}
                   </a-form-item>
                 </a-col>
                 <a-col :lg="24" :md="6" :sm="6">
-                  <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="找零">
+                  <a-form-item :labelCol="summaryLabelCol" :wrapperCol="summaryWrapperCol" :label="$t('retail.backAmount')">
                     {{model.backAmount}}
                   </a-form-item>
                 </a-col>
                 <a-col :lg="24" :md="6" :sm="6">
-                  <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="收款账户">
+                  <a-form-item :labelCol="summaryLabelCol" :wrapperCol="summaryWrapperCol" :label="$t('financial.form.account')">
                     {{model.accountName}}
                   </a-form-item>
                 </a-col>
                 <a-col v-if="model.hasBackFlag" :lg="24" :md="6" :sm="6">
-                  <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="退货单号">
+                  <a-form-item :labelCol="summaryLabelCol" :wrapperCol="summaryWrapperCol" :label="$t('common.returnBillNo')">
                     <template v-for="(item, index) in linkNumberList">
                       <a @click="myHandleDetail(item.number)">{{item.number}}</a><br/>
                     </template>
@@ -141,23 +141,23 @@
         <section ref="print" id="retailBackPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="会员卡号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.memberCard')">
                 <a-input v-decorator="['id']" hidden/>
                 {{model.organName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.operTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.number}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="关联单据">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.linkedBill')">
                 <a @click="myHandleDetail(model.linkNumber)">{{model.linkNumber}}</a>
               </a-form-item>
             </a-col>
@@ -178,31 +178,31 @@
                     <div :style="record.imgName?'float:left;line-height:30px':'float:left;'">{{record.barCode}}</div>
                     <a-popover placement="right" trigger="click">
                       <template slot="content"><img :src="getImgUrl(record.imgName, record.imgLarge)" width="500px" /></template>
-                      <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" title="查看大图" /></div>
+                      <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" :title="$t('common.view')" /></div>
                     </a-popover>
                   </template>
                 </a-table>
               </div>
             </a-col>
-            <a-col :span="6">
+            <a-col :lg="6" :md="24" :sm="24" class="bill-summary-panel">
               <a-row class="form-row" :gutter="24">
                 <a-col :lg="24" :md="6" :sm="6">
-                  <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据金额">
+                  <a-form-item :labelCol="summaryLabelCol" :wrapperCol="summaryWrapperCol" :label="$t('common.documentAmount')">
                     {{model.changeAmount}}
                   </a-form-item>
                 </a-col>
                 <a-col :lg="24" :md="6" :sm="6">
-                  <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="付款金额">
+                  <a-form-item :labelCol="summaryLabelCol" :wrapperCol="summaryWrapperCol" :label="$t('purchase.form.paymentAmount')">
                     {{model.getAmount}}
                   </a-form-item>
                 </a-col>
                 <a-col :lg="24" :md="6" :sm="6">
-                  <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="找零">
+                  <a-form-item :labelCol="summaryLabelCol" :wrapperCol="summaryWrapperCol" :label="$t('retail.backAmount')">
                     {{model.backAmount}}
                   </a-form-item>
                 </a-col>
                 <a-col :lg="24" :md="6" :sm="6">
-                  <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="付款账户">
+                  <a-form-item :labelCol="summaryLabelCol" :wrapperCol="summaryWrapperCol" :label="$t('financial.form.account')">
                     {{model.accountName}}
                   </a-form-item>
                 </a-col>
@@ -223,12 +223,12 @@
         <section ref="print" id="purchaseApplyPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.operTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.number}}
               </a-form-item>
             </a-col>
@@ -251,7 +251,7 @@
                 <div :style="record.imgName?'float:left;line-height:30px':'float:left;'">{{record.barCode}}</div>
                 <a-popover placement="right" trigger="click">
                   <template slot="content"><img :src="getImgUrl(record.imgName, record.imgLarge)" width="500px" /></template>
-                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" title="查看大图" /></div>
+                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" :title="$t('common.view')" /></div>
                 </a-popover>
               </template>
             </a-table>
@@ -270,28 +270,28 @@
         <section ref="print" id="purchaseOrderPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="供应商">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.supplier')">
                 <a-input v-decorator="['id']" hidden/>
                 {{model.organName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.operTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.number}}
               </a-form-item>
             </a-col>
             <a-col :span="6" v-if="model.linkApply">
-              <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 6 }}" :wrapperCol="wrapperCol" label="关联请购单">
+              <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 6 }}" :wrapperCol="wrapperCol" :label="$t('purchase.form.linkedRequisition')">
                 <a @click="myHandleDetail(model.linkApply)">{{model.linkApply}}</a>
               </a-form-item>
             </a-col>
             <a-col :span="6" v-if="model.linkNumber">
-              <a-form-item v-if="purchaseBySaleFlag" :labelCol="labelCol" :wrapperCol="wrapperCol" label="关联订单">
+              <a-form-item v-if="purchaseBySaleFlag" :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.linkedBill')">
                 {{model.linkNumber}}
               </a-form-item>
             </a-col>
@@ -310,7 +310,7 @@
                 <div :style="record.imgName?'float:left;line-height:30px':'float:left;'">{{record.barCode}}</div>
                 <a-popover placement="right" trigger="click">
                   <template slot="content"><img :src="getImgUrl(record.imgName, record.imgLarge)" width="500px" /></template>
-                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" title="查看大图" /></div>
+                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" :title="$t('common.view')" /></div>
                 </a-popover>
               </template>
             </a-table>
@@ -324,17 +324,17 @@
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="优惠率">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.discount')">
                 {{model.discount}}%
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="付款优惠">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.discountMoney')">
                 {{model.discountMoney}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 6 }}" :wrapperCol="wrapperCol" label="优惠后金额">
+              <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 6 }}" :wrapperCol="wrapperCol" :label="$t('purchase.form.discountLastMoney')">
                 {{model.discountLastMoney}}
               </a-form-item>
             </a-col>
@@ -342,12 +342,12 @@
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="结算账户">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.settleAccount')">
                 {{model.accountName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="支付订金">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.payDeposit')">
                 {{model.changeAmount}}
               </a-form-item>
             </a-col>
@@ -361,23 +361,23 @@
         <section ref="print" id="purchaseInPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="供应商">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.supplier')">
                 <a-input v-decorator="['id']" hidden/>
                 {{model.organName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.operTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.number}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="关联订单">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.linkedBill')">
                 <a @click="myHandleDetail(model.linkNumber)">{{model.linkNumber}}</a>
               </a-form-item>
             </a-col>
@@ -396,7 +396,7 @@
                 <div :style="record.imgName?'float:left;line-height:30px':'float:left;'">{{record.barCode}}</div>
                 <a-popover placement="right" trigger="click">
                   <template slot="content"><img :src="getImgUrl(record.imgName, record.imgLarge)" width="500px" /></template>
-                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" title="查看大图" /></div>
+                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" :title="$t('common.view')" /></div>
                 </a-popover>
               </template>
             </a-table>
@@ -410,49 +410,49 @@
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="优惠率">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.discount')">
                 {{model.discount}}%
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="付款优惠">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.discountMoney')">
                 {{model.discountMoney}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 6 }}" :wrapperCol="wrapperCol" label="优惠后金额">
+              <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 6 }}" :wrapperCol="wrapperCol" :label="$t('purchase.form.discountLastMoney')">
                 {{model.discountLastMoney}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="其它费用">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.otherMoney')">
                 {{model.otherMoney}}
               </a-form-item>
             </a-col>
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="结算账户">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.settleAccount')">
                 {{model.accountName}}
               </a-form-item>
             </a-col>
             <a-col v-if="model.deposit" :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="扣除订金">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.deposit')">
                 {{model.deposit}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="本次付款">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.changeAmount')">
                 {{model.changeAmount}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="本次欠款">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.currentDebt')">
                 {{model.debt}}
               </a-form-item>
             </a-col>
             <a-col v-if="model.hasBackFlag" :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="退货单号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.returnBillNo')">
                 <template v-for="(item, index) in linkNumberList">
                   <a @click="myHandleDetail(item.number)">{{item.number}}</a><br/>
                 </template>
@@ -461,7 +461,7 @@
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col v-if="financialBillNoList.length" :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="付款单号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.paymentBillNo')">
                 <template v-for="(item, index) in financialBillNoList">
                   <a @click="myHandleFinancialDetail(item.billNo)">{{item.billNo}}</a><br/>
                 </template>
@@ -475,23 +475,23 @@
         <section ref="print" id="purchaseBackPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="供应商">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.supplier')">
                 <a-input v-decorator="['id']" hidden/>
                 {{model.organName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.operTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.number}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="关联单据">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.linkedBill')">
                 <a @click="myHandleDetail(model.linkNumber)">{{model.linkNumber}}</a>
               </a-form-item>
             </a-col>
@@ -510,7 +510,7 @@
                 <div :style="record.imgName?'float:left;line-height:30px':'float:left;'">{{record.barCode}}</div>
                 <a-popover placement="right" trigger="click">
                   <template slot="content"><img :src="getImgUrl(record.imgName, record.imgLarge)" width="500px" /></template>
-                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" title="查看大图" /></div>
+                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" :title="$t('common.view')" /></div>
                 </a-popover>
               </template>
             </a-table>
@@ -524,39 +524,39 @@
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="优惠率">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.discount')">
                 {{model.discount}}%
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="退款优惠">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.refundDiscount')">
                 {{model.discountMoney}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 6 }}" :wrapperCol="wrapperCol" label="优惠后金额">
+              <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 6 }}" :wrapperCol="wrapperCol" :label="$t('purchase.form.discountLastMoney')">
                 {{model.discountLastMoney}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="其它费用">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.otherMoney')">
                 {{model.otherMoney}}
               </a-form-item>
             </a-col>
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="结算账户">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.settleAccount')">
                 {{model.accountName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="本次退款">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.currentRefund')">
                 {{model.changeAmount}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="本次欠款">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.currentDebt')">
                 {{model.debt}}
               </a-form-item>
             </a-col>
@@ -570,23 +570,23 @@
         <section ref="print" id="saleOrderPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="客户">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.customer')">
                 <a-input v-decorator="['id']" hidden/>
                 {{model.organName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.operTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.number}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="销售人员">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.salesMan')">
                 {{model.salesManStr}}
               </a-form-item>
             </a-col>
@@ -605,7 +605,7 @@
                 <div :style="record.imgName?'float:left;line-height:30px':'float:left;'">{{record.barCode}}</div>
                 <a-popover placement="right" trigger="click">
                   <template slot="content"><img :src="getImgUrl(record.imgName, record.imgLarge)" width="500px" /></template>
-                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" title="查看大图" /></div>
+                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" :title="$t('common.view')" /></div>
                 </a-popover>
               </template>
             </a-table>
@@ -619,17 +619,17 @@
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="优惠率">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.discount')">
                 {{model.discount}}%
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="付款优惠">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.discountMoney')">
                 {{model.discountMoney}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 6 }}" :wrapperCol="wrapperCol" label="优惠后金额">
+              <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 6 }}" :wrapperCol="wrapperCol" :label="$t('purchase.form.discountLastMoney')">
                 {{model.discountLastMoney}}
               </a-form-item>
             </a-col>
@@ -637,12 +637,12 @@
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="结算账户">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.settleAccount')">
                 {{model.accountName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="收取订金">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.collectDeposit')">
                 {{model.changeAmount}}
               </a-form-item>
             </a-col>
@@ -656,23 +656,23 @@
         <section ref="print" id="saleOutPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="客户">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.customer')">
                 <a-input v-decorator="['id']" hidden/>
                 {{model.organName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.operTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.number}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="关联订单">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.linkedBill')">
                 <a @click="myHandleDetail(model.linkNumber)">{{model.linkNumber}}</a>
               </a-form-item>
             </a-col>
@@ -691,7 +691,7 @@
                 <div :style="record.imgName?'float:left;line-height:30px':'float:left;'">{{record.barCode}}</div>
                 <a-popover placement="right" trigger="click">
                   <template slot="content"><img :src="getImgUrl(record.imgName, record.imgLarge)" width="500px" /></template>
-                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" title="查看大图" /></div>
+                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" :title="$t('common.view')" /></div>
                 </a-popover>
               </template>
             </a-table>
@@ -705,49 +705,49 @@
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="优惠率">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.discount')">
                 {{model.discount}}%
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="收款优惠">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.receiptDiscount')">
                 {{model.discountMoney}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 6 }}" :wrapperCol="wrapperCol" label="优惠后金额">
+              <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 6 }}" :wrapperCol="wrapperCol" :label="$t('purchase.form.discountLastMoney')">
                 {{model.discountLastMoney}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="其它费用">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.otherMoney')">
                 {{model.otherMoney}}
               </a-form-item>
             </a-col>
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="结算账户">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.settleAccount')">
                 {{model.accountName}}
               </a-form-item>
             </a-col>
             <a-col v-if="model.deposit" :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="扣除订金">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.deposit')">
                 {{model.deposit}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="本次收款">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('sales.form.changeAmount')">
                 {{model.changeAmount}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="本次欠款">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.currentDebt')">
                 {{model.debt}}
               </a-form-item>
             </a-col>
             <a-col v-if="model.hasBackFlag" :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="退货单号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.returnBillNo')">
                 <template v-for="(item, index) in linkNumberList">
                   <a @click="myHandleDetail(item.number)">{{item.number}}</a><br/>
                 </template>
@@ -756,12 +756,12 @@
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="销售人员">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.salesMan')">
                 {{model.salesManStr}}
               </a-form-item>
             </a-col>
             <a-col v-if="financialBillNoList.length" :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="收款单号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.receiptBillNo')">
                 <template v-for="(item, index) in financialBillNoList">
                   <a @click="myHandleFinancialDetail(item.billNo)">{{item.billNo}}</a><br/>
                 </template>
@@ -775,23 +775,23 @@
         <section ref="print" id="saleBackPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="客户">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.customer')">
                 <a-input v-decorator="['id']" hidden/>
                 {{model.organName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.operTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.number}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="关联单据">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.linkedBill')">
                 <a @click="myHandleDetail(model.linkNumber)">{{model.linkNumber}}</a>
               </a-form-item>
             </a-col>
@@ -810,7 +810,7 @@
                 <div :style="record.imgName?'float:left;line-height:30px':'float:left;'">{{record.barCode}}</div>
                 <a-popover placement="right" trigger="click">
                   <template slot="content"><img :src="getImgUrl(record.imgName, record.imgLarge)" width="500px" /></template>
-                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" title="查看大图" /></div>
+                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" :title="$t('common.view')" /></div>
                 </a-popover>
               </template>
             </a-table>
@@ -824,44 +824,44 @@
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="优惠率">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.discount')">
                 {{model.discount}}%
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="退款优惠">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.refundDiscount')">
                 {{model.discountMoney}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 6 }}" :wrapperCol="wrapperCol" label="优惠后金额">
+              <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 6 }}" :wrapperCol="wrapperCol" :label="$t('purchase.form.discountLastMoney')">
                 {{model.discountLastMoney}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="其它费用">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.otherMoney')">
                 {{model.otherMoney}}
               </a-form-item>
             </a-col>
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="结算账户">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.settleAccount')">
                 {{model.accountName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="本次退款">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.currentRefund')">
                 {{model.changeAmount}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="本次欠款">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.currentDebt')">
                 {{model.debt}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="销售人员">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.salesMan')">
                 {{model.salesManStr}}
               </a-form-item>
             </a-col>
@@ -873,26 +873,26 @@
         <section ref="print" id="otherInPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="供应商">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.supplier')">
                 <a-input v-decorator="['id']" hidden/>
                 {{model.organName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.operTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.number}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item v-if="model.billType" :labelCol="labelCol" :wrapperCol="wrapperCol" label="关联单据">
+              <a-form-item v-if="model.billType" :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.linkedBill')">
                 {{model.linkNumber}} {{model.billType}}
               </a-form-item>
-              <a-form-item v-if="!model.billType" :labelCol="labelCol" :wrapperCol="wrapperCol" label="关联单据">
+              <a-form-item v-if="!model.billType" :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.linkedBill')">
                 <a @click="myHandleDetail(model.linkNumber)">{{model.linkNumber}}</a>
               </a-form-item>
             </a-col>
@@ -911,7 +911,7 @@
                 <div :style="record.imgName?'float:left;line-height:30px':'float:left;'">{{record.barCode}}</div>
                 <a-popover placement="right" trigger="click">
                   <template slot="content"><img :src="getImgUrl(record.imgName, record.imgLarge)" width="500px" /></template>
-                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" title="查看大图" /></div>
+                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" :title="$t('common.view')" /></div>
                 </a-popover>
               </template>
             </a-table>
@@ -930,26 +930,26 @@
         <section ref="print" id="otherOutPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="客户">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.customer')">
                 <a-input v-decorator="['id']" hidden/>
                 {{model.organName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.operTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.number}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item v-if="model.billType" :labelCol="labelCol" :wrapperCol="wrapperCol" label="关联单据">
+              <a-form-item v-if="model.billType" :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.linkedBill')">
                 {{model.linkNumber}} {{model.billType}}
               </a-form-item>
-              <a-form-item v-if="!model.billType" :labelCol="labelCol" :wrapperCol="wrapperCol" label="关联单据">
+              <a-form-item v-if="!model.billType" :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.linkedBill')">
                 <a @click="myHandleDetail(model.linkNumber)">{{model.linkNumber}}</a>
               </a-form-item>
             </a-col>
@@ -968,7 +968,7 @@
                 <div :style="record.imgName?'float:left;line-height:30px':'float:left;'">{{record.barCode}}</div>
                 <a-popover placement="right" trigger="click">
                   <template slot="content"><img :src="getImgUrl(record.imgName, record.imgLarge)" width="500px" /></template>
-                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" title="查看大图" /></div>
+                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" :title="$t('common.view')" /></div>
                 </a-popover>
               </template>
             </a-table>
@@ -987,12 +987,12 @@
         <section ref="print" id="allocationOutPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.operTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.number}}
               </a-form-item>
             </a-col>
@@ -1013,7 +1013,7 @@
                 <div :style="record.imgName?'float:left;line-height:30px':'float:left;'">{{record.barCode}}</div>
                 <a-popover placement="right" trigger="click">
                   <template slot="content"><img :src="getImgUrl(record.imgName, record.imgLarge)" width="500px" /></template>
-                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" title="查看大图" /></div>
+                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" :title="$t('common.view')" /></div>
                 </a-popover>
               </template>
             </a-table>
@@ -1032,12 +1032,12 @@
         <section ref="print" id="assemblePrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.operTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.number}}
               </a-form-item>
             </a-col>
@@ -1058,7 +1058,7 @@
                 <div :style="record.imgName?'float:left;line-height:30px':'float:left;'">{{record.barCode}}</div>
                 <a-popover placement="right" trigger="click">
                   <template slot="content"><img :src="getImgUrl(record.imgName, record.imgLarge)" width="500px" /></template>
-                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" title="查看大图" /></div>
+                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" :title="$t('common.view')" /></div>
                 </a-popover>
               </template>
             </a-table>
@@ -1077,12 +1077,12 @@
         <section ref="print" id="disassemblePrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.operTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.number}}
               </a-form-item>
             </a-col>
@@ -1103,7 +1103,7 @@
                 <div :style="record.imgName?'float:left;line-height:30px':'float:left;'">{{record.barCode}}</div>
                 <a-popover placement="right" trigger="click">
                   <template slot="content"><img :src="getImgUrl(record.imgName, record.imgLarge)" width="500px" /></template>
-                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" title="查看大图" /></div>
+                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" :title="$t('common.view')" /></div>
                 </a-popover>
               </template>
             </a-table>
@@ -1122,17 +1122,17 @@
         <section ref="print" id="stockCheckReplayPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.operTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.number}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="关联单据">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.linkedBill')">
                 {{model.linkNumber}}
               </a-form-item>
             </a-col>
@@ -1152,7 +1152,7 @@
                 <div :style="record.imgName?'float:left;line-height:30px':'float:left;'">{{record.barCode}}</div>
                 <a-popover placement="right" trigger="click">
                   <template slot="content"><img :src="getImgUrl(record.imgName, record.imgLarge)" width="500px" /></template>
-                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" title="查看大图" /></div>
+                  <div class="item-info" v-if="record.imgName"><img v-if="record.imgName" :src="getImgUrl(record.imgName, record.imgSmall)" class="item-img" :title="$t('common.view')" /></div>
                 </a-popover>
               </template>
             </a-table>
@@ -1169,7 +1169,7 @@
       <template v-if="fileList && fileList.length>0">
         <a-row class="form-row" :gutter="24">
           <a-col :span="10">
-            <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 3 }}" :wrapperCol="{xs: { span: 24 },sm: { span: 21 }}" label="附件">
+            <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 3 }}" :wrapperCol="{xs: { span: 24 },sm: { span: 21 }}" :label="$t('common.attachment')">
               <j-upload v-model="fileList" bizPath="bill" :disabled="true" :buttonVisible="false"></j-upload>
             </a-form-item>
           </a-col>
@@ -1188,6 +1188,7 @@
   import { getAction, postAction, getFileAccessHttpUrl } from '@/api/manage'
   import { findBillDetailByNumber, findFinancialDetailByNumber, getPlatformConfigByKey, getCurrentSystemConfig} from '@/api/api'
   import { getMpListShort, getCheckFlag, exportXlsPost } from "@/utils/util"
+  import { getBillTypeLabel, getPaymentTypeLabel } from '@/utils/billI18n'
   import BillPrintIframe from './BillPrintIframe'
   import BillPrintProIframe from './BillPrintProIframe'
   import FinancialDetail from '../../financial/dialog/FinancialDetail'
@@ -1203,7 +1204,7 @@
     },
     data () {
       return {
-        title: "详情",
+        title: this.$t('common.detail'),
         width: '1600px',
         visible: false,
         modalStyle: '',
@@ -1233,6 +1234,14 @@
           xs: { span: 24 },
           sm: { span: 16 },
         },
+        summaryLabelCol: {
+          xs: { span: 24 },
+          sm: { span: 12 },
+        },
+        summaryWrapperCol: {
+          xs: { span: 24 },
+          sm: { span: 12 },
+        },
         form: this.$form.createForm(this),
         loading: false,
         dataSource: [],
@@ -1247,368 +1256,368 @@
         //列定义
         defColumns: [],
         retailOutColumns: [
-          { title: '仓库名称', dataIndex: 'depotName'},
-          { title: '条码', dataIndex: 'barCode'},
-          { title: '名称', dataIndex: 'name'},
-          { title: '规格', dataIndex: 'standard'},
-          { title: '型号', dataIndex: 'model'},
-          { title: '颜色', dataIndex: 'color'},
-          { title: '品牌', dataIndex: 'brand'},
-          { title: '制造商', dataIndex: 'mfrs'},
-          { title: '扩展1', dataIndex: 'otherField1'},
-          { title: '扩展2', dataIndex: 'otherField2'},
-          { title: '扩展3', dataIndex: 'otherField3'},
-          { title: '库存', dataIndex: 'stock'},
-          { title: '单位', dataIndex: 'unit'},
-          { title: '序列号', dataIndex: 'snList', width:300},
-          { title: '批号', dataIndex: 'batchNumber'},
-          { title: '有效期', dataIndex: 'expirationDate'},
-          { title: '多属性', dataIndex: 'sku'},
-          { title: '数量', dataIndex: 'operNumber'},
-          { title: '单价', dataIndex: 'unitPrice'},
-          { title: '金额', dataIndex: 'allPrice'},
-          { title: '重量', dataIndex: 'weight'},
-          { title: '仓位货架', dataIndex: 'position'},
-          { title: '备注', dataIndex: 'remark'}
+          { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+          { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+          { title: this.$t('common.name'), dataIndex: 'name'},
+          { title: this.$t('common.specification'), dataIndex: 'standard'},
+          { title: this.$t('common.model'), dataIndex: 'model'},
+          { title: this.$t('material.color'), dataIndex: 'color'},
+          { title: this.$t('common.brand'), dataIndex: 'brand'},
+          { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+          { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+          { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+          { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+          { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+          { title: this.$t('common.unit'), dataIndex: 'unit'},
+          { title: this.$t('purchase.form.columns.serialNumber'), dataIndex: 'snList', width:300},
+          { title: this.$t('purchase.form.columns.batchNumber'), dataIndex: 'batchNumber'},
+          { title: this.$t('purchase.form.columns.expirationDate'), dataIndex: 'expirationDate'},
+          { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+          { title: this.$t('purchase.form.columns.quantity'), dataIndex: 'operNumber'},
+          { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+          { title: this.$t('purchase.form.columns.amount'), dataIndex: 'allPrice'},
+          { title: this.$t('common.weight'), dataIndex: 'weight'},
+          { title: this.$t('common.position'), dataIndex: 'position'},
+          { title: this.$t('common.remark'), dataIndex: 'remark'}
         ],
         retailBackColumns: [
-          { title: '仓库名称', dataIndex: 'depotName'},
-          { title: '条码', dataIndex: 'barCode'},
-          { title: '名称', dataIndex: 'name'},
-          { title: '规格', dataIndex: 'standard'},
-          { title: '型号', dataIndex: 'model'},
-          { title: '颜色', dataIndex: 'color'},
-          { title: '品牌', dataIndex: 'brand'},
-          { title: '制造商', dataIndex: 'mfrs'},
-          { title: '扩展1', dataIndex: 'otherField1'},
-          { title: '扩展2', dataIndex: 'otherField2'},
-          { title: '扩展3', dataIndex: 'otherField3'},
-          { title: '库存', dataIndex: 'stock'},
-          { title: '单位', dataIndex: 'unit'},
-          { title: '序列号', dataIndex: 'snList', width:300},
-          { title: '批号', dataIndex: 'batchNumber'},
-          { title: '有效期', dataIndex: 'expirationDate'},
-          { title: '多属性', dataIndex: 'sku'},
-          { title: '数量', dataIndex: 'operNumber'},
-          { title: '单价', dataIndex: 'unitPrice'},
-          { title: '金额', dataIndex: 'allPrice'},
-          { title: '重量', dataIndex: 'weight'},
-          { title: '仓位货架', dataIndex: 'position'},
-          { title: '备注', dataIndex: 'remark'}
+          { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+          { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+          { title: this.$t('common.name'), dataIndex: 'name'},
+          { title: this.$t('common.specification'), dataIndex: 'standard'},
+          { title: this.$t('common.model'), dataIndex: 'model'},
+          { title: this.$t('material.color'), dataIndex: 'color'},
+          { title: this.$t('common.brand'), dataIndex: 'brand'},
+          { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+          { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+          { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+          { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+          { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+          { title: this.$t('common.unit'), dataIndex: 'unit'},
+          { title: this.$t('purchase.form.columns.serialNumber'), dataIndex: 'snList', width:300},
+          { title: this.$t('purchase.form.columns.batchNumber'), dataIndex: 'batchNumber'},
+          { title: this.$t('purchase.form.columns.expirationDate'), dataIndex: 'expirationDate'},
+          { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+          { title: this.$t('purchase.form.columns.quantity'), dataIndex: 'operNumber'},
+          { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+          { title: this.$t('purchase.form.columns.amount'), dataIndex: 'allPrice'},
+          { title: this.$t('common.weight'), dataIndex: 'weight'},
+          { title: this.$t('common.position'), dataIndex: 'position'},
+          { title: this.$t('common.remark'), dataIndex: 'remark'}
         ],
         purchaseApplyColumns: [
-          { title: '条码', dataIndex: 'barCode'},
-          { title: '名称', dataIndex: 'name'},
-          { title: '规格', dataIndex: 'standard'},
-          { title: '型号', dataIndex: 'model'},
-          { title: '颜色', dataIndex: 'color'},
-          { title: '品牌', dataIndex: 'brand'},
-          { title: '制造商', dataIndex: 'mfrs'},
-          { title: '扩展1', dataIndex: 'otherField1'},
-          { title: '扩展2', dataIndex: 'otherField2'},
-          { title: '扩展3', dataIndex: 'otherField3'},
-          { title: '单位', dataIndex: 'unit'},
-          { title: '多属性', dataIndex: 'sku'},
-          { title: '数量', dataIndex: 'operNumber'},
-          { title: '已采购', dataIndex: 'finishNumber'},
-          { title: '备注', dataIndex: 'remark'}
+          { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+          { title: this.$t('common.name'), dataIndex: 'name'},
+          { title: this.$t('common.specification'), dataIndex: 'standard'},
+          { title: this.$t('common.model'), dataIndex: 'model'},
+          { title: this.$t('material.color'), dataIndex: 'color'},
+          { title: this.$t('common.brand'), dataIndex: 'brand'},
+          { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+          { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+          { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+          { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+          { title: this.$t('common.unit'), dataIndex: 'unit'},
+          { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+          { title: this.$t('purchase.form.columns.quantity'), dataIndex: 'operNumber'},
+          { title: this.$t('purchase.finishPurchased'), dataIndex: 'finishNumber'},
+          { title: this.$t('common.remark'), dataIndex: 'remark'}
         ],
         purchaseOrderColumns: [
-          { title: '条码', dataIndex: 'barCode'},
-          { title: '名称', dataIndex: 'name'},
-          { title: '规格', dataIndex: 'standard'},
-          { title: '型号', dataIndex: 'model'},
-          { title: '颜色', dataIndex: 'color'},
-          { title: '品牌', dataIndex: 'brand'},
-          { title: '制造商', dataIndex: 'mfrs'},
-          { title: '扩展1', dataIndex: 'otherField1'},
-          { title: '扩展2', dataIndex: 'otherField2'},
-          { title: '扩展3', dataIndex: 'otherField3'},
-          { title: '库存', dataIndex: 'stock'},
-          { title: '单位', dataIndex: 'unit'},
-          { title: '多属性', dataIndex: 'sku'},
-          { title: '数量', dataIndex: 'operNumber'},
-          { title: '已采购', dataIndex: 'finishNumber'},
-          { title: '单价', dataIndex: 'unitPrice'},
-          { title: '金额', dataIndex: 'allPrice'},
-          { title: '税率(%)', dataIndex: 'taxRate'},
-          { title: '税额', dataIndex: 'taxMoney'},
-          { title: '价税合计', dataIndex: 'taxLastMoney'},
-          { title: '备注', dataIndex: 'remark'}
+          { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+          { title: this.$t('common.name'), dataIndex: 'name'},
+          { title: this.$t('common.specification'), dataIndex: 'standard'},
+          { title: this.$t('common.model'), dataIndex: 'model'},
+          { title: this.$t('material.color'), dataIndex: 'color'},
+          { title: this.$t('common.brand'), dataIndex: 'brand'},
+          { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+          { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+          { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+          { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+          { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+          { title: this.$t('common.unit'), dataIndex: 'unit'},
+          { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+          { title: this.$t('purchase.form.columns.quantity'), dataIndex: 'operNumber'},
+          { title: this.$t('purchase.finishPurchased'), dataIndex: 'finishNumber'},
+          { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+          { title: this.$t('purchase.form.columns.amount'), dataIndex: 'allPrice'},
+          { title: this.$t('system.taxRate'), dataIndex: 'taxRate'},
+          { title: this.$t('purchase.form.columns.taxAmount'), dataIndex: 'taxMoney'},
+          { title: this.$t('purchase.form.columns.taxTotal'), dataIndex: 'taxLastMoney'},
+          { title: this.$t('common.remark'), dataIndex: 'remark'}
         ],
         purchaseInColumns: [
-          { title: '仓库名称', dataIndex: 'depotName'},
-          { title: '条码', dataIndex: 'barCode'},
-          { title: '名称', dataIndex: 'name'},
-          { title: '规格', dataIndex: 'standard'},
-          { title: '型号', dataIndex: 'model'},
-          { title: '颜色', dataIndex: 'color'},
-          { title: '品牌', dataIndex: 'brand'},
-          { title: '制造商', dataIndex: 'mfrs'},
-          { title: '扩展1', dataIndex: 'otherField1'},
-          { title: '扩展2', dataIndex: 'otherField2'},
-          { title: '扩展3', dataIndex: 'otherField3'},
-          { title: '库存', dataIndex: 'stock'},
-          { title: '单位', dataIndex: 'unit'},
-          { title: '序列号', dataIndex: 'snList', width:300},
-          { title: '批号', dataIndex: 'batchNumber'},
-          { title: '有效期', dataIndex: 'expirationDate'},
-          { title: '多属性', dataIndex: 'sku'},
-          { title: '数量', dataIndex: 'operNumber'},
-          { title: '已入库', dataIndex: 'finishNumber'},
-          { title: '单价', dataIndex: 'unitPrice'},
-          { title: '金额', dataIndex: 'allPrice'},
-          { title: '税率(%)', dataIndex: 'taxRate'},
-          { title: '税额', dataIndex: 'taxMoney'},
-          { title: '价税合计', dataIndex: 'taxLastMoney'},
-          { title: '重量', dataIndex: 'weight'},
-          { title: '仓位货架', dataIndex: 'position'},
-          { title: '备注', dataIndex: 'remark'}
+          { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+          { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+          { title: this.$t('common.name'), dataIndex: 'name'},
+          { title: this.$t('common.specification'), dataIndex: 'standard'},
+          { title: this.$t('common.model'), dataIndex: 'model'},
+          { title: this.$t('material.color'), dataIndex: 'color'},
+          { title: this.$t('common.brand'), dataIndex: 'brand'},
+          { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+          { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+          { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+          { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+          { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+          { title: this.$t('common.unit'), dataIndex: 'unit'},
+          { title: this.$t('purchase.form.columns.serialNumber'), dataIndex: 'snList', width:300},
+          { title: this.$t('purchase.form.columns.batchNumber'), dataIndex: 'batchNumber'},
+          { title: this.$t('purchase.form.columns.expirationDate'), dataIndex: 'expirationDate'},
+          { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+          { title: this.$t('purchase.form.columns.quantity'), dataIndex: 'operNumber'},
+          { title: this.$t('purchase.finishInbound'), dataIndex: 'finishNumber'},
+          { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+          { title: this.$t('purchase.form.columns.amount'), dataIndex: 'allPrice'},
+          { title: this.$t('system.taxRate'), dataIndex: 'taxRate'},
+          { title: this.$t('purchase.form.columns.taxAmount'), dataIndex: 'taxMoney'},
+          { title: this.$t('purchase.form.columns.taxTotal'), dataIndex: 'taxLastMoney'},
+          { title: this.$t('common.weight'), dataIndex: 'weight'},
+          { title: this.$t('common.position'), dataIndex: 'position'},
+          { title: this.$t('common.remark'), dataIndex: 'remark'}
         ],
         purchaseBackColumns: [
-          { title: '仓库名称', dataIndex: 'depotName'},
-          { title: '条码', dataIndex: 'barCode'},
-          { title: '名称', dataIndex: 'name'},
-          { title: '规格', dataIndex: 'standard'},
-          { title: '型号', dataIndex: 'model'},
-          { title: '颜色', dataIndex: 'color'},
-          { title: '品牌', dataIndex: 'brand'},
-          { title: '制造商', dataIndex: 'mfrs'},
-          { title: '扩展1', dataIndex: 'otherField1'},
-          { title: '扩展2', dataIndex: 'otherField2'},
-          { title: '扩展3', dataIndex: 'otherField3'},
-          { title: '库存', dataIndex: 'stock'},
-          { title: '单位', dataIndex: 'unit'},
-          { title: '序列号', dataIndex: 'snList', width:300},
-          { title: '批号', dataIndex: 'batchNumber'},
-          { title: '有效期', dataIndex: 'expirationDate'},
-          { title: '多属性', dataIndex: 'sku'},
-          { title: '数量', dataIndex: 'operNumber'},
-          { title: '已出库', dataIndex: 'finishNumber'},
-          { title: '单价', dataIndex: 'unitPrice'},
-          { title: '金额', dataIndex: 'allPrice'},
-          { title: '税率(%)', dataIndex: 'taxRate'},
-          { title: '税额', dataIndex: 'taxMoney'},
-          { title: '价税合计', dataIndex: 'taxLastMoney'},
-          { title: '重量', dataIndex: 'weight'},
-          { title: '仓位货架', dataIndex: 'position'},
-          { title: '备注', dataIndex: 'remark'}
+          { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+          { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+          { title: this.$t('common.name'), dataIndex: 'name'},
+          { title: this.$t('common.specification'), dataIndex: 'standard'},
+          { title: this.$t('common.model'), dataIndex: 'model'},
+          { title: this.$t('material.color'), dataIndex: 'color'},
+          { title: this.$t('common.brand'), dataIndex: 'brand'},
+          { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+          { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+          { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+          { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+          { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+          { title: this.$t('common.unit'), dataIndex: 'unit'},
+          { title: this.$t('purchase.form.columns.serialNumber'), dataIndex: 'snList', width:300},
+          { title: this.$t('purchase.form.columns.batchNumber'), dataIndex: 'batchNumber'},
+          { title: this.$t('purchase.form.columns.expirationDate'), dataIndex: 'expirationDate'},
+          { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+          { title: this.$t('purchase.form.columns.quantity'), dataIndex: 'operNumber'},
+          { title: this.$t('sales.finishNumber'), dataIndex: 'finishNumber'},
+          { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+          { title: this.$t('purchase.form.columns.amount'), dataIndex: 'allPrice'},
+          { title: this.$t('system.taxRate'), dataIndex: 'taxRate'},
+          { title: this.$t('purchase.form.columns.taxAmount'), dataIndex: 'taxMoney'},
+          { title: this.$t('purchase.form.columns.taxTotal'), dataIndex: 'taxLastMoney'},
+          { title: this.$t('common.weight'), dataIndex: 'weight'},
+          { title: this.$t('common.position'), dataIndex: 'position'},
+          { title: this.$t('common.remark'), dataIndex: 'remark'}
         ],
         saleOrderColumns: [
-          { title: '条码', dataIndex: 'barCode'},
-          { title: '名称', dataIndex: 'name'},
-          { title: '规格', dataIndex: 'standard'},
-          { title: '型号', dataIndex: 'model'},
-          { title: '颜色', dataIndex: 'color'},
-          { title: '品牌', dataIndex: 'brand'},
-          { title: '制造商', dataIndex: 'mfrs'},
-          { title: '扩展1', dataIndex: 'otherField1'},
-          { title: '扩展2', dataIndex: 'otherField2'},
-          { title: '扩展3', dataIndex: 'otherField3'},
-          { title: '库存', dataIndex: 'stock'},
-          { title: '单位', dataIndex: 'unit'},
-          { title: '多属性', dataIndex: 'sku'},
-          { title: '数量', dataIndex: 'operNumber'},
-          { title: '已采购', dataIndex: 'finishPurchaseNumber'},
-          { title: '已销售', dataIndex: 'finishNumber'},
-          { title: '单价', dataIndex: 'unitPrice'},
-          { title: '金额', dataIndex: 'allPrice'},
-          { title: '税率(%)', dataIndex: 'taxRate'},
-          { title: '税额', dataIndex: 'taxMoney'},
-          { title: '价税合计', dataIndex: 'taxLastMoney'},
-          { title: '备注', dataIndex: 'remark'}
+          { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+          { title: this.$t('common.name'), dataIndex: 'name'},
+          { title: this.$t('common.specification'), dataIndex: 'standard'},
+          { title: this.$t('common.model'), dataIndex: 'model'},
+          { title: this.$t('material.color'), dataIndex: 'color'},
+          { title: this.$t('common.brand'), dataIndex: 'brand'},
+          { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+          { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+          { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+          { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+          { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+          { title: this.$t('common.unit'), dataIndex: 'unit'},
+          { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+          { title: this.$t('purchase.form.columns.quantity'), dataIndex: 'operNumber'},
+          { title: this.$t('purchase.finishPurchased'), dataIndex: 'finishPurchaseNumber'},
+          { title: this.$t('sales.partialSales'), dataIndex: 'finishNumber'},
+          { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+          { title: this.$t('purchase.form.columns.amount'), dataIndex: 'allPrice'},
+          { title: this.$t('system.taxRate'), dataIndex: 'taxRate'},
+          { title: this.$t('purchase.form.columns.taxAmount'), dataIndex: 'taxMoney'},
+          { title: this.$t('purchase.form.columns.taxTotal'), dataIndex: 'taxLastMoney'},
+          { title: this.$t('common.remark'), dataIndex: 'remark'}
         ],
         saleOutColumns: [
-          { title: '仓库名称', dataIndex: 'depotName'},
-          { title: '条码', dataIndex: 'barCode'},
-          { title: '名称', dataIndex: 'name'},
-          { title: '规格', dataIndex: 'standard'},
-          { title: '型号', dataIndex: 'model'},
-          { title: '颜色', dataIndex: 'color'},
-          { title: '品牌', dataIndex: 'brand'},
-          { title: '制造商', dataIndex: 'mfrs'},
-          { title: '扩展1', dataIndex: 'otherField1'},
-          { title: '扩展2', dataIndex: 'otherField2'},
-          { title: '扩展3', dataIndex: 'otherField3'},
-          { title: '库存', dataIndex: 'stock'},
-          { title: '单位', dataIndex: 'unit'},
-          { title: '序列号', dataIndex: 'snList', width:300},
-          { title: '批号', dataIndex: 'batchNumber'},
-          { title: '有效期', dataIndex: 'expirationDate'},
-          { title: '多属性', dataIndex: 'sku'},
-          { title: '数量', dataIndex: 'operNumber'},
-          { title: '已出库', dataIndex: 'finishNumber'},
-          { title: '单价', dataIndex: 'unitPrice'},
-          { title: '金额', dataIndex: 'allPrice'},
-          { title: '税率(%)', dataIndex: 'taxRate'},
-          { title: '税额', dataIndex: 'taxMoney'},
-          { title: '价税合计', dataIndex: 'taxLastMoney'},
-          { title: '重量', dataIndex: 'weight'},
-          { title: '仓位货架', dataIndex: 'position'},
-          { title: '备注', dataIndex: 'remark'}
+          { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+          { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+          { title: this.$t('common.name'), dataIndex: 'name'},
+          { title: this.$t('common.specification'), dataIndex: 'standard'},
+          { title: this.$t('common.model'), dataIndex: 'model'},
+          { title: this.$t('material.color'), dataIndex: 'color'},
+          { title: this.$t('common.brand'), dataIndex: 'brand'},
+          { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+          { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+          { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+          { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+          { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+          { title: this.$t('common.unit'), dataIndex: 'unit'},
+          { title: this.$t('purchase.form.columns.serialNumber'), dataIndex: 'snList', width:300},
+          { title: this.$t('purchase.form.columns.batchNumber'), dataIndex: 'batchNumber'},
+          { title: this.$t('purchase.form.columns.expirationDate'), dataIndex: 'expirationDate'},
+          { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+          { title: this.$t('purchase.form.columns.quantity'), dataIndex: 'operNumber'},
+          { title: this.$t('sales.finishNumber'), dataIndex: 'finishNumber'},
+          { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+          { title: this.$t('purchase.form.columns.amount'), dataIndex: 'allPrice'},
+          { title: this.$t('system.taxRate'), dataIndex: 'taxRate'},
+          { title: this.$t('purchase.form.columns.taxAmount'), dataIndex: 'taxMoney'},
+          { title: this.$t('purchase.form.columns.taxTotal'), dataIndex: 'taxLastMoney'},
+          { title: this.$t('common.weight'), dataIndex: 'weight'},
+          { title: this.$t('common.position'), dataIndex: 'position'},
+          { title: this.$t('common.remark'), dataIndex: 'remark'}
         ],
         saleBackColumns: [
-          { title: '仓库名称', dataIndex: 'depotName'},
-          { title: '条码', dataIndex: 'barCode'},
-          { title: '名称', dataIndex: 'name'},
-          { title: '规格', dataIndex: 'standard'},
-          { title: '型号', dataIndex: 'model'},
-          { title: '颜色', dataIndex: 'color'},
-          { title: '品牌', dataIndex: 'brand'},
-          { title: '制造商', dataIndex: 'mfrs'},
-          { title: '扩展1', dataIndex: 'otherField1'},
-          { title: '扩展2', dataIndex: 'otherField2'},
-          { title: '扩展3', dataIndex: 'otherField3'},
-          { title: '库存', dataIndex: 'stock'},
-          { title: '单位', dataIndex: 'unit'},
-          { title: '序列号', dataIndex: 'snList', width:300},
-          { title: '批号', dataIndex: 'batchNumber'},
-          { title: '有效期', dataIndex: 'expirationDate'},
-          { title: '多属性', dataIndex: 'sku'},
-          { title: '数量', dataIndex: 'operNumber'},
-          { title: '已入库', dataIndex: 'finishNumber'},
-          { title: '单价', dataIndex: 'unitPrice'},
-          { title: '金额', dataIndex: 'allPrice'},
-          { title: '税率(%)', dataIndex: 'taxRate'},
-          { title: '税额', dataIndex: 'taxMoney'},
-          { title: '价税合计', dataIndex: 'taxLastMoney'},
-          { title: '重量', dataIndex: 'weight'},
-          { title: '仓位货架', dataIndex: 'position'},
-          { title: '备注', dataIndex: 'remark'}
+          { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+          { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+          { title: this.$t('common.name'), dataIndex: 'name'},
+          { title: this.$t('common.specification'), dataIndex: 'standard'},
+          { title: this.$t('common.model'), dataIndex: 'model'},
+          { title: this.$t('material.color'), dataIndex: 'color'},
+          { title: this.$t('common.brand'), dataIndex: 'brand'},
+          { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+          { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+          { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+          { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+          { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+          { title: this.$t('common.unit'), dataIndex: 'unit'},
+          { title: this.$t('purchase.form.columns.serialNumber'), dataIndex: 'snList', width:300},
+          { title: this.$t('purchase.form.columns.batchNumber'), dataIndex: 'batchNumber'},
+          { title: this.$t('purchase.form.columns.expirationDate'), dataIndex: 'expirationDate'},
+          { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+          { title: this.$t('purchase.form.columns.quantity'), dataIndex: 'operNumber'},
+          { title: this.$t('purchase.finishInbound'), dataIndex: 'finishNumber'},
+          { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+          { title: this.$t('purchase.form.columns.amount'), dataIndex: 'allPrice'},
+          { title: this.$t('system.taxRate'), dataIndex: 'taxRate'},
+          { title: this.$t('purchase.form.columns.taxAmount'), dataIndex: 'taxMoney'},
+          { title: this.$t('purchase.form.columns.taxTotal'), dataIndex: 'taxLastMoney'},
+          { title: this.$t('common.weight'), dataIndex: 'weight'},
+          { title: this.$t('common.position'), dataIndex: 'position'},
+          { title: this.$t('common.remark'), dataIndex: 'remark'}
         ],
         otherInColumns: [
-          { title: '仓库名称', dataIndex: 'depotName'},
-          { title: '条码', dataIndex: 'barCode'},
-          { title: '名称', dataIndex: 'name'},
-          { title: '规格', dataIndex: 'standard'},
-          { title: '型号', dataIndex: 'model'},
-          { title: '颜色', dataIndex: 'color'},
-          { title: '品牌', dataIndex: 'brand'},
-          { title: '制造商', dataIndex: 'mfrs'},
-          { title: '扩展1', dataIndex: 'otherField1'},
-          { title: '扩展2', dataIndex: 'otherField2'},
-          { title: '扩展3', dataIndex: 'otherField3'},
-          { title: '库存', dataIndex: 'stock'},
-          { title: '单位', dataIndex: 'unit'},
-          { title: '序列号', dataIndex: 'snList', width:300},
-          { title: '批号', dataIndex: 'batchNumber'},
-          { title: '有效期', dataIndex: 'expirationDate'},
-          { title: '多属性', dataIndex: 'sku'},
-          { title: '数量', dataIndex: 'operNumber'},
-          { title: '单价', dataIndex: 'unitPrice'},
-          { title: '金额', dataIndex: 'allPrice'},
-          { title: '重量', dataIndex: 'weight'},
-          { title: '仓位货架', dataIndex: 'position'},
-          { title: '备注', dataIndex: 'remark'}
+          { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+          { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+          { title: this.$t('common.name'), dataIndex: 'name'},
+          { title: this.$t('common.specification'), dataIndex: 'standard'},
+          { title: this.$t('common.model'), dataIndex: 'model'},
+          { title: this.$t('material.color'), dataIndex: 'color'},
+          { title: this.$t('common.brand'), dataIndex: 'brand'},
+          { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+          { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+          { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+          { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+          { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+          { title: this.$t('common.unit'), dataIndex: 'unit'},
+          { title: this.$t('purchase.form.columns.serialNumber'), dataIndex: 'snList', width:300},
+          { title: this.$t('purchase.form.columns.batchNumber'), dataIndex: 'batchNumber'},
+          { title: this.$t('purchase.form.columns.expirationDate'), dataIndex: 'expirationDate'},
+          { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+          { title: this.$t('purchase.form.columns.quantity'), dataIndex: 'operNumber'},
+          { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+          { title: this.$t('purchase.form.columns.amount'), dataIndex: 'allPrice'},
+          { title: this.$t('common.weight'), dataIndex: 'weight'},
+          { title: this.$t('common.position'), dataIndex: 'position'},
+          { title: this.$t('common.remark'), dataIndex: 'remark'}
         ],
         otherOutColumns: [
-          { title: '仓库名称', dataIndex: 'depotName'},
-          { title: '条码', dataIndex: 'barCode'},
-          { title: '名称', dataIndex: 'name'},
-          { title: '规格', dataIndex: 'standard'},
-          { title: '型号', dataIndex: 'model'},
-          { title: '颜色', dataIndex: 'color'},
-          { title: '品牌', dataIndex: 'brand'},
-          { title: '制造商', dataIndex: 'mfrs'},
-          { title: '扩展1', dataIndex: 'otherField1'},
-          { title: '扩展2', dataIndex: 'otherField2'},
-          { title: '扩展3', dataIndex: 'otherField3'},
-          { title: '库存', dataIndex: 'stock'},
-          { title: '单位', dataIndex: 'unit'},
-          { title: '序列号', dataIndex: 'snList', width:300},
-          { title: '批号', dataIndex: 'batchNumber'},
-          { title: '有效期', dataIndex: 'expirationDate'},
-          { title: '多属性', dataIndex: 'sku'},
-          { title: '数量', dataIndex: 'operNumber'},
-          { title: '单价', dataIndex: 'unitPrice'},
-          { title: '金额', dataIndex: 'allPrice'},
-          { title: '重量', dataIndex: 'weight'},
-          { title: '仓位货架', dataIndex: 'position'},
-          { title: '备注', dataIndex: 'remark'}
+          { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+          { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+          { title: this.$t('common.name'), dataIndex: 'name'},
+          { title: this.$t('common.specification'), dataIndex: 'standard'},
+          { title: this.$t('common.model'), dataIndex: 'model'},
+          { title: this.$t('material.color'), dataIndex: 'color'},
+          { title: this.$t('common.brand'), dataIndex: 'brand'},
+          { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+          { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+          { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+          { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+          { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+          { title: this.$t('common.unit'), dataIndex: 'unit'},
+          { title: this.$t('purchase.form.columns.serialNumber'), dataIndex: 'snList', width:300},
+          { title: this.$t('purchase.form.columns.batchNumber'), dataIndex: 'batchNumber'},
+          { title: this.$t('purchase.form.columns.expirationDate'), dataIndex: 'expirationDate'},
+          { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+          { title: this.$t('purchase.form.columns.quantity'), dataIndex: 'operNumber'},
+          { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+          { title: this.$t('purchase.form.columns.amount'), dataIndex: 'allPrice'},
+          { title: this.$t('common.weight'), dataIndex: 'weight'},
+          { title: this.$t('common.position'), dataIndex: 'position'},
+          { title: this.$t('common.remark'), dataIndex: 'remark'}
         ],
         allocationOutColumns: [
-          { title: '仓库名称', dataIndex: 'depotName'},
-          { title: '条码', dataIndex: 'barCode'},
-          { title: '名称', dataIndex: 'name'},
-          { title: '规格', dataIndex: 'standard'},
-          { title: '型号', dataIndex: 'model'},
-          { title: '颜色', dataIndex: 'color'},
-          { title: '品牌', dataIndex: 'brand'},
-          { title: '制造商', dataIndex: 'mfrs'},
-          { title: '扩展1', dataIndex: 'otherField1'},
-          { title: '扩展2', dataIndex: 'otherField2'},
-          { title: '扩展3', dataIndex: 'otherField3'},
-          { title: '库存', dataIndex: 'stock'},
-          { title: '调入仓库', dataIndex: 'anotherDepotName'},
-          { title: '单位', dataIndex: 'unit'},
-          { title: '多属性', dataIndex: 'sku'},
-          { title: '数量', dataIndex: 'operNumber'},
-          { title: '单价', dataIndex: 'unitPrice'},
-          { title: '金额', dataIndex: 'allPrice'},
-          { title: '重量', dataIndex: 'weight'},
-          { title: '仓位货架', dataIndex: 'position'},
-          { title: '备注', dataIndex: 'remark'}
+          { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+          { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+          { title: this.$t('common.name'), dataIndex: 'name'},
+          { title: this.$t('common.specification'), dataIndex: 'standard'},
+          { title: this.$t('common.model'), dataIndex: 'model'},
+          { title: this.$t('material.color'), dataIndex: 'color'},
+          { title: this.$t('common.brand'), dataIndex: 'brand'},
+          { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+          { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+          { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+          { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+          { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+          { title: this.$t('common.inboundDepot'), dataIndex: 'anotherDepotName'},
+          { title: this.$t('common.unit'), dataIndex: 'unit'},
+          { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+          { title: this.$t('purchase.form.columns.quantity'), dataIndex: 'operNumber'},
+          { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+          { title: this.$t('purchase.form.columns.amount'), dataIndex: 'allPrice'},
+          { title: this.$t('common.weight'), dataIndex: 'weight'},
+          { title: this.$t('common.position'), dataIndex: 'position'},
+          { title: this.$t('common.remark'), dataIndex: 'remark'}
         ],
         assembleColumns: [
-          { title: '商品类型', dataIndex: 'mType'},
-          { title: '仓库名称', dataIndex: 'depotName'},
-          { title: '条码', dataIndex: 'barCode'},
-          { title: '名称', dataIndex: 'name'},
-          { title: '规格', dataIndex: 'standard'},
-          { title: '型号', dataIndex: 'model'},
-          { title: '颜色', dataIndex: 'color'},
-          { title: '品牌', dataIndex: 'brand'},
-          { title: '制造商', dataIndex: 'mfrs'},
-          { title: '扩展1', dataIndex: 'otherField1'},
-          { title: '扩展2', dataIndex: 'otherField2'},
-          { title: '扩展3', dataIndex: 'otherField3'},
-          { title: '库存', dataIndex: 'stock'},
-          { title: '单位', dataIndex: 'unit'},
-          { title: '多属性', dataIndex: 'sku'},
-          { title: '数量', dataIndex: 'operNumber'},
-          { title: '单价', dataIndex: 'unitPrice'},
-          { title: '金额', dataIndex: 'allPrice'},
-          { title: '备注', dataIndex: 'remark'}
+          { title: this.$t('common.productType'), dataIndex: 'mType'},
+          { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+          { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+          { title: this.$t('common.name'), dataIndex: 'name'},
+          { title: this.$t('common.specification'), dataIndex: 'standard'},
+          { title: this.$t('common.model'), dataIndex: 'model'},
+          { title: this.$t('material.color'), dataIndex: 'color'},
+          { title: this.$t('common.brand'), dataIndex: 'brand'},
+          { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+          { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+          { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+          { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+          { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+          { title: this.$t('common.unit'), dataIndex: 'unit'},
+          { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+          { title: this.$t('purchase.form.columns.quantity'), dataIndex: 'operNumber'},
+          { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+          { title: this.$t('purchase.form.columns.amount'), dataIndex: 'allPrice'},
+          { title: this.$t('common.remark'), dataIndex: 'remark'}
         ],
         disassembleColumns: [
-          { title: '商品类型', dataIndex: 'mType'},
-          { title: '仓库名称', dataIndex: 'depotName'},
-          { title: '条码', dataIndex: 'barCode'},
-          { title: '名称', dataIndex: 'name'},
-          { title: '规格', dataIndex: 'standard'},
-          { title: '型号', dataIndex: 'model'},
-          { title: '颜色', dataIndex: 'color'},
-          { title: '品牌', dataIndex: 'brand'},
-          { title: '制造商', dataIndex: 'mfrs'},
-          { title: '扩展1', dataIndex: 'otherField1'},
-          { title: '扩展2', dataIndex: 'otherField2'},
-          { title: '扩展3', dataIndex: 'otherField3'},
-          { title: '库存', dataIndex: 'stock'},
-          { title: '单位', dataIndex: 'unit'},
-          { title: '多属性', dataIndex: 'sku'},
-          { title: '数量', dataIndex: 'operNumber'},
-          { title: '单价', dataIndex: 'unitPrice'},
-          { title: '金额', dataIndex: 'allPrice'},
-          { title: '备注', dataIndex: 'remark'}
+          { title: this.$t('common.productType'), dataIndex: 'mType'},
+          { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+          { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+          { title: this.$t('common.name'), dataIndex: 'name'},
+          { title: this.$t('common.specification'), dataIndex: 'standard'},
+          { title: this.$t('common.model'), dataIndex: 'model'},
+          { title: this.$t('material.color'), dataIndex: 'color'},
+          { title: this.$t('common.brand'), dataIndex: 'brand'},
+          { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+          { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+          { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+          { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+          { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+          { title: this.$t('common.unit'), dataIndex: 'unit'},
+          { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+          { title: this.$t('purchase.form.columns.quantity'), dataIndex: 'operNumber'},
+          { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+          { title: this.$t('purchase.form.columns.amount'), dataIndex: 'allPrice'},
+          { title: this.$t('common.remark'), dataIndex: 'remark'}
         ],
         stockCheckReplayColumns: [
-          { title: '仓库名称', dataIndex: 'depotName'},
-          { title: '条码', dataIndex: 'barCode'},
-          { title: '名称', dataIndex: 'name'},
-          { title: '规格', dataIndex: 'standard'},
-          { title: '型号', dataIndex: 'model'},
-          { title: '品牌', dataIndex: 'brand'},
-          { title: '制造商', dataIndex: 'mfrs'},
-          { title: '扩展1', dataIndex: 'otherField1'},
-          { title: '扩展2', dataIndex: 'otherField2'},
-          { title: '扩展3', dataIndex: 'otherField3'},
-          { title: '库存', dataIndex: 'stock'},
-          { title: '单位', dataIndex: 'unit'},
-          { title: '多属性', dataIndex: 'sku'},
-          { title: '数量', dataIndex: 'operNumber'},
-          { title: '单价', dataIndex: 'unitPrice'},
-          { title: '金额', dataIndex: 'allPrice'},
-          { title: '备注', dataIndex: 'remark'}
+          { title: this.$t('common.depotName'), dataIndex: 'depotName'},
+          { title: this.$t('common.barcode'), dataIndex: 'barCode'},
+          { title: this.$t('common.name'), dataIndex: 'name'},
+          { title: this.$t('common.specification'), dataIndex: 'standard'},
+          { title: this.$t('common.model'), dataIndex: 'model'},
+          { title: this.$t('common.brand'), dataIndex: 'brand'},
+          { title: this.$t('material.manufacturer'), dataIndex: 'mfrs'},
+          { title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1'},
+          { title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2'},
+          { title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3'},
+          { title: this.$t('purchase.form.columns.stock'), dataIndex: 'stock'},
+          { title: this.$t('common.unit'), dataIndex: 'unit'},
+          { title: this.$t('purchase.form.columns.sku'), dataIndex: 'sku'},
+          { title: this.$t('purchase.form.columns.quantity'), dataIndex: 'operNumber'},
+          { title: this.$t('purchase.form.columns.unitPrice'), dataIndex: 'unitPrice'},
+          { title: this.$t('purchase.form.columns.amount'), dataIndex: 'allPrice'},
+          { title: this.$t('common.remark'), dataIndex: 'remark'}
         ]
       }
     },
@@ -1622,7 +1631,36 @@
         'width': '100%'
       }
     },
+    watch: {
+      '$i18n.locale' () {
+        this.refreshColumnTitles()
+        if (this.billType) {
+          this.title = getBillTypeLabel(this, this.billType) + '-' + this.$t('common.view')
+          this.initSetting(this.model, this.billType, this.dataSource)
+        }
+      }
+    },
     methods: {
+      refreshColumnTitles () {
+        const titleKeys = {
+          depotName: 'common.depotName', barCode: 'common.barcode', name: 'common.name', standard: 'common.specification',
+          model: 'common.model', color: 'material.color', stock: 'purchase.form.columns.stock', unit: 'common.unit',
+          sku: 'purchase.form.columns.sku', operNumber: 'purchase.form.columns.quantity', unitPrice: 'purchase.form.columns.unitPrice',
+          allPrice: 'purchase.form.columns.amount', remark: 'common.remark', batchNumber: 'purchase.form.columns.batchNumber',
+          expirationDate: 'purchase.form.columns.expirationDate', snList: 'purchase.form.columns.serialNumber',
+          weight: 'common.weight', position: 'common.position', brand: 'common.brand',
+          mfrs: 'material.manufacturer', anotherDepotName: 'common.inboundDepot', mType: 'common.productType'
+        }
+        const columnSets = [
+          this.retailOutColumns, this.retailBackColumns, this.purchaseApplyColumns, this.purchaseOrderColumns,
+          this.purchaseInColumns, this.purchaseBackColumns, this.saleOrderColumns, this.saleOutColumns,
+          this.saleBackColumns, this.otherInColumns, this.otherOutColumns, this.allocationOutColumns,
+          this.assembleColumns, this.disassembleColumns, this.stockCheckReplayColumns
+        ]
+        columnSets.forEach(columns => columns.forEach(column => {
+          if (titleKeys[column.dataIndex]) column.title = this.$t(titleKeys[column.dataIndex])
+        }))
+      },
       initSetting(record, type, ds) {
         if (type === '零售出库') {
           this.defColumns = this.retailOutColumns
@@ -1820,6 +1858,7 @@
           if (res && res.code === 200) {
             let item = res.data
             this.billType = type
+            this.title = getBillTypeLabel(this, type) + '-' + this.$t('common.view')
             this.prefixNo = prefixNo
             //附件下载
             this.fileList = item.fileName
@@ -1881,8 +1920,8 @@
       handleBackCheck() {
         let that = this
         this.$confirm({
-          title: "确认操作",
-          content: "是否对该单据进行反审核?",
+          title: this.$t('common.confirmAction'),
+          content: this.$t('common.unauditConfirm'),
           onOk: function () {
             that.loading = true
             postAction(that.url.batchSetStatusUrl, {status: '0', ids: that.model.id}).then((res) => {
@@ -1912,9 +1951,12 @@
           if (res && res.code === 200) {
             let type = res.data.type === "其它"? "":res.data.type
             this.show(res.data, res.data.subType + type);
-            this.title = res.data.subType + type + "-详情";
+            this.title = getBillTypeLabel(this, res.data.subType + type) + '- ' + this.$t('common.detail');
           }
         })
+      },
+      getPaymentTypeLabel(paymentType) {
+        return getPaymentTypeLabel(this, paymentType)
       },
       myHandleFinancialDetail(billNo) {
         let that = this
@@ -1922,7 +1964,7 @@
           if (res && res.code === 200) {
             if(that.$refs.financialDetailModal) {
               that.$refs.financialDetailModal.show(res.data, res.data.type);
-              that.$refs.financialDetailModal.title= res.data.type + "-详情";
+              that.$refs.financialDetailModal.title= res.data.type + '- ' + this.$t('common.detail');
             }
           }
         })
@@ -1942,7 +1984,7 @@
             let billPrintUrl = res.data.platformValue + '&no=' + this.model.number
             let billPrintHeight = document.documentElement.clientHeight - 260
             this.$refs.modalProDetail.show(this.model, billPrintUrl, billPrintHeight)
-            this.$refs.modalProDetail.title = this.billType + "-三联打印-新版"
+            this.$refs.modalProDetail.title = this.billType + '-' + this.$t('common.printNew')
           }
         })
       },
@@ -1953,14 +1995,17 @@
             let billPrintUrl = res.data.platformValue + '&no=' + this.model.number
             let billPrintHeight = this.dataSource.length*50 + 600
             this.$refs.modalDetail.show(this.model, billPrintUrl, billPrintHeight)
-            this.$refs.modalDetail.title = this.billType + "-三联打印"
+            this.$refs.modalDetail.title = this.billType + '-' + this.$t('common.print')
           }
         })
       },
       //零售出库|零售退货入库
       retailExportExcel() {
         let list = []
-        let head = '仓库名称,条码,名称,规格,型号,颜色,' + this.otherFieldTitle + ',库存,单位,序列号,批号,有效期,多属性,数量,单价,金额,备注'
+        let head = this.$t('common.depotName') + ',' + this.$t('common.barcode') + ',' + this.$t('common.name') + ',' + this.$t('common.specification') + ',' + this.$t('common.model') + ',' + this.$t('material.color') + ',' +
+          this.otherFieldTitle + ',' + this.$t('purchase.form.columns.stock') + ',' + this.$t('common.unit') + ',' + this.$t('purchase.form.columns.serialNumber') + ',' + this.$t('purchase.form.columns.batchNumber') + ',' +
+          this.$t('purchase.form.columns.expirationDate') + ',' + this.$t('purchase.form.columns.sku') + ',' + this.$t('purchase.form.columns.quantity') + ',' + this.$t('purchase.form.columns.unitPrice') + ',' +
+          this.$t('purchase.form.columns.amount') + ',' + this.$t('common.remark')
         for (let i = 0; i < this.dataSource.length; i++) {
           let item = []
           let ds = this.dataSource[i]
@@ -1968,14 +2013,16 @@
             ds.snList, ds.batchNumber, ds.expirationDate, ds.sku, ds.operNumber, ds.unitPrice, ds.allPrice, ds.remark)
           list.push(item)
         }
-        let organName = this.model.organName? '会员卡号' + this.model.organName: ''
-        let tip = organName + ' ' + '单据日期：' + this.model.operTimeStr + ' ' + '单据编号：' + this.model.number
-        exportXlsPost(this.billType + '_' + this.model.number, '单据导出', head, tip, list)
+        let organName = this.model.organName? this.$t('common.memberCard') + this.model.organName: ''
+        let tip = organName + ' ' + this.$t('common.billDate') + this.model.operTimeStr + ' ' + this.$t('common.billNo') + this.model.number
+        exportXlsPost(this.billType + '_' + this.model.number, this.$t('common.billExport'), head, tip, list)
       },
       //请购单
       applyExportExcel() {
         let list = []
-        let head = '条码,名称,规格,型号,颜色,' + this.otherFieldTitle + ',单位,多属性,原数量,已采购,数量,备注'
+        let head = this.$t('common.barcode') + ',' + this.$t('common.name') + ',' + this.$t('common.specification') + ',' + this.$t('common.model') + ',' + this.$t('material.color') + ',' +
+          this.otherFieldTitle + ',' + this.$t('common.unit') + ',' + this.$t('purchase.form.columns.sku') + ',' + this.$t('purchase.form.preNumber') + ',' + this.$t('purchase.finishPurchased') + ',' +
+          this.$t('purchase.form.columns.quantity') + ',' + this.$t('common.remark')
         for (let i = 0; i < this.dataSource.length; i++) {
           let item = []
           let ds = this.dataSource[i]
@@ -1983,8 +2030,8 @@
             ds.preNumber, ds.finishNumber, ds.operNumber, ds.remark)
           list.push(item)
         }
-        let tip = '单据日期：' + this.model.operTimeStr + ' ' + '单据编号：' + this.model.number
-        exportXlsPost(this.billType + '_' + this.model.number, '单据导出', head, tip, list)
+        let tip = this.$t('common.billDate') + '：' + this.model.operTimeStr + ' ' + this.$t('common.billNo') + this.model.number
+        exportXlsPost(this.billType + '_' + this.model.number, this.$t('common.billExport'), head, tip, list)
       },
       //采购订单|销售订单
       orderExportExcel() {
@@ -1992,11 +2039,17 @@
         let organType = ''
         let head = ''
         if(this.billType === '采购订单') {
-          organType = '供应商：'
-          head = '条码,名称,规格,型号,颜色,' + this.otherFieldTitle + ',库存,单位,多属性,数量,已采购,单价,金额,税率(%),税额,价税合计,备注'
+          organType = this.$t('common.supplier') + '：'
+          head = this.$t('common.barcode') + ',' + this.$t('common.name') + ',' + this.$t('common.specification') + ',' + this.$t('common.model') + ',' + this.$t('material.color') + ',' +
+            this.otherFieldTitle + ',' + this.$t('purchase.form.columns.stock') + ',' + this.$t('common.unit') + ',' + this.$t('purchase.form.columns.sku') + ',' +
+            this.$t('purchase.form.columns.quantity') + ',' + this.$t('purchase.finishPurchased') + ',' + this.$t('purchase.form.columns.unitPrice') + ',' + this.$t('purchase.form.columns.amount') + ',' +
+            this.$t('system.taxRate') + ',' + this.$t('purchase.form.columns.taxAmount') + ',' + this.$t('purchase.form.columns.taxTotal') + ',' + this.$t('common.remark')
         } else if(this.billType === '销售订单') {
-          organType = '客户：'
-          head = '条码,名称,规格,型号,颜色,' + this.otherFieldTitle + ',库存,单位,多属性,数量,已采购,已销售,单价,金额,税率(%),税额,价税合计,备注'
+          organType = this.$t('common.customer') + '：'
+          head = this.$t('common.barcode') + ',' + this.$t('common.name') + ',' + this.$t('common.specification') + ',' + this.$t('common.model') + ',' + this.$t('material.color') + ',' +
+            this.otherFieldTitle + ',' + this.$t('purchase.form.columns.stock') + ',' + this.$t('common.unit') + ',' + this.$t('purchase.form.columns.sku') + ',' +
+            this.$t('purchase.form.columns.quantity') + ',' + this.$t('purchase.finishPurchased') + ',' + this.$t('sales.partialSales') + ',' + this.$t('purchase.form.columns.unitPrice') + ',' +
+            this.$t('purchase.form.columns.amount') + ',' + this.$t('system.taxRate') + ',' + this.$t('purchase.form.columns.taxAmount') + ',' + this.$t('purchase.form.columns.taxTotal') + ',' + this.$t('common.remark')
         }
         for (let i = 0; i < this.dataSource.length; i++) {
           let item = []
@@ -2011,19 +2064,23 @@
           list.push(item)
         }
         let organName = this.model.organName? this.model.organName: ''
-        let tip = organType + organName + ' ' + '单据日期：' + this.model.operTimeStr + ' ' + '单据编号：' + this.model.number
-        exportXlsPost(this.billType + '_' + this.model.number, '单据导出', head, tip, list)
+        let tip = organType + organName + ' ' + this.$t('common.billDate') + this.model.operTimeStr + ' ' + this.$t('common.billNo') + this.model.number
+        exportXlsPost(this.billType + '_' + this.model.number, this.$t('common.billExport'), head, tip, list)
       },
       //采购入库|采购退货出库|销售出库|销售退货入库
       purchaseSaleExportExcel() {
         let list = []
         let organType = ''
         if(this.billType === '采购入库' || this.billType === '采购退货出库') {
-          organType = '供应商：'
+          organType = this.$t('common.supplier') + '：'
         } else if(this.billType === '销售出库' || this.billType === '销售退货入库') {
-          organType = '客户：'
+          organType = this.$t('common.customer') + '：'
         }
-        let head = '仓库名称,条码,名称,规格,型号,颜色,' + this.otherFieldTitle + ',库存,单位,序列号,批号,有效期,多属性,数量,单价,金额,税率(%),税额,价税合计,重量,备注'
+        let head = this.$t('common.depotName') + ',' + this.$t('common.barcode') + ',' + this.$t('common.name') + ',' + this.$t('common.specification') + ',' + this.$t('common.model') + ',' + this.$t('material.color') + ',' +
+          this.otherFieldTitle + ',' + this.$t('purchase.form.columns.stock') + ',' + this.$t('common.unit') + ',' + this.$t('purchase.form.columns.serialNumber') + ',' + this.$t('purchase.form.columns.batchNumber') + ',' +
+          this.$t('purchase.form.columns.expirationDate') + ',' + this.$t('purchase.form.columns.sku') + ',' + this.$t('purchase.form.columns.quantity') + ',' + this.$t('purchase.form.columns.unitPrice') + ',' +
+          this.$t('purchase.form.columns.amount') + ',' + this.$t('system.taxRate') + ',' + this.$t('purchase.form.columns.taxAmount') + ',' + this.$t('purchase.form.columns.taxTotal') + ',' +
+          this.$t('common.weight') + ',' + this.$t('common.remark')
         for (let i = 0; i < this.dataSource.length; i++) {
           let item = []
           let ds = this.dataSource[i]
@@ -2033,20 +2090,23 @@
         }
         let organName = this.model.organName? this.model.organName: ''
         let linkNumber = this.model.linkNumber? this.model.linkNumber: ''
-        let tip = organType + organName + ' ' + '单据日期：' + this.model.operTimeStr + ' ' + '单据编号：' +
-          this.model.number + '' + '关联单号：' + linkNumber
-        exportXlsPost(this.billType + '_' + this.model.number, '单据导出', head, tip, list)
+        let tip = organType + organName + ' ' + this.$t('common.billDate') + this.model.operTimeStr + ' ' + this.$t('common.billNo') +
+          this.model.number + '' + this.$t('common.linkedBill') + '：' + linkNumber
+        exportXlsPost(this.billType + '_' + this.model.number, this.$t('common.billExport'), head, tip, list)
       },
       //其它入库|其它出库
       otherExportExcel() {
         let list = []
         let organType = ''
         if(this.billType === '其它入库') {
-          organType = '供应商：'
+          organType = this.$t('common.supplier') + '：'
         } else if(this.billType === '其它出库') {
-          organType = '客户：'
+          organType = this.$t('common.customer') + '：'
         }
-        let head = '仓库名称,条码,名称,规格,型号,颜色,' + this.otherFieldTitle + ',库存,单位,序列号,批号,有效期,多属性,数量,单价,金额,备注'
+        let head = this.$t('common.depotName') + ',' + this.$t('common.barcode') + ',' + this.$t('common.name') + ',' + this.$t('common.specification') + ',' + this.$t('common.model') + ',' + this.$t('material.color') + ',' +
+          this.otherFieldTitle + ',' + this.$t('purchase.form.columns.stock') + ',' + this.$t('common.unit') + ',' + this.$t('purchase.form.columns.serialNumber') + ',' + this.$t('purchase.form.columns.batchNumber') + ',' +
+          this.$t('purchase.form.columns.expirationDate') + ',' + this.$t('purchase.form.columns.sku') + ',' + this.$t('purchase.form.columns.quantity') + ',' + this.$t('purchase.form.columns.unitPrice') + ',' +
+          this.$t('purchase.form.columns.amount') + ',' + this.$t('common.remark')
         for (let i = 0; i < this.dataSource.length; i++) {
           let item = []
           let ds = this.dataSource[i]
@@ -2055,13 +2115,15 @@
           list.push(item)
         }
         let organName = this.model.organName? this.model.organName: ''
-        let tip = organType + organName + ' ' + '单据日期：' + this.model.operTimeStr + ' ' + '单据编号：' + this.model.number
-        exportXlsPost(this.billType + '_' + this.model.number, '单据导出', head, tip, list)
+        let tip = organType + organName + ' ' + this.$t('common.billDate') + this.model.operTimeStr + ' ' + this.$t('common.billNo') + this.model.number
+        exportXlsPost(this.billType + '_' + this.model.number, this.$t('common.billExport'), head, tip, list)
       },
       //调拨出库
       allocationOutExportExcel() {
         let list = []
-        let head = '仓库名称,条码,名称,规格,型号,颜色,' + this.otherFieldTitle + ',库存,调入仓库,单位,多属性,数量,单价,金额,备注'
+        let head = this.$t('common.depotName') + ',' + this.$t('common.barcode') + ',' + this.$t('common.name') + ',' + this.$t('common.specification') + ',' + this.$t('common.model') + ',' + this.$t('material.color') + ',' +
+          this.otherFieldTitle + ',' + this.$t('purchase.form.columns.stock') + ',' + this.$t('common.inboundDepot') + ',' + this.$t('common.unit') + ',' + this.$t('purchase.form.columns.sku') + ',' +
+          this.$t('purchase.form.columns.quantity') + ',' + this.$t('purchase.form.columns.unitPrice') + ',' + this.$t('purchase.form.columns.amount') + ',' + this.$t('common.remark')
         for (let i = 0; i < this.dataSource.length; i++) {
           let item = []
           let ds = this.dataSource[i]
@@ -2069,13 +2131,15 @@
             ds.sku, ds.operNumber, ds.unitPrice, ds.allPrice, ds.remark)
           list.push(item)
         }
-        let tip = '单据日期：' + this.model.operTimeStr + ' ' + '单据编号：' + this.model.number
-        exportXlsPost(this.billType + '_' + this.model.number, '单据导出', head, tip, list)
+        let tip = this.$t('common.billDate') + '：' + this.model.operTimeStr + ' ' + this.$t('common.billNo') + this.model.number
+        exportXlsPost(this.billType + '_' + this.model.number, this.$t('common.billExport'), head, tip, list)
       },
       //组装单|拆卸单
       assembleExportExcel() {
         let list = []
-        let head = ['商品类型,仓库名称,条码,名称,规格,型号,颜色,' + this.otherFieldTitle + ',库存,单位,多属性,数量,单价,金额,备注']
+        let head = [this.$t('common.productType') + ',' + this.$t('common.depotName') + ',' + this.$t('common.barcode') + ',' + this.$t('common.name') + ',' + this.$t('common.specification') + ',' + this.$t('common.model') + ',' + this.$t('material.color') + ',' +
+          this.otherFieldTitle + ',' + this.$t('purchase.form.columns.stock') + ',' + this.$t('common.unit') + ',' + this.$t('purchase.form.columns.sku') + ',' +
+          this.$t('purchase.form.columns.quantity') + ',' + this.$t('purchase.form.columns.unitPrice') + ',' + this.$t('purchase.form.columns.amount') + ',' + this.$t('common.remark')]
         for (let i = 0; i < this.dataSource.length; i++) {
           let item = []
           let ds = this.dataSource[i]
@@ -2083,13 +2147,15 @@
             ds.sku, ds.operNumber, ds.unitPrice, ds.allPrice, ds.remark)
           list.push(item)
         }
-        let tip = '单据日期：' + this.model.operTimeStr + ' ' + '单据编号：' + this.model.number
-        exportXlsPost(this.billType + '_' + this.model.number, '单据导出', head, tip, list)
+        let tip = this.$t('common.billDate') + '：' + this.model.operTimeStr + ' ' + this.$t('common.billNo') + this.model.number
+        exportXlsPost(this.billType + '_' + this.model.number, this.$t('common.billExport'), head, tip, list)
       },
       //盘点复盘
       stockCheckReplayExportExcel() {
         let list = []
-        let head = '仓库名称,条码,名称,规格,型号,' + this.otherFieldTitle + ',库存,单位,多属性,数量,单价,金额,备注'
+        let head = this.$t('common.depotName') + ',' + this.$t('common.barcode') + ',' + this.$t('common.name') + ',' + this.$t('common.specification') + ',' + this.$t('common.model') + ',' +
+          this.otherFieldTitle + ',' + this.$t('purchase.form.columns.stock') + ',' + this.$t('common.unit') + ',' + this.$t('purchase.form.columns.sku') + ',' +
+          this.$t('purchase.form.columns.quantity') + ',' + this.$t('purchase.form.columns.unitPrice') + ',' + this.$t('purchase.form.columns.amount') + ',' + this.$t('common.remark')
         for (let i = 0; i < this.dataSource.length; i++) {
           let item = []
           let ds = this.dataSource[i]
@@ -2098,8 +2164,8 @@
           list.push(item)
         }
         let linkNumber = this.model.linkNumber? this.model.linkNumber: ''
-        let tip = '单据日期：' + this.model.operTimeStr + ' ' + '单据编号：' + this.model.number + '' + '关联单号：' + linkNumber
-        exportXlsPost(this.billType + '_' + this.model.number, '单据导出', head, tip, list)
+        let tip = this.$t('common.billDate') + '：' + this.model.operTimeStr + ' ' + this.$t('common.billNo') + this.model.number + '' + this.$t('common.linkedBill') + '：' + linkNumber
+        exportXlsPost(this.billType + '_' + this.model.number, this.$t('common.billExport'), head, tip, list)
       }
     }
   }

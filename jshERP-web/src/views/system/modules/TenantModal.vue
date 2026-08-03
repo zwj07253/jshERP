@@ -12,36 +12,36 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:15%;height: 60%;">
       <a-spin :spinning="confirmLoading">
         <a-form :form="form">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="登录名称">
-            <a-input placeholder="请输入登录名称" v-decorator.trim="[ 'loginName', validatorRules.loginName]" :readOnly="!!model.id"
-                     suffix="初始密码：123456" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.loginName')">
+            <a-input :placeholder="$t('system.enterLoginName')" v-decorator.trim="[ 'loginName', validatorRules.loginName]" :readOnly="!!model.id"
+                     :suffix="$t('system.initialPassword')" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="用户数量限制">
-            <a-input-number style="width:100%" placeholder="请输入用户数量限制" v-decorator.trim="[ 'userNumLimit' ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.userNumLimit')">
+            <a-input-number style="width:100%" :placeholder="$t('system.enterUserNumLimit')" v-decorator.trim="[ 'userNumLimit' ]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="租户角色" v-if="model.id">
-            <a-select style="width:100%" placeholder="请选择租户角色" v-decorator.trim="[ 'roleId' ]">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.tenantRole')" v-if="model.id">
+            <a-select style="width:100%" :placeholder="$t('system.selectTenantRole')" v-decorator.trim="[ 'roleId' ]">
               <a-select-option v-for="(item,index) in tenantRoleList" :key="index" :value="item.id">
                 {{ item.name }}
               </a-select-option>
             </a-select>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="租户类型" v-if="model.id">
-            <a-select style="width:100%" placeholder="请选择租户类型" v-decorator.trim="[ 'type' ]">
-              <a-select-option value="0">试用租户</a-select-option>
-              <a-select-option value="1">付费租户</a-select-option>
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.tenantTypeLabel')" v-if="model.id">
+            <a-select style="width:100%" :placeholder="$t('system.selectTenantType')" v-decorator.trim="[ 'type' ]">
+              <a-select-option value="0">{{ $t('system.trialTenantOpt') }}</a-select-option>
+              <a-select-option value="1">{{ $t('system.paidTenantOpt') }}</a-select-option>
             </a-select>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="到期时间">
-            <j-date style="width:100%" placeholder="请选择到期时间" v-decorator.trim="[ 'expireTime' ]" :show-time="true"/>
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.expireTime')">
+            <j-date style="width:100%" :placeholder="$t('system.selectExpireTime')" v-decorator.trim="[ 'expireTime' ]" :show-time="true"/>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="备注">
-            <a-textarea :rows="2" placeholder="请输入备注（微信号）" v-decorator.trim="[ 'remark' ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.remark')">
+            <a-textarea :rows="2" :placeholder="$t('system.enterRemarkWechat')" v-decorator.trim="[ 'remark' ]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -62,7 +62,7 @@
     },
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         model: {},
         tenantRoleList: [],  //租户角色列表
@@ -79,8 +79,8 @@
         validatorRules:{
           loginName:{
             rules: [
-              { required: true, message: '请输入登录名称!' },
-              { min: 2, max: 30, message: '长度在 2 到 30 个字符', trigger: 'blur' },
+              { required: true, message: this.$t('system.loginNameRequired') },
+              { min: 2, max: 30, message: this.$t('system.loginNameLength'), trigger: 'blur' },
               { validator: this.validateLoginName}
             ]
           }
@@ -96,7 +96,7 @@
       edit (record) {
         this.form.resetFields();
         this.model = Object.assign({}, record);
-        this.model.expireTime = this.model.expireTimeStr
+        this.model.expireTime = this.model.expireTimeStr === this.$t('system.permanentlyValid') ? null : this.model.expireTimeStr
         this.visible = true;
         this.$nextTick(() => {
           this.form.setFieldsValue(pick(this.model,'loginName', 'userNumLimit', 'type', 'roleId', 'expireTime', 'remark'))
@@ -132,7 +132,7 @@
               if(res.code === 200){
                 that.$emit('ok');
               }else{
-                that.$message.warning(res.data.message);
+                that.$message.warning(res.message || res.data || this.$t('system.saveFailed'));
               }
             }).finally(() => {
               that.confirmLoading = false;
@@ -154,7 +154,7 @@
             if(!res.data.status){
               callback();
             } else {
-              callback("登录名称已经存在");
+              callback(this.$t('system.loginNameExists'));
             }
           } else {
             callback(res.data);

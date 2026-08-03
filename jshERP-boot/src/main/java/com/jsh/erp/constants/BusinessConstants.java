@@ -109,6 +109,9 @@ public class BusinessConstants {
     public static final String TYPE_MONEY_IN = "收款";
     public static final String TYPE_MONEY_OUT = "付款";
     public static final String TYPE_GIRO = "转账";
+    public static final String TYPE_ADVANCE_IN = "收预付款";
+    public static final String TYPE_INCOME = "收入";
+    public static final String TYPE_EXPENSE = "支出";
     /**
      * 批量插入sql时最大的数据条数
      * */
@@ -216,7 +219,12 @@ public class BusinessConstants {
     /**
      * 字典管理 cache key
      */
-    public static final String SYS_DICT_KEY = "sys_dict:";
+    public static final String SYS_DICT_KEY = "jsh:dict:v1:";
+
+    /**
+     * 字典缓存过期时间（秒），24小时，作为兜底防止缓存永久驻留
+     */
+    public static final Long SYS_DICT_TTL_SECONDS = 24 * 60 * 60L;
 
     /**
      * redis相关

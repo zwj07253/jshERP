@@ -3,7 +3,6 @@ package com.jsh.erp.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.base.BaseController;
 import com.jsh.erp.base.TableDataInfo;
 import com.jsh.erp.datasource.entities.Log;
@@ -12,8 +11,6 @@ import com.jsh.erp.service.LogService;
 import com.jsh.erp.utils.Constants;
 import com.jsh.erp.utils.ErpInfo;
 import com.jsh.erp.utils.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -23,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.jsh.erp.utils.ResponseJsonUtil.returnJson;
-import static com.jsh.erp.utils.ResponseJsonUtil.returnStr;
 
 /**
  * @author ji sheng hua 752*718*920
@@ -32,8 +28,6 @@ import static com.jsh.erp.utils.ResponseJsonUtil.returnStr;
 @RequestMapping(value = "/log")
 @Tag(name = "日志管理")
 public class LogController extends BaseController {
-    private Logger logger = LoggerFactory.getLogger(LogController.class);
-
     @Resource
     private LogService logService;
 
@@ -42,6 +36,7 @@ public class LogController extends BaseController {
     @Operation(summary = "根据id获取信息")
     public String getList(@RequestParam("id") Long id,
                           HttpServletRequest request) throws Exception {
+        logService.checkReadPermission();
         Log log = logService.getLog(id);
         Map<String, Object> objectMap = new HashMap<>();
         if(log != null) {
@@ -56,6 +51,7 @@ public class LogController extends BaseController {
     @Operation(summary = "获取信息列表")
     public TableDataInfo getList(@RequestParam(value = Constants.SEARCH, required = false) String search,
                                  HttpServletRequest request)throws Exception {
+        logService.checkReadPermission();
         String operation = StringUtil.getInfo(search, "operation");
         String userInfo = StringUtil.getInfo(search, "userInfo");
         String clientIp = StringUtil.getInfo(search, "clientIp");
@@ -66,37 +62,5 @@ public class LogController extends BaseController {
         String content = StringUtil.getInfo(search, "content");
         List<LogVo4List> list = logService.select(operation, userInfo, clientIp, tenantLoginName, tenantType, beginTime, endTime, content);
         return getDataTable(list);
-    }
-
-    @PostMapping(value = "/add")
-    @Operation(summary = "新增")
-    public String addResource(@RequestBody JSONObject obj, HttpServletRequest request)throws Exception {
-        Map<String, Object> objectMap = new HashMap<String, Object>();
-        int insert = logService.insertLog(obj, request);
-        return returnStr(objectMap, insert);
-    }
-
-    @PutMapping(value = "/update")
-    @Operation(summary = "修改")
-    public String updateResource(@RequestBody JSONObject obj, HttpServletRequest request)throws Exception {
-        Map<String, Object> objectMap = new HashMap<>();
-        int update = logService.updateLog(obj, request);
-        return returnStr(objectMap, update);
-    }
-
-    @DeleteMapping(value = "/delete")
-    @Operation(summary = "删除")
-    public String deleteResource(@RequestParam("id") Long id, HttpServletRequest request)throws Exception {
-        Map<String, Object> objectMap = new HashMap<>();
-        int delete = logService.deleteLog(id, request);
-        return returnStr(objectMap, delete);
-    }
-
-    @DeleteMapping(value = "/deleteBatch")
-    @Operation(summary = "批量删除")
-    public String batchDeleteResource(@RequestParam("ids") String ids, HttpServletRequest request)throws Exception {
-        Map<String, Object> objectMap = new HashMap<>();
-        int delete = logService.batchDeleteLog(ids, request);
-        return returnStr(objectMap, delete);
     }
 }

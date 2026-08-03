@@ -14,22 +14,21 @@
     :id="prefixNo"
     style="top:20px;height: 95%;">
     <template slot="footer">
-      <a-button @click="handleCancel">取消</a-button>
-      <a-button v-if="billPrintFlag && isShowPrintBtn" @click="handlePrintPro('销售订单')">三联打印-新版</a-button>
-      <a-button v-if="billPrintFlag && isShowPrintBtn" @click="handlePrint('销售订单')">三联打印</a-button>
-      <a-button v-if="checkFlag && isCanCheck" :loading="confirmLoading" @click="handleOkAndCheck">保存并审核</a-button>
-      <a-button type="primary" :loading="confirmLoading" @click="handleOkOnly">保存（Ctrl+S）</a-button>
+      <a-button @click="handleCancel">{{ $t('common.cancel') }}</a-button>
+      <a-button v-if="billPrintFlag && isShowPrintBtn" @click="handlePrintPro('销售订单')">{{ $t('common.printNew') }}</a-button>
+      <a-button v-if="billPrintFlag && isShowPrintBtn" @click="handlePrint('销售订单')">{{ $t('common.print') }}</a-button>
+      <a-button v-if="checkFlag && isCanCheck" :loading="confirmLoading" @click="handleOkAndCheck">{{ $t('common.saveAndApprove') }}</a-button>
+      <a-button type="primary" :loading="confirmLoading" @click="handleOkOnly">{{ $t('common.save') }}</a-button>
       <!--发起多级审核-->
-      <a-button v-if="!checkFlag" @click="handleWorkflow()" type="primary">提交流程</a-button>
+      <a-button v-if="!checkFlag" @click="handleWorkflow()" type="primary">{{ $t('common.submitWorkflow') }}</a-button>
     </template>
     <a-spin :spinning="confirmLoading">
       <a-form :form="form">
         <a-row class="form-row" :gutter="24">
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="客户" data-step="1" data-title="客户"
-              data-intro="客户必须选择，如果发现需要选择的客户尚未录入，可以在下拉框中点击新增客户进行录入。
-                          特别注意，客户如果录入之后在下拉框中不显示，请检查是否给当前用户分配对应的客户权限">
-              <a-select placeholder="请选择客户" v-decorator="[ 'organId', validatorRules.organId ]"
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.customer')" data-step="1" :data-title="$t('common.customer')"
+              :data-intro="$t('guide.customer')">
+              <a-select :placeholder="$t('common.selectCustomer')" v-decorator="[ 'organId', validatorRules.organId ]"
                 :dropdownMatchSelectWidth="false" showSearch optionFilterProp="children" @change="handleOrganChange" @search="handleSearchCustomer">
                 <div slot="dropdownRender" slot-scope="menu">
                   <v-nodes :vnodes="menu" />
@@ -44,20 +43,21 @@
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
               <j-date v-decorator="['operTime', validatorRules.operTime]" :show-time="true"/>
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号" data-step="2" data-title="单据编号"
-              data-intro="单据编号自动生成、自动累加、开头是单据类型的首字母缩写，累加的规则是每次打开页面会自动占用一个新的编号">
-              <a-input placeholder="请输入单据编号" v-decorator.trim="[ 'number', validatorRules.number ]" />
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')" data-step="2" :data-title="$t('common.billNo')"
+              :data-intro="$t('guide.autoNumber')">
+              <a-input :placeholder="$t('common.enterBillNo')" :readOnly="action !== 'add' && action !== 'copyAdd'"
+                       v-decorator.trim="[ 'number', validatorRules.number ]" />
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="销售人员" data-step="3" data-title="销售人员"
-              data-intro="销售人员的数据来自【经手人管理】菜单中的销售员">
-              <j-select-multiple placeholder="请选择销售人员" v-model="personList.value" :options="personList.options"/>
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.salesMan')" data-step="3" :data-title="$t('common.salesMan')"
+              :data-intro="$t('guide.salesPerson')">
+              <j-select-multiple :placeholder="$t('common.selectSalesMan')" v-model="personList.value" :options="personList.options"/>
             </a-form-item>
           </a-col>
         </a-row>
@@ -76,15 +76,15 @@
           @added="onAdded"
           @deleted="onDeleted">
           <template #buttonAfter>
-            <a-row :gutter="24" style="float:left;padding-bottom: 5px;" data-step="4" data-title="扫码录入" data-intro="此功能支持扫码枪扫描商品条码进行录入">
+            <a-row :gutter="24" style="float:left;padding-bottom: 5px;" data-step="4" :data-title="$t('common.scanEntry')" :data-intro="$t('common.scanEntry')">
               <a-col v-if="scanStatus" :md="6" :sm="24">
-                <a-button @click="scanEnter">扫码录入</a-button>
+                <a-button @click="scanEnter">{{ $t('common.scanEntry') }}</a-button>
               </a-col>
               <a-col v-if="!scanStatus" :md="16" :sm="24" style="padding: 0 8px 0 12px">
-                <a-input placeholder="请扫描商品条码并回车" v-model="scanBarCode" @pressEnter="scanPressEnter" ref="scanBarCode"/>
+                <a-input :placeholder="$t('common.scanBarcodePlaceholder')" v-model="scanBarCode" @pressEnter="scanPressEnter" ref="scanBarCode"/>
               </a-col>
               <a-col v-if="!scanStatus" :md="6" :sm="24" style="padding: 0px 12px 0 0">
-                <a-button @click="stopScan">收起扫码</a-button>
+                <a-button @click="stopScan">{{ $t('common.hideScan') }}</a-button>
               </a-col>
             </a-row>
             <a-row :gutter="24" style="float:left;padding-bottom: 5px;">
@@ -100,36 +100,36 @@
         <a-row class="form-row" :gutter="24">
           <a-col :lg="24" :md="24" :sm="24">
             <a-form-item :labelCol="labelCol" :wrapperCol="{xs: { span: 24 },sm: { span: 24 }}" label="">
-              <a-textarea :rows="1" placeholder="请输入备注" v-decorator="[ 'remark' ]" style="margin-top:8px;"/>
+              <a-textarea :rows="1" :placeholder="$t('common.enterRemark')" v-decorator="[ 'remark' ]" style="margin-top:8px;"/>
             </a-form-item>
           </a-col>
         </a-row>
         <a-row class="form-row" :gutter="24">
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="优惠率" data-step="5" data-title="优惠率"
-                         data-intro="针对单据明细中商品总金额进行优惠的比例">
-              <a-input style="width:80%;" placeholder="请输入优惠率" v-decorator.trim="[ 'discount' ]" suffix="%" @change="onChangeDiscount"/>
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.discount')" data-step="5" :data-title="$t('purchase.form.discount')"
+                         :data-intro="$t('guide.discountRate')">
+              <a-input style="width:80%;" :placeholder="$t('purchase.form.discountPlaceholder')" v-decorator.trim="[ 'discount' ]" suffix="%" @change="onChangeDiscount"/>
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="收款优惠" data-step="6" data-title="收款优惠"
-                         data-intro="针对单据明细中商品总金额进行优惠的金额">
-              <a-input placeholder="请输入付款优惠" v-decorator.trim="[ 'discountMoney' ]" @change="onChangeDiscountMoney"/>
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.paymentDiscount')" data-step="6" :data-title="$t('common.paymentDiscount')"
+                         :data-intro="$t('guide.discountAmount')">
+              <a-input :placeholder="$t('purchase.form.discountMoneyPlaceholder')" v-decorator.trim="[ 'discountMoney' ]" @change="onChangeDiscountMoney"/>
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="优惠后金额" data-step="7" data-title="优惠后金额"
-                         data-intro="针对单据明细中商品总金额进行优惠后的金额">
-              <a-input placeholder="请输入优惠后金额" v-decorator.trim="[ 'discountLastMoney' ]" :readOnly="true"/>
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.discountLastMoney')" data-step="7" :data-title="$t('purchase.form.discountLastMoney')"
+                         :data-intro="$t('guide.discountedAmount')">
+              <a-input :placeholder="$t('common.enterDiscountAfterAmount')" v-decorator.trim="[ 'discountLastMoney' ]" :readOnly="true"/>
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24"></a-col>
         </a-row>
         <a-row class="form-row" :gutter="24">
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="结算账户" data-step="8" data-title="结算账户"
-                         data-intro="如果在下拉框中选择多账户，则可以通过多个结算账户进行结算">
-              <a-select style="width:80%;" placeholder="请选择结算账户" v-decorator="[ 'accountId' ]"
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.settleAccount')" data-step="8" :data-title="$t('common.settleAccount')"
+                         :data-intro="$t('guide.multiAccount')">
+              <a-select style="width:80%;" :placeholder="$t('common.selectSettleAccount')" v-decorator="[ 'accountId' ]"
                         :dropdownMatchSelectWidth="false" allowClear @select="selectAccount">
                 <div slot="dropdownRender" slot-scope="menu">
                   <v-nodes :vnodes="menu" />
@@ -147,9 +147,9 @@
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="收取订金" data-step="9" data-title="收取订金"
-                         data-intro="填写订金之后，在销售出库单会自动计算扣除订金">
-              <a-input placeholder="请输入收取订金" v-decorator.trim="[ 'changeAmount', validatorRules.price ]" @change="onChangeChangeAmount"/>
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.collectDeposit')" data-step="9" :data-title="$t('common.collectDeposit')"
+                         :data-intro="$t('guide.deposit')">
+              <a-input :placeholder="$t('common.enterCollectDeposit')" v-decorator.trim="[ 'changeAmount', validatorRules.price ]" @change="onChangeChangeAmount"/>
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
@@ -159,7 +159,7 @@
         </a-row>
         <a-row class="form-row" :gutter="24">
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="附件" data-step="10" data-title="附件" data-intro="可以上传与单据相关的图片、文档，支持多个文件">
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.attachment')" data-step="10" :data-title="$t('common.attachment')" :data-intro="$t('guide.attachment')">
               <j-upload v-model="fileList" bizPath="bill"></j-upload>
             </a-form-item>
           </a-col>
@@ -216,7 +216,7 @@
     },
     data () {
       return {
-        title:"操作",
+        title: this.$t('common.action'),
         width: '1600px',
         moreStatus: false,
         // 新增时子表默认添加几行空数据
@@ -241,47 +241,47 @@
           dataSource: [],
           columns: [
             { title: '', key: 'hiddenKey', width: '1%', type: FormTypes.hidden },
-            { title: '条码', key: 'barCode', width: '12%', type: FormTypes.popupJsh, kind: 'material', multi: true,
+            { title: this.$t('common.barcode'), key: 'barCode', width: '12%', type: FormTypes.popupJsh, kind: 'material', multi: true,
               validateRules: [{ required: true, message: '${title}不能为空' }]
             },
-            { title: '名称', key: 'name', width: '10%', type: FormTypes.normal },
-            { title: '规格', key: 'standard', width: '9%', type: FormTypes.normal },
-            { title: '型号', key: 'model', width: '9%', type: FormTypes.normal },
-            { title: '颜色', key: 'color', width: '5%', type: FormTypes.normal },
-            { title: '品牌', key: 'brand', width: '6%', type: FormTypes.normal },
-            { title: '制造商', key: 'mfrs', width: '6%', type: FormTypes.normal },
-            { title: '扩展1', key: 'otherField1', width: '4%', type: FormTypes.normal },
-            { title: '扩展2', key: 'otherField2', width: '4%', type: FormTypes.normal },
-            { title: '扩展3', key: 'otherField3', width: '4%', type: FormTypes.normal },
-            { title: '库存', key: 'stock', width: '5%', type: FormTypes.normal },
-            { title: '单位', key: 'unit', width: '4%', type: FormTypes.normal },
-            { title: '多属性', key: 'sku', width: '4%', type: FormTypes.normal },
-            { title: '数量', key: 'operNumber', width: '5%', type: FormTypes.inputNumber, statistics: true,
+            { title: this.$t('common.name'), key: 'name', width: '10%', type: FormTypes.normal },
+            { title: this.$t('common.specification'), key: 'standard', width: '9%', type: FormTypes.normal },
+            { title: this.$t('common.model'), key: 'model', width: '9%', type: FormTypes.normal },
+            { title: this.$t('material.color'), key: 'color', width: '5%', type: FormTypes.normal },
+            { title: this.$t('common.brand'), key: 'brand', width: '6%', type: FormTypes.normal },
+            { title: this.$t('material.manufacturer'), key: 'mfrs', width: '6%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.ext1'), key: 'otherField1', width: '4%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.ext2'), key: 'otherField2', width: '4%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.ext3'), key: 'otherField3', width: '4%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.stock'), key: 'stock', width: '5%', type: FormTypes.normal },
+            { title: this.$t('common.unit'), key: 'unit', width: '4%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.sku'), key: 'sku', width: '4%', type: FormTypes.normal },
+            { title: this.$t('common.quantity'), key: 'operNumber', width: '5%', type: FormTypes.inputNumber, statistics: true,
               validateRules: [{ required: true, message: '${title}不能为空' }]
             },
-            { title: '单价', key: 'unitPrice', width: '5%', type: FormTypes.inputNumber},
-            { title: '金额', key: 'allPrice', width: '5%', type: FormTypes.inputNumber, statistics: true },
-            { title: '税率', key: 'taxRate', width: '4%', type: FormTypes.inputNumber,placeholder: '%'},
-            { title: '税额', key: 'taxMoney', width: '5%', type: FormTypes.inputNumber, readonly: true, statistics: true },
-            { title: '价税合计', key: 'taxLastMoney', width: '7%', type: FormTypes.inputNumber, statistics: true },
-            { title: '备注', key: 'remark', width: '6%', type: FormTypes.input }
+            { title: this.$t('purchase.form.columns.unitPrice'), key: 'unitPrice', width: '5%', type: FormTypes.inputNumber},
+            { title: this.$t('common.amount'), key: 'allPrice', width: '5%', type: FormTypes.inputNumber, statistics: true },
+            { title: this.$t('purchase.form.columns.taxRate'), key: 'taxRate', width: '4%', type: FormTypes.inputNumber,placeholder: '%'},
+            { title: this.$t('purchase.form.columns.taxAmount'), key: 'taxMoney', width: '5%', type: FormTypes.inputNumber, readonly: true, statistics: true },
+            { title: this.$t('purchase.form.columns.taxTotal'), key: 'taxLastMoney', width: '7%', type: FormTypes.inputNumber, statistics: true },
+            { title: this.$t('common.remark'), key: 'remark', width: '6%', type: FormTypes.input }
           ]
         },
         confirmLoading: false,
         validatorRules:{
           operTime:{
             rules: [
-              { required: true, message: '请输入单据日期!' }
+              { required: true, message: this.$t('purchase.validation.documentDateRequired') }
             ]
           },
           number:{
             rules: [
-              { required: true, message: '请输入单据编号!' }
+              { required: true, message: this.$t('purchase.validation.documentNumberRequired') }
             ]
           },
           organId:{
             rules: [
-              { required: true, message: '请选择客户!' }
+              { required: true, message: this.$t('sales.validation.customerRequired') }
             ]
           }
         },

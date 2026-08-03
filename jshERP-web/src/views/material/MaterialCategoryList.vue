@@ -5,15 +5,15 @@
       <a-card :bordered="false">
         <!-- 按钮操作区域 -->
         <a-row style="margin-left: 14px">
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd()" type="primary">添加类别</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" title="删除多条数据" @click="batchDel" type="default">批量删除</a-button>
-          <a-button @click="refresh" type="default" icon="reload">刷新</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd()" type="primary">{{ $t('common.add') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" :title="$t('material.deleteMultipleData')" @click="batchDel" type="default">{{ $t('common.delete') }}</a-button>
+          <a-button @click="refresh" type="default" icon="reload">{{ $t('common.refresh') }}</a-button>
         </a-row>
         <div style="background: #fff;padding-left:16px;height: 100%; margin-top: 5px">
           <a-alert type="info" :showIcon="true">
             <div slot="message">
-              当前选择：<span v-if="this.currSelected.title">{{ getCurrSelectedTitle() }}</span>
-              <a v-if="this.currSelected.title" style="margin-left: 10px" @click="onClearSelected">取消选择</a>
+              {{ $t('material.currentSelection') }}<span v-if="this.currSelected.title">{{ getCurrSelectedTitle() }}</span>
+              <a v-if="this.currSelected.title" style="margin-left: 10px" @click="onClearSelected">{{ $t('common.cancel') }}</a>
             </div>
           </a-alert>
           <!-- 树-->
@@ -44,15 +44,15 @@
       <div class="drawer-bootom-button">
         <a-dropdown :trigger="['click']" placement="topCenter">
           <a-menu slot="overlay">
-            <a-menu-item key="1" @click="switchCheckStrictly(1)">父子关联</a-menu-item>
-            <a-menu-item key="2" @click="switchCheckStrictly(2)">取消关联</a-menu-item>
-            <a-menu-item key="3" @click="checkALL">全部勾选</a-menu-item>
-            <a-menu-item key="4" @click="cancelCheckALL">取消全选</a-menu-item>
-            <a-menu-item key="5" @click="expandAll">展开所有</a-menu-item>
-            <a-menu-item key="6" @click="closeAll">合并所有</a-menu-item>
+            <a-menu-item key="1" @click="switchCheckStrictly(1)">{{ $t('common.confirm') }}</a-menu-item>
+            <a-menu-item key="2" @click="switchCheckStrictly(2)">{{ $t('common.cancel') }}</a-menu-item>
+            <a-menu-item key="3" @click="checkALL">{{ $t('common.confirm') }}</a-menu-item>
+            <a-menu-item key="4" @click="cancelCheckALL">{{ $t('common.clearAll') }}</a-menu-item>
+            <a-menu-item key="5" @click="expandAll">{{ $t('common.expand') }}</a-menu-item>
+            <a-menu-item key="6" @click="closeAll">{{ $t('common.collapse') }}</a-menu-item>
           </a-menu>
           <a-button>
-            树操作 <a-icon type="up" />
+            {{ $t('common.operation') }} <a-icon type="up" />
           </a-button>
         </a-dropdown>
       </div>
@@ -61,33 +61,33 @@
     <a-col :md="12" :sm="24">
       <a-card :bordered="false" v-if="selectedKeys.length>0">
         <a-form :form="form">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="名称">
-            <a-input placeholder="请输入名称" v-decorator="['name', validatorRules.name ]"/>
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.name')">
+            <a-input :placeholder="$t('common.enterName')" v-decorator="['name', validatorRules.name ]"/>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="编号">
-            <a-input placeholder="请输入编号" v-decorator="['serialNo', validatorRules.serialNo ]"/>
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.serialNo')">
+            <a-input :placeholder="$t('common.serialNo')" v-decorator="['serialNo', validatorRules.serialNo ]"/>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="上级目录">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('material.parentDirectory')">
             <a-tree-select style="width:100%" :dropdownStyle="{maxHeight:'200px',overflow:'auto'}"
                            allow-clear :treeDefaultExpandAll="true"
-                           :treeData="treeData" v-decorator="[ 'parentId' ]" placeholder="请选择上级目录">
+                           :treeData="treeData" v-decorator="[ 'parentId' ]" :placeholder="$t('material.selectParentDirectory')">
             </a-tree-select>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="排序">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.sort')">
             <a-input v-decorator="[ 'sort' ]"/>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="备注">
-            <a-textarea placeholder="请输入备注":rows="2" v-decorator.trim="[ 'remark' ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.remark')">
+            <a-textarea :placeholder="$t('common.enterRemark')" :rows="2" v-decorator.trim="[ 'remark' ]" />
           </a-form-item>
         </a-form>
         <div class="anty-form-btn">
-          <a-button @click="emptyCurrForm" type="default" htmlType="button" icon="sync">重置</a-button>
-          <a-button @click="submitCurrForm" type="primary" htmlType="button" icon="form">保存</a-button>
+          <a-button @click="emptyCurrForm" type="default" htmlType="button" icon="sync">{{ $t('common.reset') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="submitCurrForm" type="primary" htmlType="button" icon="form">{{ $t('common.save') }}</a-button>
         </div>
       </a-card>
       <a-card v-else >
         <a-empty>
-          <span slot="description"> 请先选择一个类别! </span>
+          <span slot="description"> {{ $t('common.selectRecord') }} </span>
         </a-empty>
       </a-card>
     </a-col>
@@ -146,11 +146,11 @@ export default {
       validatorRules:{
         name: {
           rules: [
-            {required: true, message: '请输入名称!'},
+            {required: true, message: this.$t('common.enterName')},
             { validator: this.validateName}
           ]
         },
-        serialNo: {rules: [{required: true, message: '请输入编号!'}]}
+        serialNo: {rules: [{required: true, message: this.$t('common.serialNo')}]}
       },
       url: {
         delete: '/materialCategory/delete',
@@ -231,7 +231,7 @@ export default {
     batchDel: function () {
       console.log(this.checkedKeys)
       if (this.checkedKeys.length <= 0) {
-        this.$message.warning('请选择一条记录！')
+        this.$message.warning(this.$t('common.selectRecord'))
       } else {
         let ids = ''
         for (let a = 0; a < this.checkedKeys.length; a++) {
@@ -239,8 +239,8 @@ export default {
         }
         let that = this
         this.$confirm({
-          title: '确认删除',
-          content: '确定要删除所选中的 ' + this.checkedKeys.length + ' 条数据吗?',
+          title: this.$t('common.confirmAction'),
+          content: this.$t('common.confirmDeleteSelected'),
           onOk: function () {
             deleteAction(that.url.deleteBatch, {ids: ids}).then((res) => {
               if (res.code == 200) {
@@ -340,14 +340,14 @@ export default {
       this.form.validateFields((err, values) => {
         if (!err) {
           if (!this.currSelected.id) {
-            this.$message.warning('请点击选择要修改类别!')
+            this.$message.warning(this.$t('common.selectRecord'))
             return
           }
           let formData = Object.assign(this.currSelected, values)
           console.log('Received values of form: ', formData)
           httpAction(this.url.edit, formData, 'put').then((res) => {
             if (res.code == 200) {
-              this.$message.success('保存成功!')
+              this.$message.success(this.$t('common.saveSuccess'))
               this.loadTree()
               let params = {}
               params.id = formData.id
@@ -383,7 +383,7 @@ export default {
           if(!res.data.status){
             callback();
           } else {
-            callback("名称已经存在");
+            callback(this.$t('common.error'));
           }
         } else {
           callback(res.data);
@@ -392,7 +392,7 @@ export default {
     },
     handleAdd() {
       this.$refs.materialCategoryModal.add()
-      this.$refs.materialCategoryModal.title = '新增'
+      this.$refs.materialCategoryModal.title = this.$t('common.add')
     },
     selectDirectiveOk(record) {
       console.log('选中指令数据', record)

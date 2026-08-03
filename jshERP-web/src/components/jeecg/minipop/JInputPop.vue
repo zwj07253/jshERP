@@ -3,7 +3,7 @@
     <!--"(node) => node.parentNode.parentNode"-->
     <div slot="title">
       <span>{{ title }}</span>
-      <span style="float: right" title="关闭">
+      <span style="float: right" :title="$t('common.close')">
         <a-icon type="close" @click="visible=false"/>
       </span>
     </div>

@@ -30,6 +30,7 @@ public class P1BasicDataTest extends ApiTestBase {
     void createCategory() {
         JSONObject body = new JSONObject();
         body.put("name", "测试类别_" + System.currentTimeMillis());
+        body.put("serialNo", "P1CAT-" + System.currentTimeMillis());
         body.put("parentId", 0);
         body.put("sort", 1);
         Response resp = authReq().body(body.toJSONString()).post(CONTEXT + "/materialCategory/add");
@@ -127,9 +128,10 @@ public class P1BasicDataTest extends ApiTestBase {
     @DisplayName("23b: 新建单位")
     void createUnit() {
         JSONObject body = new JSONObject();
-        body.put("name", "测试单位_" + System.currentTimeMillis());
-        body.put("parentId", 0);
-        body.put("sort", 1);
+        String suffix = String.valueOf(System.currentTimeMillis() % 100000);
+        body.put("basicUnit", "件" + suffix);
+        body.put("otherUnit", "箱" + suffix);
+        body.put("ratio", 12);
         Response resp = authReq().body(body.toJSONString()).post(CONTEXT + "/unit/add");
         assertSuccess(resp);
     }
@@ -258,7 +260,7 @@ public class P1BasicDataTest extends ApiTestBase {
     @DisplayName("28b: 按类型查询经手人")
     void personByType() {
         Response resp = authReqGet()
-                .param("type", "业务员")
+                .param("type", "销售员")
                 .get(CONTEXT + "/person/getPersonByType");
         assertSuccess(resp);
     }
@@ -269,9 +271,7 @@ public class P1BasicDataTest extends ApiTestBase {
     void createPerson() {
         JSONObject body = new JSONObject();
         body.put("name", "P1测试经手人_" + System.currentTimeMillis());
-        body.put("type", "业务员");
-        body.put("phonenum", "13900139000");
-        body.put("remark", "P1测试");
+        body.put("type", "销售员");
         Response resp = authReq().body(body.toJSONString()).post(CONTEXT + "/person/add");
         assertSuccess(resp);
     }
@@ -293,9 +293,10 @@ public class P1BasicDataTest extends ApiTestBase {
     @DisplayName("29b: 新建部门")
     void createDepartment() {
         JSONObject body = new JSONObject();
-        body.put("name", "P1测试部门_" + System.currentTimeMillis());
-        body.put("parentId", 0);
-        body.put("sort", 1);
+        long suffix = System.currentTimeMillis();
+        body.put("orgAbr", "P1测试部门_" + suffix);
+        body.put("orgNo", "P1-" + suffix);
+        body.put("sort", "1");
         body.put("remark", "P1测试");
         Response resp = authReq().body(body.toJSONString()).post(CONTEXT + "/organization/add");
         assertSuccess(resp);

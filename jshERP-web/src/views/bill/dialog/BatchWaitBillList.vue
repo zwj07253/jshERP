@@ -12,7 +12,7 @@
       @cancel="handleCancel"
       style="top:20px;height: 95%;">
       <template slot="footer">
-        <a-button key="back" @click="handleCancel">取消</a-button>
+        <a-button key="back" @click="handleCancel">{{ $t('common.cancel') }}</a-button>
       </template>
       <!-- 查询区域 -->
       <div class="table-page-search-wrapper">
@@ -20,22 +20,22 @@
         <a-form layout="inline" @keyup.enter.native="searchQuery">
           <a-row :gutter="24">
             <a-col :md="6" :sm="24">
-              <a-form-item label="单据编号" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
-                <a-input placeholder="请输入单据编号查询" v-model="queryParam.number"></a-input>
+              <a-form-item :label="$t('common.billNo')" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
+                <a-input :placeholder="$t('common.enterBillNo')" v-model="queryParam.number"></a-input>
               </a-form-item>
             </a-col>
             <a-col :md="6" :sm="24">
-              <a-form-item label="商品信息" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
-                <a-input placeholder="条码|名称|规格|型号" v-model="queryParam.materialParam"></a-input>
+              <a-form-item :label="$t('common.materialInfo')" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
+                <a-input :placeholder="$t('common.enterBarcodeNameSpecModel')" v-model="queryParam.materialParam"></a-input>
               </a-form-item>
             </a-col>
             <a-col :md="6" :sm="24">
-              <a-form-item label="单据日期" :labelCol="labelCol" :wrapperCol="wrapperCol">
+              <a-form-item :label="$t('common.billDate')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                 <a-range-picker
                   style="width: 100%"
                   v-model="queryParam.createTimeRange"
                   format="YYYY-MM-DD"
-                  :placeholder="['开始时间', '结束时间']"
+                  :placeholder="[$t('common.startTime'), $t('common.endTime')]"
                   @change="onDateChange"
                   @ok="onDateOk"
                 />
@@ -43,8 +43,8 @@
             </a-col>
             <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
               <a-col :md="6" :sm="24">
-                <a-button type="primary" @click="searchQuery">查询</a-button>
-                <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
+                <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                <a-button style="margin-left: 8px" @click="searchReset">{{ $t('common.reset') }}</a-button>
               </a-col>
             </span>
           </a-row>
@@ -74,9 +74,9 @@
         </span>
         <template slot="customRenderStatus" slot-scope="text, record">
           <template>
-            <a-tag v-if="record.status === '1'" color="green">已审核</a-tag>
-            <a-tag v-if="record.status === '3' && queryParam.type === '入库'" color="blue">部分入库</a-tag>
-            <a-tag v-if="record.status === '3' && queryParam.type === '出库'" color="blue">部分出库</a-tag>
+            <a-tag v-if="record.status === '1'" color="green">{{ $t('common.approved') }}</a-tag>
+            <a-tag v-if="record.status === '3' && queryParam.type === '入库'" color="blue">{{ $t('common.partialInbound') }}</a-tag>
+            <a-tag v-if="record.status === '3' && queryParam.type === '出库'" color="blue">{{ $t('common.partialOut') }}</a-tag>
           </template>
         </template>
       </a-table>
@@ -100,7 +100,7 @@
     },
     data () {
       return {
-        title: "操作",
+        title: this.$t('common.action'),
         visible: false,
         confirmLoading: false,
         disableMixinCreated: true,
@@ -126,20 +126,20 @@
         // 表头
         columns: [
           { title: '', dataIndex: 'organName',width:120, ellipsis:true},
-          { title: '单据编号', dataIndex: 'number',width:130,
+          { title: this.$t('common.billNo'), dataIndex: 'number',width:130,
             scopedSlots: { customRender: 'numberCustomRender' },
           },
-          { title: '商品信息', dataIndex: 'materialsList',width:280, ellipsis:true,
+          { title: this.$t('common.materialInfo'), dataIndex: 'materialsList',width:280, ellipsis:true,
             customRender:function (text,record,index) {
               if(text) {
                 return text.replace(",","，");
               }
             }
           },
-          { title: '单据日期', dataIndex: 'operTimeStr',width:145},
-          { title: '操作员', dataIndex: 'userName',width:70},
+          { title: this.$t('common.billDate'), dataIndex: 'operTimeStr',width:145},
+          { title: this.$t('common.operator'), dataIndex: 'userName',width:70},
           { title: '数量', dataIndex: 'materialCount',width:60},
-          { title: '状态', dataIndex: 'status', width: 70, align: "center",
+          { title: this.$t('common.status'), dataIndex: 'status', width: 70, align: "center",
             scopedSlots: { customRender: 'customRenderStatus' }
           }
         ],
@@ -153,6 +153,8 @@
     },
     methods: {
       show(type, subType, status) {
+        this.selectedRowKeys = []
+        this.confirmLoading = false
         this.queryParam.type = type
         this.queryParam.subType = subType
         this.queryParam.status = status
@@ -199,7 +201,7 @@
       handleBatchInOut() {
         const that = this
         if (this.selectedRowKeys.length <= 0) {
-          this.$message.warning('请选择一条记录！')
+          this.$message.warning(this.$t('common.selectRecord'))
         } else {
           this.$confirm({
             title: "确认批量操作",
@@ -214,12 +216,12 @@
                 if (res.code === 200) {
                   that.$emit('ok')
                   that.selectedRowKeys = []
-                  that.confirmLoading = false
                   that.close()
                 } else {
                   that.$message.warning(res.data.message)
-                  that.confirmLoading = false
                 }
+              }).finally(() => {
+                that.confirmLoading = false
               })
             }
           })

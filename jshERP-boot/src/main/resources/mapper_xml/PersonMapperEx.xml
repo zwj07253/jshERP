@@ -13,7 +13,11 @@
             and "type"=#{type}
         </if>
         and COALESCE(delete_flag,'0') !='1'
-        order by sort asc, id desc
+        order by case when sort ~ '^[0-9]+$' then sort::bigint end asc nulls last, id desc
+    </select>
+
+    <select id="lockPersonWrite" resultType="java.lang.Object">
+        select pg_advisory_xact_lock(6000000000 + COALESCE(#{tenantId}, 0))
     </select>
 
     <update id="batchDeletePersonByIds">

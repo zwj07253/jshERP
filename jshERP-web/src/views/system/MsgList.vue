@@ -5,11 +5,11 @@
     :visible="visible"
     :confirmLoading="confirmLoading"
     @cancel="handleCancel"
-    cancelText="关闭"
+    :cancelText="$t('common.close')"
     style="top:15%;height: 70%;overflow-y: hidden">
     <template slot="footer">
       <a-button key="back" @click="handleCancel">
-        关闭
+        {{ $t('common.close') }}
       </a-button>
     </template>
     <!-- 查询区域 -->
@@ -17,15 +17,15 @@
       <a-form layout="inline" @keyup.enter.native="searchQuery">
         <a-row :gutter="24">
           <a-col :span="12">
-            <a-form-item label="标题">
-              <a-input placeholder="请输入标题" v-model="queryParam.name"></a-input>
+            <a-form-item :label="$t('common.title')">
+              <a-input :placeholder="$t('common.enterTitle')" v-model="queryParam.name"></a-input>
             </a-form-item>
           </a-col>
           <a-col :span="12" >
             <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
-              <a-button type="primary" @click="searchQuery">查询</a-button>
-              <a-button @click="searchReset" style="margin-left: 8px">重置</a-button>
-              <a-button type="primary" @click="readAll" style="margin-left: 8px" icon="book">全部标注已读</a-button>
+              <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+              <a-button @click="searchReset" style="margin-left: 8px">{{ $t('common.reset') }}</a-button>
+              <a-button type="primary" @click="readAll" style="margin-left: 8px" icon="book">{{ $t('common.markAllRead') }}</a-button>
             </span>
           </a-col>
         </a-row>
@@ -43,11 +43,11 @@
         :loading="loading"
         @change="handleTableChange">
       <template slot="customRenderTitle" slot-scope="text, record">
-        <span v-if="record.status =='1'" style="font-weight: bold">{{text}}</span>
-        <span v-if="record.status =='2'">{{text}}</span>
+        <span v-if="record.status =='1'" style="font-weight: bold">{{ notificationTitle(record) }}</span>
+        <span v-if="record.status =='2'">{{ notificationTitle(record) }}</span>
       </template>
       <span slot="action" slot-scope="text, record">
-        <a @click="showAnnouncement(record)">查看</a>
+        <a @click="showAnnouncement(record)">{{ $t('common.view') }}</a>
       </span>
       </a-table>
     </div>
@@ -61,6 +61,7 @@
   import ShowAnnouncement from '@/components/tools/ShowAnnouncement'
   import {JeecgListMixin} from '@/mixins/JeecgListMixin'
   import DynamicNotice from '../../components/tools/DynamicNotice'
+  import { getNotificationTitle } from '@/utils/notificationI18n'
 
   export default {
     name: "MsgList",
@@ -71,7 +72,7 @@
     },
     data () {
       return {
-        title:"通知",
+        title: this.$t('common.notification'),
         modalWidth:800,
         visible: false,
         confirmLoading: false,
@@ -83,23 +84,23 @@
           pageSizeOptions: ['5','10', '20', '30']
         },
         columns: [{
-          title: '标题',
+          title: this.$t('common.title'),
           dataIndex: 'msgTitle',
           scopedSlots: { customRender: 'customRenderTitle' },
           width: 200
         },
         {
-          title: '消息类型',
+          title: this.$t('common.messageType'),
           dataIndex: 'type',
           width: 80
         },
         {
-          title: '通知日期',
+          title: this.$t('common.notificationDate'),
           dataIndex: 'createTimeStr',
           width: 90
         },
         {
-          title: '操作',
+          title: this.$t('common.action'),
           dataIndex: 'action',
           align:"center",
           scopedSlots: { customRender: 'action' },
@@ -116,6 +117,9 @@
       }
     },
     methods: {
+      notificationTitle (record) {
+        return getNotificationTitle(record, this.$i18n)
+      },
       handleDetail: function(){
         this.visible = true
       },
@@ -136,8 +140,8 @@
       readAll(){
         let that = this;
         that.$confirm({
-          title:"确认操作",
-          content:"是否全部标注已读?",
+          title: this.$t('common.confirmAction'),
+          content: this.$t('common.markAllReadConfirm'),
           onOk: function(){
             postAction(that.url.readAllMsg).then((res)=>{
               if(res && res.code === 200){

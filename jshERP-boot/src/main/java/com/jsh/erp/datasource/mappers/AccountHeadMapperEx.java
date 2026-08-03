@@ -41,6 +41,16 @@ public interface AccountHeadMapperEx {
     List<AccountItem> getFinancialBillPriceByBillIdList(
             @Param("idList") List<Long> idList);
 
+    BigDecimal getAuditedFinancialAmountByBillId(
+            @Param("billId") Long billId,
+            @Param("type") String type,
+            @Param("excludeHeadId") Long excludeHeadId);
+
+    BigDecimal getAuditedOpeningAmount(
+            @Param("organId") Long organId,
+            @Param("type") String type,
+            @Param("excludeHeadId") Long excludeHeadId);
+
     List<AccountHead> getFinancialBillNoByBillId(
             @Param("billId") Long billId);
 

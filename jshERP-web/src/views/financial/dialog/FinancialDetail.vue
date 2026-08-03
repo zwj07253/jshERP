@@ -11,16 +11,16 @@
     @cancel="handleCancel"
     wrapClassName="ant-modal-cust-warp">
     <template slot="footer">
-      <a-button key="back" @click="handleCancel">取消(ESC)</a-button>
+      <a-button key="back" @click="handleCancel">{{ $t('financial.cancelEsc') }}</a-button>
       <!--此处为解决缓存问题-->
-      <a-button v-if="financialType === '收预付款'" v-print="'#advanceInPrint'">打印</a-button>
-      <a-button v-if="financialType === '转账'" v-print="'#giroPrint'">打印</a-button>
-      <a-button v-if="financialType === '收入'" v-print="'#itemInPrint'">打印</a-button>
-      <a-button v-if="financialType === '支出'" v-print="'#itemOutPrint'">打印</a-button>
-      <a-button v-if="financialType === '收款'" v-print="'#moneyInPrint'">打印</a-button>
-      <a-button v-if="financialType === '付款'" v-print="'#moneyOutPrint'">打印</a-button>
+      <a-button v-if="financialType === '收预付款'" v-print="'#advanceInPrint'">{{ $t('common.print') }}</a-button>
+      <a-button v-if="financialType === '转账'" v-print="'#giroPrint'">{{ $t('common.print') }}</a-button>
+      <a-button v-if="financialType === '收入'" v-print="'#itemInPrint'">{{ $t('common.print') }}</a-button>
+      <a-button v-if="financialType === '支出'" v-print="'#itemOutPrint'">{{ $t('common.print') }}</a-button>
+      <a-button v-if="financialType === '收款'" v-print="'#moneyInPrint'">{{ $t('common.print') }}</a-button>
+      <a-button v-if="financialType === '付款'" v-print="'#moneyOutPrint'">{{ $t('common.print') }}</a-button>
       <!--反审核-->
-      <a-button v-if="checkFlag && isCanBackCheck && model.status==='1'" @click="handleBackCheck()">反审核</a-button>
+      <a-button v-if="checkFlag && isCanBackCheck && model.status==='1'" @click="handleBackCheck()">{{ $t('common.unaudit') }}</a-button>
     </template>
     <a-form :form="form">
       <!--收预付款-->
@@ -28,23 +28,23 @@
         <section ref="print" id="advanceInPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="付款会员">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.form.payingMember')">
                 <a-input v-decorator="['id']" hidden/>
                 {{model.organName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="财务人员">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.operator')">
                 {{model.handsPersonName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.billTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.billNo}}
               </a-form-item>
             </a-col>
@@ -68,12 +68,12 @@
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="合计金额">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.form.totalAmount')">
                 {{model.totalPrice}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="收款金额">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.form.receiptAmount')">
                 {{model.changeAmount}}
               </a-form-item>
             </a-col>
@@ -88,18 +88,18 @@
         <section ref="print" id="giroPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="财务人员">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.operator')">
                 <a-input v-decorator="['id']" hidden/>
                 {{model.handsPersonName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.billTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.billNo}}
               </a-form-item>
             </a-col>
@@ -124,12 +124,12 @@
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="付款账户">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.form.transferOutAccount')">
                 {{model.accountName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="实付金额">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.form.transferAmount')">
                 {{model.changeAmount}}
               </a-form-item>
             </a-col>
@@ -143,23 +143,23 @@
         <section ref="print" id="itemInPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="往来单位">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.supplier')">
                 <a-input v-decorator="['id']" hidden/>
                 {{model.organName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="财务人员">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.operator')">
                 {{model.handsPersonName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.billTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.billNo}}
               </a-form-item>
             </a-col>
@@ -183,12 +183,12 @@
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="收入账户">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.form.incomeAccount')">
                 {{model.accountName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="收入金额">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.form.incomeAmount')">
                 {{model.changeAmount}}
               </a-form-item>
             </a-col>
@@ -202,23 +202,23 @@
         <section ref="print" id="itemOutPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="往来单位">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.supplier')">
                 <a-input v-decorator="['id']" hidden/>
                 {{model.organName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="财务人员">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.operator')">
                 {{model.handsPersonName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.billTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.billNo}}
               </a-form-item>
             </a-col>
@@ -242,12 +242,12 @@
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="支出账户">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.form.expenseAccount')">
                 {{model.accountName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="支出金额">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.form.expenseAmount')">
                 {{model.changeAmount}}
               </a-form-item>
             </a-col>
@@ -261,23 +261,23 @@
         <section ref="print" id="moneyInPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="客户">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.customer')">
                 <a-input v-decorator="['id']" hidden/>
                 {{model.organName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="财务人员">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.operator')">
                 {{model.handsPersonName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.billTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.billNo}}
               </a-form-item>
             </a-col>
@@ -301,22 +301,22 @@
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="收款账户">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.form.account')">
                 {{model.accountName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="合计收款">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.totalReceipt')">
                 {{model.totalPrice}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="优惠金额">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.discountAmount')">
                 {{model.discountMoney}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="实际收款">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.actualReceipt')">
                 {{model.changeAmount}}
               </a-form-item>
             </a-col>
@@ -328,23 +328,23 @@
         <section ref="print" id="moneyOutPrint">
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="供应商">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.supplier')">
                 <a-input v-decorator="['id']" hidden/>
                 {{model.organName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="财务人员">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.operator')">
                 {{model.handsPersonName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billDate')">
                 {{model.billTimeStr}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.billNo')">
                 {{model.billNo}}
               </a-form-item>
             </a-col>
@@ -368,22 +368,22 @@
           </a-row>
           <a-row class="form-row" :gutter="24">
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="付款账户">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.form.account')">
                 {{model.accountName}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="合计付款">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.totalPayment')">
                 {{model.totalPrice}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="优惠金额">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.discountAmount')">
                 {{model.discountMoney}}
               </a-form-item>
             </a-col>
             <a-col :span="6">
-              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="实际付款">
+              <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('financial.actualPayment')">
                 {{model.changeAmount}}
               </a-form-item>
             </a-col>
@@ -393,7 +393,7 @@
       <template v-if="fileList && fileList.length>0">
         <a-row class="form-row" :gutter="24">
           <a-col :span="12">
-            <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 3 }}" :wrapperCol="{xs: { span: 24 },sm: { span: 21 }}" label="附件">
+            <a-form-item :labelCol="{xs: { span: 24 },sm: { span: 3 }}" :wrapperCol="{xs: { span: 24 },sm: { span: 21 }}" :label="$t('common.attachment')">
               <j-upload v-model="fileList" bizPath="bill" :disabled="true" :buttonVisible="false"></j-upload>
             </a-form-item>
           </a-col>
@@ -417,7 +417,7 @@
     },
     data () {
       return {
-        title: "详情",
+        title: this.$t('common.detail'),
         width: '1600px',
         visible: false,
         modalStyle: '',
@@ -444,43 +444,43 @@
         },
         advanceInColumns: [
           { title: '#',dataIndex:'',width:'5%',align:'center',customRender:function(t,r,index){return parseInt(index)+1;}},
-          { title: '账户名称',dataIndex: 'accountName',width: '30%'},
-          { title: '金额',dataIndex: 'eachAmount', width: '30%'},
-          { title: '备注',dataIndex: 'remark', width: '30%'}
+          { title: this.$t('system.accountName'),dataIndex: 'accountName',width: '30%'},
+          { title: this.$t('financial.form.amount'),dataIndex: 'eachAmount', width: '30%'},
+          { title: this.$t('common.remark'),dataIndex: 'remark', width: '30%'}
         ],
         giroColumns: [
           { title: '#',dataIndex:'',width:'5%',align:'center',customRender:function(t,r,index){return parseInt(index)+1;}},
-          { title: '账户名称',dataIndex: 'accountName',width: '30%'},
-          { title: '金额',dataIndex: 'eachAmount', width: '30%'},
-          { title: '备注',dataIndex: 'remark', width: '30%'}
+          { title: this.$t('system.accountName'),dataIndex: 'accountName',width: '30%'},
+          { title: this.$t('financial.form.amount'),dataIndex: 'eachAmount', width: '30%'},
+          { title: this.$t('common.remark'),dataIndex: 'remark', width: '30%'}
         ],
         itemInColumns: [
           { title: '#',dataIndex:'',width:'5%',align:'center',customRender:function(t,r,index){return parseInt(index)+1;}},
-          { title: '收入项目',dataIndex: 'inOutItemName',width: '30%'},
-          { title: '金额',dataIndex: 'eachAmount', width: '30%'},
-          { title: '备注',dataIndex: 'remark', width: '30%'}
+          { title: this.$t('financial.form.incomeItem'),dataIndex: 'inOutItemName',width: '30%'},
+          { title: this.$t('financial.form.amount'),dataIndex: 'eachAmount', width: '30%'},
+          { title: this.$t('common.remark'),dataIndex: 'remark', width: '30%'}
         ],
         itemOutColumns: [
           { title: '#',dataIndex:'',width:'5%',align:'center',customRender:function(t,r,index){return parseInt(index)+1;}},
-          { title: '支出项目',dataIndex: 'inOutItemName',width: '30%'},
-          { title: '金额',dataIndex: 'eachAmount', width: '30%'},
-          { title: '备注',dataIndex: 'remark', width: '30%'}
+          { title: this.$t('financial.form.expenseItem'),dataIndex: 'inOutItemName',width: '30%'},
+          { title: this.$t('financial.form.amount'),dataIndex: 'eachAmount', width: '30%'},
+          { title: this.$t('common.remark'),dataIndex: 'remark', width: '30%'}
         ],
         moneyInColumns: [
           { title: '#',dataIndex:'',width:'5%',align:'center',customRender:function(t,r,index){return parseInt(index)+1;}},
-          { title: '销售单据编号', dataIndex: 'billNumber', width: '20%' },
-          { title: '应收欠款',dataIndex: 'needDebt', width: '10%'},
-          { title: '已收欠款',dataIndex: 'finishDebt', width: '10%'},
-          { title: '本次收款',dataIndex: 'eachAmount', width: '10%'},
-          { title: '备注',dataIndex: 'remark', width: '20%'}
+          { title: this.$t('financial.salesBillNo'), dataIndex: 'billNumber', width: '20%' },
+          { title: this.$t('financial.receivableDebt'),dataIndex: 'needDebt', width: '10%'},
+          { title: this.$t('financial.receivedDebt'),dataIndex: 'finishDebt', width: '10%'},
+          { title: this.$t('financial.thisReceipt'),dataIndex: 'eachAmount', width: '10%'},
+          { title: this.$t('common.remark'),dataIndex: 'remark', width: '20%'}
         ],
         moneyOutColumns: [
           { title: '#',dataIndex:'',width:'5%',align:'center',customRender:function(t,r,index){return parseInt(index)+1;}},
-          { title: '采购单据编号', dataIndex: 'billNumber', width: '20%' },
-          { title: '应付欠款',dataIndex: 'needDebt', width: '10%'},
-          { title: '已付欠款',dataIndex: 'finishDebt', width: '10%'},
-          { title: '本次付款',dataIndex: 'eachAmount', width: '10%'},
-          { title: '备注',dataIndex: 'remark', width: '20%'}
+          { title: this.$t('financial.purchaseBillNo'), dataIndex: 'billNumber', width: '20%' },
+          { title: this.$t('financial.payableDebt'),dataIndex: 'needDebt', width: '10%'},
+          { title: this.$t('financial.paidPayableDebt'),dataIndex: 'finishDebt', width: '10%'},
+          { title: this.$t('financial.thisPayment'),dataIndex: 'eachAmount', width: '10%'},
+          { title: this.$t('common.remark'),dataIndex: 'remark', width: '20%'}
         ],
       }
     },
@@ -536,8 +536,8 @@
       handleBackCheck() {
         let that = this
         this.$confirm({
-          title: "确认操作",
-          content: "是否对该单据进行反审核?",
+          title: this.$t('common.confirmAction'),
+          content: this.$t('financial.reverseAuditConfirm'),
           onOk: function () {
             that.loading = true
             postAction(that.url.batchSetStatusUrl, {status: '0', ids: that.model.id}).then((res) => {

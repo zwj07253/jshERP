@@ -40,6 +40,7 @@ import '@/assets/less/JAreaLinkage.less'
 import VueAreaLinkage from 'vue-area-linkage'
 import DictData from '@/components/DictData'
 import DictTag from '@/components/DictTag'
+import { i18n } from '@/locales'
 
 Vue.config.productionTip = false
 Vue.component('DictTag', DictTag)
@@ -58,6 +59,7 @@ DictData.install()
 new Vue({
   router,
   store,
+  i18n,
   mounted () {
     // store.commit('SET_SIDEBAR_TYPE', Vue.ls.get(SIDEBAR_TYPE, true))
     store.commit('SET_SIDEBAR_TYPE', true)

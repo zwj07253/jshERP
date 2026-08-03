@@ -13,26 +13,26 @@
     :id="prefixNo"
     style="top:20px;height: 95%;">
     <template slot="footer">
-      <a-button @click="handleCancel">取消</a-button>
-      <a-button v-if="billPrintFlag && isShowPrintBtn" @click="handlePrintPro('零售退货入库')">三联打印-新版</a-button>
-      <a-button v-if="billPrintFlag && isShowPrintBtn" @click="handlePrint('零售退货入库')">三联打印</a-button>
-      <a-button v-if="checkFlag && isCanCheck" :loading="confirmLoading" @click="handleOkAndCheck">保存并审核</a-button>
-      <a-button type="primary" :loading="confirmLoading" @click="handleOkOnly">保存（Ctrl+S）</a-button>
+      <a-button @click="handleCancel">{{ $t('common.cancel') }}</a-button>
+      <a-button v-if="billPrintFlag && isShowPrintBtn" @click="handlePrintPro('零售退货入库')">{{ $t('common.printNew') }}</a-button>
+      <a-button v-if="billPrintFlag && isShowPrintBtn" @click="handlePrint('零售退货入库')">{{ $t('common.print') }}</a-button>
+      <a-button v-if="checkFlag && isCanCheck" :loading="confirmLoading" @click="handleOkAndCheck">{{ $t('common.saveAndApprove') }}</a-button>
+      <a-button type="primary" :loading="confirmLoading" @click="handleOkOnly">{{ $t('common.save') }}（Ctrl+S）</a-button>
       <!--发起多级审核-->
-      <a-button v-if="!checkFlag" @click="handleWorkflow()" type="primary">提交流程</a-button>
+      <a-button v-if="!checkFlag" @click="handleWorkflow()" type="primary">{{ $t('common.submitWorkflow') }}</a-button>
     </template>
     <a-spin :spinning="confirmLoading">
       <a-form :form="form">
         <a-row class="form-row" :gutter="24">
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="会员卡号">
-              <a-select placeholder="请选择会员卡号" v-decorator="[ 'organId' ]" :disabled="!rowCanEdit"
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('retail.memberCard')">
+              <a-select :placeholder="$t('retail.selectMemberCard')" v-decorator="[ 'organId' ]" :disabled="!rowCanEdit"
                 :dropdownMatchSelectWidth="false" showSearch optionFilterProp="children" @search="handleSearchRetail">
                 <div slot="dropdownRender" slot-scope="menu">
                   <v-nodes :vnodes="menu" />
                   <a-divider style="margin: 4px 0;" />
-                  <div v-if="quickBtn.member" class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="addMember"><a-icon type="plus" /> 新增会员</div>
-                  <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initRetail(0)"><a-icon type="reload" /> 刷新列表</div>
+                  <div v-if="quickBtn.member" class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="addMember"><a-icon type="plus" /> {{ $t('retail.addMember') }}</div>
+                  <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initRetail(0)"><a-icon type="reload" /> {{ $t('retail.refreshList') }}</div>
                 </div>
                 <a-select-option v-for="(item,index) in retailList" :key="index" :value="item.id">
                   {{ item.supplier }}
@@ -41,18 +41,30 @@
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据日期">
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.documentDate')">
               <j-date v-decorator="['operTime', validatorRules.operTime]" :show-time="true"/>
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="单据编号">
-              <a-input placeholder="请输入单据编号" v-decorator.trim="[ 'number', validatorRules.number ]" />
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.documentNumber')">
+              <a-input :placeholder="$t('purchase.form.documentNumber')" v-decorator.trim="[ 'number', validatorRules.number ]" />
             </a-form-item>
           </a-col>
           <a-col :lg="6" :md="12" :sm="24">
-            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="关联单据">
-              <a-input-search placeholder="请选择关联单据" v-decorator="[ 'linkNumber' ]" @search="onSearchLinkNumber" :readOnly="true"/>
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.linkedBill')">
+              <a-input-search :placeholder="$t('purchase.form.selectLinkedBill')" v-decorator="[ 'linkNumber' ]" @search="onSearchLinkNumber" :readOnly="true"/>
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row class="form-row" :gutter="24">
+          <a-col :lg="6" :md="12" :sm="24">
+            <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('retail.refundType')">
+              <a-select :placeholder="$t('retail.selectRefundType')" v-decorator="[ 'payType', validatorRules.payType ]"
+                        :disabled="refundTypeLocked" @change="onChangePayType">
+                <a-select-option v-for="(item,index) in payTypeList" :key="index" :value="item.value">
+                  {{ item.text }}
+                </a-select-option>
+              </a-select>
             </a-form-item>
           </a-col>
         </a-row>
@@ -74,15 +86,15 @@
               @added="onAdded"
               @deleted="onDeleted">
               <template #buttonAfter>
-                <a-row v-if="rowCanEdit" :gutter="24" style="float:left;padding-bottom:5px;padding-right:8px" data-step="4" data-title="扫码录入" data-intro="此功能支持扫码枪扫描商品条码进行录入">
+                <a-row v-if="rowCanEdit" :gutter="24" style="float:left;padding-bottom:5px;padding-right:8px" data-step="4" :data-title="$t('common.scanEntry')" :data-intro="$t('common.scanEntry')">
                   <a-col v-if="scanStatus" :md="6" :sm="24">
-                    <a-button @click="scanEnter" style="margin-right: 8px">扫码录入</a-button>
+                    <a-button @click="scanEnter" style="margin-right: 8px">{{ $t('common.scanEntry') }}</a-button>
                   </a-col>
                   <a-col v-if="!scanStatus" :md="16" :sm="24" style="padding: 0 6px 0 12px">
-                    <a-input placeholder="请扫描商品条码并回车" v-model="scanBarCode" @pressEnter="scanPressEnter" ref="scanBarCode"/>
+                    <a-input :placeholder="$t('common.scanBarcodePlaceholder')" v-model="scanBarCode" @pressEnter="scanPressEnter" ref="scanBarCode"/>
                   </a-col>
                   <a-col v-if="!scanStatus" :md="6" :sm="24" style="padding: 0px 18px 0 0">
-                    <a-button @click="stopScan" style="margin-right: 8px">收起扫码</a-button>
+                    <a-button @click="stopScan" style="margin-right: 8px">{{ $t('common.hideScan') }}</a-button>
                   </a-col>
                 </a-row>
               </template>
@@ -91,20 +103,20 @@
               </template>
               <template #depotAdd>
                 <a-divider v-if="quickBtn.depot" style="margin: 4px 0;" />
-                <div v-if="quickBtn.depot" class="dropdown-btn" @click="addDepot"><a-icon type="plus" /> 新增</div>
-                <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initDepot"><a-icon type="reload" /> 刷新</div>
+                <div v-if="quickBtn.depot" class="dropdown-btn" @click="addDepot"><a-icon type="plus" /> {{ $t('common.addNew') }}</div>
+                <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initDepot"><a-icon type="reload" /> {{ $t('common.refresh') }}</div>
               </template>
             </j-editable-table>
             <a-row class="form-row" :gutter="24">
               <a-col :lg="24" :md="24" :sm="24">
                 <a-form-item :labelCol="labelCol" :wrapperCol="{xs: { span: 24 },sm: { span: 24 }}" label="">
-                  <a-textarea :rows="1" placeholder="请输入备注" v-decorator="[ 'remark' ]" style="margin-top:8px;"/>
+                  <a-textarea :rows="1" :placeholder="$t('common.enterRemark')" v-decorator="[ 'remark' ]" style="margin-top:8px;"/>
                 </a-form-item>
               </a-col>
             </a-row>
             <a-row class="form-row" :gutter="24">
               <a-col :lg="6" :md="12" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="附件">
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.attachment')">
                   <j-upload v-model="fileList" bizPath="bill"></j-upload>
                 </a-form-item>
               </a-col>
@@ -115,32 +127,36 @@
               <a-row class="form-row" :gutter="24">
                 <a-col :lg="24" :md="6" :sm="6"><br/><br/></a-col>
                 <a-col :lg="24" :md="6" :sm="6">
-                  <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <span slot="label" style="font-size: 20px;line-height:20px">单据金额</span>
+                  <a-form-item :labelCol="signLabelCol" :wrapperCol="signWrapperCol">
+                    <span slot="label" style="font-size: 20px;line-height:20px">{{ $t('retail.billAmount') }}</span>
                     <a-input v-decorator.trim="[ 'changeAmount' ]" :style="{color:'purple'}" :readOnly="true"/>
                   </a-form-item>
                 </a-col>
                 <a-col :lg="24" :md="6" :sm="6">
-                  <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <span slot="label" style="font-size: 20px;line-height:20px">付款金额</span>
-                    <a-input v-decorator.trim="[ 'getAmount' ]" :style="{color:'red'}" defaultValue="0" @change="onChangeGetAmount"/>
+                  <a-form-item :labelCol="signLabelCol" :wrapperCol="signWrapperCol">
+                    <span slot="label" style="font-size: 20px;line-height:20px">{{ $t('retail.paymentAmountLabel') }}</span>
+                    <a-input v-decorator.trim="[ 'getAmount', {rules: [
+                      { required: true, message: $t('purchase.validation.paymentAmountRequired') },
+                      { validator: validateGetAmount }
+                    ]} ]" :disabled="isPrepaidRefund" :style="{color:'red'}" defaultValue="0" @change="onChangeGetAmount"/>
                   </a-form-item>
                 </a-col>
                 <a-col :lg="24" :md="6" :sm="6">
-                  <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <span slot="label" style="font-size: 20px;line-height:20px">找零</span>
+                  <a-form-item :labelCol="signLabelCol" :wrapperCol="signWrapperCol">
+                    <span slot="label" style="font-size: 20px;line-height:20px">{{ $t('retail.backAmount') }}</span>
                     <a-input v-decorator.trim="[ 'backAmount' ]" :style="{color:'green'}" :readOnly="true" defaultValue="0"/>
                   </a-form-item>
                 </a-col>
                 <a-col :lg="24" :md="6" :sm="6">
-                  <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <span slot="label" style="font-size: 20px;line-height:20px">付款账户</span>
-                    <a-select placeholder="请选择付款账户" style="font-size:20px;" v-decorator="[ 'accountId', validatorRules.accountId ]" :dropdownMatchSelectWidth="false">
+                  <a-form-item :labelCol="signLabelCol" :wrapperCol="signWrapperCol">
+                    <span slot="label" style="font-size: 20px;line-height:20px">{{ $t('retail.paymentAccountLabel') }}</span>
+                    <a-select :placeholder="$t('retail.selectPaymentAccount')" style="font-size:20px;" v-decorator="[ 'accountId', validatorRules.accountId ]"
+                              :disabled="isPrepaidRefund" :dropdownMatchSelectWidth="false">
                       <div slot="dropdownRender" slot-scope="menu">
                         <v-nodes :vnodes="menu" />
                         <a-divider style="margin: 4px 0;" />
-                        <div v-if="quickBtn.account" class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="addAccount"><a-icon type="plus" /> 新增</div>
-                        <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initAccount(0)"><a-icon type="reload" /> 刷新</div>
+                        <div v-if="quickBtn.account" class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="addAccount"><a-icon type="plus" /> {{ $t('common.addNew') }}</div>
+                        <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initAccount(0)"><a-icon type="reload" /> {{ $t('common.refresh') }}</div>
                       </div>
                       <a-select-option v-for="(item,index) in accountList" :key="index" :value="item.id">
                         {{ item.name }}
@@ -204,7 +220,7 @@
     },
     data () {
       return {
-        title:"操作",
+        title: this.$t('common.action'),
         width: '1600px',
         moreStatus: false,
         // 新增时子表默认添加几行空数据
@@ -213,6 +229,12 @@
         operTimeStr: '',
         prefixNo: 'LSTH',
         fileList:[],
+        payTypeList: [
+          {value: '现付', text: this.$t('retail.returnToAccount')},
+          {value: '预付款', text: this.$t('retail.returnToPrepaid')}
+        ],
+        isPrepaidRefund: false,
+        refundTypeLocked: false,
         minWidth: 1100,
         rowCanEdit: true,
         model: {},
@@ -224,41 +246,46 @@
           xs: { span: 24 },
           sm: { span: 16 },
         },
+        signLabelCol: { xs: { span: 24 }, sm: { span: 12 } },
+        signWrapperCol: { xs: { span: 24 }, sm: { span: 12 } },
         refKeys: ['materialDataTable', ],
         activeKey: 'materialDataTable',
         materialTable: {
           loading: false,
           dataSource: [],
           columns: [
-            { title: '仓库名称', key: 'depotId', width: '10%', type: FormTypes.select, placeholder: '请选择${title}', options: [],
+            { title: this.$t('purchase.form.warehouse'), key: 'depotId', width: '10%', type: FormTypes.select, placeholder: '请选择${title}', options: [],
               allowSearch:true, validateRules: [{ required: true, message: '${title}不能为空' }]
             },
-            { title: '条码', key: 'barCode', width: '16%', type: FormTypes.popupJsh, kind: 'material', multi: true,
+            { title: this.$t('purchase.form.columns.barcode'), key: 'barCode', width: '16%', type: FormTypes.popupJsh, kind: 'material', multi: true,
               validateRules: [{ required: true, message: '${title}不能为空' }]
             },
-            { title: '名称', key: 'name', width: '12%', type: FormTypes.normal },
-            { title: '规格', key: 'standard', width: '10%', type: FormTypes.normal },
-            { title: '型号', key: 'model', width: '10%', type: FormTypes.normal },
-            { title: '颜色', key: 'color', width: '5%', type: FormTypes.normal },
-            { title: '品牌', key: 'brand', width: '6%', type: FormTypes.normal },
-            { title: '制造商', key: 'mfrs', width: '6%', type: FormTypes.normal },
-            { title: '扩展1', key: 'otherField1', width: '4%', type: FormTypes.normal },
-            { title: '扩展2', key: 'otherField2', width: '4%', type: FormTypes.normal },
-            { title: '扩展3', key: 'otherField3', width: '4%', type: FormTypes.normal },
-            { title: '库存', key: 'stock', width: '5%', type: FormTypes.normal },
-            { title: '单位', key: 'unit', width: '5%', type: FormTypes.normal },
-            { title: '序列号', key: 'snList', width: '12%', type: FormTypes.popupJsh, kind: 'snAdd', multi: true },
-            { title: '批号', key: 'batchNumber', width: '8%', type: FormTypes.input },
-            { title: '有效期', key: 'expirationDate',width: '9%', type: FormTypes.date },
-            { title: '多属性', key: 'sku', width: '9%', type: FormTypes.normal },
-            { title: '原数量', key: 'preNumber', width: '6%', type: FormTypes.normal },
-            { title: '已退货', key: 'finishNumber', width: '6%', type: FormTypes.normal },
-            { title: '数量', key: 'operNumber', width: '6%', type: FormTypes.inputNumber, statistics: true,
-              validateRules: [{ required: true, message: '${title}不能为空' }]
+            { title: this.$t('purchase.form.columns.name'), key: 'name', width: '12%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.specification'), key: 'standard', width: '10%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.model'), key: 'model', width: '10%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.color'), key: 'color', width: '5%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.brand'), key: 'brand', width: '6%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.manufacturer'), key: 'mfrs', width: '6%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.ext1'), key: 'otherField1', width: '4%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.ext2'), key: 'otherField2', width: '4%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.ext3'), key: 'otherField3', width: '4%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.stock'), key: 'stock', width: '5%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.unit'), key: 'unit', width: '5%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.serialNumber'), key: 'snList', width: '12%', type: FormTypes.popupJsh, kind: 'snAdd', multi: true },
+            { title: this.$t('purchase.form.columns.batchNumber'), key: 'batchNumber', width: '8%', type: FormTypes.input },
+            { title: this.$t('purchase.form.columns.expirationDate'), key: 'expirationDate',width: '9%', type: FormTypes.date },
+            { title: this.$t('purchase.form.columns.sku'), key: 'sku', width: '9%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.preNumber'), key: 'preNumber', width: '6%', type: FormTypes.normal },
+            { title: this.$t('retail.finishNumber'), key: 'finishNumber', width: '6%', type: FormTypes.normal },
+            { title: this.$t('purchase.form.columns.quantity'), key: 'operNumber', width: '6%', type: FormTypes.inputNumber, statistics: true,
+              validateRules: [
+                { required: true, message: '${title}不能为空' },
+                { pattern: /^(?=.*[1-9])\d+(?:\.\d+)?$/, message: '${title}必须大于0' }
+              ]
             },
-            { title: '单价', key: 'unitPrice', width: '6%', type: FormTypes.inputNumber},
-            { title: '金额', key: 'allPrice', width: '6%', type: FormTypes.inputNumber, statistics: true },
-            { title: '备注', key: 'remark', width: '7%', type: FormTypes.input },
+            { title: this.$t('purchase.form.columns.unitPrice'), key: 'unitPrice', width: '6%', type: FormTypes.inputNumber},
+            { title: this.$t('purchase.form.columns.amount'), key: 'allPrice', width: '6%', type: FormTypes.inputNumber, statistics: true },
+            { title: this.$t('purchase.form.columns.remark'), key: 'remark', width: '7%', type: FormTypes.input },
             { title: '关联id', key: 'linkId', width: '5%', type: FormTypes.hidden },
           ]
         },
@@ -266,17 +293,22 @@
         validatorRules:{
           operTime:{
             rules: [
-              { required: true, message: '请输入单据日期!' }
+              { required: true, message: this.$t('purchase.validation.documentDateRequired') }
             ]
           },
           number:{
             rules: [
-              { required: true, message: '请输入单据编号!' }
+              { required: true, message: this.$t('purchase.validation.documentNumberRequired') }
             ]
           },
           accountId:{
             rules: [
-              { required: true, message: '请选择结算账户!' }
+              { validator: this.validateAccount }
+            ]
+          },
+          payType:{
+            rules: [
+              { required: true, message: this.$t('retail.selectRefundType') + '!' }
             ]
           }
         },
@@ -297,7 +329,11 @@
         this.billStatus = '0'
         this.currentSelectDepotId = ''
         this.rowCanEdit = true
+        this.refundTypeLocked = false
+        this.isPrepaidRefund = false
         this.materialTable.columns[1].type = FormTypes.popupJsh
+        this.materialTable.columns.find(item => item.key === 'unitPrice').type = FormTypes.inputNumber
+        this.materialTable.columns.find(item => item.key === 'allPrice').type = FormTypes.inputNumber
         this.changeColumnHide()
         this.changeFormTypes(this.materialTable.columns, 'snList', 0)
         this.changeFormTypes(this.materialTable.columns, 'batchNumber', 0)
@@ -308,19 +344,27 @@
           this.addInit(this.prefixNo)
           this.fileList = []
           this.$nextTick(() => {
-            this.form.setFieldsValue({'getAmount':0, 'backAmount':0})
+            this.form.setFieldsValue({'payType':'现付', 'getAmount':0, 'backAmount':0})
             if(this.transferParam && this.transferParam.number) {
               let tp = this.transferParam
-              this.linkBillListOk(tp.list, tp.number, tp.organId, tp.discount, tp.deposit, tp.remark)
+              this.linkBillListOk(tp.list, tp.number, tp.organId, tp.discount, tp.deposit, tp.remark,
+                null, tp.accountId, tp.salesMan, tp.payType)
             }
           })
         } else {
           if(this.model.linkNumber) {
             this.rowCanEdit = false
+            this.refundTypeLocked = true
             this.materialTable.columns[1].type = FormTypes.normal
+            this.changeFormTypes(this.materialTable.columns, 'unitPrice', 1)
+            this.changeFormTypes(this.materialTable.columns, 'allPrice', 1)
           }
           this.model.operTime = this.model.operTimeStr
-          if(this.model.backAmount) {
+          this.model.changeAmount = Math.abs(Number(this.model.changeAmount || 0))
+          this.isPrepaidRefund = this.model.payType === '预付款'
+          if(this.isPrepaidRefund) {
+            this.model.getAmount = 0
+          } else if(this.model.backAmount) {
             this.model.getAmount = (this.model.changeAmount + this.model.backAmount).toFixed(2)
           } else {
             this.model.getAmount = this.model.changeAmount
@@ -328,7 +372,7 @@
           this.fileList = this.model.fileName
           this.$nextTick(() => {
             this.form.setFieldsValue(pick(this.model,'organId', 'operTime', 'number', 'linkNumber', 'remark',
-              'discount','discountMoney','discountLastMoney','otherMoney','accountId','changeAmount','getAmount','backAmount'))
+              'payType','discount','discountMoney','discountLastMoney','otherMoney','accountId','changeAmount','getAmount','backAmount'))
           });
           // 加载子表数据
           let params = {
@@ -405,13 +449,51 @@
           this.form.setFieldsValue({'backAmount':backAmount})
         });
       },
+      onChangePayType(value) {
+        this.isPrepaidRefund = value === '预付款'
+        this.$nextTick(() => {
+          if(this.isPrepaidRefund) {
+            this.form.setFieldsValue({'accountId': undefined, 'getAmount': 0, 'backAmount': 0})
+          } else {
+            const changeAmount = Number(this.form.getFieldValue('changeAmount') || 0)
+            this.form.setFieldsValue({'getAmount': changeAmount, 'backAmount': 0})
+          }
+          this.form.validateFields(['accountId', 'getAmount'], { force: true }, () => {})
+        })
+      },
+      validateAccount(rule, value, callback) {
+        if(!this.isPrepaidRefund && !value) {
+          callback(this.$t('purchase.validation.selectAccount'))
+        } else {
+          callback()
+        }
+      },
+      validateGetAmount(rule, value, callback) {
+        if(this.isPrepaidRefund) {
+          callback()
+          return
+        }
+        const getAmount = Number(value)
+        const changeAmount = Number(this.form.getFieldValue('changeAmount'))
+        if(!Number.isFinite(getAmount) || getAmount < 0) {
+          callback(this.$t('purchase.validation.getAmountMustBePositive'))
+        } else if(Number.isFinite(changeAmount) && getAmount < changeAmount) {
+          callback(this.$t('purchase.validation.refundNoLess'))
+        } else {
+          callback()
+        }
+      },
       onSearchLinkNumber() {
         this.$refs.linkBillList.show('出库', '零售', '会员', "1")
-        this.$refs.linkBillList.title = "请选择零售出库"
+        this.$refs.linkBillList.title = this.$t('retail.selectRetailOut')
       },
-      linkBillListOk(selectBillDetailRows, linkNumber, organId, discount, deposit, remark) {
+      linkBillListOk(selectBillDetailRows, linkNumber, organId, discount, deposit, remark,
+                     depotId, accountId, salesMan, payType) {
         this.rowCanEdit = false
+        this.refundTypeLocked = true
         this.materialTable.columns[1].type = FormTypes.normal
+        this.changeFormTypes(this.materialTable.columns, 'unitPrice', 1)
+        this.changeFormTypes(this.materialTable.columns, 'allPrice', 1)
         this.changeFormTypes(this.materialTable.columns, 'preNumber', 1)
         this.changeFormTypes(this.materialTable.columns, 'finishNumber', 1)
         if(selectBillDetailRows && selectBillDetailRows.length>0) {
@@ -430,11 +512,15 @@
           ///给优惠后金额重新赋值
           allTaxLastMoney = allTaxLastMoney?allTaxLastMoney:0
           let discountLastMoney = (allTaxLastMoney).toFixed(2)-0
+          let refundPayType = payType === '预付款' ? '预付款' : '现付'
+          this.isPrepaidRefund = refundPayType === '预付款'
           this.$nextTick(() => {
             this.form.setFieldsValue({
               'organId': organId,
               'linkNumber': linkNumber,
-              'getAmount': discountLastMoney,
+              'payType': refundPayType,
+              'accountId': this.isPrepaidRefund ? undefined : accountId,
+              'getAmount': this.isPrepaidRefund ? 0 : discountLastMoney,
               'changeAmount': discountLastMoney,
               'backAmount': 0,
               'remark': remark

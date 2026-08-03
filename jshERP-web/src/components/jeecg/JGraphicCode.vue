@@ -152,7 +152,7 @@
                 this.code = window.atob(res.result.code)
                 resolve();
               }else{
-                this.$message.error("生成验证码错误,请联系系统管理员")
+                this.$message.error(this.$t('common.generateCodeError'))
                 this.code = 'BUG'
                 resolve();
               }

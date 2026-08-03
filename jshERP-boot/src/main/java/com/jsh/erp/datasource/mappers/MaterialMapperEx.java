@@ -18,6 +18,8 @@ import java.util.Map;
  */
 public interface MaterialMapperEx {
 
+    Long lockById(@Param("id") Long id);
+
     List<MaterialVo4Unit> selectByConditionMaterial(
             @Param("materialParam") String materialParam,
             @Param("standard") String standard,
@@ -101,11 +103,13 @@ public interface MaterialMapperEx {
 
     Long getMaterialEnableSerialNumberCount(@Param("q") String q);
 
-    int batchDeleteMaterialByIds(@Param("updateTime") Date updateTime, @Param("updater") Long updater, @Param("ids") String ids[]);
+    int batchDeleteMaterialByIds(@Param("updateTime") Date updateTime, @Param("updater") Long updater, @Param("ids") List<Long> ids);
 
-    List<Material> getMaterialListByCategoryIds(@Param("categoryIds") String[] categoryIds);
+    List<Material> getMaterialListByCategoryIds(@Param("categoryIds") List<Long> categoryIds);
 
-    List<Material> getMaterialListByUnitIds(@Param("unitIds") String[] unitIds);
+    List<Material> getMaterialListByUnitIds(@Param("unitIds") List<Long> unitIds);
+
+    int getCountByMaterialAttributeIds(@Param("attributeIds") List<Long> attributeIds);
 
     List<String> getBarCodeList();
 
@@ -115,6 +119,10 @@ public interface MaterialMapperEx {
     List<String> getMaterialNameList();
 
     int setUnitIdToNull(@Param("id") Long id);
+
+    int setCategoryIdToNull(@Param("id") Long id);
+
+    int batchSetCategoryIdToNull(@Param("ids") List<Long> ids);
 
     int setExpiryNumToNull(@Param("id") Long id);
 

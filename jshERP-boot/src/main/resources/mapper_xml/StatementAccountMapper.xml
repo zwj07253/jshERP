@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsh.erp.datasource.mappers.StatementAccountMapper">
+
+    <sql id="statementAccountCte">
+        with bill_summary as (
+            select dh.tenant_id, dh.organ_id,
+                   COALESCE(sum(case when dh."type"=#{type} and dh.sub_type=#{subType}
+                                      and dh.oper_time &lt; #{beginTime}::timestamp
+                                then COALESCE(dh.discount_last_money,0)+COALESCE(dh.other_money,0)
+                                     -COALESCE(dh.deposit,0)-abs(COALESCE(dh.change_amount,0)) else 0 end),0) pre_debt_money,
+                   COALESCE(sum(case when dh."type"=#{typeBack} and dh.sub_type=#{subTypeBack}
+                                      and dh.oper_time &lt; #{beginTime}::timestamp
+                                then COALESCE(dh.discount_last_money,0)+COALESCE(dh.other_money,0)
+                                     -COALESCE(dh.deposit,0)-abs(COALESCE(dh.change_amount,0)) else 0 end),0) pre_return_debt_money,
+                   COALESCE(sum(case when dh."type"=#{type} and dh.sub_type=#{subType}
+                                      and dh.oper_time &gt;= #{beginTime}::timestamp
+                                then COALESCE(dh.discount_last_money,0)+COALESCE(dh.other_money,0)
+                                     -COALESCE(dh.deposit,0)-abs(COALESCE(dh.change_amount,0)) else 0 end),0) debt_money,
+                   COALESCE(sum(case when dh."type"=#{typeBack} and dh.sub_type=#{subTypeBack}
+                                      and dh.oper_time &gt;= #{beginTime}::timestamp
+                                then COALESCE(dh.discount_last_money,0)+COALESCE(dh.other_money,0)
+                                     -COALESCE(dh.deposit,0)-abs(COALESCE(dh.change_amount,0)) else 0 end),0) return_debt_money
+            from jsh_depot_head dh
+            where dh.status='1' and dh.oper_time &lt;= #{endTime}::timestamp
+              and ((dh."type"=#{type} and dh.sub_type=#{subType})
+                or (dh."type"=#{typeBack} and dh.sub_type=#{subTypeBack}))
+              and COALESCE(dh.delete_flag,'0') !='1'
+            group by dh.tenant_id, dh.organ_id
+        ), payment_summary as (
+            select ah.tenant_id, ah.organ_id,
+                   COALESCE(sum(case when ah.bill_time &lt; #{beginTime}::timestamp
+                                then case when ah."type"='付款' then 0-ai.each_amount else ai.each_amount end else 0 end),0) pre_back_money,
+                   COALESCE(sum(case when ah.bill_time &gt;= #{beginTime}::timestamp
+                                then case when ah."type"='付款' then 0-ai.each_amount else ai.each_amount end else 0 end),0) back_money
+            from jsh_account_head ah
+            join jsh_account_item ai on ai.header_id=ah.id and COALESCE(ai.delete_flag,'0') !='1'
+            where ah.status='1' and ah."type"=#{billType}
+              and ah.bill_time &lt;= #{endTime}::timestamp
+              and COALESCE(ah.delete_flag,'0') !='1'
+            group by ah.tenant_id, ah.organ_id
+        ), statement_account_base as (
+            select s.tenant_id, s.id, s.supplier, s.contacts, s.telephone, s.phone_num, s.email,
+                   case when s."type"='供应商' then COALESCE(s.begin_need_pay,0) else COALESCE(s.begin_need_get,0) end begin_need,
+                   COALESCE(bs.pre_debt_money,0) pre_debt_money,
+                   COALESCE(bs.pre_return_debt_money,0) pre_return_debt_money,
+                   COALESCE(ps.pre_back_money,0) pre_back_money,
+                   COALESCE(bs.debt_money,0) debt_money,
+                   COALESCE(bs.return_debt_money,0) return_debt_money,
+                   COALESCE(ps.back_money,0) back_money
+            from jsh_supplier s
+            left join bill_summary bs on bs.organ_id=s.id and bs.tenant_id is not distinct from s.tenant_id
+            left join payment_summary ps on ps.organ_id=s.id and ps.tenant_id is not distinct from s.tenant_id
+            where s.enabled=true and s."type"=#{supplierType}
+            <if test="organId != null">and s.id = #{organId}::bigint</if>
+            <if test="organArray != null and organArray !=''">
+                and s.id in
+                <foreach collection="organArray" item="organ" separator="," open="(" close=")">#{organ}::bigint</foreach>
+            </if>
+            and COALESCE(s.delete_flag,'0') !='1'
+        ), statement_account_data as (
+            select *, begin_need+pre_debt_money-pre_return_debt_money-pre_back_money pre_need,
+                   begin_need+pre_debt_money-pre_return_debt_money-pre_back_money
+                       +debt_money-return_debt_money-back_money all_need
+            from statement_account_base
+        ), statement_account_filtered as (
+            select * from statement_account_data
+            <if test="hasDebt == 1">where all_need != 0</if>
+            <if test="hasDebt == 0">where all_need = 0</if>
+        )
+    </sql>
+
+    <select id="selectStatementAccount" resultType="com.jsh.erp.datasource.vo.DepotHeadVo4StatementAccount">
+        <include refid="statementAccountCte"/>
+        select * from statement_account_filtered
+        <choose>
+            <when test="column == 'preNeed'">order by pre_need</when>
+            <when test="column == 'debtMoney'">order by debt_money-return_debt_money</when>
+            <when test="column == 'backMoney'">order by back_money</when>
+            <otherwise>order by all_need</otherwise>
+        </choose>
+        <choose>
+            <when test="order == 'asc'">asc</when>
+            <otherwise>desc</otherwise>
+        </choose>
+        , id desc
+        <if test="offset != null and rows != null">LIMIT #{rows} OFFSET #{offset}</if>
+    </select>
+
+    <select id="countStatementAccount" resultType="java.lang.Integer">
+        <include refid="statementAccountCte"/>
+        select count(1) from statement_account_filtered
+    </select>
+
+    <select id="sumStatementAccount" resultType="com.jsh.erp.datasource.vo.DepotHeadVo4StatementAccount">
+        <include refid="statementAccountCte"/>
+        select COALESCE(sum(begin_need),0) begin_need,
+               COALESCE(sum(pre_debt_money),0) pre_debt_money,
+               COALESCE(sum(pre_return_debt_money),0) pre_return_debt_money,
+               COALESCE(sum(pre_back_money),0) pre_back_money,
+               COALESCE(sum(debt_money),0) debt_money,
+               COALESCE(sum(return_debt_money),0) return_debt_money,
+               COALESCE(sum(back_money),0) back_money
+        from statement_account_filtered
+    </select>
+</mapper>

@@ -58,6 +58,16 @@ public class DepotItemVo4WithInfoEx extends DepotItem{
 
     private String brand;
 
+    private BigDecimal outSum;
+
+    private BigDecimal inSum;
+
+    private BigDecimal outSumPrice;
+
+    private BigDecimal inSumPrice;
+
+    private BigDecimal outInSumPrice;
+
     public Long getMId() {
         return MId;
     }
@@ -272,5 +282,45 @@ public class DepotItemVo4WithInfoEx extends DepotItem{
 
     public void setBrand(String brand) {
         this.brand = brand;
+    }
+
+    public BigDecimal getOutSum() {
+        return outSum;
+    }
+
+    public void setOutSum(BigDecimal outSum) {
+        this.outSum = outSum;
+    }
+
+    public BigDecimal getInSum() {
+        return inSum;
+    }
+
+    public void setInSum(BigDecimal inSum) {
+        this.inSum = inSum;
+    }
+
+    public BigDecimal getOutSumPrice() {
+        return outSumPrice;
+    }
+
+    public void setOutSumPrice(BigDecimal outSumPrice) {
+        this.outSumPrice = outSumPrice;
+    }
+
+    public BigDecimal getInSumPrice() {
+        return inSumPrice;
+    }
+
+    public void setInSumPrice(BigDecimal inSumPrice) {
+        this.inSumPrice = inSumPrice;
+    }
+
+    public BigDecimal getOutInSumPrice() {
+        return outInSumPrice;
+    }
+
+    public void setOutInSumPrice(BigDecimal outInSumPrice) {
+        this.outInSumPrice = outInSumPrice;
     }
 }

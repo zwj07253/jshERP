@@ -7,19 +7,19 @@
           <a-form layout="inline" @keyup.enter.native="searchQuery">
             <a-row :gutter="24">
               <a-col :md="6" :sm="24">
-                <a-form-item label="登录名称" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="输入登录名称模糊查询" v-model="queryParam.loginName"></a-input>
+                <a-form-item :label="$t('login.username')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('login.username')" v-model="queryParam.loginName"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item label="用户姓名" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="输入用户姓名模糊查询" v-model="queryParam.userName"></a-input>
+                <a-form-item :label="$t('common.name')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('common.name')" v-model="queryParam.userName"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
                 <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
-                  <a-button type="primary" @click="searchQuery">查询</a-button>
-                  <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
+                  <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="searchReset">{{ $t('common.reset') }}</a-button>
                 </span>
               </a-col>
             </a-row>
@@ -27,10 +27,10 @@
         </div>
         <!-- 操作按钮区域 -->
         <div class="table-operator" style="border-top: 5px">
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd" type="primary" icon="plus">新增</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchDel" icon="delete">删除</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(0)" icon="check-square">启用</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(2)" icon="close-square">禁用</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd" type="primary" icon="plus">{{ $t('common.add') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchDel" icon="delete">{{ $t('common.delete') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(0)" icon="check-square">{{ $t('common.enable') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(2)" icon="close-square">{{ $t('common.disable') }}</a-button>
         </div>
         <!-- table区域-begin -->
         <div>
@@ -47,22 +47,22 @@
             :rowSelection="{selectedRowKeys: selectedRowKeys, onChange: onSelectChange}"
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
-              <a v-if="btnEnableList.indexOf(1)>-1 && depotFlag === '1' " @click="btnSetDepot(record)">分配仓库</a>
+              <a v-if="btnEnableList.indexOf(1)>-1 && depotFlag === '1' " @click="btnSetDepot(record)">{{ $t('common.assignWarehouse') }}</a>
               <a-divider v-if="btnEnableList.indexOf(1)>-1 && depotFlag === '1'" type="vertical" />
-              <a v-if="btnEnableList.indexOf(1)>-1 && customerFlag === '1'" @click="btnSetCustomer(record)">分配客户</a>
+              <a v-if="btnEnableList.indexOf(1)>-1 && customerFlag === '1'" @click="btnSetCustomer(record)">{{ $t('common.assignCustomer') }}</a>
               <a-divider v-if="btnEnableList.indexOf(1)>-1 && customerFlag === '1'" type="vertical" />
-              <a @click="handleEdit(record)">编辑</a>
+              <a @click="handleEdit(record)">{{ $t('common.edit') }}</a>
               <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical"/>
-              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定删除吗?" @confirm="() => handleDelete(record.id)">
-                <a>删除</a>
+              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" :title="$t('common.confirmDelete')" @confirm="() => handleDelete(record.id)">
+                <a>{{ $t('common.delete') }}</a>
               </a-popconfirm>
-              <a-divider type="vertical"/>
-              <a @click="handleResetModal(record)">重置密码</a>
+              <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical"/>
+              <a v-if="btnEnableList.indexOf(1)>-1" @click="handleResetModal(record)">{{ $t('common.resetPassword') }}</a>
             </span>
             <!-- 状态渲染模板 -->
             <template slot="customRenderFlag" slot-scope="status">
-              <a-tag v-if="status===0" color="green">启用</a-tag>
-              <a-tag v-if="status===2" color="orange">禁用</a-tag>
+              <a-tag v-if="status===0" color="green">{{ $t('common.enable') }}</a-tag>
+              <a-tag v-if="status===2" color="orange">{{ $t('common.disable') }}</a-tag>
             </template>
           </a-table>
         </div>
@@ -120,21 +120,21 @@
             }
           },
           {
-            title: '操作',
+            title: this.$t('common.action'),
             dataIndex: 'action',
             scopedSlots: {customRender: 'action'},
             align: "center",
             width: 200
           },
-          { title: '登录名称', dataIndex: 'loginName', width: 100, align: "left"},
-          { title: '用户姓名', dataIndex: 'username', width: 100, align: "left"},
-          { title: '用户类型', dataIndex: 'userType', width: 80, align: "left" },
-          { title: '角色', dataIndex: 'roleName', width: 100, align: "left"},
-          { title: '部门', dataIndex: 'orgAbr', width: 100, align: "left"},
-          { title: '是否经理', dataIndex: 'leaderFlagStr', width: 60, align: "left"},
-          { title: '电话号码', dataIndex: 'phonenum', width: 80, align: "left"},
-          { title: '排序', dataIndex: 'userBlngOrgaDsplSeq', width: 40, align: "left"},
-          { title: '状态',dataIndex: 'status',width:60,align:"center",
+          { title: this.$t('login.username'), dataIndex: 'loginName', width: 100, align: "left"},
+          { title: this.$t('common.name'), dataIndex: 'username', width: 100, align: "left"},
+          { title: this.$t('common.userType'), dataIndex: 'userType', width: 80, align: "left" },
+          { title: this.$t('common.roleName'), dataIndex: 'roleName', width: 100, align: "left"},
+          { title: this.$t('common.department'), dataIndex: 'orgAbr', width: 100, align: "left"},
+          { title: this.$t('common.isManager'), dataIndex: 'leaderFlagStr', width: 60, align: "left"},
+          { title: this.$t('common.phoneNo'), dataIndex: 'phonenum', width: 80, align: "left"},
+          { title: this.$t('common.sort'), dataIndex: 'userBlngOrgaDsplSeq', width: 40, align: "left"},
+          { title: this.$t('common.status'),dataIndex: 'status',width:60,align:"center",
             scopedSlots: { customRender: 'customRenderFlag' }
           }
         ],
@@ -170,24 +170,22 @@
       },
       handleEdit: function (record) {
         this.$refs.modalForm.edit(record);
-        this.$refs.modalForm.title = "编辑";
+        this.$refs.modalForm.title = this.$t('common.edit');
         this.$refs.modalForm.disableSubmit = false;
-        if(this.btnEnableList.indexOf(1)===-1) {
-          this.$refs.modalForm.isReadOnly = true
-        }
+        this.$refs.modalForm.isReadOnly = this.btnEnableList.indexOf(1) === -1
       },
       handleResetModal(record) {
         this.$refs.userResetModal.edit(record);
-        this.$refs.userResetModal.title = "请输入" + record.loginName + "的新密码";
+        this.$refs.userResetModal.title = this.$t('common.enterNewPasswordFor') + record.loginName;
       },
       btnSetDepot(record) {
         this.$refs.userDepotModal.edit(record);
-        this.$refs.userDepotModal.title = "分配仓库给：" + record.username
+        this.$refs.userDepotModal.title = this.$t('common.assignWarehouseTo') + record.username
         this.$refs.userDepotModal.disableSubmit = false;
       },
       btnSetCustomer(record) {
         this.$refs.userCustomerModal.edit(record);
-        this.$refs.userCustomerModal.title = "分配客户给：" + record.username
+        this.$refs.userCustomerModal.title = this.$t('common.assignCustomerTo') + record.username
         this.$refs.userCustomerModal.disableSubmit = false;
       },
     }

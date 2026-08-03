@@ -22,9 +22,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.jsh.erp.utils.ResponseJsonUtil.returnJson;
 import static com.jsh.erp.utils.ResponseJsonUtil.returnStr;
@@ -36,6 +39,8 @@ import static com.jsh.erp.utils.ResponseJsonUtil.returnStr;
 @RequestMapping(value = "/material")
 @Tag(name = "商品管理")
 public class MaterialController extends BaseController {
+    private static final int MAX_PAGE_SIZE = 1000;
+
     private Logger logger = LoggerFactory.getLogger(MaterialController.class);
 
     @Resource
@@ -175,7 +180,7 @@ public class MaterialController extends BaseController {
                                @RequestParam("model") String model, @RequestParam("color") String color,
                                @RequestParam("standard") String standard, @RequestParam("mfrs") String mfrs,
                                @RequestParam("otherField1") String otherField1, @RequestParam("otherField2") String otherField2,
-                               @RequestParam("otherField3") String otherField3, @RequestParam("unit") String unit,@RequestParam("unitId") Long unitId,
+                               @RequestParam("otherField3") String otherField3, @RequestParam("unit") String unit,@RequestParam(value = "unitId", required = false) Long unitId,
                                HttpServletRequest request)throws Exception {
         Map<String, Object> objectMap = new HashMap<String, Object>();
         int exist = materialService.checkIsExist(id, name, StringUtil.toNull(model), StringUtil.toNull(color),
@@ -312,18 +317,33 @@ public class MaterialController extends BaseController {
                                   HttpServletRequest request) throws Exception{
         JSONObject object = new JSONObject();
         try {
+            int safeCurrentPage = Math.max(currentPage, 1);
+            int safePageSize = Math.min(Math.max(pageSize, 1), MAX_PAGE_SIZE);
             String[] mpArr = new String[]{};
             if(StringUtil.isNotEmpty(mpList)){
                 mpArr= mpList.split(",");
             }
             List<MaterialVo4Unit> dataList = materialService.findBySelectWithBarCode(categoryId, q, StringUtil.toNull(standardOrModel),
                     StringUtil.toNull(color), StringUtil.toNull(brand), StringUtil.toNull(mfrs), StringUtil.toNull(otherField1), StringUtil.toNull(otherField2), StringUtil.toNull(otherField3),
-                    enableSerialNumber, enableBatchNumber, (currentPage-1)*pageSize, pageSize);
+                    enableSerialNumber, enableBatchNumber, (safeCurrentPage-1)*safePageSize, safePageSize);
             int total = materialService.findBySelectWithBarCodeCount(categoryId, q, StringUtil.toNull(standardOrModel),
                     StringUtil.toNull(color), StringUtil.toNull(brand), StringUtil.toNull(mfrs), StringUtil.toNull(otherField1), StringUtil.toNull(otherField2), StringUtil.toNull(otherField3),
                     enableSerialNumber, enableBatchNumber);
             object.put("total", total);
             JSONArray dataArray = new JSONArray();
+            Set<Long> unitIds = new HashSet<>();
+            List<Long> materialIds = new ArrayList<>();
+            List<Long> materialExtendIds = new ArrayList<>();
+            if (dataList != null) {
+                for (MaterialVo4Unit material : dataList) {
+                    if (material.getUnitId() != null) unitIds.add(material.getUnitId());
+                    if (StringUtil.isNotEmpty(material.getSku())) materialExtendIds.add(material.getMeId());
+                    else materialIds.add(material.getId());
+                }
+            }
+            Map<Long, Unit> unitMap = unitService.getUnitMap(unitIds);
+            Map<Long, BigDecimal> currentStockMap = depotItemService.getCurrentStockByMaterialIds(depotId, materialIds);
+            Map<Long, BigDecimal> skuStockMap = depotItemService.getSkuStockByMaterialExtendIds(depotId, materialExtendIds);
             //存放数据json数组
             if (null != dataList) {
                 for (MaterialVo4Unit material : dataList) {
@@ -334,7 +354,7 @@ public class MaterialController extends BaseController {
                     if (material.getUnitId() == null) {
                         ratioStr = "";
                     } else {
-                        unit = unitService.getUnit(material.getUnitId());
+                        unit = unitMap.get(material.getUnitId());
                         //拼接副单位的比例
                         String commodityUnit = material.getCommodityUnit();
                         if(StringUtil.isNotEmpty(commodityUnit) && unit!=null) {
@@ -367,9 +387,9 @@ public class MaterialController extends BaseController {
                     item.put("enableBatchNumber", material.getEnableBatchNumber());
                     BigDecimal stock;
                     if(StringUtil.isNotEmpty(material.getSku())){
-                        stock = depotItemService.getSkuStockByParam(depotId,material.getMeId(),null,null);
+                        stock = skuStockMap.getOrDefault(material.getMeId(), BigDecimal.ZERO);
                     } else {
-                        stock = depotItemService.getCurrentStockByParam(depotId, material.getId());
+                        stock = currentStockMap.getOrDefault(material.getId(), BigDecimal.ZERO);
                         if (material.getUnitId()!=null){
                             String commodityUnit = material.getCommodityUnit();
                             stock = unitService.parseStockByUnit(stock, unit, commodityUnit);
@@ -473,15 +493,11 @@ public class MaterialController extends BaseController {
                             @RequestParam(value = "enableBatchNumber", required = false) String enableBatchNumber,
                             @RequestParam(value = "remark", required = false) String remark,
                             @RequestParam(value = "mpList", required = false) String mpList,
-                            HttpServletRequest request, HttpServletResponse response) {
-        try {
-            materialService.exportExcel(StringUtil.toNull(categoryId), StringUtil.toNull(materialParam), StringUtil.toNull(color),
-                    StringUtil.toNull(materialOther), StringUtil.toNull(weight),
-                    StringUtil.toNull(expiryNum), StringUtil.toNull(enabled), StringUtil.toNull(enableSerialNumber),
-                    StringUtil.toNull(enableBatchNumber), StringUtil.toNull(remark), mpList, response);
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-        }
+                            HttpServletRequest request, HttpServletResponse response) throws Exception {
+        materialService.exportExcel(StringUtil.toNull(categoryId), StringUtil.toNull(materialParam), StringUtil.toNull(color),
+                StringUtil.toNull(materialOther), StringUtil.toNull(weight),
+                StringUtil.toNull(expiryNum), StringUtil.toNull(enabled), StringUtil.toNull(enableSerialNumber),
+                StringUtil.toNull(enableBatchNumber), StringUtil.toNull(remark), mpList, request, response);
     }
 
     /**
@@ -524,7 +540,10 @@ public class MaterialController extends BaseController {
                                 HttpServletResponse response)throws Exception {
         JSONObject object= new JSONObject();
         try {
-            List<MaterialVo4Unit> list = materialService.getMaterialEnableSerialNumberList(q, (currentPage-1)*pageSize, pageSize);
+            int safeCurrentPage = Math.max(currentPage, 1);
+            int safePageSize = Math.min(Math.max(pageSize, 1), MAX_PAGE_SIZE);
+            List<MaterialVo4Unit> list = materialService.getMaterialEnableSerialNumberList(q,
+                    (safeCurrentPage-1)*safePageSize, safePageSize);
             Long count = materialService.getMaterialEnableSerialNumberCount(q);
             object.put("rows", list);
             object.put("total", count);
@@ -605,10 +624,10 @@ public class MaterialController extends BaseController {
                     mvo.setMaterialOther(materialService.getMaterialOtherByParam(mpArr, mvo));
                     if ("LSCK".equals(prefixNo) || "LSTH".equals(prefixNo)) {
                         //零售价
-                        mvo.setBillPrice(mvo.getCommodityDecimal());
+                        mvo.setBillPrice(roleService.parseBillPriceByLimit(mvo.getCommodityDecimal(), "retail", priceLimit, request));
                     } else if ("CGDD".equals(prefixNo) || "CGRK".equals(prefixNo) || "CGTH".equals(prefixNo)) {
                         //采购价
-                        mvo.setBillPrice(mvo.getPurchaseDecimal());
+                        mvo.setBillPrice(roleService.parseBillPriceByLimit(mvo.getPurchaseDecimal(), "buy", priceLimit, request));
                     } else if("QTRK".equals(prefixNo) || "DBCK".equals(prefixNo) || "ZZD".equals(prefixNo) || "CXD".equals(prefixNo)
                             || "PDLR".equals(prefixNo) || "PDFP".equals(prefixNo)) {
                         //采购价-给录入界面按权限屏蔽
@@ -616,15 +635,16 @@ public class MaterialController extends BaseController {
                     } else if ("XSDD".equals(prefixNo) || "XSCK".equals(prefixNo) || "XSTH".equals(prefixNo) || "QTCK".equals(prefixNo)) {
                         //销售价
                         if(organId == null) {
-                            mvo.setBillPrice(mvo.getWholesaleDecimal());
+                            mvo.setBillPrice(roleService.parseBillPriceByLimit(mvo.getWholesaleDecimal(), "sale", priceLimit, request));
                         } else {
                             if(systemConfigService.getCustomerStaticPriceFlag()) {
                                 //已经开启了客户静态单价的开关
-                                mvo.setBillPrice(mvo.getWholesaleDecimal());
+                                mvo.setBillPrice(roleService.parseBillPriceByLimit(mvo.getWholesaleDecimal(), "sale", priceLimit, request));
                             } else {
                                 //查询最后一单的销售价,实现不同的客户不同的销售价
                                 BigDecimal lastUnitPrice = depotItemService.getLastUnitPriceByParam(organId, mvo.getMeId(), prefixNo);
-                                mvo.setBillPrice(lastUnitPrice!=null? lastUnitPrice : mvo.getWholesaleDecimal());
+                                mvo.setBillPrice(roleService.parseBillPriceByLimit(
+                                        lastUnitPrice!=null? lastUnitPrice : mvo.getWholesaleDecimal(), "sale", priceLimit, request));
                             }
                         }
                         //销售价-给录入界面按权限屏蔽价格
@@ -637,7 +657,7 @@ public class MaterialController extends BaseController {
                             BigDecimal currentUnitPrice = materialService.getCurrentUnitPriceByMaterialId(mvo.getId());
                             mvo.setBillPrice(currentUnitPrice);
                         } else {
-                            mvo.setBillPrice(mvo.getPurchaseDecimal());
+                            mvo.setBillPrice(roleService.parseBillPriceByLimit(mvo.getPurchaseDecimal(), "buy", priceLimit, request));
                         }
                     }
                     //仓库id
@@ -691,6 +711,10 @@ public class MaterialController extends BaseController {
                         }
                     }
                     mvo.setTaxLastMoney(taxLastMoney);
+                    mvo.setPurchaseDecimal(roleService.parseBillPriceByLimit(mvo.getPurchaseDecimal(), "buy", priceLimit, request));
+                    mvo.setCommodityDecimal(roleService.parseBillPriceByLimit(mvo.getCommodityDecimal(), "retail", priceLimit, request));
+                    mvo.setWholesaleDecimal(roleService.parseBillPriceByLimit(mvo.getWholesaleDecimal(), "sale", priceLimit, request));
+                    mvo.setLowDecimal(roleService.parseBillPriceByLimit(mvo.getLowDecimal(), "sale", priceLimit, request));
                 }
             }
             res.code = 200;
@@ -752,26 +776,32 @@ public class MaterialController extends BaseController {
         BaseResponseInfo res = new BaseResponseInfo();
         Map<String, Object> map = new HashMap<>();
         try {
+            int safeCurrentPage = Math.max(currentPage, 1);
+            int safePageSize = Math.min(Math.max(pageSize, 1), MAX_PAGE_SIZE);
             List<Long> idList = new ArrayList<>();
-            List<Long> depotList = new ArrayList<>();
+            List<Long> depotList;
             if(categoryId != null){
                 idList = materialService.getListByParentId(categoryId);
             }
-            if(StringUtil.isNotEmpty(depotIds)) {
-                depotList = StringUtil.strToLongList(depotIds);
-            } else {
-                //未选择仓库时默认为当前用户有权限的仓库
-                JSONArray depotArr = depotService.findDepotByCurrentUser();
-                for(Object obj: depotArr) {
-                    JSONObject object = JSONObject.parseObject(obj.toString());
-                    depotList.add(object.getLong("id"));
-                }
+            String[] depotIdArr = StringUtil.isNotEmpty(depotIds) ? depotIds.split(",") : null;
+            depotList = depotService.parseDepotListByArr(depotIdArr);
+            if (depotList.contains(-1L)) {
+                map.put("total", 0);
+                map.put("currentStock", BigDecimal.ZERO);
+                map.put("currentStockPrice", BigDecimal.ZERO);
+                map.put("currentWeight", BigDecimal.ZERO);
+                map.put("showStockPrice", false);
+                map.put("rows", Collections.emptyList());
+                res.code = 200;
+                res.data = map;
+                return res;
             }
             Long userId = userService.getUserId(request);
             String priceLimit = userService.getRoleTypeByUserId(userId).getPriceLimit();
             Boolean moveAvgPriceFlag = systemConfigService.getMoveAvgPriceFlag();
             List<MaterialVo4Unit> dataList = materialService.getListWithStock(priceLimit, depotList, idList, StringUtil.toNull(position), StringUtil.toNull(materialParam),
-                    moveAvgPriceFlag, zeroStock, StringUtil.safeSqlParse(column), StringUtil.safeSqlParse(order), (currentPage-1)*pageSize, pageSize, request);
+                    moveAvgPriceFlag, zeroStock, StringUtil.safeSqlParse(column), StringUtil.safeSqlParse(order),
+                    (safeCurrentPage-1)*safePageSize, safePageSize, request);
             int total = materialService.getListWithStockCount(priceLimit, depotList, idList, StringUtil.toNull(position), StringUtil.toNull(materialParam), zeroStock);
             MaterialVo4Unit materialVo4Unit= materialService.getTotalStockAndPrice(priceLimit, depotList, idList, StringUtil.toNull(position), StringUtil.toNull(materialParam), request);
             map.put("total", total);
@@ -813,7 +843,15 @@ public class MaterialController extends BaseController {
                                  HttpServletRequest request)throws Exception {
         String ids = jsonObject.getString("ids");
         Map<String, Object> objectMap = new HashMap<>();
-        List<Depot> depotList = depotService.getAllList();
+        List<Depot> depotList = new ArrayList<>();
+        for (Long depotId : depotService.parseDepotList(null)) {
+            if (depotId >= 0) {
+                Depot depot = depotService.getDepot(depotId);
+                if (depot != null) {
+                    depotList.add(depot);
+                }
+            }
+        }
         if(depotList.isEmpty()) {
             return returnJson(objectMap, "请先创建仓库后再操作", ErpInfo.WARING_MSG.code);
         }

@@ -12,17 +12,17 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="关闭"
+      :cancelText="$t('common.close')"
       style="top:30%;height: 35%;">
       <template slot="footer">
         <a-button key="back" v-if="isReadOnly" @click="handleCancel">
-          关闭
+          {{ $t('common.close') }}
         </a-button>
       </template>
       <a-spin :spinning="confirmLoading">
         <a-form :form="form" id="batchSetDepot">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="仓库名称">
-            <a-select placeholder="请选择仓库" v-decorator="[ 'depotId', validatorRules.depotId ]" showSearch optionFilterProp="children">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.depotName')">
+            <a-select :placeholder="$t('common.selectWarehouse')" v-decorator="[ 'depotId', validatorRules.depotId ]" showSearch optionFilterProp="children">
               <a-select-option v-for="(depot,index) in depotList" :value="depot.id" :key="index">
                 {{ depot.depotName }}
               </a-select-option>
@@ -42,7 +42,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title: this.$t('common.action'),
         visible: false,
         model: {},
         depotList: [],
@@ -60,7 +60,7 @@
         validatorRules:{
           depotId:{
             rules: [
-              { required: true, message: '请选择仓库!' }
+              { required: true, message: this.$t('common.selectWarehouse') }
             ]
           }
         },

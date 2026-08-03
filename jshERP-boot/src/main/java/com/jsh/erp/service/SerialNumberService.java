@@ -18,9 +18,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class SerialNumberService {
@@ -38,6 +36,8 @@ public class SerialNumberService {
     private UserService userService;
     @Resource
     private LogService logService;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public SerialNumber getSerialNumber(long id)throws Exception {
         SerialNumber result=null;
@@ -135,13 +135,82 @@ public class SerialNumberService {
     }
 
     /**
+     * 校验关联采购入库退货时提交的序列号，防止退错入库明细或跨仓库出库。
+     */
+    public void validatePurchaseReturnSerialNumbers(Long materialId, Long depotId, String currentBillNo,
+                                                     String returnSnList, String sourceSnList,
+                                                     boolean physicalOutbound) {
+        Set<String> returnNumbers = parseSerialNumberSet(returnSnList);
+        if (returnNumbers.isEmpty()) {
+            return;
+        }
+        List<String> submittedNumbers = StringUtil.strToStringList(
+                returnSnList.replaceAll("，", ","));
+        if (submittedNumbers == null || returnNumbers.size() != submittedNumbers.size()
+                || !parseSerialNumberSet(sourceSnList).containsAll(returnNumbers)) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_SERIAL_CODE,
+                    ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_SERIAL_MSG);
+        }
+        if (!physicalOutbound) {
+            return;
+        }
+        SerialNumberExample example = new SerialNumberExample();
+        example.createCriteria().andMaterialIdEqualTo(materialId)
+                .andSerialNumberIn(new ArrayList<>(returnNumbers))
+                .andDeleteFlagNotEqualTo(BusinessConstants.DELETE_FLAG_DELETED);
+        List<SerialNumber> serialNumbers = serialNumberMapper.selectByExample(example);
+        Set<String> validNumbers = new HashSet<>();
+        for (SerialNumber serialNumber : serialNumbers) {
+            boolean available = "0".equals(serialNumber.getIsSell())
+                    || (StringUtil.isNotEmpty(currentBillNo)
+                    && currentBillNo.equals(serialNumber.getOutBillNo()));
+            if (available && Objects.equals(depotId, serialNumber.getDepotId())) {
+                validNumbers.add(serialNumber.getSerialNumber());
+            }
+        }
+        if (!validNumbers.containsAll(returnNumbers)) {
+            throw new BusinessRunTimeException(ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_SERIAL_CODE,
+                    ExceptionConstants.DEPOT_HEAD_PURCHASE_RETURN_SERIAL_MSG);
+        }
+    }
+
+    private Set<String> parseSerialNumberSet(String serialNumberList) {
+        Set<String> result = new LinkedHashSet<>();
+        if (StringUtil.isEmpty(serialNumberList)) {
+            return result;
+        }
+        for (String serialNumber : serialNumberList.replaceAll("，", ",").split(",")) {
+            if (StringUtil.isNotEmpty(serialNumber)) {
+                result.add(serialNumber.trim());
+            }
+        }
+        return result;
+    }
+
+    /**
      * 出售序列号
      */
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public void sellSerialNumber(Long materialId, String outBillNo, String snList, User user) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
+        if (materialId == null || StringUtil.isEmpty(snList)) {
+            throw new BusinessRunTimeException(ExceptionConstants.SERIAL_NUMBERE_NOT_EXISTS_CODE,
+                    String.format(ExceptionConstants.SERIAL_NUMBERE_NOT_EXISTS_MSG, ""));
+        }
+        // Serialize availability checks and allocation for the same material.
+        materialMapperEx.lockById(materialId);
         //将中文的逗号批量替换为英文逗号
         snList = snList.replaceAll("，",",");
-        String [] snArray=snList.split(",");
+        String[] submitted = snList.split(",");
+        LinkedHashSet<String> serialNumberSet = new LinkedHashSet<>();
+        for (String value : submitted) {
+            String serialNumber = value.trim();
+            if (StringUtil.isEmpty(serialNumber) || !serialNumberSet.add(serialNumber)) {
+                throw new BusinessRunTimeException(ExceptionConstants.SERIAL_NUMBERE_NOT_EXISTS_CODE,
+                        String.format(ExceptionConstants.SERIAL_NUMBERE_NOT_EXISTS_MSG, serialNumber));
+            }
+        }
+        String[] snArray = serialNumberSet.toArray(new String[0]);
         for (String sn : snArray) {
             int isNotSellCount = serialNumberMapperEx.getIsNotSellCountByParam(materialId, sn);
             if (isNotSellCount == 0) {
@@ -155,7 +224,15 @@ public class SerialNumberService {
         for (SerialNumber serialNumber : minList) {
             idList.add(serialNumber.getId());
         }
-        serialNumberMapperEx.sellSerialNumber(idList, outBillNo, new Date(), user == null ? null : user.getId());
+        if (idList.size() != snArray.length) {
+            throw new BusinessRunTimeException(ExceptionConstants.SERIAL_NUMBERE_NOT_EXISTS_CODE,
+                    String.format(ExceptionConstants.SERIAL_NUMBERE_NOT_EXISTS_MSG, ""));
+        }
+        int updated = serialNumberMapperEx.sellSerialNumber(idList, outBillNo, new Date(), user == null ? null : user.getId());
+        if (updated != idList.size()) {
+            throw new BusinessRunTimeException(ExceptionConstants.SERIAL_NUMBERE_NOT_EXISTS_CODE,
+                    String.format(ExceptionConstants.SERIAL_NUMBERE_NOT_EXISTS_MSG, ""));
+        }
     }
 
     /**
@@ -167,6 +244,7 @@ public class SerialNumberService {
      */
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int cancelSerialNumber(Long materialId, String outBillNo,int count,User user) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         int result=0;
         try{
             result = serialNumberMapperEx.cancelSerialNumber(materialId,outBillNo,count,new Date(),user==null?null:user.getId());
@@ -181,6 +259,7 @@ public class SerialNumberService {
      */
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int batAddSerialNumber(String materialCode, String serialNumberPrefix, Integer batAddTotal, String remark)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         int result=0;
         try {
             if (StringUtil.isNotEmpty(materialCode)) {

@@ -14,12 +14,12 @@
             <a-list>
               <a-list-item :key="index" v-for="(record, index) in announcement1">
                 <div style="margin-left: 5%;width: 80%">
-                  <p><a @click="showAnnouncement(record)">{{ record.msgTitle }}</a></p>
+                  <p><a @click="showAnnouncement(record)">{{ notificationTitle(record) }}</a></p>
                   <p style="color: rgba(0,0,0,.45);margin-bottom: 0px">{{ record.createTimeStr }}</p>
                 </div>
               </a-list-item>
               <div style="margin-top: 5px;text-align: center">
-                <a-button @click="toMyAnnouncement()" type="dashed" block>查看更多</a-button>
+                <a-button @click="toMyAnnouncement()" type="dashed" block>{{ $t('common.viewMore') }}</a-button>
               </div>
             </a-list>
           </a-tab-pane>
@@ -43,6 +43,7 @@
   import store from '@/store/'
   import DynamicNotice from './DynamicNotice'
   import MsgList from '@/views/system/MsgList'
+  import { getNotificationContent, getNotificationTitle } from '@/utils/notificationI18n'
 
   export default {
     name: "HeaderNotice",
@@ -62,8 +63,11 @@
         hovered: false,
         announcement1:[],
         msg1Count:"0",
-        msg1Title:"通知(0)",
+        msg1Title: "",
         stopTimer:false,
+        noticeTimer:null,
+        noticeInitialized:false,
+        knownUnreadMsgIds:[],
         websock: null,
         lockReconnect:false,
         heartCheck:null,
@@ -78,37 +82,57 @@
     },
     mounted() {
       this.loadData();
-      //this.timerFun();
+      this.timerFun();
       //this.initWebSocket(); //注释by jishenghua  2021年1月13日
      // this.heartCheckFun();
     },
     destroyed: function () { // 离开页面生命周期函数
       //this.websocketclose();
     },
+    beforeDestroy: function () {
+      this.stopTimer = true;
+      if (this.noticeTimer) {
+        clearInterval(this.noticeTimer);
+        this.noticeTimer = null;
+      }
+    },
     methods: {
+      notificationTitle (record) {
+        return getNotificationTitle(record, this.$i18n)
+      },
       timerFun() {
         this.stopTimer = false;
-        let myTimer = setInterval(()=>{
+        if (this.noticeTimer) {
+          clearInterval(this.noticeTimer);
+        }
+        this.noticeTimer = setInterval(()=>{
           // 停止定时器
-          if (this.stopTimer == true) {
-            clearInterval(myTimer);
-            return;
-          }
           this.loadData()
-        },6000)
+        },20000)
       },
       loadData (){
         try {
           // 获取系统消息
           getAction(this.url.getMsgByStatus, { status: '1'}).then((res) => {
             if (res && res.code === 200) {
+              const unreadMessages = Array.isArray(res.data) ? res.data : [];
+              if (this.noticeInitialized) {
+                unreadMessages
+                  .filter(item => !this.knownUnreadMsgIds.includes(String(item.id)))
+                  .slice()
+                  .reverse()
+                  .forEach(item => this.openNotification(item));
+              }
+              this.knownUnreadMsgIds = unreadMessages.map(item => String(item.id));
+              this.noticeInitialized = true;
+              res.data = unreadMessages;
               this.announcement1 = res.data;
               if(this.announcement1.length>5) {
                 this.announcement1 = this.announcement1.reverse()
                 this.announcement1 = this.announcement1.slice(0,5)
               }
               this.msg1Count = res.data.length;
-              this.msg1Title = "通知(" + res.data.length + ")";
+              this.msg1Title = this.$t('common.notification') + "(" + res.data.length + ")";
             }
           }).catch(error => {
             console.log("系统消息通知异常",error);//这行打印permissionName is undefined
@@ -197,10 +221,10 @@
       },
 
       openNotification (data) {
-        var text = data.msgTxt;
-        const key = `open${Date.now()}`;
+        var text = this.notificationTitle(data) + '\n' + getNotificationContent(data, this.$i18n);
+        const key = `open${data.id || Date.now()}`;
         this.$notification.open({
-          message: '消息提醒',
+          message: this.$t('common.messageReminder'),
           placement:'bottomRight',
           description: text,
           key,
@@ -211,9 +235,12 @@
                 size: 'small',
               },
               on: {
-                click: () => this.showDetail(key,data)
+                click: () => {
+                  this.$notification.close(key);
+                  this.showAnnouncement(data);
+                }
               }
-            }, '查看详情')
+            }, this.$t('common.viewDetail'))
           },
         });
       },

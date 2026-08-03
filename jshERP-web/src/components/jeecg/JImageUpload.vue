@@ -16,7 +16,7 @@
     <img v-if="!isMultiple && picUrl" :src="getAvatarView()" style="height:104px;max-width:300px"/>
     <div v-else >
       <a-icon :type="uploadLoading ? 'loading' : 'plus'" />
-      <div class="ant-upload-text">{{ text }}</div>
+      <div class="ant-upload-text">{{ text || $t('common.uploadFile') }}</div>
     </div>
     <a-modal :visible="previewVisible" :width="1000" :footer="null" @cancel="handleCancel()">
       <img alt="example" style="width: 100%" :src="previewImage"/>
@@ -59,7 +59,7 @@
       text:{
         type:String,
         required:false,
-        default:"上传"
+        default:""
       },
       /*这个属性用于控制文件上传的业务路径*/
       bizPath:{
@@ -133,14 +133,14 @@
         let fileType = file.type;
         let fileSize = file.size;
         if(fileType.indexOf('image')<0){
-          this.$message.warning('请上传图片');
+          this.$message.warning(this.$t('common.pleaseUploadImage'));
           this.uploadGoOn=false
           return false;
         }
         //验证文件大小
         if(fileSize>this.sizeLimit/10) {
           let parseSizeLimit = (this.sizeLimit/1024/1024/10).toFixed(2)
-          this.$message.warning('抱歉，图片大小不能超过' + parseSizeLimit + 'M');
+          this.$message.warning(this.$t('common.fileSizeExceeds', { size: parseSizeLimit }));
           this.uploadGoOn=false
           return false;
         }
@@ -165,7 +165,7 @@
           }
           //this.$message.success(`${info.file.name} 上传成功!`);
         }else if (info.file.status === 'error') {
-          this.$message.error(`${info.file.name} 上传失败.`);
+          this.$message.error(`${info.file.name} ${this.$t('common.uploadFailed')}`);
         }else if(info.file.status === 'removed'){
           this.handleDelete(info.file)
         }

@@ -102,6 +102,7 @@ public class ApiTestBase {
         }
         JSONObject body = JSONObject.parseObject(raw);
         assertTrue(body.containsKey("code"), "响应应包含code字段");
+        assertEquals(200, body.getIntValue("code"), "业务响应code应为200，实际响应：" + raw);
     }
 
     /** 校验分页响应 data.total >= 0, data.rows != null */
@@ -114,10 +115,10 @@ public class ApiTestBase {
         assertNotNull(data.getJSONArray("rows"), "rows不应为null");
     }
 
-    /** 校验业务异常响应 code != 0 */
+    /** 校验业务异常响应 code != 200 */
     protected void assertBizError(Response resp) {
         JSONObject body = JSONObject.parseObject(resp.body().asString());
-        assertNotEquals(0, body.getIntValue("code"), "业务异常时code不应为0");
+        assertNotEquals(200, body.getIntValue("code"), "业务异常时code不应为200");
     }
 
     // ========== 工具方法 ==========
@@ -140,7 +141,7 @@ public class ApiTestBase {
         Response resp = authReqGet().get(CONTEXT + "/sequence/buildNumber");
         assertSuccess(resp);
         JSONObject body = JSONObject.parseObject(resp.body().asString());
-        return body.getJSONObject("data").getString("defaultNumber");
+        return prefix + body.getJSONObject("data").getString("defaultNumber");
     }
 
     /** 获取列表第一个记录的ID */
@@ -262,7 +263,19 @@ public class ApiTestBase {
     protected Long createDepotHeadAndDetail(String type, String subType, Long organId,
                                             Long accountId, Long depotId, Long materialExtendId,
                                             double operNumber, double unitPrice) {
-        String number = generateNumber(subType.equals("采购") ? "CGRK" : subType.equals("销售") ? "XSCK" : "LSCK");
+        String prefix;
+        switch (subType) {
+            case "采购": prefix = "CGRK"; break;
+            case "采购退货": prefix = "CGTH"; break;
+            case "销售": prefix = "XSCK"; break;
+            case "销售退货": prefix = "XSTH"; break;
+            case "零售退货": prefix = "LSTH"; break;
+            case "其它": prefix = "入库".equals(type) ? "QTRK" : "QTCK"; break;
+            default: prefix = "LSCK";
+        }
+        String number = generateNumber(prefix);
+        double signedAmount = "入库".equals(type) && subType.endsWith("退货")
+                ? -operNumber * unitPrice : operNumber * unitPrice;
 
         // 查询商品条码
         String barCode = "";
@@ -288,10 +301,13 @@ public class ApiTestBase {
         info.put("subType", subType);
         info.put("organId", organId);
         info.put("accountId", accountId);
-        info.put("accountIdList", String.valueOf(accountId));
-        info.put("accountMoneyList", String.valueOf(operNumber * unitPrice));
-        info.put("changeAmount", operNumber * unitPrice);
-        info.put("totalPrice", operNumber * unitPrice);
+        if (accountId != null) {
+            info.put("accountIdList", String.valueOf(accountId));
+            info.put("accountMoneyList", String.valueOf(signedAmount));
+        }
+        info.put("changeAmount", signedAmount);
+        info.put("totalPrice", signedAmount);
+        info.put("getAmount", Math.abs(signedAmount));
         info.put("deposit", 0);
         info.put("debt", 0);
         info.put("payType", "现付");
@@ -303,7 +319,7 @@ public class ApiTestBase {
         if (matRows != null) {
             for (int i = 0; i < matRows.size(); i++) {
                 if (materialExtendId.equals(matRows.getJSONObject(i).getLong("id"))) {
-                    unit = matRows.getJSONObject(i).getString("unit");
+                    unit = matRows.getJSONObject(i).getString("unit").replaceAll("\\[[^]]*]$", "");
                     break;
                 }
             }
@@ -333,16 +349,12 @@ public class ApiTestBase {
         Response resp = authReq().body(body.toJSONString()).post(CONTEXT + "/depotHead/addDepotHeadAndDetail");
         assertSuccess(resp);
 
-        // 查询单据获取ID
-        Response listResp = authReqGet()
-                .param("search", "{\"number\":\"" + number + "\"}")
-                .get(CONTEXT + "/depotHead/list");
-        JSONObject data = JSONObject.parseObject(listResp.body().asString()).getJSONObject("data");
-        JSONArray listRows = data.getJSONArray("rows");
-        if (listRows != null && !listRows.isEmpty()) {
-            return listRows.getJSONObject(0).getLong("id");
-        }
-        return null;
+        // 按单号直接查询，避免列表接口的往来单位/用户权限过滤影响测试数据定位
+        Response detailResp = authReqGet().param("number", number)
+                .get(CONTEXT + "/depotHead/getDetailByNumber");
+        assertSuccess(detailResp);
+        JSONObject data = JSONObject.parseObject(detailResp.body().asString()).getJSONObject("data");
+        return data == null ? null : data.getLong("id");
     }
 
     /** 审核单据 */
@@ -367,8 +379,8 @@ public class ApiTestBase {
     protected double getMaterialStock(Long materialExtendId, Long depotId) {
         Response resp = authReqGet()
                 .param("currentPage", 1)
-                .param("pageSize", 10)
-                .param("depotIds", "")
+                .param("pageSize", 100)
+                .param("depotIds", String.valueOf(depotId))
                 .param("categoryId", "")
                 .param("position", "")
                 .param("materialParam", "")
@@ -378,8 +390,14 @@ public class ApiTestBase {
                 .get(CONTEXT + "/material/getListWithStock");
         assertSuccess(resp);
         JSONObject data = JSONObject.parseObject(resp.body().asString()).getJSONObject("data");
-        if (data != null && data.getJSONArray("rows") != null && !data.getJSONArray("rows").isEmpty()) {
-            return data.getJSONArray("rows").getJSONObject(0).getDoubleValue("currentStock");
+        if (data != null && data.getJSONArray("rows") != null) {
+            JSONArray rows = data.getJSONArray("rows");
+            for (int index = 0; index < rows.size(); index++) {
+                JSONObject row = rows.getJSONObject(index);
+                if (materialExtendId.equals(row.getLong("id"))) {
+                    return row.getDoubleValue("currentStock");
+                }
+            }
         }
         return 0;
     }

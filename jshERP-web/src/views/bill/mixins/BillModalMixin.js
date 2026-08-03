@@ -3,7 +3,7 @@ import { findBySelectCus, findBySelectRetail, findBySelectSup, findStockByDepotA
   getBatchNumberList, getCurrentSystemConfig, getMaterialByBarCode, getPersonByNumType, getPlatformConfigByKey } from '@/api/api'
 import { getAction } from '@/api/manage'
 import { getCheckFlag, getMpListShort, getNowFormatDateTime } from '@/utils/util'
-import { USER_INFO } from '@/store/mutation-types'
+import { USER_ID, USER_INFO } from '@/store/mutation-types'
 import Vue from 'vue'
 
 export const BillModalMixin = {
@@ -51,7 +51,7 @@ export const BillModalMixin = {
       validatorRules:{
         price:{
           rules: [
-            { pattern: /^(([0-9][0-9]*)|([0]\.\d{0,4}|[0-9][0-9]*\.\d{0,4}))$/, message: '金额格式不正确!' }
+            { pattern: /^(([0-9][0-9]*)|([0]\.\d{0,4}|[0-9][0-9]*\.\d{0,4}))$/, message: this.$t('purchase.validation.amountPattern') }
           ]
         }
       },
@@ -97,10 +97,12 @@ export const BillModalMixin = {
       }
     },
     addInit(amountNum) {
-      getAction('/sequence/buildNumber').then((res) => {
+      getAction('/sequence/buildNumber', {prefixNo: amountNum}).then((res) => {
         if (res && res.code === 200) {
-          this.model.defaultNumber = amountNum + res.data.defaultNumber
-          this.form.setFieldsValue({'number':amountNum + res.data.defaultNumber})
+          this.model.defaultNumber = res.data.defaultNumber
+          this.form.setFieldsValue({'number':res.data.defaultNumber})
+        } else if(res) {
+          this.$message.warning(res.data || this.$t('common.getDataFailed'))
         }
       })
       this.$nextTick(() => {
@@ -127,9 +129,11 @@ export const BillModalMixin = {
       this.manyAccountBtnStatus = false
     },
     copyAddInit(amountNum) {
-      getAction('/sequence/buildNumber').then((res) => {
+      getAction('/sequence/buildNumber', {prefixNo: amountNum}).then((res) => {
         if (res && res.code === 200) {
-          this.form.setFieldsValue({'number':amountNum + res.data.defaultNumber})
+          this.form.setFieldsValue({'number':res.data.defaultNumber})
+        } else if(res) {
+          this.$message.warning(res.data || this.$t('common.getDataFailed'))
         }
       })
       this.$nextTick(() => {
@@ -184,7 +188,7 @@ export const BillModalMixin = {
       }
     },
     initSystemConfig() {
-      getCurrentSystemConfig().then((res) => {
+      return getCurrentSystemConfig().then((res) => {
         if(res.code === 200 && res.data){
           let multiBillType = res.data.multiBillType
           let multiLevelApprovalFlag = res.data.multiLevelApprovalFlag
@@ -207,7 +211,7 @@ export const BillModalMixin = {
     },
     initSupplier(isChecked) {
       let that = this;
-      findBySelectSup({organId: this.model.organId, limit:1}).then((res)=>{
+      return findBySelectSup({organId: this.model.organId, limit:1}).then((res)=>{
         if(res) {
           that.supList = res
           if(isChecked && res.length>0) {
@@ -218,7 +222,7 @@ export const BillModalMixin = {
     },
     initCustomer(isChecked) {
       let that = this;
-      findBySelectCus({organId: this.model.organId, limit:1}).then((res)=>{
+      return findBySelectCus({organId: this.model.organId, limit:1}).then((res)=>{
         if(res) {
           that.cusList = res
           if(isChecked && res.length>0) {
@@ -229,7 +233,7 @@ export const BillModalMixin = {
     },
     initRetail(isChecked) {
       let that = this;
-      findBySelectRetail({organId: this.model.organId, limit:1}).then((res)=>{
+      return findBySelectRetail({organId: this.model.organId, limit:1}).then((res)=>{
         if(res) {
           that.retailList = res
           if(isChecked && res.length>0) {
@@ -240,7 +244,7 @@ export const BillModalMixin = {
     },
     initSalesman() {
       let that = this;
-      getPersonByNumType({type:1}).then((res)=>{
+      return getPersonByNumType({type:1}).then((res)=>{
         if(res) {
           that.personList.options = res;
         }
@@ -248,7 +252,7 @@ export const BillModalMixin = {
     },
     initDepot() {
       let that = this;
-      getAction('/depot/findDepotByCurrentUser').then((res) => {
+      return getAction('/depot/findDepotByCurrentUser').then((res) => {
         if(res.code === 200){
           let arr = res.data
           for(let item of that.materialTable.columns){
@@ -268,15 +272,15 @@ export const BillModalMixin = {
     },
     initAccount(isChecked){
       let that = this;
-      getAccount({}).then((res)=>{
+      return getAccount({}).then((res)=>{
         if(res && res.code === 200) {
           let list = res.data.accountList
           let lastId = list.length>0?list[0].id:''
-          getCurrentSystemConfig().then((res) => {
+          return getCurrentSystemConfig().then((res) => {
             if (res.code === 200 && res.data) {
               let multiAccountFlag = res.data.multiAccountFlag
               if(multiAccountFlag==='1') {
-                list.splice(0,0,{id: 0, name: '多账户'})
+                list.splice(0,0,{id: 0, name: this.$t('purchase.form.manyAccountDetails')})
               }
             }
             that.accountList = list
@@ -332,7 +336,7 @@ export const BillModalMixin = {
     selectAccount(value){
       if(value === 0) { //多账户
         this.$refs.manyAccountModalForm.edit(this.accountIdList, this.accountMoneyList)
-        this.$refs.manyAccountModalForm.title = "多账户结算"
+        this.$refs.manyAccountModalForm.title = this.$t('purchase.form.manyAccountDetails')
         this.manyAccountBtnStatus = true
       } else {
         this.accountIdList = []
@@ -352,32 +356,32 @@ export const BillModalMixin = {
     },
     addSupplier() {
       this.$refs.vendorModalForm.add();
-      this.$refs.vendorModalForm.title = "新增供应商";
+      this.$refs.vendorModalForm.title = this.$t('purchase.addSupplier');
       this.$refs.vendorModalForm.disableSubmit = false;
     },
     addCustomer() {
       this.$refs.customerModalForm.add();
-      this.$refs.customerModalForm.title = "新增客户（提醒：如果找不到新添加的客户，请到用户管理检查是否分配了该客户权限）";
+      this.$refs.customerModalForm.title = this.$t('sales.addCustomer');
       this.$refs.customerModalForm.disableSubmit = false;
     },
     addMember() {
       this.$refs.memberModalForm.add();
-      this.$refs.memberModalForm.title = "新增会员";
+      this.$refs.memberModalForm.title = this.$t('retail.addMember');
       this.$refs.memberModalForm.disableSubmit = false;
     },
     handleBatchSetDepot() {
       this.$refs.batchSetDepotModalForm.add();
-      this.$refs.batchSetDepotModalForm.title = "批量切换仓库";
+      this.$refs.batchSetDepotModalForm.title = this.$t('common.batchSetDepot');
       this.$refs.batchSetDepotModalForm.disableSubmit = false;
     },
     addDepot() {
       this.$refs.depotModalForm.add();
-      this.$refs.depotModalForm.title = "新增仓库";
+      this.$refs.depotModalForm.title = this.$t('common.add') + this.$t('system.depot');
       this.$refs.depotModalForm.disableSubmit = false;
     },
     addAccount() {
       this.$refs.accountModalForm.add();
-      this.$refs.accountModalForm.title = "新增结算账户";
+      this.$refs.accountModalForm.title = this.$t('common.add') + this.$t('system.account');
       this.$refs.accountModalForm.disableSubmit = false;
     },
     vendorModalFormOk() {
@@ -389,52 +393,58 @@ export const BillModalMixin = {
     memberModalFormOk() {
       this.initRetail(1)
     },
-    batchSetDepotModalFormOk(depotId) {
+    batchSetDepotModalFormOk(depotId, sourceDetails) {
+      if(Array.isArray(sourceDetails)) {
+        this.fillDepotAndStock(depotId, sourceDetails)
+        return
+      }
       this.getAllTable().then(tables => {
         return getListData(this.form, tables)
       }).then(allValues => {
         //获取单据明细列表信息
         let detailArr = allValues.tablesValue[0].values
-        let barCodes = ''
-        for(let detail of detailArr){
+        this.fillDepotAndStock(depotId, detailArr)
+      })
+    },
+    fillDepotAndStock(depotId, detailArr) {
+      let barCodes = ''
+      for(let detail of detailArr){
+        if(detail.barCode) {
           barCodes += detail.barCode + ','
         }
-        if(barCodes) {
-          barCodes = barCodes.substring(0, barCodes.length-1)
-        }
-        let param = {
-          barCode: barCodes,
-          organId: this.form.getFieldValue('organId'),
-          depotId: depotId,
-          mpList: getMpListShort(Vue.ls.get('materialPropertyList')),  //扩展属性
-          prefixNo: this.prefixNo
-        }
-        getMaterialByBarCode(param).then((res) => {
-          if (res && res.code === 200) {
-            let mList = res.data
-            //构造新的列表数组，用于存放单据明细信息
-            let newDetailArr = []
-            if(mList && mList.length) {
-              for (let i = 0; i < detailArr.length; i++) {
-                let item = detailArr[i]
-                item.depotId = depotId
-                for (let j = 0; j < mList.length; j++) {
-                  if(mList[j].mBarCode === item.barCode) {
-                    item.stock = mList[j].stock
-                  }
-                }
-                newDetailArr.push(item)
-              }
-            } else {
-              for (let i = 0; i < detailArr.length; i++) {
-                let item = detailArr[i]
-                item.depotId = depotId
-                newDetailArr.push(item)
+      }
+      if(barCodes) {
+        barCodes = barCodes.substring(0, barCodes.length-1)
+      }
+      // 仓库先立即回填，库存接口只负责异步补充 stock，不能阻塞或清空转单明细。
+      let newDetailArr = detailArr.map(item => {
+        item.depotId = depotId
+        return item
+      })
+      this.materialTable.dataSource = [...newDetailArr]
+      if(!barCodes) {
+        return
+      }
+      let param = {
+        barCode: barCodes,
+        organId: this.form.getFieldValue('organId'),
+        depotId: depotId,
+        mpList: getMpListShort(Vue.ls.get('materialPropertyList')),  //扩展属性
+        prefixNo: this.prefixNo
+      }
+      getMaterialByBarCode(param).then((res) => {
+        if (res && res.code === 200 && Array.isArray(res.data)) {
+          let mList = res.data
+          for (let item of newDetailArr) {
+            for (let material of mList) {
+              if(material.mBarCode === item.barCode) {
+                item.stock = material.stock
+                break
               }
             }
-            this.materialTable.dataSource = newDetailArr
           }
-        })
+          this.materialTable.dataSource = [...newDetailArr]
+        }
       })
     },
     depotModalFormOk() {
@@ -519,9 +529,9 @@ export const BillModalMixin = {
                     taxLastMoneyTotal += mArr[j].taxLastMoney-0
                     //组合和拆分单据给商品类型进行重新赋值
                     if(j===0) {
-                      mArr[0].mType = '组合件'
+                      mArr[0].mType = this.$t('common.compositeItem')
                     } else {
-                      mArr[j].mType = '普通子件'
+                      mArr[j].mType = this.$t('common.normalPart')
                     }
                   }
                   this.materialTable.dataSource = mArr
@@ -1062,7 +1072,7 @@ export const BillModalMixin = {
                   }
                   //如果扫码结果和序列号重复，就直接跳过
                   if(detail.snList === this.scanBarCode.trim()) {
-                    this.$message.warning('抱歉，已经扫描过该序列号！');
+                    this.$message.warning(this.$t('common.snAlreadyScanned'));
                     hasFinished = true
                   }
                   newDetailArr.push(detail)
@@ -1099,15 +1109,15 @@ export const BillModalMixin = {
                   item.taxLastMoney = mInfo.taxLastMoney
                   newDetailArr.push(item)
                 } else {
-                  this.$message.warning('抱歉，此条码不存在商品信息！');
+                  this.$message.warning(this.$t('common.barcodeNotFound'));
                 }
               }
               //组合和拆分单据给商品类型进行重新赋值
               for(let i=0; i< newDetailArr.length; i++) {
                 if(i===0) {
-                  newDetailArr[0].mType = '组合件'
+                  newDetailArr[0].mType = this.$t('common.compositeItem')
                 } else {
-                  newDetailArr[i].mType = '普通子件'
+                  newDetailArr[i].mType = this.$t('common.normalPart')
                 }
               }
               this.materialTable.dataSource = newDetailArr
@@ -1194,11 +1204,11 @@ export const BillModalMixin = {
           if (res && res.code === 200) {
             let sendWorkflowUrl = res.data.platformValue + '&no=' + this.model.number + '&type=1'
             this.$refs.modalWorkflow.show(this.model, sendWorkflowUrl, this.model.number, 1, 320)
-            this.$refs.modalWorkflow.title = "发起流程"
+            this.$refs.modalWorkflow.title = this.$t('common.launchWorkflow')
           }
         })
       } else {
-        this.$message.warning('请先保存单据后再提交流程！');
+        this.$message.warning(this.$t('common.saveFirst'));
       }
     },
     //三联打印新版
@@ -1209,11 +1219,11 @@ export const BillModalMixin = {
             let billPrintUrl = res.data.platformValue + '&no=' + this.model.number
             let billPrintHeight = document.documentElement.clientHeight - 260
             this.$refs.modalPrintPro.show(this.model, billPrintUrl, billPrintHeight)
-            this.$refs.modalPrintPro.title = billType + "-三联打印-新版"
+            this.$refs.modalPrintPro.title = billType + "-" + this.$t('common.printNew')
           }
         })
       } else {
-        this.$message.warning('请先保存单据后再打印！');
+        this.$message.warning(this.$t('common.saveFirst'));
       }
     },
     //三联打印
@@ -1224,11 +1234,11 @@ export const BillModalMixin = {
             let billPrintUrl = res.data.platformValue + '&no=' + this.model.number
             let billPrintHeight = this.materialTable.dataSource.length*50 + 600
             this.$refs.modalPrint.show(this.model, billPrintUrl, billPrintHeight)
-            this.$refs.modalPrint.title = billType + "-三联打印"
+            this.$refs.modalPrint.title = billType + "-" + this.$t('common.print')
           }
         })
       } else {
-        this.$message.warning('请先保存单据后再打印！');
+        this.$message.warning(this.$t('common.saveFirst'));
       }
     },
     //加载平台配置信息
@@ -1241,7 +1251,8 @@ export const BillModalMixin = {
     },
     //加载快捷按钮：供应商、客户、会员、结算账户、仓库
     initQuickBtn() {
-      let btnStrList = Vue.ls.get('winBtnStrList') //按钮功能列表 JSON字符串
+      // 登录后按钮权限按用户保存；保留旧键以兼容历史缓存。
+      let btnStrList = Vue.ls.get('winBtnStrList_' + Vue.ls.get(USER_ID)) || Vue.ls.get('winBtnStrList')
       if (btnStrList) {
         for (let i = 0; i < btnStrList.length; i++) {
           if (btnStrList[i].btnStr) {

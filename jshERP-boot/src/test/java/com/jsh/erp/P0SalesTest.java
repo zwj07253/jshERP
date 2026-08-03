@@ -29,7 +29,14 @@ public class P0SalesTest extends ApiTestBase {
         Response matResp = authReqGet().param("q", "").param("page", 1).param("rows", 10).get(CONTEXT + "/material/findBySelect");
         JSONObject matData = JSONObject.parseObject(matResp.body().asString());
         if (matData.getLong("total") > 0) {
-            materialExtendId = matData.getJSONArray("rows").getJSONObject(0).getLong("id");
+            for (int index = 0; index < matData.getJSONArray("rows").size(); index++) {
+                JSONObject material = matData.getJSONArray("rows").getJSONObject(index);
+                if (!"1".equals(material.getString("enableBatchNumber"))
+                        && !"1".equals(material.getString("enableSerialNumber"))) {
+                    materialExtendId = material.getLong("id");
+                    break;
+                }
+            }
         }
 
         // 获取仓库
@@ -148,7 +155,7 @@ public class P0SalesTest extends ApiTestBase {
     @DisplayName("14b: 欠款单据列表")
     void verifyDebtList() {
         Response resp = authReqGet()
-                .param("search", "{\"organId\":\"" + customerId + "\"}")
+                .param("search", "{\"organId\":\"" + customerId + "\",\"type\":\"出库\",\"subType\":\"销售\"}")
                 .param("currentPage", 1)
                 .param("pageSize", 10)
                 .get(CONTEXT + "/depotHead/debtList");

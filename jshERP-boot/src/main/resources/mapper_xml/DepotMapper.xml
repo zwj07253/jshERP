@@ -120,7 +120,8 @@
       #{enabled,jdbcType=BOOLEAN}, #{tenantId,jdbcType=BIGINT}, #{deleteFlag,jdbcType=VARCHAR}, 
       #{isDefault,jdbcType=BOOLEAN})
   </insert>
-  <insert id="insertSelective" parameterType="com.jsh.erp.datasource.entities.Depot">
+  <insert id="insertSelective" parameterType="com.jsh.erp.datasource.entities.Depot"
+          useGeneratedKeys="true" keyProperty="id" keyColumn="id">
     insert into jsh_depot
     <trim prefix="(" suffix=")" suffixOverrides=",">
       <if test="id != null">

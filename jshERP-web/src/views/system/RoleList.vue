@@ -8,19 +8,19 @@
           <a-form layout="inline" @keyup.enter.native="searchQuery">
             <a-row :gutter="24">
               <a-col :md="6" :sm="24">
-                <a-form-item label="角色名称" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入角色名称查询" v-model="queryParam.name"></a-input>
+                <a-form-item :label="$t('common.roleName')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('common.roleName')" v-model="queryParam.name"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item label="备注" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入备注查询" v-model="queryParam.description"></a-input>
+                <a-form-item :label="$t('common.remark')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('common.enterRemark')" v-model="queryParam.description"></a-input>
                 </a-form-item>
               </a-col>
               <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
                 <a-col :md="6" :sm="24">
-                  <a-button type="primary" @click="searchQuery">查询</a-button>
-                  <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
+                  <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="searchReset">{{ $t('common.reset') }}</a-button>
                 </a-col>
               </span>
             </a-row>
@@ -28,10 +28,10 @@
         </div>
         <!-- 操作按钮区域 -->
         <div class="table-operator"  style="margin-top: 5px">
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd" type="primary" icon="plus">新增</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchDel" icon="delete">删除</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(true)" icon="check-square">启用</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(false)" icon="close-square">禁用</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd" type="primary" icon="plus">{{ $t('common.add') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchDel" icon="delete">{{ $t('common.delete') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(true)" icon="check-square">{{ $t('common.enable') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(false)" icon="close-square">{{ $t('common.disable') }}</a-button>
         </div>
         <!-- table区域-begin -->
         <div>
@@ -48,36 +48,37 @@
             :rowSelection="{selectedRowKeys: selectedRowKeys, onChange: onSelectChange}"
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
-              <a @click="handleSetFunction(record)">分配菜单</a>
-              <a-divider type="vertical" />
-              <a @click="handleSetPushBtn(record.id, record.name)">分配按钮</a>
-              <a-divider type="vertical" />
-              <a @click="handleEdit(record)">编辑</a>
+              <template v-if="btnEnableList.indexOf(1)>-1">
+                <a @click="handleSetFunction(record)">{{ $t('common.assignMenu') }}</a>
+                <a-divider type="vertical" />
+                <a @click="handleSetPushBtn(record.id, record.name)">{{ $t('common.assignButton') }}</a>
+                <a-divider type="vertical" />
+              </template>
+              <a @click="handleEdit(record)">{{ btnEnableList.indexOf(1)>-1 ? $t('common.edit') : $t('common.view') }}</a>
               <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
-              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定删除吗?" @confirm="() => handleDelete(record.id)">
-                <a>删除</a>
+              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" :title="$t('common.confirmDelete')" @confirm="() => handleDelete(record.id)">
+                <a>{{ $t('common.delete') }}</a>
               </a-popconfirm>
-              <a-modal v-model="roleModalVisible" title="操作提示" @ok="handleRoleTip">
-                <p>保存角色已经操作成功！现在继续<b>分配菜单</b>吗？</p>
+              <a-modal v-model="roleModalVisible" :title="$t('common.operationTip')" @ok="handleRoleTip">
+                <p>{{ $t('common.roleSaveSuccess') }}<b>{{ $t('common.assignMenu') }}</b>{{ $t('common.questionMark') }}</p>
               </a-modal>
             </span>
             <span slot="typeTitle">
-              数据类型
-              <a-tooltip title="1、全部数据-该角色对应的用户可以看到全部单据；2、本部门数据-该角色对应的用户可以看到自己所在部门的全部单据；
-                3、个人数据-该角色对应的用户只可以看到自己的单据。单据是指采购入库、销售出库等">
+              {{ $t('common.dataType') }}
+              <a-tooltip :title="$t('common.dataTypeTip')">
                 <a-icon type="question-circle" />
               </a-tooltip>
             </span>
             <span slot="priceLimitTitle">
-              价格屏蔽
-              <a-tooltip title="价格屏蔽支持多选，可以对首页和单据进行价格屏蔽，还可以对商品库存和进销存统计报表进行成本价屏蔽">
+              {{ $t('common.priceLimit') }}
+              <a-tooltip :title="$t('common.priceLimitTip')">
                 <a-icon type="question-circle" />
               </a-tooltip>
             </span>
             <!-- 状态渲染模板 -->
             <template slot="customRenderFlag" slot-scope="enabled">
-              <a-tag v-if="enabled" color="green">启用</a-tag>
-              <a-tag v-if="!enabled" color="orange">禁用</a-tag>
+              <a-tag v-if="enabled" color="green">{{ $t('common.enable') }}</a-tag>
+              <a-tag v-if="!enabled" color="orange">{{ $t('common.disable') }}</a-tag>
             </template>
           </a-table>
         </div>
@@ -86,8 +87,8 @@
         <role-modal ref="modalForm" @ok="roleModalFormOk"></role-modal>
         <role-function-modal ref="roleFunctionModal" @ok="roleFunctionModalFormOk"></role-function-modal>
         <role-push-btn-modal ref="rolePushBtnModal" @ok="modalFormOk"></role-push-btn-modal>
-        <a-modal v-model="roleFunctionModalVisible" title="操作提示" @ok="handleRoleFunctionTip">
-          <p>分配菜单已经操作成功！现在继续<b>分配按钮</b>吗？</p>
+        <a-modal v-model="roleFunctionModalVisible" :title="$t('common.operationTip')" @ok="handleRoleFunctionTip">
+          <p>{{ $t('common.menuAssignSuccess') }}<b>{{ $t('common.assignButton') }}</b>{{ $t('common.questionMark') }}</p>
         </a-modal>
       </a-card>
     </a-col>
@@ -111,7 +112,7 @@
     },
     data () {
       return {
-        description: '角色管理页面',
+        description: '',
         roleModalVisible: false,
         roleFunctionModalVisible: false,
         currentRoleId: '',
@@ -141,14 +142,14 @@
             }
           },
           {
-            title: '操作',
+            title: this.$t('common.action'),
             dataIndex: 'action',
             align:"center",
             width: 200,
             scopedSlots: { customRender: 'action' },
           },
           {
-            title: '角色名称', align:"left", dataIndex: 'name', width: 120
+            title: this.$t('common.roleName'), align:"left", dataIndex: 'name', width: 120
           },
           {
             align:"left", dataIndex: 'type', width: 100,
@@ -159,10 +160,10 @@
             slots: { title: 'priceLimitTitle' }
           },
           {
-            title: '备注', align:"left", dataIndex: 'description', width: 150
+            title: this.$t('common.remark'), align:"left", dataIndex: 'description', width: 150
           },
-          { title: '排序', align:"left", dataIndex: 'sort', width: 50},
-          { title: '状态',dataIndex: 'enabled',width:60,align:"center",
+          { title: this.$t('common.sort'), align:"left", dataIndex: 'sort', width: 50},
+          { title: this.$t('common.status'),dataIndex: 'enabled',width:60,align:"center",
             scopedSlots: { customRender: 'customRenderFlag' }
           }
         ],
@@ -182,12 +183,12 @@
     methods: {
       handleSetFunction(record) {
         this.$refs.roleFunctionModal.edit(record);
-        this.$refs.roleFunctionModal.title = "分配菜单给：" + record.name + "【分配之后请继续分配按钮】"
+        this.$refs.roleFunctionModal.title = this.$t('common.assignMenuTo') + record.name + this.$t('common.assignMenuTip')
         this.$refs.roleFunctionModal.disableSubmit = false;
       },
       handleSetPushBtn(roleId, roleName) {
         this.$refs.rolePushBtnModal.edit(roleId);
-        this.$refs.rolePushBtnModal.title = "分配按钮给：" + roleName
+        this.$refs.rolePushBtnModal.title = this.$t('common.assignButtonTo') + roleName
         this.$refs.rolePushBtnModal.disableSubmit = false;
       },
       roleModalFormOk() {
@@ -236,13 +237,13 @@
       handleAdd: function () {
         this.currentRoleId = ''
         this.$refs.modalForm.add();
-        this.$refs.modalForm.title = "新增【保存之后请继续分配菜单】";
+        this.$refs.modalForm.title = this.$t('common.add') + this.$t('common.saveThenAssignMenu');
         this.$refs.modalForm.disableSubmit = false;
       },
       handleEdit: function (record) {
         this.currentRoleId = record.id
         this.$refs.modalForm.edit(record);
-        this.$refs.modalForm.title = "编辑【保存之后请继续分配菜单】";
+        this.$refs.modalForm.title = this.$t('common.edit') + this.$t('common.saveThenAssignMenu');
         this.$refs.modalForm.disableSubmit = false;
         if(this.btnEnableList.indexOf(1)===-1) {
           this.$refs.modalForm.isReadOnly = true

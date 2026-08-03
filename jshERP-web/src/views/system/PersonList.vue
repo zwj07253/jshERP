@@ -8,23 +8,24 @@
           <a-form layout="inline" @keyup.enter.native="searchQuery">
             <a-row :gutter="24">
               <a-col :md="6" :sm="24">
-                <a-form-item label="姓名" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入姓名查询" v-model="queryParam.name"></a-input>
+                <a-form-item :label="$t('system.personNameQuery')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('system.enterPersonNameQuery')" v-model="queryParam.name"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item label="类型" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-select v-model="queryParam.type" placeholder="请选择类型">
-                    <a-select-option value="">请选择</a-select-option>
-                    <a-select-option value="销售员">销售员</a-select-option>
-                    <a-select-option value="财务员">财务员</a-select-option>
+                <a-form-item :label="$t('common.type')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-select v-model="queryParam.type" :placeholder="$t('common.selectType')">
+                    <a-select-option value="">{{ $t('common.pleaseSelect') }}</a-select-option>
+                    <a-select-option value="销售员">{{ $t('system.salesPerson') }}</a-select-option>
+                    <a-select-option value="仓管员">{{ $t('system.warehouseKeeper') }}</a-select-option>
+                    <a-select-option value="财务员">{{ $t('system.financeStaff') }}</a-select-option>
                   </a-select>
                 </a-form-item>
               </a-col>
               <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
                 <a-col :md="6" :sm="24">
-                  <a-button type="primary" @click="searchQuery">查询</a-button>
-                  <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
+                  <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="searchReset">{{ $t('common.reset') }}</a-button>
                 </a-col>
               </span>
             </a-row>
@@ -32,10 +33,10 @@
         </div>
         <!-- 操作按钮区域 -->
         <div class="table-operator"  style="margin-top: 5px">
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd" type="primary" icon="plus">新增</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchDel" icon="delete">删除</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(true)" icon="check-square">启用</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(false)" icon="close-square">禁用</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd" type="primary" icon="plus">{{ $t('common.add') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchDel" icon="delete">{{ $t('common.delete') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(true)" icon="check-square">{{ $t('common.enable') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(false)" icon="close-square">{{ $t('common.disable') }}</a-button>
         </div>
         <!-- table区域-begin -->
         <div>
@@ -52,16 +53,16 @@
             :rowSelection="{selectedRowKeys: selectedRowKeys, onChange: onSelectChange}"
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
-              <a @click="handleEdit(record)">编辑</a>
+              <a @click="handleEdit(record)">{{btnEnableList.indexOf(1)>-1 ? $t('common.edit') : $t('common.view')}}</a>
               <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
-              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定删除吗?" @confirm="() => handleDelete(record.id)">
-                <a>删除</a>
+              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" :title="$t('common.confirmDelete')" @confirm="() => handleDelete(record.id)">
+                <a>{{ $t('common.delete') }}</a>
               </a-popconfirm>
             </span>
             <!-- 状态渲染模板 -->
             <template slot="customRenderFlag" slot-scope="enabled">
-              <a-tag v-if="enabled" color="green">启用</a-tag>
-              <a-tag v-if="!enabled" color="orange">禁用</a-tag>
+              <a-tag v-if="enabled" color="green">{{ $t('common.enable') }}</a-tag>
+              <a-tag v-if="!enabled" color="orange">{{ $t('common.disable') }}</a-tag>
             </template>
           </a-table>
         </div>
@@ -109,16 +110,16 @@
             }
           },
           {
-            title: '操作',
+            title: this.$t('common.action'),
             dataIndex: 'action',
             align:"center",
             width: 100,
             scopedSlots: { customRender: 'action' },
           },
-          { title: '姓名', align:"left", dataIndex: 'name', width: 200, },
-          { title: '类型', align:"left", dataIndex: 'type', width: 150, },
-          { title: '排序', dataIndex: 'sort', width: 60},
-          { title: '状态',dataIndex: 'enabled',width:60,align:"center",
+          { title: this.$t('system.personNameQuery'), align:"left", dataIndex: 'name', width: 200, },
+          { title: this.$t('common.type'), align:"left", dataIndex: 'type', width: 150, },
+          { title: this.$t('common.sort'), dataIndex: 'sort', width: 60},
+          { title: this.$t('common.status'),dataIndex: 'enabled',width:60,align:"center",
             scopedSlots: { customRender: 'customRenderFlag' }
           }
         ],
@@ -135,12 +136,10 @@
     },
     methods: {
       handleEdit: function (record) {
-        this.$refs.modalForm.edit(record);
-        this.$refs.modalForm.title = "编辑";
+        const isReadOnly = this.btnEnableList.indexOf(1) === -1
+        this.$refs.modalForm.edit(record, isReadOnly);
+        this.$refs.modalForm.title = isReadOnly ? this.$t('common.view') : this.$t('common.edit');
         this.$refs.modalForm.disableSubmit = false;
-        if(this.btnEnableList.indexOf(1)===-1) {
-          this.$refs.modalForm.isReadOnly = true
-        }
       }
     }
   }

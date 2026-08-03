@@ -10,6 +10,7 @@ import com.jsh.erp.base.BaseController;
 import com.jsh.erp.base.TableDataInfo;
 import com.jsh.erp.constants.BusinessConstants;
 import com.jsh.erp.constants.ExceptionConstants;
+import com.jsh.erp.datasource.entities.PlatformConfig;
 import com.jsh.erp.datasource.entities.Tenant;
 import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.entities.UserEx;
@@ -60,6 +61,9 @@ public class UserController extends BaseController {
     @Resource
     private RedisService redisService;
 
+    @Resource
+    private PlatformConfigService platformConfigService;
+
     private static String SUCCESS = "操作成功";
     private static String ERROR = "操作失败";
 
@@ -67,7 +71,7 @@ public class UserController extends BaseController {
     @Operation(summary = "根据id获取信息")
     public String getList(@RequestParam("id") Long id,
                           HttpServletRequest request) throws Exception {
-        User user = userService.getUser(id);
+        User user = userService.getSafeUser(id);
         Map<String, Object> objectMap = new HashMap<>();
         if(user != null) {
             objectMap.put("info", user);
@@ -81,6 +85,7 @@ public class UserController extends BaseController {
     @Operation(summary = "获取信息列表")
     public TableDataInfo getList(@RequestParam(value = Constants.SEARCH, required = false) String search,
                                  HttpServletRequest request)throws Exception {
+        userService.checkReadPermission();
         String userName = StringUtil.getInfo(search, "userName");
         String loginName = StringUtil.getInfo(search, "loginName");
         List<UserEx> list = userService.select(userName, loginName);
@@ -123,6 +128,7 @@ public class UserController extends BaseController {
     @Operation(summary = "检查名称是否存在")
     public String checkIsNameExist(@RequestParam Long id, @RequestParam(value ="name", required = false) String name,
                                    HttpServletRequest request)throws Exception {
+        userService.checkReadPermission();
         Map<String, Object> objectMap = new HashMap<>();
         int exist = userService.checkIsNameExist(id, name);
         if(exist > 0) {
@@ -138,6 +144,7 @@ public class UserController extends BaseController {
     public BaseResponseInfo login(@RequestBody UserEx userParam, HttpServletRequest request)throws Exception {
         BaseResponseInfo res = new BaseResponseInfo();
         try {
+            userService.checkRateLimit("login", request, 20, 300);
             userService.validateCaptcha(userParam.getCode(), userParam.getUuid());
             Map<String, Object> data = userService.login(userParam.getLoginName().trim(), userParam.getPassword().trim(), request);
             res.code = 200;
@@ -158,6 +165,7 @@ public class UserController extends BaseController {
                                   HttpServletRequest request)throws Exception {
         BaseResponseInfo res = new BaseResponseInfo();
         try {
+            userService.checkRateLimit("weixin-login", request, 30, 300);
             String weixinCode = jsonObject.getString("weixinCode");
             User user = userService.getUserByWeixinCode(weixinCode);
             if(user == null) {
@@ -165,7 +173,7 @@ public class UserController extends BaseController {
                 res.data = "微信未绑定";
             } else {
                 logger.info("微信登录:" + user.getLoginName());
-                Map<String, Object> data = userService.login(user.getLoginName().trim(), user.getPassword().trim(), request);
+                Map<String, Object> data = userService.loginByWeixin(user, request);
                 res.code = 200;
                 res.data = data;
             }
@@ -182,6 +190,7 @@ public class UserController extends BaseController {
     public String weixinBind(@RequestBody JSONObject jsonObject,
                              HttpServletRequest request)throws Exception {
         Map<String, Object> objectMap = new HashMap<>();
+        userService.checkRateLimit("weixin-bind", request, 10, 300);
         String loginName = jsonObject.getString("loginName");
         String password = jsonObject.getString("password");
         String weixinCode = jsonObject.getString("weixinCode");
@@ -202,6 +211,7 @@ public class UserController extends BaseController {
             Long userId = Long.parseLong(redisService.getObjectFromSessionByKey(request,"userId").toString());
             User user = userService.getUser(userId);
             user.setPassword(null);
+            user.setWeixinOpenId(null);
             data.put("user", user);
             res.code = 200;
             res.data = data;
@@ -250,17 +260,12 @@ public class UserController extends BaseController {
         Map<String, Object> objectMap = new HashMap<String, Object>();
         try {
             String info = "";
-            Long userId = jsonObject.getLong("userId");
             String oldpwd = jsonObject.getString("oldpassword");
             String password = jsonObject.getString("password");
-            User user = userService.getUser(userId);
-            //必须和原始密码一致才可以更新密码
-            if (oldpwd.equalsIgnoreCase(user.getPassword())) {
-                user.setPassword(password);
-                flag = userService.updateUserByObj(user, request); //1-成功
+            flag = userService.updateCurrentUserPassword(oldpwd, password, request);
+            if (flag == 1) {
                 info = "修改成功";
             } else {
-                flag = 2; //原始密码输入错误
                 info = "原始密码输入错误";
             }
             objectMap.put("status", flag);
@@ -270,7 +275,7 @@ public class UserController extends BaseController {
                 return returnJson(objectMap, ERROR, ErpInfo.ERROR.code);
             }
         } catch (Exception e) {
-            logger.error(">>>>>>>>>>>>>修改用户ID为 ： " + jsonObject.getLong("userId") + "密码信息失败", e);
+            logger.error(">>>>>>>>>>>>>修改当前用户密码信息失败", e);
             flag = 3;
             objectMap.put("status", flag);
             return returnJson(objectMap, ERROR, ErpInfo.ERROR.code);
@@ -316,6 +321,7 @@ public class UserController extends BaseController {
     @ResponseBody
     public Object addUser(@RequestBody JSONObject obj, HttpServletRequest request)throws Exception{
         JSONObject result = ExceptionConstants.standardSuccess();
+        userService.checkEditPermission();
         User userInfo = userService.getCurrentUser();
         Tenant tenant = tenantService.getTenantByTenantId(userInfo.getTenantId());
         Long count = userService.countUser(null,null);
@@ -360,6 +366,13 @@ public class UserController extends BaseController {
     public Object registerUser(@RequestBody UserEx ue,
                                HttpServletRequest request)throws Exception{
         JSONObject result = ExceptionConstants.standardSuccess();
+        userService.checkRateLimit("register", request, 5, 3600);
+        // 后端强制检查注册开关
+        PlatformConfig registerFlag = platformConfigService.getInfoByKey("register_flag");
+        if(registerFlag == null || !"1".equals(registerFlag.getPlatformValue())) {
+            throw new BusinessRunTimeException(ExceptionConstants.REGISTER_DISABLED_CODE,
+                    ExceptionConstants.REGISTER_DISABLED_MSG);
+        }
         ue.setUsername(ue.getLoginName());
         userService.validateCaptcha(ue.getCode(), ue.getUuid());
         userService.checkLoginName(ue); //检查登录名
@@ -375,6 +388,7 @@ public class UserController extends BaseController {
     @RequestMapping("/getOrganizationUserTree")
     @Operation(summary = "获取部门用户树")
     public JSONArray getOrganizationUserTree()throws Exception{
+        userService.checkReadPermission();
         JSONArray arr=new JSONArray();
         List<TreeNodeEx> organizationUserTree= userService.getOrganizationUserTree();
         if(organizationUserTree!=null&&organizationUserTree.size()>0){
@@ -441,11 +455,8 @@ public class UserController extends BaseController {
         try {
             Map<String, Object> data = new HashMap<>();
             Long userId = userService.getUserId(request);
-            String loginName = userService.getUser(userId).getLoginName();
             JSONArray btnStrArr = userService.getBtnStrArrById(userId);
-            if(!"admin".equals(loginName)) {
-                data.put("userBtn", btnStrArr);
-            }
+            data.put("userBtn", btnStrArr);
             res.code = 200;
             res.data = data;
         } catch(Exception e){
@@ -469,6 +480,20 @@ public class UserController extends BaseController {
                                   HttpServletRequest request) throws Exception{
         JSONArray arr = new JSONArray();
         try {
+            if (!("UserCustomer".equals(type) || "UserDepot".equals(type))) {
+                throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_INVALID_CODE,
+                        String.format(ExceptionConstants.SUPPLIER_INVALID_MSG, "用户权限类型不合法"));
+            }
+            Long currentUserId = userService.getUserId(request);
+            if (!userService.hasButtonPermission(currentUserId, "/system/user", "1")) {
+                throw new BusinessRunTimeException(ExceptionConstants.SUPPLIER_PERMISSION_CODE,
+                        ExceptionConstants.SUPPLIER_PERMISSION_MSG);
+            }
+            if ("UserCustomer".equals(type)) {
+                userBusinessService.validateCustomerId(oneValue);
+            } else {
+                userBusinessService.validateDepotId(oneValue);
+            }
             //获取权限信息
             List<Long> keyIdList = userBusinessService.getUBKeyIdByTypeAndOneValue(type, oneValue);
             Map<Long, Long> keyIdMap = keyIdList.stream().collect(Collectors.toMap(Function.identity(),Function.identity()));
@@ -498,8 +523,11 @@ public class UserController extends BaseController {
             }
             outer.put("children", dataArray);
             arr.add(outer);
+        } catch (BusinessRunTimeException e) {
+            throw e;
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
+            throw e;
         }
         return arr;
     }

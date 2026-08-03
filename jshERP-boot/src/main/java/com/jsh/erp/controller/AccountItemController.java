@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.constants.BusinessConstants;
+import com.jsh.erp.datasource.entities.AccountHead;
 import com.jsh.erp.datasource.vo.AccountItemVo4List;
 import com.jsh.erp.service.AccountHeadService;
 import com.jsh.erp.service.AccountItemService;
@@ -48,8 +49,9 @@ public class AccountItemController {
             String type = null;
             List<AccountItemVo4List> dataList = new ArrayList<>();
             if(headerId != 0) {
+                AccountHead accountHead = accountHeadService.getAccountHeadWithPermission(headerId);
                 dataList = accountItemService.getDetailList(headerId);
-                type = accountHeadService.getAccountHead(headerId).getType();
+                type = accountHead.getType();
             }
             JSONObject outer = new JSONObject();
             outer.put("total", dataList.size());
@@ -64,7 +66,8 @@ public class AccountItemController {
                     item.put("inOutItemName", ai.getInOutItemName());
                     if(StringUtil.isNotEmpty(ai.getBillNumber())) {
                         item.put("billNumber", ai.getBillNumber());
-                    } else {
+                    } else if(BusinessConstants.TYPE_MONEY_IN.equals(type)
+                            || BusinessConstants.TYPE_MONEY_OUT.equals(type)) {
                         item.put("billNumber", "QiChu");
                     }
                     item.put("needDebt", ai.getNeedDebt());

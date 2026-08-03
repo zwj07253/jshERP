@@ -12,16 +12,16 @@
       @tabClick="tabCallBack"
       @edit="editPage">
       <a-tab-pane :id="page.fullPath" :key="page.fullPath" v-for="page in pageList">
-        <span slot="tab" :pagekey="page.fullPath">{{ page.meta.title }}</span>
+        <span slot="tab" :pagekey="page.fullPath">{{ translateTabTitle(page.meta.title) }}</span>
       </a-tab-pane>
     </a-tabs>
     <div style="margin: 4px 4px 0;">
       <transition name="page-toggle">
         <keep-alive v-if="multipage" :include="includedComponents">
-          <router-view />
+          <router-view :key="viewKey" />
         </keep-alive>
         <template v-else>
-          <router-view />
+          <router-view :key="viewKey" />
         </template>
       </transition>
       <!-- iframe页 -->
@@ -42,8 +42,9 @@
   import { triggerWindowResizeEvent } from '@/utils/util'
   const indexKey = '/dashboard/analysis'
   import Vue from 'vue'
-  import { CACHE_INCLUDED_ROUTES } from "@/store/mutation-types"
+  import { CACHE_INCLUDED_ROUTES, USER_ID } from "@/store/mutation-types"
   import store from '../../store'
+  import { menuNameMap } from '@/components/menu'
 
   export default {
     name: 'TabLayout',
@@ -59,9 +60,9 @@
         activePage: '',
         menuVisible: false,
         menuItemList: [
-          { key: '1', icon: 'arrow-left', text: '关闭左侧' },
-          { key: '2', icon: 'arrow-right', text: '关闭右侧' },
-          { key: '3', icon: 'close', text: '关闭其它' }
+          { key: '1', icon: 'arrow-left', text: this.$t('common.closeLeft') },
+          { key: '2', icon: 'arrow-right', text: this.$t('common.closeRight') },
+          { key: '3', icon: 'close', text: this.$t('common.closeOthers') }
         ],
         componentsArr: []
       }
@@ -79,6 +80,9 @@
       multipage() {
         //根据配置来返回页面是否是多页签模式
         return this.$store.state.app.multipage
+      },
+      viewKey() {
+        return this.$route.fullPath + ':' + this.$i18n.locale
       },
       includedComponents() {
         const includedRouters = Vue.ls.get(CACHE_INCLUDED_ROUTES)
@@ -104,16 +108,22 @@
       // 判断当前路由是否iframe页
       this.isOpenIframePage()
 
-      if (this.$route.path != indexKey) {
-        this.addIndexToFirst()
-      }
       let storeKey = 'route:title:' + this.$route.fullPath
       let routeTitle = this.$ls.get(storeKey)
       if (routeTitle) {
         this.$route.meta.title = routeTitle
       }
-      this.pageList.push(this.$route)
-      this.linkList.push(this.$route.fullPath)
+      this.restoreTabs()
+      if (this.$route.path !== indexKey && this.linkList.indexOf(indexKey) === -1) {
+        this.addIndexToFirst()
+      }
+      const currentIndex = this.linkList.indexOf(this.$route.fullPath)
+      if (currentIndex === -1) {
+        this.pageList.push(this.$route)
+        this.linkList.push(this.$route.fullPath)
+      } else {
+        this.pageList.splice(currentIndex, 1, this.$route)
+      }
       this.activePage = this.$route.fullPath
     },
     mounted() {
@@ -134,6 +144,11 @@
           let oldIndex = this.linkList.indexOf(newRoute.fullPath)
           let oldPositionRoute = this.pageList[oldIndex]
           this.pageList.splice(oldIndex, 1, Object.assign({},newRoute,{meta:oldPositionRoute.meta}))
+        }
+      },
+      pageList: {
+        handler () {
+          this.saveTabs()
         }
       },
       'activePage': function(key) {
@@ -160,6 +175,23 @@
       }
     },
     methods: {
+      tabStorageKey () {
+        return 'tabRoutes:' + (Vue.ls.get(USER_ID) || 'anonymous')
+      },
+      restoreTabs () {
+        const paths = Vue.ls.get(this.tabStorageKey()) || []
+        const pages = paths.map(path => this.$router.resolve(path).route)
+          .filter(route => route && route.name)
+        this.pageList = pages
+        this.linkList = pages.map(page => page.fullPath)
+      },
+      saveTabs () {
+        Vue.ls.set(this.tabStorageKey(), this.pageList.map(page => page.fullPath))
+      },
+      translateTabTitle(title) {
+        const key = menuNameMap[title]
+        return key ? this.$t(key) : title
+      },
       // 根据当前路由设置hasOpen
       isOpenIframePage() {
         const target = this.componentsArr.find(item => {
@@ -202,12 +234,12 @@
       // 将首页添加到第一位
       addIndexToFirst() {
         this.pageList.splice(0, 0, {
-          name: '首页',
+          name: this.$t('common.home'),
           path: indexKey,
           fullPath: indexKey,
           meta: {
             icon: 'dashboard',
-            title: '首页'
+            title: this.$t('common.home')
           }
         })
         this.linkList.splice(0, 0, indexKey)
@@ -215,11 +247,12 @@
       //动态更改页面标题
       changeTitle(title) {
         let projectTitle = window.SYS_TITLE
+        let translatedTitle = this.translateTabTitle(title)
         // 首页特殊处理
         if (this.$route.path === indexKey) {
           document.title = projectTitle
         } else {
-          document.title = title + ' · ' + projectTitle
+          document.title = translatedTitle + ' · ' + projectTitle
         }
       },
       changePage(key) {
@@ -235,11 +268,11 @@
       },
       remove(key) {
         if (key == indexKey) {
-          this.$message.warning('首页不能关闭!')
+          this.$message.warning(this.$t('common.homeCannotClose'))
           return
         }
         if (this.pageList.length === 1) {
-          this.$message.warning('这是最后一页，不能再关闭了啦')
+          this.$message.warning(this.$t('common.lastPageCannotClose'))
           return
         }
         //console.log("this.pageList ",this.pageList );

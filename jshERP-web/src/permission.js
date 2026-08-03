@@ -24,9 +24,9 @@ router.beforeEach((to, from, next) => {
           if (menuData === null || menuData === "" || menuData === undefined) {
             return;
           }
-          // 缓存用户的按钮权限
+          // 缓存用户的按钮权限（按用户隔离）
           store.dispatch('GetUserBtnList').then(res => {
-            Vue.ls.set('winBtnStrList', res.data.userBtn, 7 * 24 * 60 * 60 * 1000)
+            Vue.ls.set('winBtnStrList_' + Vue.ls.get(USER_ID), res.data.userBtn, 7 * 24 * 60 * 60 * 1000)
           })
           let constRoutes = [];
           constRoutes = generateIndexRouter(menuData);

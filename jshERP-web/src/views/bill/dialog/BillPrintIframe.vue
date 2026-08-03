@@ -11,9 +11,9 @@
       :maskClosable="false"
       :style="modalStyle"
       @cancel="handleCancel"
-      cancelText="关闭">
+      :cancelText="$t('common.close')">
       <template slot="footer">
-        <a-button key="back" @click="handleCancel">取消(ESC)</a-button>
+        <a-button key="back" @click="handleCancel">{{ $t('common.cancel') }}(ESC)</a-button>
       </template>
       <a-form :form="form">
         <template>
@@ -41,7 +41,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title: "三联打印预览",
+        title: this.$t('common.tripartitePrintPreview'),
         width: '1000px',
         visible: false,
         modalStyle: '',

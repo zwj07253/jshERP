@@ -24,7 +24,7 @@ public interface SupplierMapperEx {
             @Param("phonenum") String phonenum,
             @Param("telephone") String telephone);
 
-    int batchDeleteSupplierByIds(@Param("updateTime") Date updateTime, @Param("updater") Long updater, @Param("ids") String ids[]);
+    int batchDeleteSupplierByIds(@Param("updateTime") Date updateTime, @Param("updater") Long updater, @Param("ids") List<Long> ids);
 
     Supplier getSupplierByNameAndType(
             @Param("supplier") String supplier,
@@ -43,4 +43,6 @@ public interface SupplierMapperEx {
     Supplier getInfoByName(
             @Param("name") String name,
             @Param("type") String type);
+
+    Supplier lockById(@Param("id") Long id);
 }

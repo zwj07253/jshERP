@@ -12,22 +12,22 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:5%;height: 95%;">
       <a-spin :spinning="confirmLoading">
         <div class="drawer-bootom-button">
           <a-dropdown :trigger="['click']" placement="topCenter">
             <a-menu slot="overlay">
-              <a-menu-item key="1" @click="switchCheckStrictly(1)">父子关联</a-menu-item>
-              <a-menu-item key="2" @click="switchCheckStrictly(2)">取消关联</a-menu-item>
-              <a-menu-item key="3" @click="checkALL">全部勾选</a-menu-item>
-              <a-menu-item key="4" @click="cancelCheckALL">取消全选</a-menu-item>
-              <a-menu-item key="5" @click="expandAll">展开所有</a-menu-item>
-              <a-menu-item key="6" @click="closeAll">合并所有</a-menu-item>
+              <a-menu-item key="1" @click="switchCheckStrictly(1)">{{ $t('system.parentChildLinked') }}</a-menu-item>
+              <a-menu-item key="2" @click="switchCheckStrictly(2)">{{ $t('system.unlink') }}</a-menu-item>
+              <a-menu-item key="3" @click="checkALL">{{ $t('system.selectAll') }}</a-menu-item>
+              <a-menu-item key="4" @click="cancelCheckALL">{{ $t('system.deselectAll') }}</a-menu-item>
+              <a-menu-item key="5" @click="expandAll">{{ $t('system.expandAll') }}</a-menu-item>
+              <a-menu-item key="6" @click="closeAll">{{ $t('system.collapseAll') }}</a-menu-item>
             </a-menu>
             <a-button>
-              树操作 <a-icon type="up" />
+              {{ $t('system.treeOperation') }} <a-icon type="up" />
             </a-button>
           </a-dropdown>
         </div>
@@ -53,14 +53,14 @@
 <script>
   import pick from 'lodash.pick'
   import {mixinDevice} from '@/utils/mixin'
-  import {addUserBusiness,editUserBusiness,checkUserBusiness} from '@/api/api'
+  import {saveRoleFunctions} from '@/api/api'
   import {getAction} from '../../../api/manage'
   export default {
     name: "RoleFunctionModal",
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         width: '800px',
         visible: false,
         model: {},
@@ -111,24 +111,15 @@
             formData.type = 'RoleFunctions'
             formData.keyId = this.roleId
             formData.value = this.checkedKeys
-            let obj;
-            checkUserBusiness({'type': 'RoleFunctions','keyId': this.roleId}).then((res)=>{
-              if(res.data && res.data.id) {
-                formData.id=res.data.id
-                obj=editUserBusiness(formData);
-              } else {
-                obj=addUserBusiness(formData);
-              }
-              obj.then((res)=>{
-                if(res.code === 200){
-                  that.$emit('ok', this.roleId);
-                }else{
-                  that.$message.warning(res.data.message);
-                }
-              }).finally(() => {
-                that.confirmLoading = false;
+            saveRoleFunctions(formData).then((res)=>{
+              if(res.code === 200){
+                that.$emit('ok', this.roleId);
                 that.close();
-              })
+              }else{
+                that.$message.warning(res.data && res.data.message ? res.data.message : res.data);
+              }
+            }).finally(() => {
+              that.confirmLoading = false;
             })
           }
         })
@@ -153,13 +144,11 @@
               that.setThisExpandedKeys(temp)
               that.getAllKeys(temp);
             }
-            console.log(JSON.stringify(this.checkedKeys))
             this.loading = false
           }
         })
       },
       onCheck(checkedKeys, info) {
-        console.log('onCheck', checkedKeys, info)
         this.hiding = false
         if(this.checkStrictly){
           this.checkedKeys = checkedKeys.checked;
@@ -194,7 +183,7 @@
         this.iExpandedKeys = []
       },
       checkALL () {
-        this.checkStriccheckStrictlytly = false
+        this.checkStrictly = false
         this.checkedKeys = this.allTreeKeys
       },
       cancelCheckALL () {
@@ -208,7 +197,6 @@
         }
       },
       onExpand(expandedKeys) {
-        console.log('onExpand', expandedKeys)
         this.iExpandedKeys = expandedKeys
       }
     }

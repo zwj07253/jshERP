@@ -12,4 +12,13 @@
 
 ## env
 .env
+
+## local backup archives
+/backups/*
+!/backups/.gitkeep
+
 docs/
+!jshERP-boot/docs/
+jshERP-boot/docs/*
+!jshERP-boot/docs/02_initial_tenant.sql
+!jshERP-boot/docs/jsh_erp_pg.sql

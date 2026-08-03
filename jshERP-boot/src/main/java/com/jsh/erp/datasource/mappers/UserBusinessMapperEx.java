@@ -30,4 +30,6 @@ public interface UserBusinessMapperEx {
 
     List<UserBusiness> getOldListByType(
             @Param("type") String type);
+
+    int deleteRoleFunctionsByRoleIds(@Param("roleIds") List<String> roleIds);
 }

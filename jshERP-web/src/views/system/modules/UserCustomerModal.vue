@@ -12,8 +12,8 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:5%;height: 95%;">
       <a-spin :spinning="confirmLoading">
         <a-table
@@ -40,13 +40,13 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         model: {},
         roleId: 0,
         // 表头
         columns: [
-          { title: '客户名称', dataIndex: 'supplier', width: 200 }
+          { title: this.$t('system.customerName'), dataIndex: 'supplier', width: 200 }
         ],
         dataSource:[],
         selectedRowKeys: [],
@@ -87,6 +87,7 @@
           } else {
             this.$message.warning(res.data.message)
           }
+        }).finally(() => {
           this.loading = false
         })
       },
@@ -112,24 +113,24 @@
             formData.type = 'UserCustomer'
             formData.keyId = this.roleId
             formData.value = this.selectedRowKeys
-            let obj;
             checkUserBusiness({'type': 'UserCustomer','keyId': this.roleId}).then((res)=>{
+              let obj;
               if(res.data && res.data.id) {
                 formData.id=res.data.id
                 obj=editUserBusiness(formData);
               } else {
                 obj=addUserBusiness(formData);
               }
-              obj.then((res)=>{
+              return obj.then((res)=>{
                 if(res.code === 200){
                   that.$emit('ok');
+                  that.close();
                 }else{
-                  that.$message.warning(res.data.message);
+                  that.$message.warning(res.data && res.data.message ? res.data.message : res.data);
                 }
-              }).finally(() => {
-                that.confirmLoading = false;
-                that.close();
               })
+            }).finally(() => {
+              that.confirmLoading = false;
             })
           }
         })

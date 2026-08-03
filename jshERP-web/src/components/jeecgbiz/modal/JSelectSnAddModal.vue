@@ -5,7 +5,7 @@
     :title="title"
     @ok="handleSubmit"
     @cancel="close"
-    cancelText="关闭"
+    :cancelText="$t('common.close')"
     style="top:12%;height: 90%;overflow-y: hidden"
     wrapClassName="ant-modal-cust-warp">
     <a-row :gutter="24">
@@ -16,11 +16,11 @@
               <a-tab-pane key="1" tab="单个序列号" forceRender>
                 <a-row :gutter="24">
                   <a-col :md="24" :sm="24">
-                    <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="序列号">
-                      <a-input ref="name" style="width:400px;" placeholder="请输入序列号并回车（只能输入数字或字母）"
+                    <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.columns.serialNumber')">
+                      <a-input ref="name" style="width:400px;" :placeholder="$t('common.snInputPlaceholder')"
                                oninput="value=value.replace(/[\W]/g,'')" v-model="queryParam.name"></a-input>
                       <div style="float:left;">
-                        <a-button type="primary" @click="onAdd">添加</a-button>
+                        <a-button type="primary" @click="onAdd">{{ $t('common.add') }}</a-button>
                         <a-button style="margin-left: 8px" @click="clearAllSn">清空</a-button>
                       </div>
                     </a-form-item>
@@ -30,9 +30,9 @@
               <a-tab-pane key="2" tab="多个序列号" forceRender>
                 <a-row :gutter="24">
                   <a-col :md="24" :sm="24">
-                    <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="序列号">
+                    <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.columns.serialNumber')">
                       <a-textarea style="width:400px;"
-                        placeholder="多个序列号用逗号隔开，请少于2000个字符"
+                        :placeholder="$t('common.multiSnPlaceholderLimit')"
                         :auto-size="{ minRows: 2, maxRows: 4 }"
                         v-model="queryParam.multiName" />
                       <div style="float:left;">
@@ -93,15 +93,15 @@
         },
         categoryTree:[],
         columns: [
-          {dataIndex: 'serialNumber', title: '已录入的序列号', width: 100, align: 'left'},
-          {tdataIndex: 'action', title: '操作', align:"center", width: 50, scopedSlots: { customRender: 'action' }}
+          {dataIndex: 'serialNumber', title: this.$t('common.enteredSerialNumber'), width: 100, align: 'left'},
+          {tdataIndex: 'action', title: this.$t('common.action'), align:"center", width: 50, scopedSlots: { customRender: 'action' }}
         ],
         scrollTrigger: {y: 460},
         checkDataSource: [],
         selectedRowKeys: [],
         selectRows: [],
         selectIds: [],
-        title: '录入序列号',
+        title: this.$t('common.enterSerialNumber'),
         visible: false,
         form: this.$form.createForm(this),
         disableMixinCreated: true,
@@ -196,7 +196,7 @@
           }
         }
         if(isExist) {
-          this.$message.warning('抱歉，此序列号已经添加过！');
+          this.$message.warning(this.$t('common.snAlreadyAdded'));
         } else {
           this.checkDataSource.push(checkObj)
           this.queryParam.name = ''
@@ -207,7 +207,7 @@
           return
         }
         if(this.queryParam.multiName && this.queryParam.multiName.length>2000) {
-          this.$message.warning('序列号长度不能超出2000个字符！');
+          this.$message.warning(this.$t('common.snLengthLimit'));
           return
         }
         this.queryParam.multiName = this.queryParam.multiName.replaceAll('，',',')
@@ -225,7 +225,7 @@
             }
           }
           if(isExist) {
-            this.$message.warning('抱歉，序列号' + nameArr[i] + '已经添加过！');
+            this.$message.warning(this.$t('common.snAlreadyAddedWithName', { name: nameArr[i] }));
             return
           } else {
             this.checkDataSource.push(checkObj)

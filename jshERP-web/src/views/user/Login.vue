@@ -7,7 +7,7 @@
           size="large"
           v-decorator="['loginName',{initialValue:'', rules: validatorRules.loginName.rules}]"
           type="text"
-          placeholder="请输入用户名">
+          :placeholder="$t('login.username')">
           <a-icon slot="prefix" type="user" :style="{ color: 'rgba(0,0,0,.25)' }"/>
         </a-input>
       </a-form-item>
@@ -18,7 +18,7 @@
           size="large"
           type="password"
           autocomplete="false"
-          placeholder="请输入密码">
+          :placeholder="$t('login.password')">
           <a-icon slot="prefix" type="lock" :style="{ color: 'rgba(0,0,0,.25)' }"/>
         </a-input-password>
       </a-form-item>
@@ -31,7 +31,7 @@
               size="large"
               type="text"
               default-value=""
-              placeholder="请输入验证码">
+              :placeholder="$t('login.verificationCode')">
               <a-icon slot="prefix" type="smile" :style="{ color: 'rgba(0,0,0,.25)' }"/>
             </a-input>
           </a-form-item>
@@ -43,9 +43,9 @@
       </a-row>
 
       <a-form-item>
-        <a-checkbox :checked="checked" @change="handleChange">记住密码</a-checkbox>
+        <a-checkbox :checked="checked" @change="handleChange">{{ $t('login.rememberPassword') }}</a-checkbox>
         <router-link v-if="registerFlag==='1'" :to="{ name: 'register'}" class="forge-password" style="float: right;margin-right: 10px;" >
-          注册租户
+          {{ $t('login.registerTenant') }}
         </router-link>
       </a-form-item>
 
@@ -57,7 +57,7 @@
           class="login-button"
           :loading="loginBtn"
           @click.stop.prevent="handleSubmit"
-          :disabled="loginBtn">登 录
+          :disabled="loginBtn">{{ $t('login.signIn') }}
         </a-button>
       </a-form-item>
 
@@ -65,7 +65,7 @@
         <a-row>
           <a-col>
             © 2015-2030 Powered By
-            <a style="color:#00458a;" :href="systemUrl" target="_blank">官方网站</a>
+            <a style="color:#00458a;" :href="systemUrl" target="_blank">{{ $t('login.officialSite') }}</a>
           </a-col>
         </a-row>
       </div>
@@ -77,7 +77,7 @@
   import md5 from 'md5'
   import TwoStepCaptcha from '@/components/tools/TwoStepCaptcha'
   import { mapActions } from 'vuex'
-  import { timeFix } from '@/utils/util'
+  import { timeFix, getMaterialPropertyCacheKey } from '@/utils/util'
   import Vue from 'vue'
   import { getPlatformConfigByKey} from '@/api/api'
   import { ACCESS_TOKEN, ENCRYPTED_STRING } from '@/store/mutation-types'
@@ -110,9 +110,9 @@
           smsSendBtn: false,
         },
         validatorRules:{
-          loginName:{rules: [{ required: true, message: '请输入用户名!'},{validator: this.handleLoginName}]},
-          password:{rules: [{ required: true, message: '请输入密码!',validator: 'click'}]},
-          inputCode:{rules: [{ required: true, message: '请输入验证码!',validator: 'click'}]}
+          loginName:{rules: [{ required: true, message: this.$t('login.usernameRequired')},{validator: this.handleLoginName}]},
+          password:{rules: [{ required: true, message: this.$t('login.passwordRequired'),validator: 'click'}]},
+          inputCode:{rules: [{ required: true, message: this.$t('login.verificationCodeRequired'),validator: 'click'}]}
         },
         verifiedCode:"",
         inputCodeContent:"", //20200510 cfm: 为方便测试，不输入验证码可 ""-->"xxxx"
@@ -228,23 +228,24 @@
       },
       loginSuccess (res) {
         let that = this
+        this.loginBtn = false
         this.$router.push({ path: "/dashboard/analysis" })
         this.$notification.success({
-          message: '欢迎',
-          description: `${timeFix()}，欢迎回来`,
+          message: this.$t('login.welcome'),
+          description: this.$t('login.welcomeBack', { time: timeFix((key) => this.$t(key)) }),
         })
         if(res.data.pwdSimple) {
           setTimeout(function () {
             that.$notification.warning({
-              message: '友情提醒',
-              description: '密码过于简单，请尽快修改',
+              message: that.$t('login.friendlyReminder'),
+              description: that.$t('login.passwordTooSimple'),
             })
           },3000)
         }
         if(res.data && res.data.user) {
           if(res.data.user.loginName === 'admin'){
-            let desc = 'admin只是平台运维用户，真正的管理员是租户(测试账号为jsh），admin不能编辑任何业务数据，只能配置平台菜单和创建租户'
-            this.$message.info(desc,30)
+            let desc = this.$t('common.adminTip')
+            this.$message.info(desc, 5)
           } else {
             getPlatformConfigByKey({ "platformKey": "bill_excel_url" }).then((res) => {
               if (res && res.code === 200) {
@@ -261,7 +262,7 @@
                 let expireTime = new Date(res.data.expireTime); //设置过去的一个时间点，"yyyy-MM-dd HH:mm:ss"格式化日期
                 let type = res.data.type  //租户类型，0免费租户，1付费租户
                 let difftime = expireTime - currentTime; //计算时间差
-                let tipInfo = '您好，服务即将到期，请及时续费！'
+                let tipInfo = this.$t('common.trialExpiring')
                 //0免费租户-如果距离到期还剩5天就进行提示续费
                 if(type === '0' && difftime<86400000*5) {
                   this.$message.warning(tipInfo,8)
@@ -278,15 +279,15 @@
       },
       cmsFailed(err){
         this.$notification[ 'error' ]({
-          message: "登录失败",
+          message: this.$t('login.loginFailed'),
           description:err,
           duration: 4,
         });
       },
       requestFailed (err) {
         this.$notification[ 'error' ]({
-          message: '登录失败',
-          description: ((err.response || {}).data || {}).message || err.message || err.data.message || "请求出现错误，请稍后再试",
+          message: this.$t('login.loginFailed'),
+          description: ((err.response || {}).data || {}).message || err.message || err.data.message || this.$t('login.requestFailed'),
           duration: 4,
         });
         //验证码刷新
@@ -303,31 +304,35 @@
           if(res.data.msgTip === 'user can login'){
             this.loginSuccess(res)
           } else if(res.data.msgTip === 'user is not exist'){
-            err.message = '用户不存在';
+            err.message = this.$t('common.userNotExist');
             this.requestFailed(err)
             this.Logout();
           } else if(res.data.msgTip === 'user password error'){
-            err.message = '用户密码不正确';
+            err.message = this.$t('common.passwordIncorrect');
             this.requestFailed(err)
             this.Logout();
           } else if(res.data.msgTip === 'user is black'){
-            err.message = '用户被禁用';
+            err.message = this.$t('common.userDisabled');
             this.requestFailed(err)
             this.Logout();
           } else if(res.data.msgTip === 'tenant is black'){
             if(loginName === 'jsh') {
-              err.message = 'jsh用户已停用，请注册租户进行体验！';
+              err.message = this.$t('common.userStopped');
             } else {
-              err.message = '用户所属的租户被禁用';
+              err.message = this.$t('common.tenantDisabled');
             }
             this.requestFailed(err)
             this.Logout();
-          } else if(res.data.msgTip === 'tenant is expire'){
-            err.message = '试用期已结束，请联系客服续费';
+          } else if(res.data.msgTip === 'trial tenant is expire' || res.data.msgTip === 'tenant is expire'){
+            err.message = this.$t('common.trialEnded');
+            this.requestFailed(err)
+            this.Logout();
+          } else if(res.data.msgTip === 'paid tenant is expire'){
+            err.message = this.$t('common.serviceExpired');
             this.requestFailed(err)
             this.Logout();
           } else if(res.data.msgTip === 'access service error'){
-            err.message = '查询服务异常';
+            err.message = this.$t('common.queryServiceError');
             this.requestFailed(err)
             this.Logout();
           }
@@ -379,6 +384,7 @@
           if(res && res.code === 200){
             if(res.data) {
               let thisRows = res.data; //属性列表
+              Vue.ls.set(getMaterialPropertyCacheKey(), thisRows, 7 * 24 * 60 * 60 * 1000);
               Vue.ls.set('materialPropertyList', thisRows, 7 * 24 * 60 * 60 * 1000);
             }
           }
@@ -424,8 +430,8 @@
       },
       openNotificationWithIcon(type, currentWidth, currentHeight, percentage) {
         this.$notification[type]({
-          message: '浏览器的缩放比例调整提示',
-          description: '检测到您显示器的分辨率为：' + currentWidth + '*' + currentHeight + ' ，为了获得更好的操作体验，建议您将浏览器的缩放比例调整至' + percentage,
+          message: this.$t('common.browserZoomTip'),
+          description: this.$t('common.browserZoomDesc', { width: currentWidth, height: currentHeight, percent: percentage }),
           duration: 10
         });
       },

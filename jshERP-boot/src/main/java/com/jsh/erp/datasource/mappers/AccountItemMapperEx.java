@@ -32,6 +32,8 @@ public interface AccountItemMapperEx {
 
     List<AccountItem> getAccountItemListByHeaderIds(@Param("headerIds") String[] headerIds);
 
+    List<Long> getBillIdsByHeaderIds(@Param("headerIds") String[] headerIds);
+
     List<AccountItem> getAccountItemListByInOutItemIds(@Param("inOutItemIds") String[] inOutItemIds);
 
     int batchDeleteAccountItemByHeadIds(@Param("updateTime") Date updateTime, @Param("updater") Long updater, @Param("ids") String[] ids);

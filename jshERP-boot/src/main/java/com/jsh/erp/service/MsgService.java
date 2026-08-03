@@ -38,13 +38,12 @@ public class MsgService {
     private MsgMapperEx msgMapperEx;
 
     @Resource
-    private DepotHeadService depotHeadService;
-
-    @Resource
     private UserService userService;
 
     @Resource
     private LogService logService;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public Msg getMsg(long id)throws Exception {
         Msg result=null;
@@ -102,6 +101,7 @@ public class MsgService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertMsg(JSONObject obj, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         Msg msg = JSONObject.parseObject(obj.toJSONString(), Msg.class);
         int result=0;
         try{
@@ -123,7 +123,22 @@ public class MsgService {
     }
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
+    public int insertSystemMsg(String title, String content, String type, Long userId, Long tenantId) {
+        Msg msg = new Msg();
+        msg.setMsgTitle(title);
+        msg.setMsgContent(content);
+        msg.setType(type);
+        msg.setUserId(userId);
+        msg.setTenantId(tenantId);
+        msg.setStatus("1");
+        msg.setCreateTime(new Date());
+        msg.setDeleteFlag(BusinessConstants.DELETE_FLAG_EXISTS);
+        return msgMapper.insertSelective(msg);
+    }
+
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateMsg(JSONObject obj, HttpServletRequest request) throws Exception{
+        platformAccessService.assertBusinessWriteAllowed();
         Msg msg = JSONObject.parseObject(obj.toJSONString(), Msg.class);
         int result=0;
         try{
@@ -141,6 +156,7 @@ public class MsgService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int deleteMsg(Long id, HttpServletRequest request)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         int result=0;
         try{
             result=msgMapper.deleteByPrimaryKey(id);

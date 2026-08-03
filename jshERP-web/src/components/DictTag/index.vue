@@ -15,6 +15,9 @@
         >{{ item.label }}</a-tag>
       </template>
     </template>
+    <template v-if="hasUnknownValues">
+      <span>{{ unknownValues.join(', ') }}</span>
+    </template>
   </div>
 </template>
 
@@ -35,6 +38,16 @@ export default {
       } else {
         return [];
       }
+    },
+    knownValues() {
+      if (!this.options) return [];
+      return this.options.map(item => item.value);
+    },
+    unknownValues() {
+      return this.values.filter(v => !this.knownValues.includes(v));
+    },
+    hasUnknownValues() {
+      return this.unknownValues.length > 0;
     },
   },
 };

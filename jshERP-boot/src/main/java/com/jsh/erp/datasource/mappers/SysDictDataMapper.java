@@ -57,22 +57,6 @@ public interface SysDictDataMapper
     public int countDictDataByType(String dictType);
 
     /**
-     * 通过字典ID删除字典数据信息
-     *
-     * @param dictCode 字典数据ID
-     * @return 结果
-     */
-    public int deleteDictDataById(Long dictCode);
-
-    /**
-     * 批量删除字典数据信息
-     *
-     * @param dictCodes 需要删除的字典数据ID
-     * @return 结果
-     */
-    public int deleteDictDataByIds(Long[] dictCodes);
-
-    /**
      * 新增字典数据信息
      *
      * @param dictData 字典数据信息
@@ -87,15 +71,6 @@ public interface SysDictDataMapper
      * @return 结果
      */
     public int updateDictData(SysDictData dictData);
-
-    /**
-     * 同步修改字典类型
-     *
-     * @param oldDictType 旧字典类型
-     * @param newDictType 新旧字典类型
-     * @return 结果
-     */
-    public int updateDictDataType(@Param("oldDictType") String oldDictType, @Param("newDictType") String newDictType);
 
     int batchDeleteDictDataByIds(
             @Param("ids") String ids[]);

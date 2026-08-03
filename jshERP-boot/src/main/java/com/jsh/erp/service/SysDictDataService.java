@@ -1,12 +1,19 @@
 package com.jsh.erp.service;
 
 import com.jsh.erp.constants.BusinessConstants;
+import com.jsh.erp.constants.ExceptionConstants;
 import com.jsh.erp.datasource.entities.SysDictData;
+import com.jsh.erp.datasource.entities.SysDictType;
+import com.jsh.erp.datasource.entities.User;
 import com.jsh.erp.datasource.mappers.SysDictDataMapper;
+import com.jsh.erp.datasource.mappers.SysDictTypeMapper;
+import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.exception.JshException;
 import com.jsh.erp.utils.DictUtils;
 import com.jsh.erp.utils.PageUtils;
 import com.jsh.erp.utils.StringUtil;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -28,11 +35,20 @@ public class SysDictDataService {
 
     private Logger logger = LoggerFactory.getLogger(SysDictDataService.class);
 
+    private static final String DICT_URL = "/system/dict";
+    private static final String EDIT_BUTTON_CODE = "1";
+
     @Resource
     private LogService logService;
 
     @Resource
     private SysDictDataMapper dictDataMapper;
+
+    @Resource
+    private SysDictTypeMapper dictTypeMapper;
+
+    @Resource
+    private UserService userService;
 
     /**
      * 根据条件分页查询字典数据
@@ -69,19 +85,70 @@ public class SysDictDataService {
         return dictDataMapper.selectDictDataById(dictCode);
     }
 
-    /**
-     * 批量删除字典数据信息
-     *
-     * @param dictCodes 需要删除的字典数据ID
-     */
-    public void deleteDictDataByIds(Long[] dictCodes)
-    {
-        for (Long dictCode : dictCodes)
-        {
-            SysDictData data = selectDictDataById(dictCode);
-            dictDataMapper.deleteDictDataById(dictCode);
-            List<SysDictData> dictDatas = dictDataMapper.selectDictDataByType(data.getDictType());
-            DictUtils.setDictCache(data.getDictType(), dictDatas);
+    public void checkEditPermission() throws Exception {
+        User currentUser = userService.getCurrentUser();
+        Long userId = currentUser == null ? null : currentUser.getId();
+        if (!userService.hasButtonPermission(userId, DICT_URL, EDIT_BUTTON_CODE)) {
+            throw new BusinessRunTimeException(ExceptionConstants.DICT_EDIT_PERMISSION_CODE,
+                    ExceptionConstants.DICT_EDIT_PERMISSION_MSG);
+        }
+    }
+
+    private void checkBuiltInProtected(String dictType) {
+        SysDictType type = dictTypeMapper.selectDictTypeByType(dictType);
+        if (type != null && "1".equals(type.getBuiltIn())) {
+            throw new BusinessRunTimeException(ExceptionConstants.DICT_BUILT_IN_PROTECTED_CODE,
+                    ExceptionConstants.DICT_BUILT_IN_PROTECTED_MSG);
+        }
+    }
+
+    private void checkDictValueUnique(SysDictData data) {
+        List<SysDictData> existing = dictDataMapper.selectDictDataByType(data.getDictType());
+        if (existing != null) {
+            for (SysDictData d : existing) {
+                if (d.getDictValue().equals(data.getDictValue())
+                        && !d.getDictCode().equals(data.getDictCode())) {
+                    throw new BusinessRunTimeException(ExceptionConstants.DICT_VALUE_ALREADY_EXISTS_CODE,
+                            ExceptionConstants.DICT_VALUE_ALREADY_EXISTS_MSG);
+                }
+            }
+        }
+    }
+
+    private void checkIsDefaultUnique(SysDictData data) {
+        if (!"Y".equals(data.getIsDefault())) {
+            return;
+        }
+        List<SysDictData> existing = dictDataMapper.selectDictDataByType(data.getDictType());
+        if (existing != null) {
+            for (SysDictData d : existing) {
+                if ("Y".equals(d.getIsDefault()) && !d.getDictCode().equals(data.getDictCode())) {
+                    throw new BusinessRunTimeException(ExceptionConstants.DICT_DEFAULT_ALREADY_EXISTS_CODE,
+                            ExceptionConstants.DICT_DEFAULT_ALREADY_EXISTS_MSG);
+                }
+            }
+        }
+    }
+
+    private void scheduleCacheRefresh(String dictType) {
+        Runnable task = () -> {
+            try {
+                List<SysDictData> dictDatas = dictDataMapper.selectDictDataByType(dictType);
+                DictUtils.setDictCache(dictType, dictDatas);
+            } catch (Exception e) {
+                logger.error("字典缓存刷新失败: {}", dictType, e);
+            }
+        };
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+                && TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    task.run();
+                }
+            });
+        } else {
+            task.run();
         }
     }
 
@@ -91,13 +158,15 @@ public class SysDictDataService {
      * @param data 字典数据信息
      * @return 结果
      */
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertDictData(SysDictData data)
     {
+        checkDictValueUnique(data);
+        checkIsDefaultUnique(data);
         int row = dictDataMapper.insertDictData(data);
         if (row > 0)
         {
-            List<SysDictData> dictDatas = dictDataMapper.selectDictDataByType(data.getDictType());
-            DictUtils.setDictCache(data.getDictType(), dictDatas);
+            scheduleCacheRefresh(data.getDictType());
         }
         return row;
     }
@@ -108,13 +177,27 @@ public class SysDictDataService {
      * @param data 字典数据信息
      * @return 结果
      */
+    @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateDictData(SysDictData data)
     {
+        SysDictData existing = selectDictDataById(data.getDictCode());
+        if (existing == null) {
+            throw new BusinessRunTimeException(ExceptionConstants.DICT_VALUE_IMMUTABLE_CODE,
+                    "字典数据不存在");
+        }
+        if (!existing.getDictType().equals(data.getDictType())) {
+            throw new BusinessRunTimeException(ExceptionConstants.DICT_TYPE_IMMUTABLE_CODE,
+                    ExceptionConstants.DICT_TYPE_IMMUTABLE_MSG);
+        }
+        if (!existing.getDictValue().equals(data.getDictValue())) {
+            throw new BusinessRunTimeException(ExceptionConstants.DICT_VALUE_IMMUTABLE_CODE,
+                    ExceptionConstants.DICT_VALUE_IMMUTABLE_MSG);
+        }
+        checkIsDefaultUnique(data);
         int row = dictDataMapper.updateDictData(data);
         if (row > 0)
         {
-            List<SysDictData> dictDatas = dictDataMapper.selectDictDataByType(data.getDictType());
-            DictUtils.setDictCache(data.getDictType(), dictDatas);
+            scheduleCacheRefresh(data.getDictType());
         }
         return row;
     }
@@ -141,17 +224,20 @@ public class SysDictDataService {
             List<SysDictData> list = getDictDataListByIds(ids);
             if(!list.isEmpty()) {
                 dictType = list.get(0).getDictType();
+                checkBuiltInProtected(dictType);
                 sb.append("字典：").append(dictType).append("下的数据：");
             }
             for(SysDictData sysDictData: list){
                 sb.append("[").append(sysDictData.getDictLabel()).append("]");
             }
             result = dictDataMapper.batchDeleteDictDataByIds(idArray);
-            List<SysDictData> dictDatas = dictDataMapper.selectDictDataByType(dictType);
-            DictUtils.setDictCache(dictType, dictDatas);
+            final String cacheDictType = dictType;
+            scheduleCacheRefresh(cacheDictType);
             //记录日志
             logService.insertLog("字典数据", sb.toString(),
                     ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest());
+        } catch (BusinessRunTimeException e) {
+            throw e;
         } catch (Exception e) {
             JshException.writeFail(logger, e);
         }

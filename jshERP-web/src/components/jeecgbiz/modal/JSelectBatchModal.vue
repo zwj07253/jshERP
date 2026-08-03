@@ -5,7 +5,7 @@
     :title="title"
     @ok="handleSubmit"
     @cancel="close"
-    cancelText="关闭"
+    :cancelText="$t('common.close')"
     style="top:12%;height: 90%;overflow-y: hidden"
     wrapClassName="ant-modal-cust-warp">
     <a-row :gutter="10" style="padding: 10px; margin: -10px">
@@ -16,15 +16,15 @@
           <a-form layout="inline" @keyup.enter.native="onSearch">
             <a-row :gutter="24">
               <a-col :md="12" :sm="24">
-                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="批号">
-                  <a-input ref="name" placeholder="请输入批号" v-model="queryParam.name"></a-input>
+                <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('purchase.form.columns.batchNumber')">
+                  <a-input ref="name" :placeholder="$t('purchase.form.columns.batchNumber')" v-model="queryParam.name"></a-input>
                 </a-form-item>
               </a-col>
               <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
                 <a-col :md="12" :sm="24">
-                  <a-button type="primary" @click="loadData(1)">查询</a-button>
-                  <a-button style="margin-left: 8px" @click="searchReset(1)">重置</a-button>
-                  <span style="margin-left: 20px">提示：双击行可以直接选中</span>
+                  <a-button type="primary" @click="loadData(1)">{{ $t('common.search') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="searchReset(1)">{{ $t('common.reset') }}</a-button>
+                  <span style="margin-left: 20px">{{ $t('common.doubleClickToSelect') }}</span>
                 </a-col>
               </span>
             </a-row>
@@ -75,21 +75,21 @@
         },
         categoryTree:[],
         columns: [
-          {dataIndex: 'batchNumber', title: '批号', width: 100, align: 'left', ellipsis:true},
-          {dataIndex: 'barCode', title: '条码', width: 100, ellipsis:true},
-          {dataIndex: 'name', title: '名称', width: 100, ellipsis:true},
-          {dataIndex: 'standard', title: '规格', width: 80, ellipsis:true},
-          {dataIndex: 'model', title: '型号', width: 80, ellipsis:true},
-          {dataIndex: 'commodityUnit', title: '单位', width: 60, ellipsis:true},
-          {dataIndex: 'expirationDateStr', title: '有效期至', width: 80},
-          {dataIndex: 'totalNum', title: '库存', width: 80}
+          {dataIndex: 'batchNumber', title: this.$t('purchase.form.columns.batchNumber'), width: 100, align: 'left', ellipsis:true},
+          {dataIndex: 'barCode', title: this.$t('common.barcode'), width: 100, ellipsis:true},
+          {dataIndex: 'name', title: this.$t('common.name'), width: 100, ellipsis:true},
+          {dataIndex: 'standard', title: this.$t('common.specification'), width: 80, ellipsis:true},
+          {dataIndex: 'model', title: this.$t('common.model'), width: 80, ellipsis:true},
+          {dataIndex: 'commodityUnit', title: this.$t('common.unit'), width: 60, ellipsis:true},
+          {dataIndex: 'expirationDateStr', title: this.$t('common.expirationDate'), width: 80},
+          {dataIndex: 'totalNum', title: this.$t('purchase.form.columns.stock'), width: 80}
         ],
         scrollTrigger: {},
         dataSource: [],
         selectedRowKeys: [],
         selectRows: [],
         selectIds: [],
-        title: '选择批号',
+        title: this.$t('common.selectBatchNumber'),
         isorter: {
           column: 'createTime',
           order: 'desc'

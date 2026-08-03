@@ -39,14 +39,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				AND status = #{status}
 			</if>
 		</where>
-		order by dict_sort asc
+		order by dict_sort asc, dict_code asc
 	</select>
 
 	<select id="selectDictDataByType" parameterType="com.jsh.erp.datasource.entities.SysDictData" resultMap="SysDictDataResult">
 		<include refid="selectDictDataVo"/>
 		where status = '0' and dict_type = #{dictType}
 		and COALESCE(delete_flag,'0') !='1'
-		order by dict_sort asc
+		order by dict_sort asc, dict_code asc
 	</select>
 
 	<select id="selectDictLabel" resultType="String">
@@ -66,24 +66,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		where dict_type=#{dictType} and COALESCE(delete_flag,'0') !='1'
 	</select>
 
-	<delete id="deleteDictDataById" parameterType="Long">
- 		delete from jsh_sys_dict_data where dict_code = #{dictCode}
- 	</delete>
-
- 	<delete id="deleteDictDataByIds" parameterType="Long">
- 		delete from jsh_sys_dict_data where dict_code in
- 		<foreach collection="array" item="dictCode" open="(" separator="," close=")">
- 			#{dictCode}
-        </foreach>
- 	</delete>
-
 	<update id="updateDictData" parameterType="com.jsh.erp.datasource.entities.SysDictData">
  		update jsh_sys_dict_data
  		<set>
  			<if test="dictSort != null">dict_sort = #{dictSort},</if>
  			<if test="dictLabel != null and dictLabel != ''">dict_label = #{dictLabel},</if>
- 			<if test="dictValue != null and dictValue != ''">dict_value = #{dictValue},</if>
- 			<if test="dictType != null and dictType != ''">dict_type = #{dictType},</if>
  			<if test="cssClass != null">css_class = #{cssClass},</if>
  			<if test="listClass != null">list_class = #{listClass},</if>
  			<if test="isDefault != null and isDefault != ''">is_default = #{isDefault},</if>
@@ -93,10 +80,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			update_time = NOW()
  		</set>
  		where dict_code = #{dictCode}
-	</update>
-
-	<update id="updateDictDataType" parameterType="String">
- 		update jsh_sys_dict_data set dict_type = #{newDictType} where dict_type = #{oldDictType}
 	</update>
 
 	<insert id="insertDictData" parameterType="com.jsh.erp.datasource.entities.SysDictData">

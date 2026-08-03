@@ -6,6 +6,8 @@ import java.util.Date;
 
 public class DepotHeadVo4InDetail {
 
+    private Long id;
+
     private String number;
 
     private String barCode;
@@ -48,7 +50,17 @@ public class DepotHeadVo4InDetail {
 
     private String newType;
 
+    private String subType;
+
     private Long tenantId;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     public String getNumber() {
         return number;
@@ -212,6 +224,14 @@ public class DepotHeadVo4InDetail {
 
     public String getNewType() {
         return newType;
+    }
+
+    public String getSubType() {
+        return subType;
+    }
+
+    public void setSubType(String subType) {
+        this.subType = subType;
     }
 
     public void setNewType(String newType) {

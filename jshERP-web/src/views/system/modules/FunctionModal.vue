@@ -12,46 +12,46 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:5%;height: 90%;">
       <template slot="footer">
         <a-button key="back" v-if="isReadOnly" @click="handleCancel">
-          取消
+          {{ $t('common.cancel') }}
         </a-button>
       </template>
       <a-spin :spinning="confirmLoading">
         <a-form :form="form" id="functionModal">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="编号">
-            <a-input placeholder="请输入编号" v-decorator.trim="[ 'number', validatorRules.number]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.serialNo')">
+            <a-input :placeholder="$t('common.enterNumber')" v-decorator.trim="[ 'number', validatorRules.number]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="名称">
-            <a-input placeholder="请输入名称" v-decorator.trim="[ 'name', validatorRules.name]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.name')">
+            <a-input :placeholder="$t('common.enterName')" v-decorator.trim="[ 'name', validatorRules.name]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="上级编号">
-            <a-input-search placeholder="请选择上级编号" v-decorator.trim="[ 'parentNumber', validatorRules.parentNumber ]"
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.parentNumber')">
+            <a-input-search :placeholder="$t('system.selectParentNumber')" v-decorator.trim="[ 'parentNumber', validatorRules.parentNumber ]"
                             @search="onSearchParentNumber" :readOnly="true" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="上级名称">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.parentName')">
             <a-input v-decorator.trim="[ 'parentName' ]" :readOnly="true" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="链接">
-            <a-input placeholder="请输入链接" v-decorator.trim="[ 'url', validatorRules.url ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.link')">
+            <a-input :placeholder="$t('system.enterLink')" v-decorator.trim="[ 'url', validatorRules.url ]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="组件">
-            <a-input placeholder="请输入组件" v-decorator.trim="[ 'component', validatorRules.component ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.component')">
+            <a-input :placeholder="$t('system.enterComponent')" v-decorator.trim="[ 'component', validatorRules.component ]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="排序">
-            <a-input placeholder="请输入排序" v-decorator.trim="[ 'sort', validatorRules.sort ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.sort')">
+            <a-input :placeholder="$t('common.sort')" v-decorator.trim="[ 'sort', validatorRules.sort ]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="功能按钮">
-            <j-select-multiple placeholder="请选择功能按钮" v-model="jselectMultiple.value" :options="jselectMultiple.options"/>
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.functionButton')">
+            <j-select-multiple :placeholder="$t('system.selectFunctionButton')" v-model="jselectMultiple.value" :options="jselectMultiple.options"/>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="图标">
-            <a-input placeholder="请输入图标" v-decorator.trim="[ 'icon', validatorRules.icon ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.iconLabel')">
+            <a-input :placeholder="$t('system.enterIcon')" v-decorator.trim="[ 'icon', validatorRules.icon ]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="是否启用">
-            <a-switch checked-children="启用" un-checked-children="禁用" v-model="enabledSwitch" @change="onChange"/>
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.isEnabled')">
+            <a-switch :checked-children="$t('common.enable')" :un-checked-children="$t('common.disable')" v-model="enabledSwitch" @change="onChange"/>
           </a-form-item>
         </a-form>
       </a-spin>
@@ -75,20 +75,20 @@
     },
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         model: {},
         enabledSwitch: true, //是否启用
         isReadOnly: false,
         jselectMultiple: {
           options: [
-            { text: '编辑', value: '1' },
-            { text: '审核', value: '2' },
-            { text: '反审核', value: '7' },
-            { text: '导出', value: '3' },
-            { text: '启用禁用', value: '4' },
-            { text: '打印', value: '5' },
-            { text: '作废', value: '6' }
+            { text: this.$t('system.btnEdit'), value: '1' },
+            { text: this.$t('system.btnAudit'), value: '2' },
+            { text: this.$t('system.btnUnaudit'), value: '7' },
+            { text: this.$t('system.btnExport'), value: '3' },
+            { text: this.$t('system.btnEnableDisable'), value: '4' },
+            { text: this.$t('system.btnPrint'), value: '5' },
+            { text: this.$t('system.btnVoid'), value: '6' }
           ],
           value: ''
         },
@@ -105,41 +105,41 @@
         validatorRules:{
           number:{
             rules: [
-              { required: true, message: '请输入编号!' },
-              { min: 2, max: 30, message: '长度在 2 到 30 个字符', trigger: 'blur' },
+              { required: true, message: this.$t('system.numberRequired') },
+              { min: 2, max: 30, message: this.$t('system.numberLength'), trigger: 'blur' },
               { validator: this.validateNumber}
             ]
           },
           name:{
             rules: [
-              { required: true, message: '请输入名称!' },
-              { min: 2, max: 30, message: '长度在 2 到 30 个字符', trigger: 'blur' },
+              { required: true, message: this.$t('common.enterName') },
+              { min: 2, max: 30, message: this.$t('system.roleNameLength'), trigger: 'blur' },
               { validator: this.validateName}
             ]
           },
           parentNumber:{
             rules: [
-              { required: true, message: '请输入上级编号!' }
+              { required: true, message: this.$t('system.parentNumberRequired') }
             ]
           },
           url:{
             rules: [
-              { required: true, message: '请输入链接!' }
+              { required: true, message: this.$t('system.linkRequired') }
             ]
           },
           component:{
             rules: [
-              { required: true, message: '请输入组件!' }
+              { required: true, message: this.$t('system.componentRequired') }
             ]
           },
           sort:{
             rules: [
-              { required: true, message: '请输入排序!' }
+              { required: true, message: this.$t('system.sortRequired') }
             ]
           },
           icon:{
             rules: [
-              { required: true, message: '请输入图标!' }
+              { required: true, message: this.$t('system.iconRequired') }
             ]
           },
         },
@@ -217,7 +217,7 @@
             if(!res.data.status){
               callback();
             } else {
-              callback("编号已经存在！");
+              callback(this.$t('system.numberExists'));
             }
           } else {
             callback(res.data);
@@ -234,7 +234,7 @@
             if(!res.data.status){
               callback();
             } else {
-              callback("名称已经存在！");
+              callback(this.$t('system.nameExistsExcl'));
             }
           } else {
             callback(res.data);
@@ -243,7 +243,7 @@
       },
       onSearchParentNumber() {
         this.$refs.functionTreeModal.edit(this.model.id);
-        this.$refs.functionTreeModal.title = "选择上级编号";
+        this.$refs.functionTreeModal.title = this.$t('system.selectParentNumberTitle');
         this.$refs.functionTreeModal.disableSubmit = false;
       },
       functionTreeModalOk(number, name) {

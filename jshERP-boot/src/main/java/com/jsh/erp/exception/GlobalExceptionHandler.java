@@ -2,21 +2,26 @@ package com.jsh.erp.exception;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.constants.ExceptionConstants;
+import com.jsh.erp.service.LogService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.annotation.Resource;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @Resource
+    private LogService logService;
 
     @ExceptionHandler(value = Exception.class)
     @ResponseBody
     public Object handleException(Exception e, HttpServletRequest request) {
         JSONObject status = new JSONObject();
+        logService.insertFailureLog(e, request);
 
         // 针对业务参数异常的处理
         if (e instanceof BusinessParamCheckingException) {

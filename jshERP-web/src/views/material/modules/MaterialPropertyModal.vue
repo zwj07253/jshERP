@@ -12,15 +12,15 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
+      :cancelText="$t('common.cancel')"
       style="top:10%;height: 70%;">
       <a-spin :spinning="confirmLoading">
         <a-form :form="form">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="名称">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.name')">
             {{model.nativeName}}
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="别名">
-            <a-input placeholder="请输入别名" v-decorator.trim="[ 'anotherName', validatorRules.anotherName ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.alias')">
+            <a-input :placeholder="$t('common.enterAlias')" v-decorator.trim="[ 'anotherName', validatorRules.anotherName ]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -36,7 +36,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title: this.$t('common.action'),
         visible: false,
         model: {},
         labelCol: {
@@ -52,8 +52,8 @@
         validatorRules:{
           anotherName:{
             rules: [
-              { required: true, message: '请输入别名!' },
-              { min: 1, max: 30, message: '长度在 1 到 30 个字符', trigger: 'blur' }
+              { required: true, message: this.$t('common.enterAlias') },
+              { min: 1, max: 30, message: this.$t('common.aliasLength'), trigger: 'blur' }
             ]
           }
         },

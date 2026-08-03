@@ -12,40 +12,49 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:10%;height: 70%;">
       <template slot="footer">
-        <a-button key="back" v-if="isReadOnly" @click="handleCancel">
-          取消
+        <a-button key="back" @click="handleCancel">
+          {{ $t('common.cancel') }}
+        </a-button>
+        <a-button v-if="!isReadOnly" key="submit" type="primary" :loading="confirmLoading" @click="handleOk">
+          {{ $t('common.save') }}
         </a-button>
       </template>
       <a-spin :spinning="confirmLoading">
         <a-form :form="form" id="depotModal">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="仓库名称">
-            <a-input placeholder="请输入仓库名称" v-decorator.trim="[ 'name', validatorRules.name]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.depotName')">
+            <a-input :disabled="isReadOnly" :placeholder="$t('system.enterDepotName')" v-decorator.trim="[ 'name', validatorRules.name]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="仓库地址">
-            <a-input placeholder="请输入仓库地址" v-decorator.trim="[ 'address' ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.depotAddressLabel')">
+            <a-input :disabled="isReadOnly" :placeholder="$t('system.enterDepotAddress')" v-decorator.trim="[ 'address', validatorRules.address ]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="仓储费">
-            <a-input placeholder="请输入仓储费" v-decorator.trim="[ 'warehousing' ]" suffix="元/天/KG"/>
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.warehousingFeeLabel')">
+            <a-input-number :disabled="isReadOnly" :min="0" :precision="6" :step="0.01"
+                            style="width: 100%" :placeholder="$t('system.enterWarehousingFee')"
+                            v-decorator="[ 'warehousing', validatorRules.warehousing ]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="搬运费">
-            <a-input placeholder="请输入搬运费" v-decorator.trim="[ 'truckage' ]" suffix="元"/>
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.truckageFeeLabel')">
+            <a-input-number :disabled="isReadOnly" :min="0" :precision="6" :step="0.01"
+                            style="width: 100%" :placeholder="$t('system.enterTruckageFee')"
+                            v-decorator="[ 'truckage', validatorRules.truckage ]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="负责人">
-            <a-select placeholder="选择负责人" v-decorator="[ 'principal' ]" :dropdownMatchSelectWidth="false">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.principalLabel')">
+            <a-select :disabled="isReadOnly" :placeholder="$t('system.selectPrincipal')" v-decorator="[ 'principal' ]" :dropdownMatchSelectWidth="false">
               <a-select-option v-for="(item,index) in userList" :key="index" :value="item.id">
                 {{ item.userName }}
               </a-select-option>
             </a-select>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="排序">
-            <a-input placeholder="请输入排序" v-decorator.trim="[ 'sort' ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.sort')">
+            <a-input-number :disabled="isReadOnly" :min="0" :precision="0" style="width: 100%"
+                            :placeholder="$t('common.sort')" v-decorator="[ 'sort', validatorRules.sort ]" />
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="备注">
-            <a-textarea :rows="2" placeholder="请输入备注" v-decorator.trim="[ 'remark' ]" />
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('common.remark')">
+            <a-textarea :disabled="isReadOnly" :rows="2" :placeholder="$t('common.enterRemark')"
+                        v-decorator.trim="[ 'remark', validatorRules.remark ]" />
           </a-form-item>
         </a-form>
       </a-spin>
@@ -62,7 +71,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         model: {},
         maskStyle: '',
@@ -81,10 +90,15 @@
         validatorRules:{
           name:{
             rules: [
-              { required: true, message: '请输入仓库名称!' },
-              { min: 2, max: 30, message: '长度在 2 到 30 个字符', trigger: 'blur' },
+              { required: true, message: this.$t('system.depotNameRequired') },
+              { min: 2, max: 20, message: this.$t('system.depotNameLength'), trigger: 'blur' },
               { validator: this.validateDepotName}
-            ]}
+            ]},
+          address: { rules: [{ max: 50, message: this.$t('system.addressLength'), trigger: 'blur' }] },
+          warehousing: { rules: [{ type: 'number', min: 0, message: this.$t('system.warehousingNonNegative'), trigger: 'change' }] },
+          truckage: { rules: [{ type: 'number', min: 0, message: this.$t('system.truckageNonNegative'), trigger: 'change' }] },
+          sort: { rules: [{ type: 'integer', min: 0, message: this.$t('system.sortNonNegativeInt'), trigger: 'change' }] },
+          remark: { rules: [{ max: 100, message: this.$t('system.remarkLength100'), trigger: 'blur' }] }
         },
       }
     },
@@ -93,6 +107,7 @@
     },
     methods: {
       add () {
+        this.isReadOnly = false
         this.edit({});
       },
       edit (record) {
@@ -125,12 +140,12 @@
             obj.then((res)=>{
               if(res.code === 200){
                 that.$emit('ok');
+                that.close();
               }else{
-                that.$message.warning(res.data.message);
+                that.$message.warning((res.data && res.data.message) || res.data || this.$t('system.saveFailed'));
               }
             }).finally(() => {
               that.confirmLoading = false;
-              that.close();
             })
           }
         })
@@ -148,10 +163,10 @@
             if(!res.data.status){
               callback();
             } else {
-              callback("名称已经存在");
+              callback(this.$t('common.nameExists'));
             }
           } else {
-            callback(res.data);
+            callback((res.data && res.data.message) || res.data || this.$t('system.depotNameCheckFailed'));
           }
         });
       },

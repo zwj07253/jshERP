@@ -8,11 +8,11 @@
           <a-form layout="inline" @keyup.enter.native="searchQuery">
             <a-row :gutter="24">
               <a-col :md="6" :sm="24">
-                <a-form-item label="仓库" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                <a-form-item :label="$t('common.warehouse')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                   <a-select
                     optionFilterProp="children"
                     showSearch allow-clear style="width: 100%"
-                    placeholder="请选择仓库"
+                    :placeholder="$t('common.selectWarehouse')"
                     v-model="queryParam.depotId">
                     <a-select-option v-for="(depot,index) in depotList" :value="depot.id" :key="index">
                       {{ depot.depotName }}
@@ -21,22 +21,22 @@
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item label="商品信息" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入条码、名称、助记码、规格、型号等信息" v-model="queryParam.materialParam"></a-input>
+                <a-form-item :label="$t('common.materialInfo')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('common.materialInputPlaceholder')" v-model="queryParam.materialParam"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item label="商品类别" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                <a-form-item :label="$t('report.productCategory')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                   <a-tree-select style="width:100%" :dropdownStyle="{maxHeight:'200px',overflow:'auto'}" allow-clear
-                                 :treeData="categoryTree" v-model="queryParam.categoryId" placeholder="请选择商品类别">
+                                 :treeData="categoryTree" v-model="queryParam.categoryId" :placeholder="$t('common.selectCategory')">
                   </a-tree-select>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
                 <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
-                  <a-button type="primary" @click="searchQuery">查询</a-button>
-                  <a-button style="margin-left: 8px" v-print="'#reportPrint'" icon="printer">打印</a-button>
-                  <a-button style="margin-left: 8px" @click="exportExcel" icon="download">导出</a-button>
+                  <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                  <a-button style="margin-left: 8px" v-print="'#reportPrint'" icon="printer">{{ $t('common.print') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="exportExcel" icon="download">{{ $t('common.export') }}</a-button>
                 </span>
               </a-col>
             </a-row>
@@ -48,7 +48,7 @@
             bordered
             ref="table"
             size="middle"
-            rowKey="id"
+            rowKey="warningKey"
             :columns="columns"
             :dataSource="dataSource"
             :components="handleDrag(columns)"
@@ -74,7 +74,7 @@
                     </a-row>
                     <a-row style="padding-top: 10px;">
                       <a-col>
-                        恢复默认列配置：<a-button @click="handleRestDefault" type="link" size="small">恢复默认</a-button>
+                        {{ $t('common.restoreColumns') }}<a-button @click="handleRestDefault" type="link" size="small">{{ $t('common.restoreDefault') }}</a-button>
                       </a-col>
                     </a-row>
                   </a-checkbox-group>
@@ -93,9 +93,9 @@
                 :page-size="ipagination.pageSize"
                 :page-size-options="ipagination.pageSizeOptions"
                 :total="ipagination.total"
-                :show-total="(total, range) => `共 ${total-Math.ceil(total/ipagination.pageSize)} 条`">
+                :show-total="total => $t('common.total', { total })">
                 <template slot="buildOptionText" slot-scope="props">
-                  <span>{{ props.value-1 }}条/页</span>
+                  <span>{{ props.value }}{{ $t('common.itemsPerPage') }}</span>
                 </template>
               </a-pagination>
             </a-col>
@@ -135,8 +135,8 @@
           mpList: getMpListShort(Vue.ls.get('materialPropertyList'))  //扩展属性
         },
         ipagination:{
-          pageSize: 11,
-          pageSizeOptions: ['11', '21', '31', '101', '201']
+          pageSize: 10,
+          pageSizeOptions: ['10', '20', '30', '100', '200']
         },
         depotList: [],
         categoryTree:[],
@@ -149,27 +149,27 @@
         defColumns: [
           {
             dataIndex: 'rowIndex', width:40, align:"center", slots: { title: 'customTitle' },
-            customRender:function (t,r,index) {
-              return (t !== '合计') ? (parseInt(index) + 1) : t
+            customRender:(t,r,index) => {
+              return (t !== this.$t('common.total')) ? (parseInt(index) + 1) : t
             }
           },
-          {title: '仓库', dataIndex: 'depotName', width: 100, ellipsis:true},
-          {title: '条码', dataIndex: 'barCode', sorter: (a, b) => a.barCode - b.barCode, width: 100},
-          {title: '名称', dataIndex: 'mname', width: 100, ellipsis:true},
-          {title: '规格', dataIndex: 'mstandard', width: 80, ellipsis:true},
-          {title: '型号', dataIndex: 'mmodel', width: 80, ellipsis:true},
-          {title: '颜色', dataIndex: 'mcolor', width: 50, ellipsis:true},
-          {title: '品牌', dataIndex: 'brand', width: 80, ellipsis:true},
-          {title: '制造商', dataIndex: 'mmfrs', width: 80, ellipsis:true},
-          {title: '扩展1', dataIndex: 'motherField1', width: 80, ellipsis:true},
-          {title: '扩展2', dataIndex: 'motherField2', width: 80, ellipsis:true},
-          {title: '扩展3', dataIndex: 'motherField3', width: 80, ellipsis:true},
-          {title: '单位', dataIndex: 'materialUnit', width: 60, ellipsis:true},
-          {title: '库存', dataIndex: 'currentNumber', sorter: (a, b) => a.currentNumber - b.currentNumber, width: 80},
-          {title: '最低安全库存', dataIndex: 'lowSafeStock', sorter: (a, b) => a.lowSafeStock - b.lowSafeStock, width: 100},
-          {title: '最高安全库存', dataIndex: 'highSafeStock', sorter: (a, b) => a.highSafeStock - b.highSafeStock, width: 100},
-          {title: '建议入库量', dataIndex: 'lowCritical', sorter: (a, b) => a.lowCritical - b.lowCritical, width: 80},
-          {title: '建议出库量', dataIndex: 'highCritical', sorter: (a, b) => a.highCritical - b.highCritical, width: 80}
+          {title: this.$t('system.depot'), dataIndex: 'depotName', width: 100, ellipsis:true},
+          {title: this.$t('common.barcode'), dataIndex: 'barCode', sorter: true, width: 100},
+          {title: this.$t('common.name'), dataIndex: 'mname', width: 100, ellipsis:true},
+          {title: this.$t('common.specification'), dataIndex: 'mstandard', width: 80, ellipsis:true},
+          {title: this.$t('common.model'), dataIndex: 'mmodel', width: 80, ellipsis:true},
+          {title: this.$t('material.color'), dataIndex: 'mcolor', width: 50, ellipsis:true},
+          {title: this.$t('common.brand'), dataIndex: 'brand', width: 80, ellipsis:true},
+          {title: this.$t('material.manufacturer'), dataIndex: 'mmfrs', width: 80, ellipsis:true},
+          {title: this.$t('purchase.form.columns.ext1'), dataIndex: 'motherField1', width: 80, ellipsis:true},
+          {title: this.$t('purchase.form.columns.ext2'), dataIndex: 'motherField2', width: 80, ellipsis:true},
+          {title: this.$t('purchase.form.columns.ext3'), dataIndex: 'motherField3', width: 80, ellipsis:true},
+          {title: this.$t('common.unit'), dataIndex: 'materialUnit', width: 60, ellipsis:true},
+          {title: this.$t('purchase.form.columns.stock'), dataIndex: 'currentNumber', sorter: true, width: 80},
+          {title: this.$t('report.minSafetyStock'), dataIndex: 'lowSafeStock', sorter: true, width: 100},
+          {title: this.$t('report.maxSafetyStock'), dataIndex: 'highSafeStock', sorter: true, width: 100},
+          {title: this.$t('report.suggestInbound'), dataIndex: 'lowCritical', sorter: true, width: 80},
+          {title: this.$t('report.suggestOutbound'), dataIndex: 'highCritical', sorter: true, width: 80}
         ],
         url: {
           list: "/depotItem/findStockWarningCount"
@@ -187,7 +187,7 @@
         let param = Object.assign({}, this.queryParam, this.isorter);
         param.field = this.getQueryField();
         param.currentPage = this.ipagination.current;
-        param.pageSize = this.ipagination.pageSize-1;
+        param.pageSize = this.ipagination.pageSize;
         return param;
       },
       getDepotData() {
@@ -239,18 +239,41 @@
         }
       },
       exportExcel() {
+        if ((this.ipagination.total || 0) > 10000) {
+          this.$message.warning(this.$t('report.exportLimit'))
+          return
+        }
+        let params = this.getQueryParams()
+        params.currentPage = 1
+        params.pageSize = Math.max(this.ipagination.total || 0, 1)
+        this.loading = true
+        getAction(this.url.list, params).then((res) => {
+          if (res.code === 200) {
+            this.exportExcelRows(res.data.rows || [])
+          } else {
+            const message = typeof res.data === 'string' ? res.data : res.data && res.data.message
+            this.$message.warning(message || this.$t('report.exportFailed'))
+          }
+        }).finally(() => {
+          this.loading = false
+        })
+      },
+      exportExcelRows(dataSource) {
         let list = []
         let mpStr = getMpListShort(Vue.ls.get('materialPropertyList'))
-        let head = '仓库,条码,名称,规格,型号,颜色,品牌,制造商,' + mpStr + ',单位,库存,最低安全库存,最高安全库存,建议入库量,建议出库量'
-        for (let i = 0; i < this.dataSource.length; i++) {
+        let head = [this.$t('common.warehouse'), this.$t('report.barCode'), this.$t('report.name'), this.$t('report.specification'), this.$t('report.model'),
+          this.$t('report.color'), this.$t('report.brand'), this.$t('report.manufacturer')].join(',') + ',' + mpStr + ',' +
+          [this.$t('report.unit'), this.$t('report.stock'), this.$t('report.lowSafeStock'), this.$t('report.highSafeStock'),
+          this.$t('report.suggestedInbound'), this.$t('report.suggestedOutbound')].join(',')
+        for (let i = 0; i < dataSource.length; i++) {
           let item = []
-          let ds = this.dataSource[i]
+          let ds = dataSource[i]
           item.push(ds.depotName, ds.barCode, ds.mname, ds.mstandard, ds.mmodel, ds.mcolor, ds.brand, ds.mmfrs,
             ds.motherField1, ds.motherField2, ds.motherField3, ds.materialUnit, ds.currentNumber, ds.lowSafeStock, ds.highSafeStock, ds.lowCritical, ds.highCritical)
           list.push(item)
         }
-        let tip = '库存预警查询'
-        this.handleExportXlsPost('库存预警', '库存预警', head, tip, list)
+        let tip = this.$t('report.stockWarningQuery')
+        this.handleExportXlsPost(this.$t('report.stockWarning'), this.$t('report.stockWarning'), head, tip, list)
       }
     }
   }

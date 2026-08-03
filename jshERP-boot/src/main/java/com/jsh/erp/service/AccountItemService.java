@@ -25,7 +25,9 @@ import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class AccountItemService {
@@ -41,6 +43,8 @@ public class AccountItemService {
     private UserService userService;
     @Resource
     private DepotHeadService depotHeadService;
+    @Resource
+    private PlatformAccessService platformAccessService;
 
     public List<AccountItem> getAccountItem()throws Exception {
         AccountItemExample example = new AccountItemExample();
@@ -78,6 +82,7 @@ public class AccountItemService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int insertAccountItemWithObj(AccountItem accountItem)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         int result=0;
         try{
             result = accountItemMapper.insertSelective(accountItem);
@@ -89,6 +94,7 @@ public class AccountItemService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public int updateAccountItemWithObj(AccountItem accountItem)throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
         int result=0;
         try{
             result = accountItemMapper.updateByPrimaryKeySelective(accountItem);
@@ -110,6 +116,8 @@ public class AccountItemService {
 
     @Transactional(value = "transactionManager", rollbackFor = Exception.class)
     public void saveDetials(String rows, Long headerId, String type, HttpServletRequest request) throws Exception {
+        platformAccessService.assertBusinessWriteAllowed();
+        Set<Long> affectedBillIds = new LinkedHashSet<>(getBillIdsByHeaderIds(new String[]{headerId.toString()}));
         //删除单据的明细
         deleteAccountItemHeadId(headerId);
         JSONArray rowArr = JSONArray.parseArray(rows);
@@ -127,7 +135,14 @@ public class AccountItemService {
                 }
                 if (tempInsertedJson.get("billNumber") != null && !tempInsertedJson.get("billNumber").equals("")) {
                     String billNo = tempInsertedJson.getString("billNumber");
-                    accountItem.setBillId(depotHeadService.getDepotHead(billNo).getId());
+                    if(!"QiChu".equals(billNo)) {
+                        DepotHead depotHead = depotHeadService.getDepotHead(billNo);
+                        if(depotHead == null) {
+                            throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ROW_FAILED_CODE,
+                                    ExceptionConstants.ACCOUNT_HEAD_ROW_FAILED_MSG);
+                        }
+                        accountItem.setBillId(depotHead.getId());
+                    }
                 }
                 if (tempInsertedJson.get("needDebt") != null && !tempInsertedJson.get("needDebt").equals("")) {
                     accountItem.setNeedDebt(tempInsertedJson.getBigDecimal("needDebt"));
@@ -149,22 +164,37 @@ public class AccountItemService {
             }
             for (AccountItem accountItem : accountItemList) {
                 this.insertAccountItemWithObj(accountItem);
-            }
-            //更新业务单据的最终欠款
-            for (AccountItem accountItem : accountItemList) {
-                if(accountItem.getBillId()!=null) {
-                    DepotHead dh = depotHeadService.getDepotHead(accountItem.getBillId());
-                    if(dh!=null) {
-                        BigDecimal debt = depotHeadService.getDebtByBill(dh);
-                        if(debt.compareTo(BigDecimal.ZERO)!=0) {
-                            depotHeadService.updateLastDebtByBillId(debt, accountItem.getBillId());
-                        }
-                    }
+                if(accountItem.getBillId() != null) {
+                    affectedBillIds.add(accountItem.getBillId());
                 }
             }
+            refreshLastDebtByBillIds(affectedBillIds);
         } else {
             throw new BusinessRunTimeException(ExceptionConstants.ACCOUNT_HEAD_ROW_FAILED_CODE,
                     String.format(ExceptionConstants.ACCOUNT_HEAD_ROW_FAILED_MSG));
+        }
+    }
+
+    public List<Long> getBillIdsByHeaderIds(String[] headerIds) {
+        if(headerIds == null || headerIds.length == 0) {
+            return new ArrayList<>();
+        }
+        List<Long> billIds = accountItemMapperEx.getBillIdsByHeaderIds(headerIds);
+        return billIds == null ? new ArrayList<>() : billIds;
+    }
+
+    public void refreshLastDebtByBillIds(Iterable<Long> billIds) throws Exception {
+        if(billIds == null) {
+            return;
+        }
+        for(Long billId : billIds) {
+            if(billId == null) {
+                continue;
+            }
+            DepotHead depotHead = depotHeadService.getDepotHead(billId);
+            if(depotHead != null) {
+                depotHeadService.updateLastDebtByBillId(depotHeadService.getDebtByBill(depotHead), billId);
+            }
         }
     }
 

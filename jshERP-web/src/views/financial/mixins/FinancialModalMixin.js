@@ -70,9 +70,11 @@ export const FinancialModalMixin = {
       }
     },
     addInit(amountNum) {
-      getAction('/sequence/buildNumber').then((res) => {
+      getAction('/sequence/buildNumber', {prefixNo: amountNum}).then((res) => {
         if (res && res.code === 200) {
-          this.form.setFieldsValue({'billNo':amountNum + res.data.defaultNumber})
+          this.form.setFieldsValue({'billNo':res.data.defaultNumber})
+        } else if(res) {
+          this.$message.warning(res.data || this.$t('financial.getBillNoFailed'))
         }
       })
       this.$nextTick(() => {
@@ -246,27 +248,27 @@ export const FinancialModalMixin = {
     },
     addSupplier() {
       this.$refs.vendorModalForm.add();
-      this.$refs.vendorModalForm.title = "新增";
+      this.$refs.vendorModalForm.title = this.$t('common.add');
       this.$refs.vendorModalForm.disableSubmit = false;
     },
     addCustomer() {
       this.$refs.customerModalForm.add();
-      this.$refs.customerModalForm.title = "新增客户（提醒：如果找不到新添加的客户，请到用户管理检查是否分配了该客户权限）";
+      this.$refs.customerModalForm.title = this.$t('financial.addCustomerTip');
       this.$refs.customerModalForm.disableSubmit = false;
     },
     addAccount() {
       this.$refs.accountModalForm.add();
-      this.$refs.accountModalForm.title = "新增结算账户";
+      this.$refs.accountModalForm.title = this.$t('system.account');
       this.$refs.accountModalForm.disableSubmit = false;
     },
     addPerson() {
       this.$refs.personModalForm.add();
-      this.$refs.personModalForm.title = "新增经手人";
+      this.$refs.personModalForm.title = this.$t('common.add');
       this.$refs.personModalForm.disableSubmit = false;
     },
     addInOutItem(type) {
       this.$refs.inOutItemModalForm.add(type);
-      this.$refs.inOutItemModalForm.title = "新增收支项目";
+      this.$refs.inOutItemModalForm.title = this.$t('financial.newInOutItem');
       this.$refs.inOutItemModalForm.disableSubmit = false;
     },
     vendorModalFormOk() {
@@ -382,12 +384,12 @@ export const FinancialModalMixin = {
     //选择期初
     selectBeginNeed(type) {
       let that = this
-      let info = type === '供应商'? '付款':'收款'
+      let info = type === '供应商'? this.$t('financial.payment'):this.$t('financial.receipt')
       let organId = this.form.getFieldValue('organId')
       if(organId){
         this.$confirm({
-          title: "确认操作",
-          content: "是否选择期初金额，对期初进行" + info + "?",
+          title: this.$t('common.confirmAction'),
+          content: this.$t('financial.selectInitialAmountConfirm', [info]),
           onOk: function () {
             let listEx = []
             let info = {}
@@ -413,7 +415,8 @@ export const FinancialModalMixin = {
           }
         })
       } else {
-        that.$message.warning('请选择' + type + '！');
+        let displayType = type === '供应商' ? this.$t('common.supplier') : this.$t('common.customer')
+        that.$message.warning(this.$t('financial.selectOrganWarning', [displayType]));
       }
     },
     //选择-待收款或者待付款
@@ -437,11 +440,11 @@ export const FinancialModalMixin = {
           if (res && res.code === 200) {
             let sendWorkflowUrl = res.data.platformValue + '&no=' + this.model.billNo + '&type=2'
             this.$refs.modalWorkflow.show(this.model, sendWorkflowUrl, this.model.billNo, 2, 320)
-            this.$refs.modalWorkflow.title = "发起流程"
+            this.$refs.modalWorkflow.title = this.$t('common.launchWorkflow')
           }
         })
       } else {
-        this.$message.warning('请先保存单据后再提交流程！');
+        this.$message.warning(this.$t('common.saveFirst'));
       }
     },
     //加载快捷按钮：供应商、客户、结算账户、经手人

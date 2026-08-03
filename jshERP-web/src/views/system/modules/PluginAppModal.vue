@@ -12,16 +12,16 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="取消"
-      okText="保存"
+      :cancelText="$t('common.cancel')"
+      :okText="$t('common.save')"
       style="top:20%;height: 50%;">
       <a-spin :spinning="confirmLoading">
         <a-form :form="form">
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="机器码">
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.machineCode')">
             <a-input v-decorator.trim="[ 'platformKey' ]" :readOnly="true"/>
           </a-form-item>
-          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" label="手机端激活码">
-            <a-textarea :rows="2" placeholder="请输入手机端激活码" v-decorator="[ 'platformValue' ]"/>
+          <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="$t('system.appActivationCode')">
+            <a-textarea :rows="2" :placeholder="$t('system.enterAppActivationCode')" v-decorator="[ 'platformValue' ]"/>
           </a-form-item>
         </a-form>
       </a-spin>
@@ -38,7 +38,7 @@
     mixins: [mixinDevice],
     data () {
       return {
-        title:"操作",
+        title:this.$t('common.action'),
         visible: false,
         model: {},
         machineCode: '',
@@ -66,7 +66,8 @@
             this.model.platformKey = res.data
             getPlatformConfigByKey( {"platformKey": "app_activation_code"}).then((res)=>{
               if(res && res.code == 200) {
-                this.model.platformValue = res.data.platformValue
+                let val = res.data.platformValue || ''
+                this.model.platformValue = val.length > 4 ? '****' + val.substring(val.length - 4) : ''
                 this.visible = true;
                 this.$nextTick(() => {
                   this.form.setFieldsValue(pick(this.model, 'platformKey','platformValue'))
@@ -90,7 +91,7 @@
             formData.platformKey = 'app_activation_code'
             postAction('/platformConfig/updatePlatformConfigByKey', formData).then((res)=>{
               if(res.code === 200){
-                that.$message.info('填写成功！');
+                that.$message.info(this.$t('system.fillSuccess'));
               }else{
                 that.$message.warning(res.data.message);
               }

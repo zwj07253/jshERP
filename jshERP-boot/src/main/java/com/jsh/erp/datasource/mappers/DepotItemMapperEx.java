@@ -2,9 +2,11 @@ package com.jsh.erp.datasource.mappers;
 
 import com.jsh.erp.datasource.entities.*;
 import com.jsh.erp.datasource.vo.DepotItemStockWarningCount;
+import com.jsh.erp.datasource.vo.DepotItemVo4InOutStock;
 import com.jsh.erp.datasource.vo.DepotItemVo4Stock;
 import com.jsh.erp.datasource.vo.DepotItemVoBatchNumberList;
 import com.jsh.erp.datasource.vo.InOutPriceVo;
+import com.jsh.erp.datasource.vo.MaterialExtendStock;
 import org.apache.ibatis.annotations.Param;
 
 import java.math.BigDecimal;
@@ -63,17 +65,44 @@ public interface DepotItemMapperEx {
     List<DepotItemVo4WithInfoEx> getBillDetailListByIds(
             @Param("idList") List<Long> idList);
 
-    List<DepotItemVo4WithInfoEx> getInOutStock(
+    List<DepotItemVo4InOutStock> getInOutStock(
             @Param("materialParam") String materialParam,
             @Param("categoryIdList") List<Long> categoryIdList,
+            @Param("depotList") List<Long> depotList,
+            @Param("beginTime") String beginTime,
             @Param("endTime") String endTime,
+            @Param("forceFlag") Boolean forceFlag,
+            @Param("inOutManageFlag") Boolean inOutManageFlag,
+            @Param("moveAvgPriceFlag") Boolean moveAvgPriceFlag,
+            @Param("column") String column,
+            @Param("order") String order,
             @Param("offset") Integer offset,
             @Param("rows") Integer rows);
 
     int getInOutStockCount(
             @Param("materialParam") String materialParam,
             @Param("categoryIdList") List<Long> categoryIdList,
-            @Param("endTime") String endTime);
+            @Param("depotList") List<Long> depotList,
+            @Param("beginTime") String beginTime,
+            @Param("endTime") String endTime,
+            @Param("forceFlag") Boolean forceFlag,
+            @Param("inOutManageFlag") Boolean inOutManageFlag,
+            @Param("moveAvgPriceFlag") Boolean moveAvgPriceFlag);
+
+    DepotItemVo4InOutStock getInOutStockStatistic(
+            @Param("materialParam") String materialParam,
+            @Param("categoryIdList") List<Long> categoryIdList,
+            @Param("depotList") List<Long> depotList,
+            @Param("beginTime") String beginTime,
+            @Param("endTime") String endTime,
+            @Param("forceFlag") Boolean forceFlag,
+            @Param("inOutManageFlag") Boolean inOutManageFlag,
+            @Param("moveAvgPriceFlag") Boolean moveAvgPriceFlag);
+
+    BigDecimal getInOutStockUnitPrice(
+            @Param("mId") Long mId,
+            @Param("depotList") List<Long> depotList,
+            @Param("moveAvgPriceFlag") Boolean moveAvgPriceFlag);
 
     List<DepotItemVo4WithInfoEx> getListWithBuyOrSale(
             @Param("materialParam") String materialParam,
@@ -86,6 +115,51 @@ public interface DepotItemMapperEx {
             @Param("categoryList") List<Long> categoryList,
             @Param("depotList") List<Long> depotList,
             @Param("forceFlag") Boolean forceFlag,
+            @Param("offset") Integer offset,
+            @Param("rows") Integer rows);
+
+    List<DepotItemVo4WithInfoEx> getRetailOutSummary(
+            @Param("materialParam") String materialParam,
+            @Param("beginTime") String beginTime,
+            @Param("endTime") String endTime,
+            @Param("creatorArray") String[] creatorArray,
+            @Param("organId") Long organId,
+            @Param("organArray") String[] organArray,
+            @Param("categoryList") List<Long> categoryList,
+            @Param("depotList") List<Long> depotList,
+            @Param("forceFlag") Boolean forceFlag,
+            @Param("column") String column,
+            @Param("order") String order,
+            @Param("offset") Integer offset,
+            @Param("rows") Integer rows);
+
+    List<DepotItemVo4WithInfoEx> getBuyInSummary(
+            @Param("materialParam") String materialParam,
+            @Param("beginTime") String beginTime,
+            @Param("endTime") String endTime,
+            @Param("creatorArray") String[] creatorArray,
+            @Param("organId") Long organId,
+            @Param("organArray") String[] organArray,
+            @Param("categoryList") List<Long> categoryList,
+            @Param("depotList") List<Long> depotList,
+            @Param("forceFlag") Boolean forceFlag,
+            @Param("column") String column,
+            @Param("order") String order,
+            @Param("offset") Integer offset,
+            @Param("rows") Integer rows);
+
+    List<DepotItemVo4WithInfoEx> getSaleOutSummary(
+            @Param("materialParam") String materialParam,
+            @Param("beginTime") String beginTime,
+            @Param("endTime") String endTime,
+            @Param("creatorArray") String[] creatorArray,
+            @Param("organId") Long organId,
+            @Param("organArray") String[] organArray,
+            @Param("categoryList") List<Long> categoryList,
+            @Param("depotList") List<Long> depotList,
+            @Param("forceFlag") Boolean forceFlag,
+            @Param("column") String column,
+            @Param("order") String order,
             @Param("offset") Integer offset,
             @Param("rows") Integer rows);
 
@@ -193,14 +267,16 @@ public interface DepotItemMapperEx {
 
     List<DepotItem> getDepotItemListListByDepotIds(@Param("depotIds") String[] depotIds);
 
-    List<DepotItem> getDepotItemListListByMaterialIds(@Param("materialIds") String[] materialIds);
+    List<DepotItem> getDepotItemListListByMaterialIds(@Param("materialIds") List<Long> materialIds);
 
     List<DepotItemStockWarningCount> findStockWarningCount(
             @Param("offset") Integer offset,
             @Param("rows") Integer rows,
             @Param("materialParam") String materialParam,
             @Param("depotList") List<Long> depotList,
-            @Param("categoryList") List<Long> categoryList);
+            @Param("categoryList") List<Long> categoryList,
+            @Param("column") String column,
+            @Param("order") String order);
 
     int findStockWarningCountTotal(
             @Param("materialParam") String materialParam,
@@ -221,6 +297,40 @@ public interface DepotItemMapperEx {
             @Param("linkType") String linkType,
             @Param("currentHeaderId") Long currentHeaderId,
             @Param("goToType") String goToType);
+
+    DepotItem lockDepotItemById(@Param("id") Long id);
+
+    BigDecimal getReturnedOperNumber(
+            @Param("linkId") Long linkId,
+            @Param("currentHeaderId") Long currentHeaderId);
+
+    BigDecimal getPurchaseOrderAppliedNumber(
+            @Param("linkId") Long linkId,
+            @Param("currentHeaderId") Long currentHeaderId);
+
+    BigDecimal getPurchaseInboundReceivedNumber(
+            @Param("linkId") Long linkId,
+            @Param("currentHeaderId") Long currentHeaderId);
+
+    BigDecimal getOtherInboundReceivedBasicNumber(
+            @Param("linkId") Long linkId,
+            @Param("currentHeaderId") Long currentHeaderId);
+
+    BigDecimal getOtherOutboundIssuedBasicNumber(
+            @Param("linkId") Long linkId,
+            @Param("currentHeaderId") Long currentHeaderId);
+
+    BigDecimal getPurchaseReturnReturnedBasicNumber(
+            @Param("linkId") Long linkId,
+            @Param("currentHeaderId") Long currentHeaderId);
+
+    BigDecimal getSalesOutboundShippedBasicNumber(
+            @Param("linkId") Long linkId,
+            @Param("currentHeaderId") Long currentHeaderId);
+
+    BigDecimal getSalesReturnReturnedBasicNumber(
+            @Param("linkId") Long linkId,
+            @Param("currentHeaderId") Long currentHeaderId);
 
     List<DepotItemVoBatchNumberList> getBatchNumberList(
             @Param("number") String number,
@@ -243,6 +353,18 @@ public interface DepotItemMapperEx {
             @Param("linkType") String linkType,
             @Param("type") String type);
 
+    List<DepotItemVo4MaterialAndSum> getSourceBillDetailBasicSum(
+            @Param("linkStr") String linkStr);
+
+    List<DepotItemVo4MaterialAndSum> getLinkedBillDetailBasicSum(
+            @Param("linkStr") String linkStr,
+            @Param("linkType") String linkType,
+            @Param("type") String type,
+            @Param("subType") String subType);
+
+    List<DepotItemVo4MaterialAndSum> getAuditedSalesOutboundBasicSum(
+            @Param("linkStr") String linkStr);
+
     Long getCountByMaterialAndBatchNumber(
             @Param("meId") Long meId,
             @Param("batchNumber") String batchNumber);
@@ -257,6 +379,18 @@ public interface DepotItemMapperEx {
     BigDecimal getCurrentStockByParam(
             @Param("depotId") Long depotId,
             @Param("mId") Long mId);
+
+    List<MaterialCurrentStock> getCurrentStockByMaterialIds(
+            @Param("depotId") Long depotId,
+            @Param("materialIds") List<Long> materialIds);
+
+    List<MaterialExtendStock> getSkuStockByMaterialExtendIds(
+            @Param("depotList") List<Long> depotList,
+            @Param("materialExtendIds") List<Long> materialExtendIds,
+            @Param("forceFlag") Boolean forceFlag,
+            @Param("inOutManageFlag") Boolean inOutManageFlag);
+
+    Long getCountByMaterialExtendIds(@Param("materialExtendIds") List<Long> materialExtendIds);
 
     BigDecimal getLastUnitPriceByParam(
             @Param("organId") Long organId,

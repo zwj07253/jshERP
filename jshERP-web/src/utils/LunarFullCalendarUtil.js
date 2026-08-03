@@ -7,6 +7,7 @@
  * */
 
 import { getRefPromise } from '@/utils/JEditableTableUtil'
+import { i18n } from '@/locales'
 
 /* 日历的视图类型 */
 const calendarViewType = {
@@ -25,10 +26,10 @@ const defaultSettings = {
   locale: 'zh-cn',
   // 按钮文字
   buttonText: {
-    today: '今天',
-    month: '月',
-    week: '周',
-    day: '日'
+    today: i18n.t('common.calendarToday'),
+    month: i18n.t('common.calendarMonth'),
+    week: i18n.t('common.calendarWeek'),
+    day: i18n.t('common.calendarDay')
   },
   // 头部排列方式
   header: {
@@ -49,7 +50,7 @@ const defaultSettings = {
   // agenda视图下是否显示all-day
   allDaySlot: true,
   // agenda视图下all-day的显示文本
-  allDayText: '全天',
+  allDayText: i18n.t('common.calendarAllDay'),
   // 时区默认本地的
   timezone: 'local',
   // 周视图和日视同的左侧时间显示

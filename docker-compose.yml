@@ -8,11 +8,15 @@ services:
       POSTGRES_DB: jsh_erp
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-Postgres@123}
+      # Keep persisted timestamp-without-time-zone values aligned with the ERP UI.
+      TZ: ${TZ:-Asia/Shanghai}
+      PGTZ: ${TZ:-Asia/Shanghai}
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./jshERP-boot/docs/jsh_erp_pg.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./jshERP-boot/docs/jsh_erp_pg.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./jshERP-boot/docs/02_initial_tenant.sql:/docker-entrypoint-initdb.d/02_initial_tenant.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 5s
@@ -47,6 +51,10 @@ services:
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
       SPRING_REDIS_PASSWORD: ${REDIS_PASSWORD:-1234abcd}
+      AI_CONFIG_MASTER_KEY: ${AI_CONFIG_MASTER_KEY:-jshErpAiKey2026Default!}
+      # Tenant expiry is evaluated by Java Date; it must use the same zone as the UI and database.
+      TZ: ${TZ:-Asia/Shanghai}
+      JAVA_TOOL_OPTIONS: -Duser.timezone=${TZ:-Asia/Shanghai}
     ports:
       - "${APP_PORT:-9999}:9999"
     volumes:
@@ -69,6 +77,29 @@ services:
       - "${WEB_PORT:-80}:80"
     depends_on:
       - app
+    restart: unless-stopped
+
+  backup:
+    build:
+      context: ./docker/backup
+      dockerfile: Dockerfile
+    container_name: jsherp-backup
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: jsh_erp
+      POSTGRES_USER: ${DB_USER:-postgres}
+      PGPASSWORD: ${DB_PASSWORD:-Postgres@123}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+      BACKUP_TIME: ${BACKUP_TIME:-02:30}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      # The host directory makes backup archives easy to copy off this machine.
+      - ./backups:/backup
+      - upload_data:/source/upload:ro
+      - plugin_data:/source/plugins:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

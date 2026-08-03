@@ -92,7 +92,7 @@ public class MaterialPropertyController extends BaseController {
             obj.put("id", null);
             res = materialPropertyService.insertMaterialProperty(obj, request);
         } else {
-            res = materialPropertyService.updateMaterialPropertyByNativeName(nativeName, anotherName);
+            res = materialPropertyService.updateMaterialPropertyByNativeName(nativeName, anotherName, request);
         }
         return returnStr(objectMap, res);
     }

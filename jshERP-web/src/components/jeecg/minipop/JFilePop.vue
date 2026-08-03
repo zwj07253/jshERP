@@ -5,7 +5,7 @@
       :width="width"
       :visible="visible"
       @ok="ok"
-      cancelText="取消"
+      :cancelText="$t('common.cancel')"
       @cancel="close">
       <!--style="top: 20px;"-->
       <j-upload :file-type="fileType" :value="filePath" @change="handleChange" :disabled="disabled"></j-upload>
@@ -87,7 +87,7 @@
       },
       ok(){
         if(!this.filePath){
-          this.$message.error("未上传任何文件")
+          this.$message.error(this.$t('common.noFileUploaded'))
           return false;
         }
         let arr = this.filePath.split(",")

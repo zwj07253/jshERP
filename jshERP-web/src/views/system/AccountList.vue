@@ -9,24 +9,24 @@
           <a-form layout="inline" @keyup.enter.native="searchQuery">
             <a-row :gutter="24">
               <a-col :md="6" :sm="24">
-                <a-form-item label="名称" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入名称查询" v-model="queryParam.name"></a-input>
+                <a-form-item :label="$t('common.name')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('common.name')" v-model="queryParam.name"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item label="编号" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入编号查询" v-model="queryParam.serialNo"></a-input>
+                <a-form-item :label="$t('common.serialNo')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('common.serialNo')" v-model="queryParam.serialNo"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item label="备注" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入备注查询" v-model="queryParam.remark"></a-input>
+                <a-form-item :label="$t('common.remark')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('common.enterRemark')" v-model="queryParam.remark"></a-input>
                 </a-form-item>
               </a-col>
               <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
                 <a-col :md="6" :sm="24">
-                  <a-button type="primary" @click="searchQuery">查询</a-button>
-                  <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
+                  <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="searchReset">{{ $t('common.reset') }}</a-button>
                 </a-col>
               </span>
             </a-row>
@@ -34,10 +34,10 @@
         </div>
         <!-- 操作按钮区域 -->
         <div class="table-operator"  style="margin-top: 5px">
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd" type="primary" icon="plus">新增</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchDel" icon="delete">删除</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(true)" icon="check-square">启用</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(false)"icon="close-square" >禁用</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd" type="primary" icon="plus">{{ $t('common.add') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchDel" icon="delete">{{ $t('common.delete') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(true)" icon="check-square">{{ $t('common.enable') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(false)"icon="close-square" >{{ $t('common.disable') }}</a-button>
         </div>
         <!-- table区域-begin -->
         <div>
@@ -54,24 +54,24 @@
             :rowSelection="{selectedRowKeys: selectedRowKeys, onChange: onSelectChange}"
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
-              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定设为默认吗?" @confirm="() => handleSetDefault(record.id)">
-                <a>设为默认</a>
+              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" :title="$t('common.confirmSetDefault')" @confirm="() => handleSetDefault(record.id)">
+                <a>{{ $t('common.setDefault') }}</a>
               </a-popconfirm>
               <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
-              <a @click="handleEdit(record)">编辑</a>
+              <a @click="handleEdit(record)">{{ $t('common.edit') }}</a>
               <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
-              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定删除吗?" @confirm="() => handleDelete(record.id)">
-                <a>删除</a>
+              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" :title="$t('common.confirmDelete')" @confirm="() => handleDelete(record.id)">
+                <a>{{ $t('common.delete') }}</a>
               </a-popconfirm>
             </span>
             <!-- 状态渲染模板 -->
             <template slot="customRenderEnabledFlag" slot-scope="enabled">
-              <a-tag v-if="enabled" color="green">启用</a-tag>
-              <a-tag v-if="!enabled" color="orange">禁用</a-tag>
+              <a-tag v-if="enabled" color="green">{{ $t('common.enable') }}</a-tag>
+              <a-tag v-if="!enabled" color="orange">{{ $t('common.disable') }}</a-tag>
             </template>
             <template slot="customRenderFlag" slot-scope="isDefault">
-              <a-tag v-if="isDefault" color="green">是</a-tag>
-              <a-tag v-if="!isDefault" color="orange">否</a-tag>
+              <a-tag v-if="isDefault" color="green">{{ $t('common.yes') }}</a-tag>
+              <a-tag v-if="!isDefault" color="orange">{{ $t('common.no') }}</a-tag>
             </template>
           </a-table>
         </div>
@@ -120,21 +120,21 @@
             }
           },
           {
-            title: '操作',
+            title: this.$t('common.action'),
             dataIndex: 'action',
             width: 150,
             align:"center",
             scopedSlots: { customRender: 'action' },
           },
-          { title: '名称', dataIndex: 'name', width: 100, align: "left"},
-          { title: '编号', dataIndex: 'serialNo', width: 150, align: "left"},
-          { title: '期初金额', dataIndex: 'initialAmount', width: 100, align: "left"},
-          { title: '备注', dataIndex: 'remark', width: 200, align: "left"},
-          { title: '排序', dataIndex: 'sort', width: 60, align: "left"},
-          { title: '状态',dataIndex: 'enabled',width:60,align:"center",
+          { title: this.$t('common.name'), dataIndex: 'name', width: 100, align: "left"},
+          { title: this.$t('common.serialNo'), dataIndex: 'serialNo', width: 150, align: "left"},
+          { title: this.$t('common.openingAmount'), dataIndex: 'initialAmount', width: 100, align: "left"},
+          { title: this.$t('common.remark'), dataIndex: 'remark', width: 200, align: "left"},
+          { title: this.$t('common.sort'), dataIndex: 'sort', width: 60, align: "left"},
+          { title: this.$t('common.status'),dataIndex: 'enabled',width:60,align:"center",
             scopedSlots: { customRender: 'customRenderEnabledFlag' }
           },
-          { title: '是否默认',dataIndex: 'isDefault',width:80,align:"center",
+          { title: this.$t('common.isDefault'),dataIndex: 'isDefault',width:80,align:"center",
             scopedSlots: { customRender: 'customRenderFlag' }
           }
         ],
@@ -153,7 +153,7 @@
     methods: {
       handleSetDefault: function (id) {
         if(!this.url.setDefault){
-          this.$message.error("请设置url.delete属性!")
+          this.$message.error(this.$t('common.setUrlError', {field: 'delete'}))
           return
         }
         let that = this;
@@ -161,13 +161,13 @@
           if(res.code === 200){
             that.loadData();
           } else {
-            that.$message.warning(res.data.message);
+            that.$message.warning((res.data && res.data.message) || res.data || that.$t('system.setDefaultAccountFailed'));
           }
         });
       },
       handleEdit: function (record) {
         this.$refs.modalForm.edit(record);
-        this.$refs.modalForm.title = "编辑";
+        this.$refs.modalForm.title = this.$t('common.edit');
         this.$refs.modalForm.disableSubmit = false;
         if(this.btnEnableList.indexOf(1)===-1) {
           this.$refs.modalForm.isReadOnly = true

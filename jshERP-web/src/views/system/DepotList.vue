@@ -9,19 +9,19 @@
           <a-form layout="inline" @keyup.enter.native="searchQuery">
             <a-row :gutter="24">
               <a-col :md="6" :sm="24">
-                <a-form-item label="仓库名称" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入仓库名称查询" v-model="queryParam.name"></a-input>
+                <a-form-item :label="$t('system.depotName')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('system.depotName')" v-model="queryParam.name"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item label="备注" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入备注查询" v-model="queryParam.remark"></a-input>
+                <a-form-item :label="$t('common.remark')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('common.enterRemark')" v-model="queryParam.remark"></a-input>
                 </a-form-item>
               </a-col>
               <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
                 <a-col :md="6" :sm="24">
-                  <a-button type="primary" @click="searchQuery">查询</a-button>
-                  <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
+                  <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="searchReset">{{ $t('common.reset') }}</a-button>
                 </a-col>
               </span>
             </a-row>
@@ -29,10 +29,10 @@
         </div>
         <!-- 操作按钮区域 -->
         <div class="table-operator"  style="margin-top: 5px">
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd" type="primary" icon="plus">新增</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchDel" icon="delete">删除</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(true)" icon="check-square">启用</a-button>
-          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(false)" icon="close-square">禁用</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="handleAdd" type="primary" icon="plus">{{ $t('common.add') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchDel" icon="delete">{{ $t('common.delete') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(true)" icon="check-square">{{ $t('common.enable') }}</a-button>
+          <a-button v-if="btnEnableList.indexOf(1)>-1" @click="batchSetStatus(false)" icon="close-square">{{ $t('common.disable') }}</a-button>
         </div>
         <!-- table区域-begin -->
         <div>
@@ -49,26 +49,26 @@
             :rowSelection="{selectedRowKeys: selectedRowKeys, onChange: onSelectChange}"
             @change="handleTableChange">
             <span slot="action" slot-scope="text, record">
-              <a v-if="btnEnableList.indexOf(1)>-1 && depotFlag === '1' && quickBtn.user.indexOf(1)>-1 " @click="btnSetUser(record)">分配用户</a>
-              <a-divider v-if="btnEnableList.indexOf(1)>-1 && depotFlag === '1' && quickBtn.user.indexOf(1)>-1 " type="vertical" />
-              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定设为默认吗?" @confirm="() => handleSetDefault(record.id)">
-                <a>设为默认</a>
+              <a v-if="btnEnableList.indexOf(1)>-1 && record.enabled && depotFlag === '1' && quickBtn.user.indexOf(1)>-1 " @click="btnSetUser(record)">{{ $t('common.assignUser') }}</a>
+              <a-divider v-if="btnEnableList.indexOf(1)>-1 && record.enabled && depotFlag === '1' && quickBtn.user.indexOf(1)>-1 " type="vertical" />
+              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1 && record.enabled && !record.isDefault" :title="$t('common.confirmSetDefault')" @confirm="() => handleSetDefault(record.id)">
+                <a>{{ $t('common.setDefault') }}</a>
               </a-popconfirm>
+              <a-divider v-if="btnEnableList.indexOf(1)>-1 && record.enabled && !record.isDefault" type="vertical" />
+              <a v-if="btnEnableList.indexOf(1)>-1" @click="handleEdit(record)">{{ $t('common.edit') }}</a>
               <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
-              <a @click="handleEdit(record)">编辑</a>
-              <a-divider v-if="btnEnableList.indexOf(1)>-1" type="vertical" />
-              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" title="确定删除吗?" @confirm="() => handleDelete(record.id)">
-                <a>删除</a>
+              <a-popconfirm v-if="btnEnableList.indexOf(1)>-1" :title="$t('common.confirmDelete')" @confirm="() => handleDelete(record.id)">
+                <a>{{ $t('common.delete') }}</a>
               </a-popconfirm>
             </span>
             <!-- 状态渲染模板 -->
             <template slot="customRenderEnabledFlag" slot-scope="enabled">
-              <a-tag v-if="enabled" color="green">启用</a-tag>
-              <a-tag v-if="!enabled" color="orange">禁用</a-tag>
+              <a-tag v-if="enabled" color="green">{{ $t('common.enable') }}</a-tag>
+              <a-tag v-if="!enabled" color="orange">{{ $t('common.disable') }}</a-tag>
             </template>
             <template slot="customRenderFlag" slot-scope="isDefault">
-              <a-tag v-if="isDefault" color="green">是</a-tag>
-              <a-tag v-if="!isDefault" color="orange">否</a-tag>
+              <a-tag v-if="isDefault" color="green">{{ $t('common.yes') }}</a-tag>
+              <a-tag v-if="!isDefault" color="orange">{{ $t('common.no') }}</a-tag>
             </template>
           </a-table>
         </div>
@@ -126,23 +126,23 @@
             }
           },
           {
-            title: '操作',
+            title: this.$t('common.action'),
             dataIndex: 'action',
             align:"center",
             width: 200,
             scopedSlots: { customRender: 'action' },
           },
-          {title: '仓库名称', dataIndex: 'name', width: 200},
-          {title: '仓库地址', dataIndex: 'address', width: 200},
-          {title: '仓储费', dataIndex: 'warehousing', width: 80},
-          {title: '搬运费', dataIndex: 'truckage', width: 80},
-          {title: '负责人', dataIndex: 'principalName', width: 80},
-          {title: '备注', dataIndex: 'remark', width: 120},
-          {title: '排序', dataIndex: 'sort', width: 60},
-          { title: '状态',dataIndex: 'enabled',width:60,align:"center",
+          {title: this.$t('system.depotName'), dataIndex: 'name', width: 200},
+          {title: this.$t('system.depotAddress'), dataIndex: 'address', width: 200},
+          {title: this.$t('system.warehousingFee'), dataIndex: 'warehousing', width: 80},
+          {title: this.$t('system.truckageFee'), dataIndex: 'truckage', width: 80},
+          {title: this.$t('system.principal'), dataIndex: 'principalName', width: 80},
+          {title: this.$t('common.remark'), dataIndex: 'remark', width: 120},
+          {title: this.$t('common.sort'), dataIndex: 'sort', width: 60},
+          { title: this.$t('common.status'),dataIndex: 'enabled',width:60,align:"center",
             scopedSlots: { customRender: 'customRenderEnabledFlag' }
           },
-          {title: '是否默认',dataIndex: 'isDefault',width:80,align:"center",
+          {title: this.$t('common.isDefault'),dataIndex: 'isDefault',width:80,align:"center",
             scopedSlots: { customRender: 'customRenderFlag' }
           }
         ],
@@ -180,7 +180,7 @@
       },
       handleSetDefault: function (id) {
         if(!this.url.setDefault){
-          this.$message.error("请设置url.delete属性!")
+          this.$message.error(this.$t('common.setUrlError', {field: 'delete'}))
           return
         }
         let that = this;
@@ -188,13 +188,13 @@
           if(res.code === 200){
             that.loadData();
           } else {
-            that.$message.warning(res.data.message);
+            that.$message.warning((res.data && res.data.message) || res.data || that.$t('system.setDefaultDepotFailed'));
           }
         });
       },
       handleEdit: function (record) {
         this.$refs.modalForm.edit(record);
-        this.$refs.modalForm.title = "编辑";
+        this.$refs.modalForm.title = this.$t('common.edit');
         this.$refs.modalForm.disableSubmit = false;
         if(this.btnEnableList.indexOf(1)===-1) {
           this.$refs.modalForm.isReadOnly = true
@@ -202,7 +202,7 @@
       },
       btnSetUser(record) {
         this.$refs.depotUserModal.edit(record)
-        this.$refs.depotUserModal.title = "分配用户给：" + record.name
+        this.$refs.depotUserModal.title = this.$t('common.assignUserTo') + record.name
         this.$refs.depotUserModal.disableSubmit = false
       }
     }

@@ -1,7 +1,15 @@
 package com.jsh.erp;
 
 import io.restassured.response.Response;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
+import com.jsh.erp.constants.ExceptionConstants;
+
+import java.math.BigDecimal;
 import org.junit.jupiter.api.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * P1: 报表对账测试 (ID 30-40)
@@ -22,15 +30,46 @@ public class P1ReportTest extends ApiTestBase {
     void inventoryReport() {
         Response resp = authReqGet()
                 .param("currentPage", 1)
-                .param("pageSize", 10)
+                .param("pageSize", 10000)
                 .param("depotIds", "")
                 .param("categoryId", "")
                 .param("beginTime", BEGIN_TIME)
                 .param("endTime", END_TIME)
                 .param("materialParam", "")
                 .param("mpList", "")
+                .param("column", "thisSum")
+                .param("order", "desc")
                 .get(CONTEXT + "/depotItem/getInOutStock");
         assertPaged(resp);
+        JSONObject data = JSONObject.parseObject(resp.body().asString()).getJSONObject("data");
+        JSONArray rows = data.getJSONArray("rows");
+        BigDecimal rowTotal = BigDecimal.ZERO;
+        BigDecimal previous = null;
+        for (int i = 0; i < rows.size(); i++) {
+            JSONObject row = rows.getJSONObject(i);
+            BigDecimal prevSum = row.getBigDecimal("prevSum");
+            BigDecimal inSum = row.getBigDecimal("inSum");
+            BigDecimal outSum = row.getBigDecimal("outSum");
+            BigDecimal thisSum = row.getBigDecimal("thisSum");
+            assertEquals(0, prevSum.add(inSum).subtract(outSum).compareTo(thisSum),
+                    "期末库存必须等于期初库存加本期入库减本期出库");
+            if (previous != null) {
+                assertTrue(previous.compareTo(thisSum) >= 0, "期末库存必须按全量结果降序排列");
+            }
+            previous = thisSum;
+            rowTotal = rowTotal.add(thisSum);
+        }
+
+        Response totalResp = authReqGet()
+                .param("depotIds", "")
+                .param("categoryId", "")
+                .param("endTime", END_TIME)
+                .param("materialParam", "")
+                .get(CONTEXT + "/depotItem/getInOutStockCountMoney");
+        assertSuccess(totalResp);
+        BigDecimal totalStock = JSONObject.parseObject(totalResp.body().asString())
+                .getJSONObject("data").getBigDecimal("totalStock");
+        assertEquals(0, rowTotal.compareTo(totalStock), "列表期末库存合计必须与顶部总结存一致");
     }
 
     @Test
@@ -96,7 +135,7 @@ public class P1ReportTest extends ApiTestBase {
     void retailStatistics() {
         Response resp = authReqGet()
                 .param("currentPage", 1)
-                .param("pageSize", 10)
+                .param("pageSize", 10000)
                 .param("beginTime", BEGIN_TIME)
                 .param("endTime", END_TIME)
                 .param("organId", "")
@@ -107,6 +146,20 @@ public class P1ReportTest extends ApiTestBase {
                 .param("mpList", "")
                 .get(CONTEXT + "/depotItem/retailOut");
         assertPaged(resp);
+        JSONObject data = JSONObject.parseObject(resp.body().asString()).getJSONObject("data");
+        JSONArray rows = data.getJSONArray("rows");
+        BigDecimal rowNet = BigDecimal.ZERO;
+        for (int i = 0; i < rows.size(); i++) {
+            JSONObject row = rows.getJSONObject(i);
+            BigDecimal out = row.getBigDecimal("outSumPrice");
+            BigDecimal in = row.getBigDecimal("inSumPrice");
+            BigDecimal net = row.getBigDecimal("outInSumPrice");
+            assertEquals(0, out.subtract(in).compareTo(net), "零售行净额必须等于零售金额减退货金额");
+            rowNet = rowNet.add(net);
+        }
+        assertEquals(0, rowNet.compareTo(data.getBigDecimal("realityPriceTotal")),
+                "零售列表合计必须与顶部实际零售金额一致");
+        assertEquals(rows.size(), data.getIntValue("total"), "分页总数必须与完整结果行数一致");
     }
 
     // ===== 34. 账户统计 =====
@@ -130,14 +183,48 @@ public class P1ReportTest extends ApiTestBase {
     void customerReconciliation() {
         Response resp = authReqGet()
                 .param("currentPage", 1)
-                .param("pageSize", 10)
+                .param("pageSize", 10000)
                 .param("beginTime", BEGIN_TIME)
                 .param("endTime", END_TIME)
                 .param("organId", "")
                 .param("hasDebt", "")
                 .param("supplierType", "客户")
+                .param("column", "allNeed")
+                .param("order", "desc")
                 .get(CONTEXT + "/depotHead/getStatementAccount");
         assertPaged(resp);
+        JSONObject data = JSONObject.parseObject(resp.body().asString()).getJSONObject("data");
+        JSONArray rows = data.getJSONArray("rows");
+        BigDecimal firstMoney = BigDecimal.ZERO;
+        BigDecimal lastMoney = BigDecimal.ZERO;
+        for (int i = 0; i < rows.size(); i++) {
+            JSONObject row = rows.getJSONObject(i);
+            BigDecimal preNeed = row.getBigDecimal("preNeed");
+            BigDecimal debtMoney = row.getBigDecimal("debtMoney");
+            BigDecimal backMoney = row.getBigDecimal("backMoney");
+            BigDecimal allNeed = row.getBigDecimal("allNeed");
+            assertEquals(0, preNeed.add(debtMoney).subtract(backMoney).compareTo(allNeed),
+                    "客户期末应收必须等于期初应收加本期欠款减本期收款");
+            firstMoney = firstMoney.add(preNeed);
+            lastMoney = lastMoney.add(allNeed);
+        }
+        assertEquals(0, firstMoney.compareTo(data.getBigDecimal("firstMoney")), "客户期初应收合计必须与列表一致");
+        assertEquals(0, lastMoney.compareTo(data.getBigDecimal("lastMoney")), "客户期末应收合计必须与列表一致");
+    }
+
+    @Test
+    @Order(7)
+    @DisplayName("35b: 客户对账拒绝非法往来单位类型")
+    void customerReconciliationRejectsInvalidType() {
+        Response resp = authReqGet()
+                .param("currentPage", 1)
+                .param("pageSize", 10)
+                .param("beginTime", BEGIN_TIME)
+                .param("endTime", END_TIME)
+                .param("supplierType", "会员")
+                .get(CONTEXT + "/depotHead/getStatementAccount");
+        assertEquals(ExceptionConstants.DEPOT_HEAD_STATEMENT_ACCOUNT_TYPE_INVALID_CODE,
+                JSONObject.parseObject(resp.body().asString()).getIntValue("code"));
     }
 
     // ===== 36. 供应商对账 =====
@@ -148,14 +235,40 @@ public class P1ReportTest extends ApiTestBase {
     void supplierReconciliation() {
         Response resp = authReqGet()
                 .param("currentPage", 1)
-                .param("pageSize", 10)
+                .param("pageSize", 10000)
                 .param("beginTime", BEGIN_TIME)
                 .param("endTime", END_TIME)
                 .param("organId", "")
                 .param("hasDebt", "")
                 .param("supplierType", "供应商")
+                .param("column", "allNeed")
+                .param("order", "asc")
                 .get(CONTEXT + "/depotHead/getStatementAccount");
         assertPaged(resp);
+        JSONObject data = JSONObject.parseObject(resp.body().asString()).getJSONObject("data");
+        JSONArray rows = data.getJSONArray("rows");
+        BigDecimal firstMoney = BigDecimal.ZERO;
+        BigDecimal lastMoney = BigDecimal.ZERO;
+        BigDecimal previousAllNeed = null;
+        for (int i = 0; i < rows.size(); i++) {
+            JSONObject row = rows.getJSONObject(i);
+            BigDecimal preNeed = row.getBigDecimal("preNeed");
+            BigDecimal debtMoney = row.getBigDecimal("debtMoney");
+            BigDecimal backMoney = row.getBigDecimal("backMoney");
+            BigDecimal allNeed = row.getBigDecimal("allNeed");
+            assertEquals(0, preNeed.add(debtMoney).subtract(backMoney).compareTo(allNeed),
+                    "供应商期末应付必须等于期初应付加本期欠款减本期付款");
+            if (previousAllNeed != null) {
+                assertTrue(previousAllNeed.compareTo(allNeed) <= 0, "供应商期末应付必须按后端全量升序排列");
+            }
+            previousAllNeed = allNeed;
+            firstMoney = firstMoney.add(preNeed);
+            lastMoney = lastMoney.add(allNeed);
+        }
+        assertEquals(rows.size(), data.getIntValue("total"), "供应商对账全量查询行数必须与总数一致");
+        assertEquals(0, firstMoney.compareTo(data.getBigDecimal("firstMoney")), "供应商期初应付合计必须与列表一致");
+        assertEquals(0, lastMoney.compareTo(data.getBigDecimal("lastMoney")), "供应商期末应付合计必须与列表一致");
+        assertTrue(data.containsKey("canViewFinancialHistory"), "接口必须返回历史付款权限标志");
     }
 
     // ===== 37. 进销存统计 =====
@@ -173,13 +286,37 @@ public class P1ReportTest extends ApiTestBase {
                 .param("depotId", "")
                 .param("beginTime", BEGIN_TIME)
                 .param("endTime", END_TIME)
-                .param("type", "")
+                .param("type", "入库")
                 .param("creator", "")
                 .param("categoryId", "")
                 .param("organizationId", "")
                 .param("remark", "")
-                .param("column", "")
-                .param("order", "")
+                .param("column", "createTime")
+                .param("order", "desc")
+                .get(CONTEXT + "/depotHead/findInOutDetail");
+        assertPaged(resp);
+    }
+
+    @Test
+    @Order(9)
+    @DisplayName("37: 进销存统计 - 出库明细")
+    void outDetail() {
+        Response resp = authReqGet()
+                .param("currentPage", 1)
+                .param("pageSize", 10)
+                .param("organId", "")
+                .param("number", "")
+                .param("materialParam", "")
+                .param("depotId", "")
+                .param("beginTime", BEGIN_TIME)
+                .param("endTime", END_TIME)
+                .param("type", "出库")
+                .param("creator", "")
+                .param("categoryId", "")
+                .param("organizationId", "")
+                .param("remark", "")
+                .param("column", "createTime")
+                .param("order", "desc")
                 .get(CONTEXT + "/depotHead/findInOutDetail");
         assertPaged(resp);
     }
@@ -192,21 +329,64 @@ public class P1ReportTest extends ApiTestBase {
     void stockWarning() {
         Response resp = authReqGet()
                 .param("currentPage", 1)
-                .param("pageSize", 10)
+                .param("pageSize", 10000)
                 .param("materialParam", "")
                 .param("depotId", "")
                 .param("categoryId", "")
-                .param("mpList", "")
+                .param("column", "currentNumber")
+                .param("order", "desc")
                 .get(CONTEXT + "/depotItem/findStockWarningCount");
         assertPaged(resp);
+        JSONObject data = JSONObject.parseObject(resp.body().asString()).getJSONObject("data");
+        JSONArray rows = data.getJSONArray("rows");
+        BigDecimal previousStock = null;
+        java.util.Set<String> warningKeys = new java.util.HashSet<>();
+        for (int i = 0; i < rows.size(); i++) {
+            JSONObject row = rows.getJSONObject(i);
+            String warningKey = row.getString("warningKey");
+            assertTrue(warningKey != null && warningKeys.add(warningKey), "库存预警行键必须存在且不重复");
+            BigDecimal current = row.getBigDecimal("currentNumber");
+            BigDecimal low = row.getBigDecimal("lowSafeStock");
+            BigDecimal high = row.getBigDecimal("highSafeStock");
+            BigDecimal lowCritical = row.getBigDecimal("lowCritical");
+            BigDecimal highCritical = row.getBigDecimal("highCritical");
+            assertTrue(lowCritical != null || highCritical != null, "每条记录必须命中一种库存预警");
+            if (lowCritical != null) {
+                assertTrue(current.compareTo(low) < 0, "建议入库记录必须低于最低安全库存");
+                assertEquals(0, low.subtract(current).compareTo(lowCritical), "建议入库量计算错误");
+            }
+            if (highCritical != null) {
+                assertTrue(current.compareTo(high) > 0, "建议出库记录必须高于最高安全库存");
+                assertEquals(0, current.subtract(high).compareTo(highCritical), "建议出库量计算错误");
+            }
+            if (previousStock != null) {
+                assertTrue(previousStock.compareTo(current) >= 0, "库存预警必须按后端库存降序排列");
+            }
+            previousStock = current;
+        }
+        assertEquals(rows.size(), data.getIntValue("total"), "库存预警全量行数必须与总数一致");
+    }
+
+    @Test
+    @Order(10)
+    @DisplayName("38b: 库存预警规范化非法分页参数")
+    void stockWarningNormalizesInvalidPagination() {
+        Response resp = authReqGet()
+                .param("currentPage", 0)
+                .param("pageSize", 0)
+                .param("materialParam", "")
+                .get(CONTEXT + "/depotItem/findStockWarningCount");
+        assertPaged(resp);
+        JSONArray rows = JSONObject.parseObject(resp.body().asString()).getJSONObject("data").getJSONArray("rows");
+        assertTrue(rows.size() <= 1, "非法 pageSize 必须归一化为 1");
     }
 
     // ===== 39. 入库/出库/调拨明细 =====
 
     @Test
     @Order(11)
-    @DisplayName("39a: 入库/出库明细 - 按商品汇总")
-    void materialCount() {
+    @DisplayName("39a: 入库汇总 - 按商品汇总")
+    void inMaterialCount() {
         Response resp = authReqGet()
                 .param("currentPage", 1)
                 .param("pageSize", 10)
@@ -217,15 +397,36 @@ public class P1ReportTest extends ApiTestBase {
                 .param("organizationId", "")
                 .param("beginTime", BEGIN_TIME)
                 .param("endTime", END_TIME)
-                .param("type", "")
-                .param("column", "")
-                .param("order", "")
+                .param("type", "入库")
+                .param("column", "createTime")
+                .param("order", "desc")
                 .get(CONTEXT + "/depotHead/findInOutMaterialCount");
         assertPaged(resp);
     }
 
     @Test
     @Order(12)
+    @DisplayName("39b: 出库汇总 - 按商品汇总")
+    void outMaterialCount() {
+        Response resp = authReqGet()
+                .param("currentPage", 1)
+                .param("pageSize", 10)
+                .param("organId", "")
+                .param("materialParam", "")
+                .param("depotId", "")
+                .param("categoryId", "")
+                .param("organizationId", "")
+                .param("beginTime", BEGIN_TIME)
+                .param("endTime", END_TIME)
+                .param("type", "出库")
+                .param("column", "createTime")
+                .param("order", "desc")
+                .get(CONTEXT + "/depotHead/findInOutMaterialCount");
+        assertPaged(resp);
+    }
+
+    @Test
+    @Order(13)
     @DisplayName("39b: 调拨明细")
     void allocationDetail() {
         Response resp = authReqGet()
@@ -241,8 +442,8 @@ public class P1ReportTest extends ApiTestBase {
                 .param("endTime", END_TIME)
                 .param("subType", "调拨")
                 .param("remark", "")
-                .param("column", "")
-                .param("order", "")
+                .param("column", "createTime")
+                .param("order", "desc")
                 .get(CONTEXT + "/depotHead/findAllocationDetail");
         assertPaged(resp);
     }
@@ -250,7 +451,7 @@ public class P1ReportTest extends ApiTestBase {
     // ===== 40. 入库/出库汇总 =====
 
     @Test
-    @Order(13)
+    @Order(14)
     @DisplayName("40: 购销统计汇总")
     void buyAndSaleSummary() {
         Response resp = authReqGet().get(CONTEXT + "/depotHead/getBuyAndSaleStatistics");
@@ -258,7 +459,7 @@ public class P1ReportTest extends ApiTestBase {
     }
 
     @Test
-    @Order(14)
+    @Order(15)
     @DisplayName("40b: 月度购销趋势")
     void monthlyTrend() {
         Response resp = authReqGet().get(CONTEXT + "/depotItem/buyOrSalePrice");

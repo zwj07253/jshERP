@@ -8,6 +8,8 @@ import com.alibaba.fastjson2.JSONObject;
 import com.jsh.erp.datasource.entities.MaterialExtend;
 import com.jsh.erp.datasource.vo.MaterialExtendVo4List;
 import com.jsh.erp.service.MaterialExtendService;
+import com.jsh.erp.service.RoleService;
+import com.jsh.erp.service.UserService;
 import com.jsh.erp.utils.BaseResponseInfo;
 import com.jsh.erp.utils.ErpInfo;
 import com.jsh.erp.utils.StringUtil;
@@ -35,12 +37,17 @@ public class MaterialExtendController {
     private Logger logger = LoggerFactory.getLogger(MaterialExtendController.class);
     @Resource
     private MaterialExtendService materialExtendService;
+    @Resource
+    private UserService userService;
+    @Resource
+    private RoleService roleService;
 
     @GetMapping(value = "/info")
     @Operation(summary = "根据id获取信息")
     public String getList(@RequestParam("id") Long id,
                           HttpServletRequest request) throws Exception {
         MaterialExtend materialExtend = materialExtendService.getMaterialExtend(id);
+        maskPrices(materialExtend, request);
         Map<String, Object> objectMap = new HashMap<>();
         if(materialExtend != null) {
             objectMap.put("info", materialExtend);
@@ -89,6 +96,8 @@ public class MaterialExtendController {
         BaseResponseInfo res = new BaseResponseInfo();
         try {
             List<MaterialExtendVo4List> dataList = new ArrayList<MaterialExtendVo4List>();
+            Long userId = userService.getUserId(request);
+            String priceLimit = userService.getRoleTypeByUserId(userId).getPriceLimit();
             if(materialId!=0) {
                 dataList = materialExtendService.getDetailList(materialId);
             }
@@ -105,10 +114,10 @@ public class MaterialExtendController {
                     if(StringUtil.isNotEmpty(md.getSku())){
                         item.put("sku", md.getSku());
                     }
-                    item.put("purchaseDecimal", md.getPurchaseDecimal());
-                    item.put("commodityDecimal", md.getCommodityDecimal());
-                    item.put("wholesaleDecimal", md.getWholesaleDecimal());
-                    item.put("lowDecimal", md.getLowDecimal());
+                    item.put("purchaseDecimal", roleService.parseBillPriceByLimit(md.getPurchaseDecimal(), "buy", priceLimit, request));
+                    item.put("commodityDecimal", roleService.parseBillPriceByLimit(md.getCommodityDecimal(), "retail", priceLimit, request));
+                    item.put("wholesaleDecimal", roleService.parseBillPriceByLimit(md.getWholesaleDecimal(), "sale", priceLimit, request));
+                    item.put("lowDecimal", roleService.parseBillPriceByLimit(md.getLowDecimal(), "sale", priceLimit, request));
                     dataArray.add(item);
                 }
             }
@@ -138,6 +147,7 @@ public class MaterialExtendController {
         Map<String, Object> map = new HashMap<String, Object>();
         try {
             MaterialExtend materialExtend = materialExtendService.getInfoByBarCode(barCode);
+            maskPrices(materialExtend, request);
             res.code = 200;
             res.data = materialExtend;
         } catch (Exception e) {
@@ -146,6 +156,18 @@ public class MaterialExtendController {
             res.data = "获取数据失败";
         }
         return res;
+    }
+
+    private void maskPrices(MaterialExtend materialExtend, HttpServletRequest request) throws Exception {
+        if (materialExtend == null) {
+            return;
+        }
+        Long userId = userService.getUserId(request);
+        String priceLimit = userService.getRoleTypeByUserId(userId).getPriceLimit();
+        materialExtend.setPurchaseDecimal(roleService.parseBillPriceByLimit(materialExtend.getPurchaseDecimal(), "buy", priceLimit, request));
+        materialExtend.setCommodityDecimal(roleService.parseBillPriceByLimit(materialExtend.getCommodityDecimal(), "retail", priceLimit, request));
+        materialExtend.setWholesaleDecimal(roleService.parseBillPriceByLimit(materialExtend.getWholesaleDecimal(), "sale", priceLimit, request));
+        materialExtend.setLowDecimal(roleService.parseBillPriceByLimit(materialExtend.getLowDecimal(), "sale", priceLimit, request));
     }
 
     /**

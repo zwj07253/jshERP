@@ -7,49 +7,49 @@
         <div class="table-page-search-wrapper">
           <a-form layout="inline" @keyup.enter.native="searchQuery">
             <a-row :gutter="24">
-              <a-col :md="6" :sm="24">
-                <a-form-item label="商品信息" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                  <a-input placeholder="请输入条码、名称、助记码、规格、型号等信息" v-model="queryParam.materialParam"></a-input>
+              <a-col :md="5" :sm="24">
+                <a-form-item :label="$t('common.materialInfo')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-input :placeholder="$t('common.materialInfoPlaceholder')" v-model="queryParam.materialParam"></a-input>
                 </a-form-item>
               </a-col>
               <a-col :md="6" :sm="24">
-                <a-form-item label="单据日期" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                <a-form-item :label="$t('common.billDate')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                   <a-range-picker
                     style="width: 100%"
                     v-model="queryParam.createTimeRange"
                     format="YYYY-MM-DD"
-                    :placeholder="['开始时间', '结束时间']"
+                    :placeholder="[$t('common.startDate'), $t('common.endDate')]"
                     @change="onDateChange"
                   />
                 </a-form-item>
               </a-col>
-              <a-col :md="6" :sm="24">
+              <a-col :md="8" :sm="24">
                 <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
-                  <a-button type="primary" @click="searchQuery">查询</a-button>
-                  <a-button style="margin-left: 8px" v-print="'#reportPrint'" icon="printer">打印</a-button>
-                  <a-button style="margin-left: 8px" @click="exportExcel" icon="download">导出</a-button>
+                  <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                  <a-button style="margin-left: 8px" v-print="'#reportPrint'" icon="printer">{{ $t('common.print') }}</a-button>
+                  <a-button style="margin-left: 8px" @click="exportExcel" icon="download">{{ $t('common.export') }}</a-button>
                   <a @click="handleToggleSearch" style="margin-left: 8px">
-                    {{ toggleSearchStatus ? '收起' : '展开' }}
+                    {{ toggleSearchStatus ? $t('common.collapse') : $t('common.expand') }}
                     <a-icon :type="toggleSearchStatus ? 'up' : 'down'"/>
                   </a>
                 </span>
               </a-col>
-              <a-col :md="6" :sm="24">
+              <a-col :md="5" :sm="24">
                 <a-form-item>
-                  <span>实际零售金额：{{realityPriceTotal}}</span>
+                  <span>{{ $t('report.actualRetailAmount') }}：{{realityPriceTotal}}</span>
                 </a-form-item>
               </a-col>
             </a-row>
             <template v-if="toggleSearchStatus">
               <a-row :gutter="24">
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="会员卡号" :labelCol="labelCol" :wrapperCol="wrapperCol">
-                    <a-select placeholder="请选择会员卡号" v-model="queryParam.organId"
+                  <a-form-item :label="$t('common.memberCard')" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                    <a-select :placeholder="$t('common.enterMemberCard')" v-model="queryParam.organId"
                               :dropdownMatchSelectWidth="false" showSearch allow-clear optionFilterProp="children" @search="handleSearchRetail">
                       <div slot="dropdownRender" slot-scope="menu">
                         <v-nodes :vnodes="menu" />
                         <a-divider style="margin: 4px 0;" />
-                        <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initRetail"><a-icon type="reload" /> 刷新列表</div>
+                        <div class="dropdown-btn" @mousedown="e => e.preventDefault()" @click="initRetail"><a-icon type="reload" /> {{ $t('common.refreshList') }}</div>
                       </div>
                       <a-select-option v-for="(item,index) in retailList" :key="index" :value="item.id">
                         {{ item.supplier }}
@@ -58,12 +58,12 @@
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="仓库" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-form-item :label="$t('common.warehouse')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                     <a-select
                       optionFilterProp="children"
                       :dropdownMatchSelectWidth="false"
                       showSearch allow-clear style="width: 100%"
-                      placeholder="请选择仓库"
+                      :placeholder="$t('common.selectWarehouse')"
                       v-model="queryParam.depotId">
                       <a-select-option v-for="(depot,index) in depotList" :value="depot.id" :key="index">
                         {{ depot.depotName }}
@@ -72,16 +72,16 @@
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24" v-if="orgaTree.length">
-                  <a-form-item label="部门" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-form-item :label="$t('report.dept')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                     <a-tree-select style="width:100%" allow-clear :treeData="orgaTree"
-                                   v-model="queryParam.organizationId" placeholder="请选择部门">
+                                   v-model="queryParam.organizationId" :placeholder="$t('common.selectDept')">
                     </a-tree-select>
                   </a-form-item>
                 </a-col>
                 <a-col :md="6" :sm="24">
-                  <a-form-item label="商品类别" :labelCol="labelCol" :wrapperCol="wrapperCol">
+                  <a-form-item :label="$t('report.productCategory')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                     <a-tree-select style="width:100%" :dropdownStyle="{maxHeight:'200px',overflow:'auto'}" allow-clear
-                                   :treeData="categoryTree" v-model="queryParam.categoryId" placeholder="请选择商品类别">
+                                   :treeData="categoryTree" v-model="queryParam.categoryId" :placeholder="$t('common.selectProductCategory')">
                     </a-tree-select>
                   </a-form-item>
                 </a-col>
@@ -97,7 +97,7 @@
             size="middle"
             rowKey="id"
             :columns="columns"
-            :dataSource="dataSource"
+            :dataSource="displayDataSource"
             :components="handleDrag(columns)"
             :pagination="false"
             :scroll="scroll"
@@ -121,7 +121,7 @@
                     </a-row>
                     <a-row style="padding-top: 10px;">
                       <a-col>
-                        恢复默认列配置：<a-button @click="handleRestDefault" type="link" size="small">恢复默认</a-button>
+                        {{ $t('common.restoreColumns') }}<a-button @click="handleRestDefault" type="link" size="small">{{ $t('common.restoreDefault') }}</a-button>
                       </a-col>
                     </a-row>
                   </a-checkbox-group>
@@ -140,9 +140,9 @@
                 :page-size="ipagination.pageSize"
                 :page-size-options="ipagination.pageSizeOptions"
                 :total="ipagination.total"
-                :show-total="(total, range) => `共 ${total-Math.ceil(total/ipagination.pageSize)} 条`">
+                :show-total="total => $t('common.paginationTotal', { total })">
                 <template slot="buildOptionText" slot-scope="props">
-                  <span>{{ props.value-1 }}条/页</span>
+                  <span>{{ props.value }}{{ $t('report.itemsPerPage') }}</span>
                 </template>
               </a-pagination>
             </a-col>
@@ -192,8 +192,8 @@
           mpList: getMpListShort(Vue.ls.get('materialPropertyList')),
         },
         ipagination:{
-          pageSize: 11,
-          pageSizeOptions: ['11', '21', '31', '101', '201']
+          pageSize: 10,
+          pageSizeOptions: ['10', '20', '30', '100', '200']
         },
         defaultTimeStr: '',
         retailList: [],
@@ -211,26 +211,26 @@
         defColumns: [
           {
             dataIndex: 'rowIndex', width:60, align:"center", slots: { title: 'customTitle' },
-            customRender:function (t,r,index) {
-              return (t !== '合计') ? (parseInt(index) + 1) : t
+            customRender:(t,r,index) => {
+              return (t !== this.$t('common.total')) ? (parseInt(index) + 1) : t
             }
           },
-          {title: '条码', dataIndex: 'barCode', sorter: (a, b) => a.barCode - b.barCode, width: 160},
-          {title: '名称', dataIndex: 'materialName', width: 160, ellipsis:true},
-          {title: '规格', dataIndex: 'materialStandard', width: 80, ellipsis:true},
-          {title: '型号', dataIndex: 'materialModel', width: 80, ellipsis:true},
-          {title: '颜色', dataIndex: 'materialColor', width: 60, ellipsis:true},
-          {title: '品牌', dataIndex: 'materialBrand', width: 80, ellipsis:true},
-          {title: '制造商', dataIndex: 'materialMfrs', width: 80, ellipsis:true},
-          {title: '扩展1', dataIndex: 'otherField1', width: 80, ellipsis:true},
-          {title: '扩展2', dataIndex: 'otherField2', width: 80, ellipsis:true},
-          {title: '扩展3', dataIndex: 'otherField3', width: 80, ellipsis:true},
-          {title: '单位', dataIndex: 'materialUnit', width: 80, ellipsis:true},
-          {title: '零售数量', dataIndex: 'outSum', sorter: (a, b) => a.outSum - b.outSum, width: 80},
-          {title: '零售金额', dataIndex: 'outSumPrice', sorter: (a, b) => a.outSumPrice - b.outSumPrice, width: 80},
-          {title: '退货数量', dataIndex: 'inSum', sorter: (a, b) => a.inSum - b.inSum, width: 80},
-          {title: '退货金额', dataIndex: 'inSumPrice', sorter: (a, b) => a.inSumPrice - b.inSumPrice, width: 80},
-          {title: '实际零售金额', dataIndex: 'outInSumPrice', sorter: (a, b) => a.outInSumPrice - b.outInSumPrice, width: 100}
+          {title: this.$t('common.barcode'), dataIndex: 'barCode', sorter: (a, b) => a.barCode - b.barCode, width: 160},
+          {title: this.$t('common.name'), dataIndex: 'materialName', width: 160, ellipsis:true},
+          {title: this.$t('common.specification'), dataIndex: 'materialStandard', width: 80, ellipsis:true},
+          {title: this.$t('common.model'), dataIndex: 'materialModel', width: 80, ellipsis:true},
+          {title: this.$t('material.color'), dataIndex: 'materialColor', width: 60, ellipsis:true},
+          {title: this.$t('common.brand'), dataIndex: 'materialBrand', width: 80, ellipsis:true},
+          {title: this.$t('material.manufacturer'), dataIndex: 'materialMfrs', width: 80, ellipsis:true},
+          {title: this.$t('purchase.form.columns.ext1'), dataIndex: 'otherField1', width: 80, ellipsis:true},
+          {title: this.$t('purchase.form.columns.ext2'), dataIndex: 'otherField2', width: 80, ellipsis:true},
+          {title: this.$t('purchase.form.columns.ext3'), dataIndex: 'otherField3', width: 80, ellipsis:true},
+          {title: this.$t('common.unit'), dataIndex: 'materialUnit', width: 80, ellipsis:true},
+          {title: this.$t('report.retailQty'), dataIndex: 'outSum', sorter: (a, b) => a.outSum - b.outSum, width: 80},
+          {title: this.$t('report.retailAmount'), dataIndex: 'outSumPrice', sorter: (a, b) => a.outSumPrice - b.outSumPrice, width: 80},
+          {title: this.$t('report.returnQty'), dataIndex: 'inSum', sorter: (a, b) => a.inSum - b.inSum, width: 80},
+          {title: this.$t('report.returnAmount'), dataIndex: 'inSumPrice', sorter: (a, b) => a.inSumPrice - b.inSumPrice, width: 80},
+          {title: this.$t('report.actualRetailAmount'), dataIndex: 'outInSumPrice', sorter: (a, b) => a.outInSumPrice - b.outInSumPrice, width: 100}
         ],
         url: {
           list: "/depotItem/retailOut"
@@ -245,6 +245,26 @@
       this.initColumnsSetting()
       this.handleChangeOtherField(0)
     },
+    computed: {
+      displayDataSource() {
+        const rows = (this.dataSource || []).slice()
+        if (!rows.length) {
+          return rows
+        }
+        const totalRow = {
+          id: `retail-total-${this.ipagination.current}`,
+          rowIndex: this.$t('common.total')
+        }
+        const numericFields = ['outSum', 'outSumPrice', 'inSum', 'inSumPrice', 'outInSumPrice']
+        numericFields.forEach(field => {
+          totalRow[field] = rows.reduce((sum, row) => {
+            const value = Number.parseFloat(row[field])
+            return sum + (Number.isFinite(value) ? value : 0)
+          }, 0).toFixed(2)
+        })
+        return rows.concat(totalRow)
+      }
+    },
     methods: {
       moment,
       getQueryParams() {
@@ -252,7 +272,7 @@
         param.monthTime = this.queryParam.monthTime;
         param.field = this.getQueryField();
         param.currentPage = this.ipagination.current;
-        param.pageSize = this.ipagination.pageSize-1;
+        param.pageSize = this.ipagination.pageSize;
         return param;
       },
       onDateChange: function (value, dateString) {
@@ -273,7 +293,6 @@
           if (res.code===200) {
             this.dataSource = res.data.rows;
             this.ipagination.total = res.data.total;
-            this.tableAddTotalRow(this.columns, this.dataSource)
             this.realityPriceTotal = res.data.realityPriceTotal
           } else if(res.code===510){
             this.$message.warning(res.data)
@@ -338,25 +357,44 @@
       },
       searchQuery() {
         if(this.queryParam.beginTime == '' || this.queryParam.endTime == ''){
-          this.$message.warning('请选择单据日期！')
+          this.$message.warning(this.$t('report.selectBillDate'))
         } else {
           this.loadData(1);
         }
       },
       exportExcel() {
+        if ((this.ipagination.total || 0) > 10000) {
+          this.$message.warning(this.$t('report.exportLimit'))
+          return
+        }
+        let params = this.getQueryParams()
+        params.currentPage = 1
+        params.pageSize = Math.max(this.ipagination.total || 0, 1)
+        this.loading = true
+        getAction(this.url.list, params).then((res) => {
+          if (res.code === 200) {
+            this.exportExcelRows(res.data.rows || [])
+          } else {
+            this.$message.warning(res.data && res.data.message ? res.data.message : this.$t('report.exportFailed'))
+          }
+        }).finally(() => {
+          this.loading = false
+        })
+      },
+      exportExcelRows(dataSource) {
         let list = []
         let mpStr = getMpListShort(Vue.ls.get('materialPropertyList'))
-        let head = '条码,名称,规格,型号,颜色,品牌,制造商,' + mpStr + ',单位,零售数量,零售金额,退货数量,退货金额,实际零售金额'
-        for (let i = 0; i < this.dataSource.length; i++) {
+        let head = this.$t('report.barCode') + ',' + this.$t('report.materialName') + ',' + this.$t('report.materialStandard') + ',' + this.$t('report.materialModel') + ',' + this.$t('report.materialColor') + ',' + this.$t('report.materialBrand') + ',' + this.$t('report.materialMfrs') + ',' + mpStr + ',' + this.$t('report.materialUnit') + ',' + this.$t('report.retailQty') + ',' + this.$t('report.retailAmount') + ',' + this.$t('report.returnQty') + ',' + this.$t('report.returnAmount') + ',' + this.$t('report.actualRetailAmount')
+        for (let i = 0; i < dataSource.length; i++) {
           let item = []
-          let ds = this.dataSource[i]
+          let ds = dataSource[i]
           item.push(ds.barCode, ds.materialName, ds.materialStandard, ds.materialModel, ds.materialColor, ds.materialBrand,
             ds.materialMfrs, ds.otherField1, ds.otherField2, ds.otherField3, ds.materialUnit, ds.outSum,
             ds.outSumPrice, ds.inSum, ds.inSumPrice, ds.outInSumPrice)
           list.push(item)
         }
-        let tip = '单据日期：' + this.queryParam.beginTime + '~' + this.queryParam.endTime
-        this.handleExportXlsPost('零售统计', '零售统计', head, tip, list)
+        let tip = this.$t('common.billDate') + '：' + this.queryParam.beginTime + '~' + this.queryParam.endTime
+        this.handleExportXlsPost(this.$t('report.retailStats'), this.$t('report.retailStats'), head, tip, list)
       }
     }
   }

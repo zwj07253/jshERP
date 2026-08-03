@@ -11,7 +11,7 @@
       :maskClosable="false"
       @ok="handleOk"
       @cancel="handleCancel"
-      cancelText="关闭"
+      :cancelText="$t('common.close')"
       style="top:20px;height: 95%;">
       <!-- 查询区域 -->
       <div class="table-page-search-wrapper" v-if="selectType === 'list'">
@@ -19,22 +19,22 @@
         <a-form layout="inline" @keyup.enter.native="searchQuery">
           <a-row :gutter="24">
             <a-col :md="6" :sm="24">
-              <a-form-item label="单据编号" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
-                <a-input placeholder="请输入单据编号查询" v-model="queryParam.number"></a-input>
+              <a-form-item :label="$t('common.billNo')" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
+                <a-input :placeholder="$t('common.enterBillNo')" v-model="queryParam.number"></a-input>
               </a-form-item>
             </a-col>
             <a-col :md="6" :sm="24">
-              <a-form-item label="商品信息" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
-                <a-input placeholder="条码|名称|规格|型号" v-model="queryParam.materialParam"></a-input>
+              <a-form-item :label="$t('common.materialInfo')" :labelCol="{span: 5}" :wrapperCol="{span: 18, offset: 1}">
+                <a-input :placeholder="$t('common.enterBarcodeNameSpecModel')" v-model="queryParam.materialParam"></a-input>
               </a-form-item>
             </a-col>
             <a-col :md="6" :sm="24">
-              <a-form-item label="单据日期" :labelCol="labelCol" :wrapperCol="wrapperCol">
+              <a-form-item :label="$t('common.billDate')" :labelCol="labelCol" :wrapperCol="wrapperCol">
                 <a-range-picker
                   style="width: 100%"
                   v-model="queryParam.createTimeRange"
                   format="YYYY-MM-DD"
-                  :placeholder="['开始时间', '结束时间']"
+                  :placeholder="[$t('common.startTime'), $t('common.endTime')]"
                   @change="onDateChange"
                   @ok="onDateOk"
                 />
@@ -42,8 +42,8 @@
             </a-col>
             <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
               <a-col :md="6" :sm="24">
-                <a-button type="primary" @click="searchQuery">查询</a-button>
-                <a-button style="margin-left: 8px" @click="searchReset">重置</a-button>
+                <a-button type="primary" @click="searchQuery">{{ $t('common.search') }}</a-button>
+                <a-button style="margin-left: 8px" @click="searchReset">{{ $t('common.reset') }}</a-button>
               </a-col>
             </span>
           </a-row>
@@ -69,9 +69,9 @@
         </span>
         <template slot="customRenderStatus" slot-scope="text, record">
           <template>
-            <a-tag v-if="record.status === '1'" color="green">已审核</a-tag>
-            <a-tag v-if="record.status === '3' && queryParam.type === '入库'" color="blue">部分入库</a-tag>
-            <a-tag v-if="record.status === '3' && queryParam.type === '出库'" color="blue">部分出库</a-tag>
+            <a-tag v-if="record.status === '1'" color="green">{{ $t('common.approved') }}</a-tag>
+            <a-tag v-if="record.status === '3' && queryParam.type === '入库'" color="blue">{{ $t('common.partialInbound') }}</a-tag>
+            <a-tag v-if="record.status === '3' && queryParam.type === '出库'" color="blue">{{ $t('common.partialOut') }}</a-tag>
           </template>
         </template>
       </a-table>
@@ -109,7 +109,7 @@
     },
     data () {
       return {
-        title: "操作",
+        title: this.$t('common.action'),
         visible: false,
         disableMixinCreated: true,
         selectedRowKeys: [],
@@ -141,31 +141,31 @@
         // 表头
         columns: [
           { title: '', dataIndex: 'organName',width:120, ellipsis:true},
-          { title: '单据编号', dataIndex: 'number',width:130,
+          { title: this.$t('common.billNo'), dataIndex: 'number',width:130,
             scopedSlots: { customRender: 'numberCustomRender' },
           },
-          { title: '商品信息', dataIndex: 'materialsList',width:280, ellipsis:true,
+          { title: this.$t('common.materialInfo'), dataIndex: 'materialsList',width:280, ellipsis:true,
             customRender:function (text,record,index) {
               if(text) {
                 return text.replace(",","，");
               }
             }
           },
-          { title: '单据日期', dataIndex: 'operTimeStr',width:145},
-          { title: '操作员', dataIndex: 'userName',width:70},
-          { title: '数量', dataIndex: 'materialCount',width:60},
-          { title: '状态', dataIndex: 'status', width: 70, align: "center",
+          { title: this.$t('common.billDate'), dataIndex: 'operTimeStr',width:145},
+          { title: this.$t('common.operator'), dataIndex: 'userName',width:70},
+          { title: this.$t('common.quantity'), dataIndex: 'materialCount',width:60},
+          { title: this.$t('common.status'), dataIndex: 'status', width: 70, align: "center",
             scopedSlots: { customRender: 'customRenderStatus' }
           }
         ],
         columnsDetail: [
-          { title: '条码', dataIndex: 'barCode',width:120},
-          { title: '名称', dataIndex: 'name',width:100, ellipsis:true},
-          { title: '规格', dataIndex: 'standard',width:120, ellipsis:true},
-          { title: '型号', dataIndex: 'model',width:120, ellipsis:true},
-          { title: '单位', dataIndex: 'unit',width:50},
-          { title: '数量', dataIndex: 'operNumber',width:50},
-          { title: '备注', dataIndex: 'remark',width:100, ellipsis:true},
+          { title: this.$t('common.barcode'), dataIndex: 'barCode',width:120},
+          { title: this.$t('common.name'), dataIndex: 'name',width:100, ellipsis:true},
+          { title: this.$t('common.specification'), dataIndex: 'standard',width:120, ellipsis:true},
+          { title: this.$t('common.model'), dataIndex: 'model',width:120, ellipsis:true},
+          { title: this.$t('common.unit'), dataIndex: 'unit',width:50},
+          { title: this.$t('common.quantity'), dataIndex: 'operNumber',width:50},
+          { title: this.$t('common.remark'), dataIndex: 'remark',width:100, ellipsis:true},
         ],
         dataSource:[],
         dataSourceDetail: [],
@@ -185,6 +185,12 @@
       show(type, subType, status) {
         this.selectType = 'list'
         this.showType = 'other'
+        this.selectedRowKeys = []
+        this.selectedDetailRowKeys = []
+        this.selectBillRows = []
+        this.selectBillDetailRows = []
+        this.dataSourceDetail = []
+        this.linkNumber = ''
         this.queryParam.type = type
         this.queryParam.subType = subType
         this.queryParam.status = status
@@ -227,14 +233,18 @@
             this.organId = record.organId
             this.remark = record.remark
             this.loadDetailData(1)
+          } else {
+            this.selectType = 'list'
+            this.title = "请选择单据"
+            this.$message.warning(this.$t('common.selectOnlyOne'))
           }
         } else {
           if(this.selectedDetailRowKeys.length) {
             this.getSelectBillDetailRows()
-            this.$emit('ok', this.selectBillDetailRows, this.linkNumber, this.remark)
+            this.$emit('ok', this.selectBillDetailRows, this.linkNumber, this.remark, this.organId)
             this.close()
           } else {
-            this.$message.warning('抱歉，请选择单据明细！')
+            this.$message.warning(this.$t('common.pleaseSelectDetail'))
           }
         }
       },
