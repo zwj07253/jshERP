@@ -18,10 +18,10 @@
     <div style="margin: 4px 4px 0;">
       <transition name="page-toggle">
         <keep-alive v-if="multipage" :include="includedComponents">
-          <router-view />
+          <router-view :key="viewKey" />
         </keep-alive>
         <template v-else>
-          <router-view />
+          <router-view :key="viewKey" />
         </template>
       </transition>
       <!-- iframe页 -->
@@ -42,7 +42,7 @@
   import { triggerWindowResizeEvent } from '@/utils/util'
   const indexKey = '/dashboard/analysis'
   import Vue from 'vue'
-  import { CACHE_INCLUDED_ROUTES } from "@/store/mutation-types"
+  import { CACHE_INCLUDED_ROUTES, USER_ID } from "@/store/mutation-types"
   import store from '../../store'
   import { menuNameMap } from '@/components/menu'
 
@@ -81,6 +81,9 @@
         //根据配置来返回页面是否是多页签模式
         return this.$store.state.app.multipage
       },
+      viewKey() {
+        return this.$route.fullPath + ':' + this.$i18n.locale
+      },
       includedComponents() {
         const includedRouters = Vue.ls.get(CACHE_INCLUDED_ROUTES)
         //加入到 cache_included_routes
@@ -105,16 +108,22 @@
       // 判断当前路由是否iframe页
       this.isOpenIframePage()
 
-      if (this.$route.path != indexKey) {
-        this.addIndexToFirst()
-      }
       let storeKey = 'route:title:' + this.$route.fullPath
       let routeTitle = this.$ls.get(storeKey)
       if (routeTitle) {
         this.$route.meta.title = routeTitle
       }
-      this.pageList.push(this.$route)
-      this.linkList.push(this.$route.fullPath)
+      this.restoreTabs()
+      if (this.$route.path !== indexKey && this.linkList.indexOf(indexKey) === -1) {
+        this.addIndexToFirst()
+      }
+      const currentIndex = this.linkList.indexOf(this.$route.fullPath)
+      if (currentIndex === -1) {
+        this.pageList.push(this.$route)
+        this.linkList.push(this.$route.fullPath)
+      } else {
+        this.pageList.splice(currentIndex, 1, this.$route)
+      }
       this.activePage = this.$route.fullPath
     },
     mounted() {
@@ -135,6 +144,11 @@
           let oldIndex = this.linkList.indexOf(newRoute.fullPath)
           let oldPositionRoute = this.pageList[oldIndex]
           this.pageList.splice(oldIndex, 1, Object.assign({},newRoute,{meta:oldPositionRoute.meta}))
+        }
+      },
+      pageList: {
+        handler () {
+          this.saveTabs()
         }
       },
       'activePage': function(key) {
@@ -161,6 +175,19 @@
       }
     },
     methods: {
+      tabStorageKey () {
+        return 'tabRoutes:' + (Vue.ls.get(USER_ID) || 'anonymous')
+      },
+      restoreTabs () {
+        const paths = Vue.ls.get(this.tabStorageKey()) || []
+        const pages = paths.map(path => this.$router.resolve(path).route)
+          .filter(route => route && route.name)
+        this.pageList = pages
+        this.linkList = pages.map(page => page.fullPath)
+      },
+      saveTabs () {
+        Vue.ls.set(this.tabStorageKey(), this.pageList.map(page => page.fullPath))
+      },
       translateTabTitle(title) {
         const key = menuNameMap[title]
         return key ? this.$t(key) : title

@@ -1,6 +1,5 @@
 import Menu from 'ant-design-vue/es/menu'
 import Icon from 'ant-design-vue/es/icon'
-import { i18n } from '@/locales'
 
 export const menuNameMap = {
   '首页': 'menu.home',
@@ -20,11 +19,6 @@ export const menuNameMap = {
   '系统管理': 'menu.systemManagement', '角色管理': 'menu.roleManagement', '用户列表': 'menu.userList', '菜单功能': 'menu.menuFunction', '平台配置': 'menu.platformConfig', '插件管理': 'menu.plugin', '消息管理': 'menu.message',
   '用户管理': 'menu.userManagement', '部门管理': 'menu.departmentManagement', '日志管理': 'menu.logManagement', '商品属性': 'menu.productProperty', 'AI模型配置': 'menu.aiModelConfig',
   '期初建账': 'menu.initialAccount'
-}
-
-function translateMenuName(text) {
-  const key = menuNameMap[text]
-  return key ? i18n.t(key) : text
 }
 
 const { Item, SubMenu } = Menu
@@ -83,6 +77,10 @@ export default {
     }
   },
   methods: {
+    translateMenuName (text) {
+      const key = menuNameMap[text]
+      return key ? this.$t(key) : text
+    },
     // select menu item
     onOpenChange (openKeys) {
 
@@ -137,7 +135,7 @@ export default {
       }
 
       const attrs = { href: menu.url, target: menu.text }
-      const displayText = translateMenuName(menu.text)
+      const displayText = this.translateMenuName(menu.text)
 
       if (menu.children) {
         // 把有子菜单的 并且 父菜单是要隐藏子菜单的
@@ -161,7 +159,7 @@ export default {
       if (!menu.alwaysShow) {
         menu.children.forEach(item => itemArr.push(this.renderItem(item)))
       }
-      const displayText = translateMenuName(menu.text)
+      const displayText = this.translateMenuName(menu.text)
       return (
         <SubMenu {...{ key: menu.url }}>
           <span slot="title">

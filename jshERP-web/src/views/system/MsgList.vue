@@ -43,8 +43,8 @@
         :loading="loading"
         @change="handleTableChange">
       <template slot="customRenderTitle" slot-scope="text, record">
-        <span v-if="record.status =='1'" style="font-weight: bold">{{text}}</span>
-        <span v-if="record.status =='2'">{{text}}</span>
+        <span v-if="record.status =='1'" style="font-weight: bold">{{ notificationTitle(record) }}</span>
+        <span v-if="record.status =='2'">{{ notificationTitle(record) }}</span>
       </template>
       <span slot="action" slot-scope="text, record">
         <a @click="showAnnouncement(record)">{{ $t('common.view') }}</a>
@@ -61,6 +61,7 @@
   import ShowAnnouncement from '@/components/tools/ShowAnnouncement'
   import {JeecgListMixin} from '@/mixins/JeecgListMixin'
   import DynamicNotice from '../../components/tools/DynamicNotice'
+  import { getNotificationTitle } from '@/utils/notificationI18n'
 
   export default {
     name: "MsgList",
@@ -116,6 +117,9 @@
       }
     },
     methods: {
+      notificationTitle (record) {
+        return getNotificationTitle(record, this.$i18n)
+      },
       handleDetail: function(){
         this.visible = true
       },

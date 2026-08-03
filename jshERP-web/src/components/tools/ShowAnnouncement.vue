@@ -13,15 +13,18 @@
       <a-button v-if="record.openType==='url'" type="primary" @click="toHandle">{{ $t('common.goProcess') }}</a-button>
     </template>
     <a-card class="daily-article" :loading="loading">
-      <span style="font-size:18px;">{{record.msgTitle}}</span>
+      <span style="font-size:18px;">{{ notificationTitle }}</span>
       <span style="font-size:14px; padding-left:30px; color:grey">{{ $t('common.notificationDate') }}：{{record.createTimeStr}}</span>
       <a-divider />
-      <span v-html="record.msgContent" class="article-content"></span>
+      <span v-if="isStructuredStockWarning" class="article-content">{{ notificationContent }}</span>
+      <span v-else v-html="notificationContent" class="article-content"></span>
     </a-card>
   </j-modal>
 </template>
 
 <script>
+  import { getNotificationContent, getNotificationTitle, isStructuredStockWarning } from '@/utils/notificationI18n'
+
   export default {
     name: "SysAnnouncementModal",
     components: {
@@ -54,7 +57,16 @@
         }
       }
     },
-    created () {
+    computed: {
+      notificationTitle () {
+        return getNotificationTitle(this.record, this.$i18n)
+      },
+      notificationContent () {
+        return getNotificationContent(this.record, this.$i18n)
+      },
+      isStructuredStockWarning () {
+        return isStructuredStockWarning(this.record)
+      }
     },
     methods: {
       detail (record) {

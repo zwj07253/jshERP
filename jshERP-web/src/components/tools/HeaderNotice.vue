@@ -14,7 +14,7 @@
             <a-list>
               <a-list-item :key="index" v-for="(record, index) in announcement1">
                 <div style="margin-left: 5%;width: 80%">
-                  <p><a @click="showAnnouncement(record)">{{ record.msgTitle }}</a></p>
+                  <p><a @click="showAnnouncement(record)">{{ notificationTitle(record) }}</a></p>
                   <p style="color: rgba(0,0,0,.45);margin-bottom: 0px">{{ record.createTimeStr }}</p>
                 </div>
               </a-list-item>
@@ -43,6 +43,7 @@
   import store from '@/store/'
   import DynamicNotice from './DynamicNotice'
   import MsgList from '@/views/system/MsgList'
+  import { getNotificationContent, getNotificationTitle } from '@/utils/notificationI18n'
 
   export default {
     name: "HeaderNotice",
@@ -96,6 +97,9 @@
       }
     },
     methods: {
+      notificationTitle (record) {
+        return getNotificationTitle(record, this.$i18n)
+      },
       timerFun() {
         this.stopTimer = false;
         if (this.noticeTimer) {
@@ -217,7 +221,7 @@
       },
 
       openNotification (data) {
-        var text = (data.msgTitle ? data.msgTitle + '\n' : '') + (data.msgContent || '');
+        var text = this.notificationTitle(data) + '\n' + getNotificationContent(data, this.$i18n);
         const key = `open${data.id || Date.now()}`;
         this.$notification.open({
           message: this.$t('common.messageReminder'),

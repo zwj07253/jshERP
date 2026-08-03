@@ -35,6 +35,10 @@ public class StockWarningService {
     private static final String WARNING_HIGH = "HIGH";
     private static final String MESSAGE_TYPE = "stock_warning";
     private static final String STOCK_WARNING_URL = "/report/stock_warning_report";
+    private static final String LOW_WARNING_TITLE_KEY = "stockWarning.low.title";
+    private static final String LOW_WARNING_CONTENT_KEY = "stockWarning.low.content";
+    private static final String HIGH_WARNING_TITLE_KEY = "stockWarning.high.title";
+    private static final String HIGH_WARNING_CONTENT_KEY = "stockWarning.high.content";
 
     @Resource
     private StockWarningStatusMapper stockWarningStatusMapper;
@@ -95,19 +99,15 @@ public class StockWarningService {
         }
         Material material = materialMapper.selectByPrimaryKey(key.getMaterialId());
         Depot depot = depotMapper.selectByPrimaryKey(key.getDepotId());
-        String materialName = escapeHtml(
-                material == null ? String.valueOf(key.getMaterialId()) : material.getName());
-        String depotName = escapeHtml(
-                depot == null ? String.valueOf(key.getDepotId()) : depot.getName());
+        String materialName = material == null ? String.valueOf(key.getMaterialId()) : material.getName();
+        String depotName = depot == null ? String.valueOf(key.getDepotId()) : depot.getName();
         if (notifyLow) {
-            sendMessages(userIds, tenantId, "\u5e93\u5b58\u9884\u8b66-\u4f4e\u5e93\u5b58",
-                    buildContent(materialName, depotName, currentStock, lowSafeStock,
-                            "\u4f4e\u4e8e\u6700\u4f4e\u5b89\u5168\u5e93\u5b58"));
+            sendMessages(userIds, tenantId, LOW_WARNING_TITLE_KEY,
+                    buildContent(LOW_WARNING_CONTENT_KEY, materialName, depotName, currentStock, lowSafeStock));
         }
         if (notifyHigh) {
-            sendMessages(userIds, tenantId, "\u5e93\u5b58\u9884\u8b66-\u9ad8\u5e93\u5b58",
-                    buildContent(materialName, depotName, currentStock, highSafeStock,
-                            "\u9ad8\u4e8e\u6700\u9ad8\u5b89\u5168\u5e93\u5b58"));
+            sendMessages(userIds, tenantId, HIGH_WARNING_TITLE_KEY,
+                    buildContent(HIGH_WARNING_CONTENT_KEY, materialName, depotName, currentStock, highSafeStock));
         }
     }
 
@@ -205,26 +205,43 @@ public class StockWarningService {
         return threshold != null && threshold.compareTo(BigDecimal.ZERO) != 0;
     }
 
-    private String buildContent(String materialName, String depotName, BigDecimal currentStock,
-                                BigDecimal threshold, String warningText) {
-        return "\u5546\u54c1\u3010" + materialName + "\u3011\u5728\u4ed3\u5e93\u3010"
-                + depotName + "\u3011\u7684\u5f53\u524d\u5e93\u5b58\u4e3a "
-                + formatNumber(currentStock) + "\uff0c" + warningText + " "
-                + formatNumber(threshold) + "\u3002";
+    private String buildContent(String key, String materialName, String depotName, BigDecimal currentStock,
+                                BigDecimal threshold) {
+        return "{\"key\":\"" + escapeJson(key) + "\",\"params\":{"
+                + "\"materialName\":\"" + escapeJson(materialName) + "\","
+                + "\"depotName\":\"" + escapeJson(depotName) + "\","
+                + "\"currentStock\":\"" + escapeJson(formatNumber(currentStock)) + "\","
+                + "\"threshold\":\"" + escapeJson(formatNumber(threshold)) + "\"}}";
     }
 
     private String formatNumber(BigDecimal number) {
         return number == null ? "0" : number.stripTrailingZeros().toPlainString();
     }
 
-    private String escapeHtml(String value) {
+    private String escapeJson(String value) {
         if (value == null) {
             return "";
         }
-        return value.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
+        StringBuilder escaped = new StringBuilder(value.length());
+        for (int i = 0; i < value.length(); i++) {
+            char character = value.charAt(i);
+            switch (character) {
+                case '\\': escaped.append("\\\\"); break;
+                case '"': escaped.append("\\\""); break;
+                case '\b': escaped.append("\\b"); break;
+                case '\f': escaped.append("\\f"); break;
+                case '\n': escaped.append("\\n"); break;
+                case '\r': escaped.append("\\r"); break;
+                case '\t': escaped.append("\\t"); break;
+                default:
+                    if (character < 0x20) {
+                        escaped.append(String.format("\\u%04x", (int) character));
+                    } else {
+                        escaped.append(character);
+                    }
+            }
+        }
+        return escaped.toString();
     }
+
 }

@@ -1,4 +1,8 @@
 export default {
+  stockWarning: {
+    low: { title: 'Stock Warning - Low Stock', content: 'Product [{materialName}] in warehouse [{depotName}] has current stock {currentStock}, below the minimum safety stock {threshold}.' },
+    high: { title: 'Stock Warning - High Stock', content: 'Product [{materialName}] in warehouse [{depotName}] has current stock {currentStock}, above the maximum safety stock {threshold}.' }
+  },
   language: { chinese: '简体中文', english: 'English' },
   common: {
     search: 'Search', reset: 'Reset', expand: 'Expand', collapse: 'Collapse',

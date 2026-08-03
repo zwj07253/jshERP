@@ -1,4 +1,8 @@
 export default {
+  stockWarning: {
+    low: { title: '库存预警-低库存', content: '商品【{materialName}】在仓库【{depotName}】的当前库存为 {currentStock}，低于最低安全库存 {threshold}。' },
+    high: { title: '库存预警-高库存', content: '商品【{materialName}】在仓库【{depotName}】的当前库存为 {currentStock}，高于最高安全库存 {threshold}。' }
+  },
   language: { chinese: '简体中文', english: 'English' },
   common: {
     search: '查询', reset: '重置', expand: '展开', collapse: '收起',
