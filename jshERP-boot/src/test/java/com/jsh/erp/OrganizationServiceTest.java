@@ -10,6 +10,7 @@ import com.jsh.erp.datasource.mappers.OrganizationMapperEx;
 import com.jsh.erp.exception.BusinessRunTimeException;
 import com.jsh.erp.service.LogService;
 import com.jsh.erp.service.OrganizationService;
+import com.jsh.erp.service.PlatformAccessService;
 import com.jsh.erp.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +24,7 @@ import java.util.Collections;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -38,6 +40,7 @@ class OrganizationServiceTest {
     @Mock private OrgaUserRelMapper orgaUserRelMapper;
     @Mock private UserService userService;
     @Mock private LogService logService;
+    @Mock private PlatformAccessService platformAccessService;
 
     @InjectMocks private OrganizationService organizationService;
 
@@ -102,6 +105,22 @@ class OrganizationServiceTest {
                 () -> organizationService.deleteOrganization(10L, null));
 
         verify(organizationMapperEx, never()).batchDeleteOrganizationByIds(any(), any(), any());
+    }
+
+    @Test
+    void deletionUsesNumericIdsForTheChildDepartmentCheck() throws Exception {
+        stubCurrentUser(true);
+        Organization organization = organization(10L, null);
+        when(organizationMapper.selectByExample(any())).thenReturn(Collections.singletonList(organization));
+        when(organizationMapperEx.getOrganizationByParentIds(any())).thenReturn(Collections.emptyList());
+        when(orgaUserRelMapper.countByExample(any())).thenReturn(1);
+
+        assertThrows(BusinessRunTimeException.class,
+                () -> organizationService.deleteOrganization(10L, null));
+
+        ArgumentCaptor<Long[]> ids = ArgumentCaptor.forClass(Long[].class);
+        verify(organizationMapperEx).getOrganizationByParentIds(ids.capture());
+        assertArrayEquals(new Long[]{10L}, ids.getValue());
     }
 
     private void stubCurrentUser(boolean canEdit) throws Exception {

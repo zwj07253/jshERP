@@ -148,7 +148,7 @@ public class OrganizationService {
         if(idList.isEmpty()) {
             return 0;
         }
-        String[] idArray = idList.stream().map(String::valueOf).toArray(String[]::new);
+        Long[] idArray = idList.toArray(new Long[0]);
         List<Organization> selected = getActiveOrganizations(idList);
         if(selected.size() != idList.size()) {
             throw invalidOrganization("部门不存在或已删除");

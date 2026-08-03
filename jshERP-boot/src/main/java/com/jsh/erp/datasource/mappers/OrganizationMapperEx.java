@@ -24,11 +24,11 @@ public interface OrganizationMapperEx {
 
     int addOrganization(Organization org);
 
-    List <Organization> getOrganizationByParentIds(@Param("ids") String ids[]);
+    List <Organization> getOrganizationByParentIds(@Param("ids") Long[] ids);
 
-    int batchDeleteOrganizationByIds(@Param("updateTime") Date updateTime, @Param("updater") Long updater, @Param("ids") String ids[]);
+    int batchDeleteOrganizationByIds(@Param("updateTime") Date updateTime, @Param("updater") Long updater, @Param("ids") Long[] ids);
 
     int editOrganization(Organization org);
 
-    List <Organization> getOrganizationRootByIds(@Param("ids") String ids[]);
+    List <Organization> getOrganizationRootByIds(@Param("ids") Long[] ids);
 }
