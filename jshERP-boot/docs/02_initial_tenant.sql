@@ -18,6 +18,11 @@
 
 BEGIN;
 
+-- Single-tenant deployments do not allow public tenant registration.
+UPDATE jsh_platform_config
+SET platform_value = '0'
+WHERE platform_key = 'register_flag';
+
 -- ========================================
 -- 租户表 jsh_tenant
 -- ========================================
