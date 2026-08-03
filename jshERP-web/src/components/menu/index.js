@@ -2,6 +2,7 @@ import Menu from 'ant-design-vue/es/menu'
 import Icon from 'ant-design-vue/es/icon'
 
 export const menuNameMap = {
+  'Home': 'common.home',
   '首页': 'menu.home',
   '零售管理': 'menu.retailManagement', '零售出库': 'menu.retailOut', '零售出库列表': 'menu.retailOutList', '零售退货': 'menu.retailBack', '零售退货列表': 'menu.retailBackList',
   '采购管理': 'menu.purchaseManagement', '请购单': 'menu.purchaseApply', '请购单列表': 'menu.purchaseApplyList', '采购订单': 'menu.purchaseOrder', '采购订单列表': 'menu.purchaseOrderList', '采购入库': 'menu.purchaseInbound', '采购入库列表': 'menu.purchaseInList', '采购退货': 'menu.purchaseReturn', '采购退货列表': 'menu.purchaseBackList',
